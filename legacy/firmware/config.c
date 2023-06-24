@@ -81,6 +81,9 @@ static const uint32_t META_MAGIC_V10 = 0xFFFFFFFF;
 #define KEY_IMPORTED (16 | APP)                                    // bool
 #define KEY_U2F_ROOT (17 | APP | FLAG_PUBLIC_SHIFTED)              // node
 #define KEY_DEBUG_LINK_PIN (255 | APP | FLAG_PUBLIC_SHIFTED)       // string(10)
+
+#define KEY_MIMBLEWIMBLE_COIN_TRANSACTION_SECRET_NONCES (50 | APP | FLAG_PUBLIC_SHIFTED) // bytes(1440)
+#define KEY_MIMBLEWIMBLE_COIN_CURRENT_TRANSACTION_SECRET_NONCE_INDEX (51 | APP | FLAG_PUBLIC_SHIFTED) // uint32_t
 // clang-format on
 
 #define MAX_SESSIONS_COUNT 10
@@ -130,6 +133,7 @@ typedef struct {
   secbool seedCached;
   MessageType authorization_type;
   AuthorizeCoinJoin coinjoin_authorization;
+  MimbleWimbleCoinSession mimblewimble_coin_session;
 } Session;
 
 static void session_clearCache(Session *session);
@@ -434,6 +438,8 @@ void session_clearCache(Session *session) {
   session->authorization_type = 0;
   memzero(&session->coinjoin_authorization,
           sizeof(session->coinjoin_authorization));
+  memzero(&session->mimblewimble_coin_session,
+          sizeof(session->mimblewimble_coin_session));
 }
 
 void config_lockDevice(void) {
@@ -688,6 +694,15 @@ const AuthorizeCoinJoin *config_getCoinJoinAuthorization(void) {
   }
 
   return &activeSessionCache->coinjoin_authorization;
+}
+
+MimbleWimbleCoinSession *config_getMimbleWimbleCoinSession(void) {
+  if (activeSessionCache == NULL) {
+    fsm_sendFailure(FailureType_Failure_InvalidSession, "Invalid session");
+    return NULL;
+  }
+
+  return &activeSessionCache->mimblewimble_coin_session;
 }
 
 static bool config_loadNode(const StorageHDNode *node, const char *curve,
@@ -1009,6 +1024,61 @@ SafetyCheckLevel config_getSafetyCheckLevel(void) { return safetyCheckLevel; }
 
 void config_setSafetyCheckLevel(SafetyCheckLevel safety_check_level) {
   safetyCheckLevel = safety_check_level;
+}
+
+bool config_setMimbleWimbleCoinTransactionSecretNonce(const uint8_t *mimblewimble_coin_transaction_secret_nonce, const uint32_t mimblewimble_coin_transaction_secret_nonce_index) {
+  if(mimblewimble_coin_transaction_secret_nonce_index >= MIMBLEWIMBLE_COIN_NUMBER_OF_TRANSACTION_SECRET_NONCES) {
+    return false;
+  }
+
+  uint8_t mimblewimble_coin_transaction_secret_nonces[MIMBLEWIMBLE_COIN_ENCRYPTED_TRANSACTION_SECRET_NONCE_SIZE * MIMBLEWIMBLE_COIN_NUMBER_OF_TRANSACTION_SECRET_NONCES] = {0};
+  if(sectrue == storage_has(KEY_MIMBLEWIMBLE_COIN_TRANSACTION_SECRET_NONCES)) {
+    uint16_t length = 0;
+    if(sectrue != storage_get(KEY_MIMBLEWIMBLE_COIN_TRANSACTION_SECRET_NONCES, mimblewimble_coin_transaction_secret_nonces, sizeof(mimblewimble_coin_transaction_secret_nonces), &length) || length != sizeof(mimblewimble_coin_transaction_secret_nonces)) {
+      memzero(mimblewimble_coin_transaction_secret_nonces, sizeof(mimblewimble_coin_transaction_secret_nonces));
+      return false;
+    }
+  }
+
+  memcpy(&mimblewimble_coin_transaction_secret_nonces[mimblewimble_coin_transaction_secret_nonce_index * MIMBLEWIMBLE_COIN_ENCRYPTED_TRANSACTION_SECRET_NONCE_SIZE], mimblewimble_coin_transaction_secret_nonce, MIMBLEWIMBLE_COIN_ENCRYPTED_TRANSACTION_SECRET_NONCE_SIZE);
+  const secbool result = storage_set(KEY_MIMBLEWIMBLE_COIN_TRANSACTION_SECRET_NONCES, mimblewimble_coin_transaction_secret_nonces, sizeof(mimblewimble_coin_transaction_secret_nonces));
+  memzero(mimblewimble_coin_transaction_secret_nonces, sizeof(mimblewimble_coin_transaction_secret_nonces));
+  return result == sectrue;
+}
+
+bool config_getMimbleWimbleCoinTransactionSecretNonce(uint8_t *mimblewimble_coin_transaction_secret_nonce, const uint32_t mimblewimble_coin_transaction_secret_nonce_index) {
+  if(mimblewimble_coin_transaction_secret_nonce_index >= MIMBLEWIMBLE_COIN_NUMBER_OF_TRANSACTION_SECRET_NONCES) {
+    return false;
+  }
+
+  uint8_t mimblewimble_coin_transaction_secret_nonces[MIMBLEWIMBLE_COIN_ENCRYPTED_TRANSACTION_SECRET_NONCE_SIZE * MIMBLEWIMBLE_COIN_NUMBER_OF_TRANSACTION_SECRET_NONCES] = {0};
+  if(sectrue == storage_has(KEY_MIMBLEWIMBLE_COIN_TRANSACTION_SECRET_NONCES)) {
+    uint16_t length = 0;
+    if(sectrue != storage_get(KEY_MIMBLEWIMBLE_COIN_TRANSACTION_SECRET_NONCES, mimblewimble_coin_transaction_secret_nonces, sizeof(mimblewimble_coin_transaction_secret_nonces), &length) || length != sizeof(mimblewimble_coin_transaction_secret_nonces)) {
+      memzero(mimblewimble_coin_transaction_secret_nonces, sizeof(mimblewimble_coin_transaction_secret_nonces));
+      return false;
+    }
+  }
+
+  memcpy(mimblewimble_coin_transaction_secret_nonce, &mimblewimble_coin_transaction_secret_nonces[mimblewimble_coin_transaction_secret_nonce_index * MIMBLEWIMBLE_COIN_ENCRYPTED_TRANSACTION_SECRET_NONCE_SIZE], MIMBLEWIMBLE_COIN_ENCRYPTED_TRANSACTION_SECRET_NONCE_SIZE);
+  memzero(mimblewimble_coin_transaction_secret_nonces, sizeof(mimblewimble_coin_transaction_secret_nonces));
+  return true;
+}
+
+bool config_setMimbleWimbleCoinCurrentTransactionSecretNonceIndex(const uint32_t mimblewimble_coin_current_transaction_secret_nonce_index) {
+  if(mimblewimble_coin_current_transaction_secret_nonce_index >= MIMBLEWIMBLE_COIN_NUMBER_OF_TRANSACTION_SECRET_NONCES) {
+    return false;
+  }
+
+  return sectrue == storage_set(KEY_MIMBLEWIMBLE_COIN_CURRENT_TRANSACTION_SECRET_NONCE_INDEX, &mimblewimble_coin_current_transaction_secret_nonce_index, sizeof(mimblewimble_coin_current_transaction_secret_nonce_index));
+}
+
+bool config_getMimbleWimbleCoinCurrentTransactionSecretNonceIndex(uint32_t *mimblewimble_coin_current_transaction_secret_nonce_index) {
+  if(sectrue != config_get_uint32(KEY_MIMBLEWIMBLE_COIN_CURRENT_TRANSACTION_SECRET_NONCE_INDEX, mimblewimble_coin_current_transaction_secret_nonce_index)) {
+    return sectrue != storage_has(KEY_MIMBLEWIMBLE_COIN_CURRENT_TRANSACTION_SECRET_NONCE_INDEX);
+  }
+
+  return true;
 }
 
 void config_wipe(void) {

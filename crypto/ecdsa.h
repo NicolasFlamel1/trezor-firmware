@@ -60,6 +60,7 @@ typedef struct {
 #define MAX_WIF_RAW_SIZE (4 + 32 + 1)
 // (4 + 32 + 1 + 4 [checksum]) * 8 / log2(58) plus NUL.
 #define MAX_WIF_SIZE (57)
+#define WNAF_SIZE 256
 
 void point_copy(const curve_point *cp1, curve_point *cp2);
 void point_add(const ecdsa_curve *curve, const curve_point *cp1,
@@ -71,6 +72,14 @@ void point_set_infinity(curve_point *p);
 int point_is_infinity(const curve_point *p);
 int point_is_equal(const curve_point *p, const curve_point *q);
 int point_is_negative_of(const curve_point *p, const curve_point *q);
+void get_wnaf(const ecdsa_curve *curve, bignum256 *k,
+              const size_t window_size, int8_t *wnaf);
+void point_multiexponentiation(const ecdsa_curve *curve,
+                              const curve_point *points,
+                              const size_t number_of_points,
+                              const int8_t wnafs[][WNAF_SIZE],
+                              const size_t window_size,
+                              curve_point *res);
 int scalar_multiply(const ecdsa_curve *curve, const bignum256 *k,
                     curve_point *res);
 int ecdh_multiply(const ecdsa_curve *curve, const uint8_t *priv_key,

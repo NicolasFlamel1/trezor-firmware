@@ -359,4 +359,44 @@ enum MessageType {
     MessageType_WebAuthnCredentials = 801 [(wire_out) = true];
     MessageType_WebAuthnAddResidentCredential = 802 [(wire_in) = true];
     MessageType_WebAuthnRemoveResidentCredential = 803 [(wire_in) = true];
+
+    // MimbleWimble Coin
+    MessageType_MimbleWimbleCoinGetRootPublicKey = 0xC700 [(wire_in) = true];
+    MessageType_MimbleWimbleCoinRootPublicKey = 0xC780 [(wire_out) = true];
+    MessageType_MimbleWimbleCoinGetAddress = 0xC701 [(wire_in) = true];
+    MessageType_MimbleWimbleCoinAddress = 0xC781 [(wire_out) = true];
+    MessageType_MimbleWimbleCoinGetSeedCookie = 0xC702 [(wire_in) = true];
+    MessageType_MimbleWimbleCoinSeedCookie = 0xC782 [(wire_out) = true];
+    MessageType_MimbleWimbleCoinGetCommitment = 0xC703 [(wire_in) = true];
+    MessageType_MimbleWimbleCoinCommitment = 0xC783 [(wire_out) = true];
+    MessageType_MimbleWimbleCoinGetBulletproofComponents = 0xC704 [(wire_in) = true];
+    MessageType_MimbleWimbleCoinBulletproofComponents = 0xC784 [(wire_out) = true];
+    MessageType_MimbleWimbleCoinVerifyRootPublicKey = 0xC705 [(wire_in) = true];
+    MessageType_MimbleWimbleCoinVerifyAddress = 0xC706 [(wire_in) = true];
+    MessageType_MimbleWimbleCoinStartEncryptingSlate = 0xC707 [(wire_in) = true];
+    MessageType_MimbleWimbleCoinEncryptedSlateNonceAndSalt = 0xC787 [(wire_out) = true];
+    MessageType_MimbleWimbleCoinContinueEncryptingSlate = 0xC708 [(wire_in) = true];
+    MessageType_MimbleWimbleCoinEncryptedSlateData = 0xC788 [(wire_out) = true];
+    MessageType_MimbleWimbleCoinFinishEncryptingSlate = 0xC709 [(wire_in) = true];
+    MessageType_MimbleWimbleCoinEncryptedSlateTagAndSignature = 0xC789 [(wire_out) = true];
+    MessageType_MimbleWimbleCoinStartDecryptingSlate = 0xC70A [(wire_in) = true];
+    MessageType_MimbleWimbleCoinContinueDecryptingSlate = 0xC70B [(wire_in) = true];
+    MessageType_MimbleWimbleCoinDecryptedSlateData = 0xC78B [(wire_out) = true];
+    MessageType_MimbleWimbleCoinFinishDecryptingSlate = 0xC70C [(wire_in) = true];
+    MessageType_MimbleWimbleCoinDecryptedSlateAesKey = 0xC78C [(wire_out) = true];
+    MessageType_MimbleWimbleCoinStartTransaction = 0xC70D [(wire_in) = true];
+    MessageType_MimbleWimbleCoinContinueTransactionIncludeOutput = 0xC70E [(wire_in) = true];
+    MessageType_MimbleWimbleCoinContinueTransactionIncludeInput = 0xC70F [(wire_in) = true];
+    MessageType_MimbleWimbleCoinContinueTransactionApplyOffset = 0xC710 [(wire_in) = true];
+    MessageType_MimbleWimbleCoinTransactionSecretNonceIndex = 0xC790 [(wire_out) = true];
+    MessageType_MimbleWimbleCoinContinueTransactionGetPublicKey = 0xC711 [(wire_in) = true];
+    MessageType_MimbleWimbleCoinTransactionPublicKey = 0xC791 [(wire_out) = true];
+    MessageType_MimbleWimbleCoinContinueTransactionGetPublicNonce = 0xC712 [(wire_in) = true];
+    MessageType_MimbleWimbleCoinTransactionPublicNonce = 0xC792 [(wire_out) = true];
+    MessageType_MimbleWimbleCoinContinueTransactionGetMessageSignature = 0xC713 [(wire_in) = true];
+    MessageType_MimbleWimbleCoinTransactionMessageSignature = 0xC793 [(wire_out) = true];
+    MessageType_MimbleWimbleCoinFinishTransaction = 0xC714 [(wire_in) = true];
+    MessageType_MimbleWimbleCoinTransactionSignatureAndPaymentProof = 0xC794 [(wire_out) = true];
+    MessageType_MimbleWimbleCoinGetMqsChallengeSignature = 0xC715 [(wire_in) = true];
+    MessageType_MimbleWimbleCoinMqsChallengeSignature = 0xC795 [(wire_out) = true];
 }

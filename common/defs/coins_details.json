@@ -41699,6 +41699,108 @@
                 }
             ]
         },
+        "mimblewimble_coin:EPIC": {
+            "links": {
+                "Github": "https://github.com/EpicCash",
+                "Homepage": "https://epic.tech"
+            },
+            "name": "Epic Cash",
+            "shortcut": "EPIC",
+            "t1_enabled": "yes",
+            "t2_enabled": "yes",
+            "type": "coin",
+            "wallet": [
+                {
+                    "name": "MWC Wallet",
+                    "url": "https://mwcwallet.com"
+                }
+            ]
+        },
+        "mimblewimble_coin:GRIN": {
+            "links": {
+                "Github": "https://github.com/mimblewimble",
+                "Homepage": "https://grin.mw"
+            },
+            "name": "Grin",
+            "shortcut": "GRIN",
+            "t1_enabled": "yes",
+            "t2_enabled": "yes",
+            "type": "coin",
+            "wallet": [
+                {
+                    "name": "MWC Wallet",
+                    "url": "https://mwcwallet.com"
+                }
+            ]
+        },
+        "mimblewimble_coin:MWC": {
+            "links": {
+                "Github": "https://github.com/mwcproject",
+                "Homepage": "https://www.mwc.mw"
+            },
+            "name": "MimbleWimble Coin",
+            "shortcut": "MWC",
+            "t1_enabled": "yes",
+            "t2_enabled": "yes",
+            "type": "coin",
+            "wallet": [
+                {
+                    "name": "MWC Wallet",
+                    "url": "https://mwcwallet.com"
+                }
+            ]
+        },
+        "mimblewimble_coin:tEPIC": {
+            "links": {
+                "Github": "https://github.com/EpicCash",
+                "Homepage": "https://epic.tech"
+            },
+            "name": "Epic Cash Floonet",
+            "shortcut": "tEPIC",
+            "t1_enabled": "yes",
+            "t2_enabled": "yes",
+            "type": "coin",
+            "wallet": [
+                {
+                    "name": "MWC Wallet",
+                    "url": "https://mwcwallet.com"
+                }
+            ]
+        },
+        "mimblewimble_coin:tGRIN": {
+            "links": {
+                "Github": "https://github.com/mimblewimble",
+                "Homepage": "https://grin.mw"
+            },
+            "name": "Grin Testnet",
+            "shortcut": "tGRIN",
+            "t1_enabled": "yes",
+            "t2_enabled": "yes",
+            "type": "coin",
+            "wallet": [
+                {
+                    "name": "MWC Wallet",
+                    "url": "https://mwcwallet.com"
+                }
+            ]
+        },
+        "mimblewimble_coin:tMWC": {
+            "links": {
+                "Github": "https://github.com/mwcproject",
+                "Homepage": "https://www.mwc.mw"
+            },
+            "name": "MimbleWimble Coin Floonet",
+            "shortcut": "tMWC",
+            "t1_enabled": "yes",
+            "t2_enabled": "yes",
+            "type": "coin",
+            "wallet": [
+                {
+                    "name": "MWC Wallet",
+                    "url": "https://mwcwallet.com"
+                }
+            ]
+        },
         "misc:ADA": {
             "links": {
                 "Github": "https://github.com/input-output-hk/cardano-node",

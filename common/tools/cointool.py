@@ -671,7 +671,7 @@ def check(backend: bool, icons: bool) -> None:
         print("Everything is OK.")
 
 
-type_choice = click.Choice(["bitcoin", "eth", "erc20", "nem", "misc"])
+type_choice = click.Choice(["bitcoin", "eth", "erc20", "nem", "misc", "mimblewimble_coin"])
 device_choice = click.Choice(["connect", "suite", "trezor1", "trezor2"])
 
 
@@ -713,8 +713,8 @@ def dump(
     By default prints to stdout, specify an output file with '-o file.json'.
 
     This file is structured the same as the internal data. That is, top-level object
-    is a dict with keys: 'bitcoin', 'eth', 'erc20', 'nem' and 'misc'. Value for each
-    key is a list of dicts, each describing a known coin.
+    is a dict with keys: 'bitcoin', 'eth', 'erc20', 'nem', 'misc', and 'mimblewimble_coin'.
+    Value for each key is a list of dicts, each describing a known coin.
 
     If '--list' is specified, the top-level object is instead a flat list of coins.
 
