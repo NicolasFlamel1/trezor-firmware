@@ -587,10 +587,8 @@ def wallet_info_single(
             wallets.update(WALLET_SUITE)
     elif key.startswith("nem:"):
         wallets.update(WALLET_NEM)
-    elif key.startswith(("eth:", "erc20:", "misc:")):
+    elif key.startswith(("eth:", "erc20:", "misc:", "mimblewimble_coin:")):
         pass  # no special logic here
-    elif key.startswith("mimblewimble_coin:"):
-        pass
     else:
         raise ValueError(f"Unknown coin category: {key}")
 
