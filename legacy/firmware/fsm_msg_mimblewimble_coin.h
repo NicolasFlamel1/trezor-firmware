@@ -47,9 +47,6 @@ static HDNode *mimbleWimbleCoinGetExtendedPrivateKey(const MimbleWimbleCoinCoinI
 // Initialize storage
 static bool mimbleWimbleCoinInitializeStorage(void);
 
-// Show processing
-static void showProcessing(void);
-
 
 // Supporting function implementation
 
@@ -171,8 +168,8 @@ void fsm_msgMimbleWimbleCoinGetRootPublicKey(const MimbleWimbleCoinGetRootPublic
 		return;
 	}
 	
-	// Show processing
-	showProcessing();
+	// Show home
+	layoutHome();
 	
 	// Check if getting extended private key failed
 	HDNode *extendedPrivateKey = mimbleWimbleCoinGetExtendedPrivateKey(coinInfo, message->account);
@@ -4088,8 +4085,8 @@ void fsm_msgMimbleWimbleCoinFinishTransaction(const MimbleWimbleCoinFinishTransa
 		return;
 	}
 	
-	// Show processing
-	showProcessing();
+	// Show home
+	layoutHome();
 	
 	// Check if finishing transaction failed
 	resp->signature.size = sizeof(resp->signature.bytes);
@@ -4332,8 +4329,8 @@ void fsm_msgMimbleWimbleCoinGetMqsChallengeSignature(const MimbleWimbleCoinGetMq
 		return;
 	}
 	
-	// Show processing
-	showProcessing();
+	// Show home
+	layoutHome();
 	
 	// Check if getting extended private key failed
 	const HDNode *extendedPrivateKey = mimbleWimbleCoinGetExtendedPrivateKey(coinInfo, message->account);
@@ -4431,20 +4428,4 @@ bool mimbleWimbleCoinInitializeStorage(void) {
 	
 	// Return true
 	return true;
-}
-
-// Show processing
-void showProcessing(void) {
-
-	// Clear screen
-	oledClear();
-	
-	// Show progress gears
-	layoutProgressUpdate(false);
-	
-	// Show message
-	oledDrawStringCenter(OLED_WIDTH / 2, OLED_HEIGHT - 16, _("Processing"), FONT_STANDARD);
-	
-	// Refresh screen
-	oledRefresh();
 }
