@@ -388,8 +388,8 @@ class ProtocolBuffers {
 											throw "Value's type isn't correct.";
 										}
 										
-										// Check if no data exists
-										if(data[name]["length"] === 0) {
+										// Check if no data exists and data is optional
+										if(data[name]["length"] === 0 && "Optional" in messageSchema[fieldNumber] === true && messageSchema[fieldNumber]["Optional"] === true) {
 										
 											// Clear value found
 											valueFound = false;

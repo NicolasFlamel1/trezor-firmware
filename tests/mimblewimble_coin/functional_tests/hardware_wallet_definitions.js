@@ -1126,7 +1126,10 @@ class HardwareWalletDefinitions {
 						"Name": "Salt",
 						
 						// Type
-						"Type": ProtocolBuffers.BYTES_SCHEMA_DATA_TYPE
+						"Type": ProtocolBuffers.BYTES_SCHEMA_DATA_TYPE,
+						
+						// Optional
+						"Optional": true
 					}
 				},
 
@@ -1181,7 +1184,10 @@ class HardwareWalletDefinitions {
 						"Name": "MQS Message Signature",
 						
 						// Type
-						"Type": ProtocolBuffers.BYTES_SCHEMA_DATA_TYPE
+						"Type": ProtocolBuffers.BYTES_SCHEMA_DATA_TYPE,
+						
+						// Optional
+						"Optional": true
 					}
 				},
 
@@ -1261,7 +1267,10 @@ class HardwareWalletDefinitions {
 						"Name": "Salt Or Encrypted File Key",
 						
 						// Type
-						"Type": ProtocolBuffers.BYTES_SCHEMA_DATA_TYPE
+						"Type": ProtocolBuffers.BYTES_SCHEMA_DATA_TYPE,
+						
+						// Optional
+						"Optional": true
 					},
 					
 					// Payload nonce
@@ -1271,7 +1280,10 @@ class HardwareWalletDefinitions {
 						"Name": "Payload Nonce",
 						
 						// Type
-						"Type": ProtocolBuffers.BYTES_SCHEMA_DATA_TYPE
+						"Type": ProtocolBuffers.BYTES_SCHEMA_DATA_TYPE,
+						
+						// Optional
+						"Optional": true
 					}
 				},
 
@@ -1436,7 +1448,10 @@ class HardwareWalletDefinitions {
 						"Name": "Address",
 						
 						// Type
-						"Type": ProtocolBuffers.BYTES_SCHEMA_DATA_TYPE
+						"Type": ProtocolBuffers.BYTES_SCHEMA_DATA_TYPE,
+						
+						// Optional
+						"Optional": true
 					}
 				},
 
@@ -1538,7 +1553,10 @@ class HardwareWalletDefinitions {
 						"Name": "Secret Nonce Index",
 						
 						// Type
-						"Type": ProtocolBuffers.ENUM_SCHEMA_DATA_TYPE
+						"Type": ProtocolBuffers.ENUM_SCHEMA_DATA_TYPE,
+						
+						// Optional
+						"Optional": true
 					}
 				},
 
@@ -1654,7 +1672,10 @@ class HardwareWalletDefinitions {
 						"Name": "Kernel Commitment",
 						
 						// Type
-						"Type": ProtocolBuffers.BYTES_SCHEMA_DATA_TYPE
+						"Type": ProtocolBuffers.BYTES_SCHEMA_DATA_TYPE,
+						
+						// Optional
+						"Optional": true
 					},
 					
 					// Payment proof
@@ -1664,7 +1685,10 @@ class HardwareWalletDefinitions {
 						"Name": "Payment Proof",
 						
 						// Type
-						"Type": ProtocolBuffers.BYTES_SCHEMA_DATA_TYPE
+						"Type": ProtocolBuffers.BYTES_SCHEMA_DATA_TYPE,
+						
+						// Optional
+						"Optional": true
 					}
 				},
 
@@ -1688,7 +1712,10 @@ class HardwareWalletDefinitions {
 						"Name": "Payment Proof",
 						
 						// Type
-						"Type": ProtocolBuffers.BYTES_SCHEMA_DATA_TYPE
+						"Type": ProtocolBuffers.BYTES_SCHEMA_DATA_TYPE,
+						
+						// Optional
+						"Optional": true
 					}
 				},
 
@@ -1751,7 +1778,10 @@ class HardwareWalletDefinitions {
 						"Type": ProtocolBuffers.UINT_SCHEMA_DATA_TYPE,
 						
 						// Size
-						"Size": Common.BYTES_IN_A_UINT64
+						"Size": Common.BYTES_IN_A_UINT64,
+						
+						// Optional
+						"Optional": true
 					},
 					
 					// Time zone offset
@@ -1764,7 +1794,10 @@ class HardwareWalletDefinitions {
 						"Type": ProtocolBuffers.UINT_SCHEMA_DATA_TYPE,
 						
 						// Size
-						"Size": Common.BYTES_IN_A_UINT16
+						"Size": Common.BYTES_IN_A_UINT16,
+						
+						// Optional
+						"Optional": true
 					}
 				},
 

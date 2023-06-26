@@ -4019,6 +4019,9 @@ bool aesEncrypt(uint8_t *encryptedData, const uint8_t *key, const uint8_t *data,
 		// Clear encrypted data
 		memzero(encryptedData, sizeof(paddedData));
 		
+		// Clear AES IV
+		memzero(aesIv, sizeof(aesIv));
+		
 		// Clear padded data
 		memzero(paddedData, sizeof(paddedData));
 		
@@ -4028,6 +4031,9 @@ bool aesEncrypt(uint8_t *encryptedData, const uint8_t *key, const uint8_t *data,
 		// Return false
 		return false;
 	}
+	
+	// Clear AES IV
+	memzero(aesIv, sizeof(aesIv));
 	
 	// Clear padded data
 	memzero(paddedData, sizeof(paddedData));
@@ -4060,12 +4066,18 @@ size_t aesDecrypt(uint8_t *data, const uint8_t *key, const uint8_t *encryptedDat
 		// Clear data
 		memzero(data, encryptedDataLength);
 		
+		// Clear AES IV
+		memzero(aesIv, sizeof(aesIv));
+		
 		// Clear AES context
 		memzero(&aesContext, sizeof(aesContext));
 		
 		// Return zero
 		return 0;
 	}
+	
+	// Clear AES IV
+	memzero(aesIv, sizeof(aesIv));
 	
 	// Clear AES context
 	memzero(&aesContext, sizeof(aesContext));
