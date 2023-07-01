@@ -1473,6 +1473,13 @@ uint8_t mimbleWimbleCoinApplyOffsetToTransaction(MimbleWimbleCoinTransactionCont
 				return 0;
 			}
 			
+			// Check if encrypted transaction secret nonce is invalid
+			if(mimbleWimbleCoinIsZero(encryptedTransactionSecretNonce, sizeof(encryptedTransactionSecretNonce))) {
+			
+				// Return zero
+				return 0;
+			}
+			
 			// Check if AES decrypting the encrypted transaction secret nonce with the transaction context's blinding factor failed
 			uint8_t transactionSecretNonce[sizeof(encryptedTransactionSecretNonce)];
 			const size_t transactionSecretNonceLength = aesDecrypt(transactionSecretNonce, transactionContext->blindingFactor, encryptedTransactionSecretNonce, sizeof(encryptedTransactionSecretNonce));
@@ -1680,6 +1687,53 @@ size_t mimbleWimbleCoinFinishTransaction(uint8_t *signature, uint8_t *paymentPro
 
 	// Check if transaction context is sending
 	if(transactionContext->send) {
+	
+		// Check if getting the encrypted transaction secret nonce at the transaction context's secret nonce index from storage failed
+		uint8_t encryptedTransactionSecretNonce[MIMBLEWIMBLE_COIN_ENCRYPTED_TRANSACTION_SECRET_NONCE_SIZE];
+		if(!config_getMimbleWimbleCoinTransactionSecretNonce(encryptedTransactionSecretNonce, transactionContext->secretNonceIndex - 1)) {
+		
+			// Return zero
+			return 0;
+		}
+		
+		// Check if encrypted transaction secret nonce is invalid
+		if(mimbleWimbleCoinIsZero(encryptedTransactionSecretNonce, sizeof(encryptedTransactionSecretNonce))) {
+		
+			// Return zero
+			return 0;
+		}
+		
+		// Check if AES decrypting the encrypted transaction secret nonce with the transaction context's blinding factor failed
+		uint8_t transactionSecretNonce[sizeof(encryptedTransactionSecretNonce)];
+		const size_t transactionSecretNonceLength = aesDecrypt(transactionSecretNonce, transactionContext->blindingFactor, encryptedTransactionSecretNonce, sizeof(encryptedTransactionSecretNonce));
+		if(!transactionSecretNonceLength) {
+		
+			// Return zero
+			return 0;
+		}
+		
+		// Check if transaction secret nonce length is invalid
+		if(transactionSecretNonceLength != sizeof(transactionContext->secretNonce)) {
+		
+			// Clear transaction secret nonce
+			memzero(transactionSecretNonce, sizeof(transactionSecretNonce));
+			
+			// Return zero
+			return 0;
+		}
+		
+		// Check if the transaction context's secret nonce isn't the transaction secret nonce
+		if(!isEqual(transactionContext->secretNonce, transactionSecretNonce, transactionSecretNonceLength)) {
+		
+			// Clear transaction secret nonce
+			memzero(transactionSecretNonce, sizeof(transactionSecretNonce));
+			
+			// Return zero
+			return 0;
+		}
+		
+		// Clear transaction secret nonce
+		memzero(transactionSecretNonce, sizeof(transactionSecretNonce));
 	
 		// Check if erasing the encrypted transaction secret nonce at the transaction context's secret nonce index in storage failed
 		const uint8_t noEncryptedTransactionSecretNonce[MIMBLEWIMBLE_COIN_ENCRYPTED_TRANSACTION_SECRET_NONCE_SIZE] = {0};
