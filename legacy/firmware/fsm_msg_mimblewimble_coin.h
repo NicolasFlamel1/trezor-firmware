@@ -3287,7 +3287,7 @@ void fsm_msgMimbleWimbleCoinContinueTransactionGetMessageSignature(const MimbleW
 	memzero(&session->encryptionAndDecryptionContext, sizeof(session->encryptionAndDecryptionContext));
 	
 	// Check if message is invalid
-	if(!mimbleWimbleCoinisValidUtf8String((const char *)message->message.bytes, message->message.size)) {
+	if(!message->message.size || !mimbleWimbleCoinisValidUtf8String((const char *)message->message.bytes, message->message.size)) {
 	
 		// Send data error response
 		fsm_sendFailure(FailureType_Failure_DataError, NULL);
