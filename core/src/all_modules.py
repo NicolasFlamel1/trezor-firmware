@@ -113,6 +113,16 @@ trezor.enums.InputScriptType
 import trezor.enums.InputScriptType
 trezor.enums.MessageType
 import trezor.enums.MessageType
+trezor.enums.MimbleWimbleCoinAddressType
+import trezor.enums.MimbleWimbleCoinAddressType
+trezor.enums.MimbleWimbleCoinCoinType
+import trezor.enums.MimbleWimbleCoinCoinType
+trezor.enums.MimbleWimbleCoinMessageType
+import trezor.enums.MimbleWimbleCoinMessageType
+trezor.enums.MimbleWimbleCoinNetworkType
+import trezor.enums.MimbleWimbleCoinNetworkType
+trezor.enums.MimbleWimbleCoinSwitchType
+import trezor.enums.MimbleWimbleCoinSwitchType
 trezor.enums.OutputScriptType
 import trezor.enums.OutputScriptType
 trezor.enums.PinMatrixRequestType
@@ -531,6 +541,16 @@ if not utils.BITCOIN_ONLY:
     import apps.ethereum.tokens
     apps.ethereum.verify_message
     import apps.ethereum.verify_message
+    apps.mimblewimble_coin
+    import apps.mimblewimble_coin
+    apps.mimblewimble_coin.coins
+    import apps.mimblewimble_coin.coins
+    apps.mimblewimble_coin.common
+    import apps.mimblewimble_coin.common
+    apps.mimblewimble_coin.get_root_public_key
+    import apps.mimblewimble_coin.get_root_public_key
+    apps.mimblewimble_coin.get_seed_cookie
+    import apps.mimblewimble_coin.get_seed_cookie
     apps.monero
     import apps.monero
     apps.monero.diag

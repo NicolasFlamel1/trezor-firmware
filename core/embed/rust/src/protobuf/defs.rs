@@ -201,11 +201,16 @@ pub unsafe fn get_msg(msg_offset: u16) -> MsgDef {
         let flags_and_wire_id_hi = ptr.offset(3).read();
         let flags_and_wire_id = u16::from_le_bytes([flags_and_wire_id_lo, flags_and_wire_id_hi]);
 
-        let is_experimental = flags_and_wire_id & 0x8000 != 0;
-        let wire_id = match flags_and_wire_id & 0x7FFF {
-            0x7FFF => None,
-            some_wire_id => Some(some_wire_id),
-        };
+        let is_experimental = flags_and_wire_id & 0x8000 != 0 && flags_and_wire_id & 0xFF00 != 0xC700;
+        let wire_id =
+            if flags_and_wire_id & 0xFF00 != 0xC700 {
+                match flags_and_wire_id & 0x7FFF {
+                    0x7FFF => None,
+                    some_wire_id => Some(some_wire_id),
+                }
+            } else {
+                Some(flags_and_wire_id)
+            };
 
         let fields_size = fields_count * mem::size_of::<FieldDef>();
         let fields_ptr = ptr.offset(4);
@@ -224,7 +229,7 @@ pub unsafe fn get_msg(msg_offset: u16) -> MsgDef {
 unsafe fn get_enum(enum_offset: u16) -> EnumDef {
     // #[repr(C, packed)]
     // struct EnumDef {
-    //     count: u8,
+    //     count: u16,
     //     vals: [u16],
     // }
 
@@ -232,11 +237,13 @@ unsafe fn get_enum(enum_offset: u16) -> EnumDef {
     // definition inside `ENUM_DEFS`.
     unsafe {
         let ptr = ENUM_DEFS.as_ptr().add(enum_offset as usize);
-        let count = ptr.offset(0).read() as usize;
-        let vals = ptr.offset(1);
+        let count_lo = ptr.offset(0).read();
+        let count_hi = ptr.offset(1).read();
+        let count = u16::from_le_bytes([count_lo, count_hi]);
+        let vals = ptr.offset(2);
 
         EnumDef {
-            values: slice::from_raw_parts(vals.cast(), count),
+            values: slice::from_raw_parts(vals.cast(), count as usize),
         }
     }
 }

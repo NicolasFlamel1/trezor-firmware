@@ -259,6 +259,44 @@ class MessageType(IntEnum):
     WebAuthnCredentials = 801
     WebAuthnAddResidentCredential = 802
     WebAuthnRemoveResidentCredential = 803
+    MimbleWimbleCoinGetRootPublicKey = 50944
+    MimbleWimbleCoinRootPublicKey = 51072
+    MimbleWimbleCoinGetAddress = 50945
+    MimbleWimbleCoinAddress = 51073
+    MimbleWimbleCoinGetSeedCookie = 50946
+    MimbleWimbleCoinSeedCookie = 51074
+    MimbleWimbleCoinGetCommitment = 50947
+    MimbleWimbleCoinCommitment = 51075
+    MimbleWimbleCoinGetBulletproofComponents = 50948
+    MimbleWimbleCoinBulletproofComponents = 51076
+    MimbleWimbleCoinVerifyRootPublicKey = 50949
+    MimbleWimbleCoinVerifyAddress = 50950
+    MimbleWimbleCoinStartEncryptingSlate = 50951
+    MimbleWimbleCoinEncryptedSlateNonceAndSalt = 51079
+    MimbleWimbleCoinContinueEncryptingSlate = 50952
+    MimbleWimbleCoinEncryptedSlateData = 51080
+    MimbleWimbleCoinFinishEncryptingSlate = 50953
+    MimbleWimbleCoinEncryptedSlateTagAndSignature = 51081
+    MimbleWimbleCoinStartDecryptingSlate = 50954
+    MimbleWimbleCoinContinueDecryptingSlate = 50955
+    MimbleWimbleCoinDecryptedSlateData = 51083
+    MimbleWimbleCoinFinishDecryptingSlate = 50956
+    MimbleWimbleCoinDecryptedSlateAesKey = 51084
+    MimbleWimbleCoinStartTransaction = 50957
+    MimbleWimbleCoinContinueTransactionIncludeOutput = 50958
+    MimbleWimbleCoinContinueTransactionIncludeInput = 50959
+    MimbleWimbleCoinContinueTransactionApplyOffset = 50960
+    MimbleWimbleCoinTransactionSecretNonceIndex = 51088
+    MimbleWimbleCoinContinueTransactionGetPublicKey = 50961
+    MimbleWimbleCoinTransactionPublicKey = 51089
+    MimbleWimbleCoinContinueTransactionGetPublicNonce = 50962
+    MimbleWimbleCoinTransactionPublicNonce = 51090
+    MimbleWimbleCoinContinueTransactionGetMessageSignature = 50963
+    MimbleWimbleCoinTransactionMessageSignature = 51091
+    MimbleWimbleCoinFinishTransaction = 50964
+    MimbleWimbleCoinTransactionSignatureAndPaymentProof = 51092
+    MimbleWimbleCoinGetMqsChallengeSignature = 50965
+    MimbleWimbleCoinMqsChallengeSignature = 51093
 
 
 class FailureType(IntEnum):
@@ -463,6 +501,7 @@ class Capability(IntEnum):
     Shamir = 15
     ShamirGroups = 16
     PassphraseEntry = 17
+    MimbleWimbleCoin = 199
 
 
 class SdProtectOperationType(IntEnum):
@@ -515,6 +554,34 @@ class EthereumDataType(IntEnum):
     ADDRESS = 6
     ARRAY = 7
     STRUCT = 8
+
+
+class MimbleWimbleCoinCoinType(IntEnum):
+    MIMBLEWIMBLE_COIN = 0
+    GRIN = 1
+    EPIC_CASH = 2
+
+
+class MimbleWimbleCoinNetworkType(IntEnum):
+    MAINNET = 0
+    TESTNET = 1
+
+
+class MimbleWimbleCoinAddressType(IntEnum):
+    MQS = 0
+    TOR = 1
+    SLATEPACK = 2
+
+
+class MimbleWimbleCoinSwitchType(IntEnum):
+    NONE = 0
+    REGULAR = 1
+
+
+class MimbleWimbleCoinMessageType(IntEnum):
+    SENDING_TRANSACTION = 0
+    RECEIVING_TRANSACTION = 1
+    CREATING_COINBASE = 2
 
 
 class MoneroNetworkType(IntEnum):
@@ -5094,6 +5161,697 @@ class EthereumAccessList(protobuf.MessageType):
     ) -> None:
         self.storage_keys: Sequence["bytes"] = storage_keys if storage_keys is not None else []
         self.address = address
+
+
+class MimbleWimbleCoinGetRootPublicKey(protobuf.MessageType):
+    MESSAGE_WIRE_TYPE = 50944
+    FIELDS = {
+        1: protobuf.Field("coin_type", "MimbleWimbleCoinCoinType", repeated=False, required=True),
+        2: protobuf.Field("network_type", "MimbleWimbleCoinNetworkType", repeated=False, required=True),
+        3: protobuf.Field("account", "uint32", repeated=False, required=True),
+    }
+
+    def __init__(
+        self,
+        *,
+        coin_type: "MimbleWimbleCoinCoinType",
+        network_type: "MimbleWimbleCoinNetworkType",
+        account: "int",
+    ) -> None:
+        self.coin_type = coin_type
+        self.network_type = network_type
+        self.account = account
+
+
+class MimbleWimbleCoinRootPublicKey(protobuf.MessageType):
+    MESSAGE_WIRE_TYPE = 51072
+    FIELDS = {
+        1: protobuf.Field("root_public_key", "bytes", repeated=False, required=True),
+    }
+
+    def __init__(
+        self,
+        *,
+        root_public_key: "bytes",
+    ) -> None:
+        self.root_public_key = root_public_key
+
+
+class MimbleWimbleCoinGetAddress(protobuf.MessageType):
+    MESSAGE_WIRE_TYPE = 50945
+    FIELDS = {
+        1: protobuf.Field("coin_type", "MimbleWimbleCoinCoinType", repeated=False, required=True),
+        2: protobuf.Field("network_type", "MimbleWimbleCoinNetworkType", repeated=False, required=True),
+        3: protobuf.Field("address_type", "MimbleWimbleCoinAddressType", repeated=False, required=True),
+        4: protobuf.Field("account", "uint32", repeated=False, required=True),
+        5: protobuf.Field("index", "uint32", repeated=False, required=True),
+    }
+
+    def __init__(
+        self,
+        *,
+        coin_type: "MimbleWimbleCoinCoinType",
+        network_type: "MimbleWimbleCoinNetworkType",
+        address_type: "MimbleWimbleCoinAddressType",
+        account: "int",
+        index: "int",
+    ) -> None:
+        self.coin_type = coin_type
+        self.network_type = network_type
+        self.address_type = address_type
+        self.account = account
+        self.index = index
+
+
+class MimbleWimbleCoinAddress(protobuf.MessageType):
+    MESSAGE_WIRE_TYPE = 51073
+    FIELDS = {
+        1: protobuf.Field("address", "string", repeated=False, required=True),
+    }
+
+    def __init__(
+        self,
+        *,
+        address: "str",
+    ) -> None:
+        self.address = address
+
+
+class MimbleWimbleCoinGetSeedCookie(protobuf.MessageType):
+    MESSAGE_WIRE_TYPE = 50946
+    FIELDS = {
+        1: protobuf.Field("coin_type", "MimbleWimbleCoinCoinType", repeated=False, required=True),
+        2: protobuf.Field("network_type", "MimbleWimbleCoinNetworkType", repeated=False, required=True),
+        3: protobuf.Field("account", "uint32", repeated=False, required=True),
+    }
+
+    def __init__(
+        self,
+        *,
+        coin_type: "MimbleWimbleCoinCoinType",
+        network_type: "MimbleWimbleCoinNetworkType",
+        account: "int",
+    ) -> None:
+        self.coin_type = coin_type
+        self.network_type = network_type
+        self.account = account
+
+
+class MimbleWimbleCoinSeedCookie(protobuf.MessageType):
+    MESSAGE_WIRE_TYPE = 51074
+    FIELDS = {
+        1: protobuf.Field("seed_cookie", "bytes", repeated=False, required=True),
+    }
+
+    def __init__(
+        self,
+        *,
+        seed_cookie: "bytes",
+    ) -> None:
+        self.seed_cookie = seed_cookie
+
+
+class MimbleWimbleCoinGetCommitment(protobuf.MessageType):
+    MESSAGE_WIRE_TYPE = 50947
+    FIELDS = {
+        1: protobuf.Field("coin_type", "MimbleWimbleCoinCoinType", repeated=False, required=True),
+        2: protobuf.Field("network_type", "MimbleWimbleCoinNetworkType", repeated=False, required=True),
+        3: protobuf.Field("account", "uint32", repeated=False, required=True),
+        4: protobuf.Field("identifier", "bytes", repeated=False, required=True),
+        5: protobuf.Field("value", "uint64", repeated=False, required=True),
+        6: protobuf.Field("switch_type", "MimbleWimbleCoinSwitchType", repeated=False, required=True),
+    }
+
+    def __init__(
+        self,
+        *,
+        coin_type: "MimbleWimbleCoinCoinType",
+        network_type: "MimbleWimbleCoinNetworkType",
+        account: "int",
+        identifier: "bytes",
+        value: "int",
+        switch_type: "MimbleWimbleCoinSwitchType",
+    ) -> None:
+        self.coin_type = coin_type
+        self.network_type = network_type
+        self.account = account
+        self.identifier = identifier
+        self.value = value
+        self.switch_type = switch_type
+
+
+class MimbleWimbleCoinCommitment(protobuf.MessageType):
+    MESSAGE_WIRE_TYPE = 51075
+    FIELDS = {
+        1: protobuf.Field("commitment", "bytes", repeated=False, required=True),
+    }
+
+    def __init__(
+        self,
+        *,
+        commitment: "bytes",
+    ) -> None:
+        self.commitment = commitment
+
+
+class MimbleWimbleCoinGetBulletproofComponents(protobuf.MessageType):
+    MESSAGE_WIRE_TYPE = 50948
+    FIELDS = {
+        1: protobuf.Field("coin_type", "MimbleWimbleCoinCoinType", repeated=False, required=True),
+        2: protobuf.Field("network_type", "MimbleWimbleCoinNetworkType", repeated=False, required=True),
+        3: protobuf.Field("message_type", "MimbleWimbleCoinMessageType", repeated=False, required=True),
+        4: protobuf.Field("account", "uint32", repeated=False, required=True),
+        5: protobuf.Field("identifier", "bytes", repeated=False, required=True),
+        6: protobuf.Field("value", "uint64", repeated=False, required=True),
+        7: protobuf.Field("switch_type", "MimbleWimbleCoinSwitchType", repeated=False, required=True),
+    }
+
+    def __init__(
+        self,
+        *,
+        coin_type: "MimbleWimbleCoinCoinType",
+        network_type: "MimbleWimbleCoinNetworkType",
+        message_type: "MimbleWimbleCoinMessageType",
+        account: "int",
+        identifier: "bytes",
+        value: "int",
+        switch_type: "MimbleWimbleCoinSwitchType",
+    ) -> None:
+        self.coin_type = coin_type
+        self.network_type = network_type
+        self.message_type = message_type
+        self.account = account
+        self.identifier = identifier
+        self.value = value
+        self.switch_type = switch_type
+
+
+class MimbleWimbleCoinBulletproofComponents(protobuf.MessageType):
+    MESSAGE_WIRE_TYPE = 51076
+    FIELDS = {
+        1: protobuf.Field("tau_x", "bytes", repeated=False, required=True),
+        2: protobuf.Field("t_one", "bytes", repeated=False, required=True),
+        3: protobuf.Field("t_two", "bytes", repeated=False, required=True),
+    }
+
+    def __init__(
+        self,
+        *,
+        tau_x: "bytes",
+        t_one: "bytes",
+        t_two: "bytes",
+    ) -> None:
+        self.tau_x = tau_x
+        self.t_one = t_one
+        self.t_two = t_two
+
+
+class MimbleWimbleCoinVerifyRootPublicKey(protobuf.MessageType):
+    MESSAGE_WIRE_TYPE = 50949
+    FIELDS = {
+        1: protobuf.Field("coin_type", "MimbleWimbleCoinCoinType", repeated=False, required=True),
+        2: protobuf.Field("network_type", "MimbleWimbleCoinNetworkType", repeated=False, required=True),
+        3: protobuf.Field("account", "uint32", repeated=False, required=True),
+    }
+
+    def __init__(
+        self,
+        *,
+        coin_type: "MimbleWimbleCoinCoinType",
+        network_type: "MimbleWimbleCoinNetworkType",
+        account: "int",
+    ) -> None:
+        self.coin_type = coin_type
+        self.network_type = network_type
+        self.account = account
+
+
+class MimbleWimbleCoinVerifyAddress(protobuf.MessageType):
+    MESSAGE_WIRE_TYPE = 50950
+    FIELDS = {
+        1: protobuf.Field("coin_type", "MimbleWimbleCoinCoinType", repeated=False, required=True),
+        2: protobuf.Field("network_type", "MimbleWimbleCoinNetworkType", repeated=False, required=True),
+        3: protobuf.Field("address_type", "MimbleWimbleCoinAddressType", repeated=False, required=True),
+        4: protobuf.Field("account", "uint32", repeated=False, required=True),
+        5: protobuf.Field("index", "uint32", repeated=False, required=True),
+    }
+
+    def __init__(
+        self,
+        *,
+        coin_type: "MimbleWimbleCoinCoinType",
+        network_type: "MimbleWimbleCoinNetworkType",
+        address_type: "MimbleWimbleCoinAddressType",
+        account: "int",
+        index: "int",
+    ) -> None:
+        self.coin_type = coin_type
+        self.network_type = network_type
+        self.address_type = address_type
+        self.account = account
+        self.index = index
+
+
+class MimbleWimbleCoinStartEncryptingSlate(protobuf.MessageType):
+    MESSAGE_WIRE_TYPE = 50951
+    FIELDS = {
+        1: protobuf.Field("coin_type", "MimbleWimbleCoinCoinType", repeated=False, required=True),
+        2: protobuf.Field("network_type", "MimbleWimbleCoinNetworkType", repeated=False, required=True),
+        3: protobuf.Field("account", "uint32", repeated=False, required=True),
+        4: protobuf.Field("index", "uint32", repeated=False, required=True),
+        5: protobuf.Field("recipient_address", "bytes", repeated=False, required=True),
+    }
+
+    def __init__(
+        self,
+        *,
+        coin_type: "MimbleWimbleCoinCoinType",
+        network_type: "MimbleWimbleCoinNetworkType",
+        account: "int",
+        index: "int",
+        recipient_address: "bytes",
+    ) -> None:
+        self.coin_type = coin_type
+        self.network_type = network_type
+        self.account = account
+        self.index = index
+        self.recipient_address = recipient_address
+
+
+class MimbleWimbleCoinEncryptedSlateNonceAndSalt(protobuf.MessageType):
+    MESSAGE_WIRE_TYPE = 51079
+    FIELDS = {
+        1: protobuf.Field("nonce", "bytes", repeated=False, required=True),
+        2: protobuf.Field("salt", "bytes", repeated=False, required=False, default=None),
+    }
+
+    def __init__(
+        self,
+        *,
+        nonce: "bytes",
+        salt: Optional["bytes"] = None,
+    ) -> None:
+        self.nonce = nonce
+        self.salt = salt
+
+
+class MimbleWimbleCoinContinueEncryptingSlate(protobuf.MessageType):
+    MESSAGE_WIRE_TYPE = 50952
+    FIELDS = {
+        1: protobuf.Field("data", "bytes", repeated=False, required=True),
+    }
+
+    def __init__(
+        self,
+        *,
+        data: "bytes",
+    ) -> None:
+        self.data = data
+
+
+class MimbleWimbleCoinEncryptedSlateData(protobuf.MessageType):
+    MESSAGE_WIRE_TYPE = 51080
+    FIELDS = {
+        1: protobuf.Field("encrypted_data", "bytes", repeated=False, required=True),
+    }
+
+    def __init__(
+        self,
+        *,
+        encrypted_data: "bytes",
+    ) -> None:
+        self.encrypted_data = encrypted_data
+
+
+class MimbleWimbleCoinFinishEncryptingSlate(protobuf.MessageType):
+    MESSAGE_WIRE_TYPE = 50953
+
+
+class MimbleWimbleCoinEncryptedSlateTagAndSignature(protobuf.MessageType):
+    MESSAGE_WIRE_TYPE = 51081
+    FIELDS = {
+        1: protobuf.Field("tag", "bytes", repeated=False, required=True),
+        2: protobuf.Field("mqs_message_signature", "bytes", repeated=False, required=False, default=None),
+    }
+
+    def __init__(
+        self,
+        *,
+        tag: "bytes",
+        mqs_message_signature: Optional["bytes"] = None,
+    ) -> None:
+        self.tag = tag
+        self.mqs_message_signature = mqs_message_signature
+
+
+class MimbleWimbleCoinStartDecryptingSlate(protobuf.MessageType):
+    MESSAGE_WIRE_TYPE = 50954
+    FIELDS = {
+        1: protobuf.Field("coin_type", "MimbleWimbleCoinCoinType", repeated=False, required=True),
+        2: protobuf.Field("network_type", "MimbleWimbleCoinNetworkType", repeated=False, required=True),
+        3: protobuf.Field("account", "uint32", repeated=False, required=True),
+        4: protobuf.Field("index", "uint32", repeated=False, required=True),
+        5: protobuf.Field("nonce", "bytes", repeated=False, required=True),
+        6: protobuf.Field("sender_address_or_ephemeral_x25519_public_key", "bytes", repeated=False, required=True),
+        7: protobuf.Field("salt_or_encrypted_file_key", "bytes", repeated=False, required=False, default=None),
+        8: protobuf.Field("payload_nonce", "bytes", repeated=False, required=False, default=None),
+    }
+
+    def __init__(
+        self,
+        *,
+        coin_type: "MimbleWimbleCoinCoinType",
+        network_type: "MimbleWimbleCoinNetworkType",
+        account: "int",
+        index: "int",
+        nonce: "bytes",
+        sender_address_or_ephemeral_x25519_public_key: "bytes",
+        salt_or_encrypted_file_key: Optional["bytes"] = None,
+        payload_nonce: Optional["bytes"] = None,
+    ) -> None:
+        self.coin_type = coin_type
+        self.network_type = network_type
+        self.account = account
+        self.index = index
+        self.nonce = nonce
+        self.sender_address_or_ephemeral_x25519_public_key = sender_address_or_ephemeral_x25519_public_key
+        self.salt_or_encrypted_file_key = salt_or_encrypted_file_key
+        self.payload_nonce = payload_nonce
+
+
+class MimbleWimbleCoinContinueDecryptingSlate(protobuf.MessageType):
+    MESSAGE_WIRE_TYPE = 50955
+    FIELDS = {
+        1: protobuf.Field("encrypted_data", "bytes", repeated=False, required=True),
+    }
+
+    def __init__(
+        self,
+        *,
+        encrypted_data: "bytes",
+    ) -> None:
+        self.encrypted_data = encrypted_data
+
+
+class MimbleWimbleCoinDecryptedSlateData(protobuf.MessageType):
+    MESSAGE_WIRE_TYPE = 51083
+    FIELDS = {
+        1: protobuf.Field("data", "bytes", repeated=False, required=True),
+    }
+
+    def __init__(
+        self,
+        *,
+        data: "bytes",
+    ) -> None:
+        self.data = data
+
+
+class MimbleWimbleCoinFinishDecryptingSlate(protobuf.MessageType):
+    MESSAGE_WIRE_TYPE = 50956
+    FIELDS = {
+        1: protobuf.Field("tag", "bytes", repeated=False, required=True),
+    }
+
+    def __init__(
+        self,
+        *,
+        tag: "bytes",
+    ) -> None:
+        self.tag = tag
+
+
+class MimbleWimbleCoinDecryptedSlateAesKey(protobuf.MessageType):
+    MESSAGE_WIRE_TYPE = 51084
+    FIELDS = {
+        1: protobuf.Field("aes_key", "bytes", repeated=False, required=True),
+    }
+
+    def __init__(
+        self,
+        *,
+        aes_key: "bytes",
+    ) -> None:
+        self.aes_key = aes_key
+
+
+class MimbleWimbleCoinStartTransaction(protobuf.MessageType):
+    MESSAGE_WIRE_TYPE = 50957
+    FIELDS = {
+        1: protobuf.Field("coin_type", "MimbleWimbleCoinCoinType", repeated=False, required=True),
+        2: protobuf.Field("network_type", "MimbleWimbleCoinNetworkType", repeated=False, required=True),
+        3: protobuf.Field("account", "uint32", repeated=False, required=True),
+        4: protobuf.Field("index", "uint32", repeated=False, required=True),
+        5: protobuf.Field("output", "uint64", repeated=False, required=True),
+        6: protobuf.Field("input", "uint64", repeated=False, required=True),
+        7: protobuf.Field("fee", "uint64", repeated=False, required=True),
+        8: protobuf.Field("secret_nonce_index", "uint32", repeated=False, required=True),
+        9: protobuf.Field("address", "bytes", repeated=False, required=False, default=None),
+    }
+
+    def __init__(
+        self,
+        *,
+        coin_type: "MimbleWimbleCoinCoinType",
+        network_type: "MimbleWimbleCoinNetworkType",
+        account: "int",
+        index: "int",
+        output: "int",
+        input: "int",
+        fee: "int",
+        secret_nonce_index: "int",
+        address: Optional["bytes"] = None,
+    ) -> None:
+        self.coin_type = coin_type
+        self.network_type = network_type
+        self.account = account
+        self.index = index
+        self.output = output
+        self.input = input
+        self.fee = fee
+        self.secret_nonce_index = secret_nonce_index
+        self.address = address
+
+
+class MimbleWimbleCoinContinueTransactionIncludeOutput(protobuf.MessageType):
+    MESSAGE_WIRE_TYPE = 50958
+    FIELDS = {
+        1: protobuf.Field("identifier", "bytes", repeated=False, required=True),
+        2: protobuf.Field("value", "uint64", repeated=False, required=True),
+        3: protobuf.Field("switch_type", "MimbleWimbleCoinSwitchType", repeated=False, required=True),
+    }
+
+    def __init__(
+        self,
+        *,
+        identifier: "bytes",
+        value: "int",
+        switch_type: "MimbleWimbleCoinSwitchType",
+    ) -> None:
+        self.identifier = identifier
+        self.value = value
+        self.switch_type = switch_type
+
+
+class MimbleWimbleCoinContinueTransactionIncludeInput(protobuf.MessageType):
+    MESSAGE_WIRE_TYPE = 50959
+    FIELDS = {
+        1: protobuf.Field("identifier", "bytes", repeated=False, required=True),
+        2: protobuf.Field("value", "uint64", repeated=False, required=True),
+        3: protobuf.Field("switch_type", "MimbleWimbleCoinSwitchType", repeated=False, required=True),
+    }
+
+    def __init__(
+        self,
+        *,
+        identifier: "bytes",
+        value: "int",
+        switch_type: "MimbleWimbleCoinSwitchType",
+    ) -> None:
+        self.identifier = identifier
+        self.value = value
+        self.switch_type = switch_type
+
+
+class MimbleWimbleCoinContinueTransactionApplyOffset(protobuf.MessageType):
+    MESSAGE_WIRE_TYPE = 50960
+    FIELDS = {
+        1: protobuf.Field("offset", "bytes", repeated=False, required=True),
+    }
+
+    def __init__(
+        self,
+        *,
+        offset: "bytes",
+    ) -> None:
+        self.offset = offset
+
+
+class MimbleWimbleCoinTransactionSecretNonceIndex(protobuf.MessageType):
+    MESSAGE_WIRE_TYPE = 51088
+    FIELDS = {
+        1: protobuf.Field("secret_nonce_index", "uint32", repeated=False, required=False, default=None),
+    }
+
+    def __init__(
+        self,
+        *,
+        secret_nonce_index: Optional["int"] = None,
+    ) -> None:
+        self.secret_nonce_index = secret_nonce_index
+
+
+class MimbleWimbleCoinContinueTransactionGetPublicKey(protobuf.MessageType):
+    MESSAGE_WIRE_TYPE = 50961
+
+
+class MimbleWimbleCoinTransactionPublicKey(protobuf.MessageType):
+    MESSAGE_WIRE_TYPE = 51089
+    FIELDS = {
+        1: protobuf.Field("public_key", "bytes", repeated=False, required=True),
+    }
+
+    def __init__(
+        self,
+        *,
+        public_key: "bytes",
+    ) -> None:
+        self.public_key = public_key
+
+
+class MimbleWimbleCoinContinueTransactionGetPublicNonce(protobuf.MessageType):
+    MESSAGE_WIRE_TYPE = 50962
+
+
+class MimbleWimbleCoinTransactionPublicNonce(protobuf.MessageType):
+    MESSAGE_WIRE_TYPE = 51090
+    FIELDS = {
+        1: protobuf.Field("public_nonce", "bytes", repeated=False, required=True),
+    }
+
+    def __init__(
+        self,
+        *,
+        public_nonce: "bytes",
+    ) -> None:
+        self.public_nonce = public_nonce
+
+
+class MimbleWimbleCoinContinueTransactionGetMessageSignature(protobuf.MessageType):
+    MESSAGE_WIRE_TYPE = 50963
+    FIELDS = {
+        1: protobuf.Field("message", "bytes", repeated=False, required=True),
+    }
+
+    def __init__(
+        self,
+        *,
+        message: "bytes",
+    ) -> None:
+        self.message = message
+
+
+class MimbleWimbleCoinTransactionMessageSignature(protobuf.MessageType):
+    MESSAGE_WIRE_TYPE = 51091
+    FIELDS = {
+        1: protobuf.Field("message_signature", "bytes", repeated=False, required=True),
+    }
+
+    def __init__(
+        self,
+        *,
+        message_signature: "bytes",
+    ) -> None:
+        self.message_signature = message_signature
+
+
+class MimbleWimbleCoinFinishTransaction(protobuf.MessageType):
+    MESSAGE_WIRE_TYPE = 50964
+    FIELDS = {
+        1: protobuf.Field("address_type", "MimbleWimbleCoinAddressType", repeated=False, required=True),
+        2: protobuf.Field("public_nonce", "bytes", repeated=False, required=True),
+        3: protobuf.Field("public_key", "bytes", repeated=False, required=True),
+        4: protobuf.Field("kernel_information", "bytes", repeated=False, required=True),
+        5: protobuf.Field("kernel_commitment", "bytes", repeated=False, required=False, default=None),
+        6: protobuf.Field("payment_proof", "bytes", repeated=False, required=False, default=None),
+    }
+
+    def __init__(
+        self,
+        *,
+        address_type: "MimbleWimbleCoinAddressType",
+        public_nonce: "bytes",
+        public_key: "bytes",
+        kernel_information: "bytes",
+        kernel_commitment: Optional["bytes"] = None,
+        payment_proof: Optional["bytes"] = None,
+    ) -> None:
+        self.address_type = address_type
+        self.public_nonce = public_nonce
+        self.public_key = public_key
+        self.kernel_information = kernel_information
+        self.kernel_commitment = kernel_commitment
+        self.payment_proof = payment_proof
+
+
+class MimbleWimbleCoinTransactionSignatureAndPaymentProof(protobuf.MessageType):
+    MESSAGE_WIRE_TYPE = 51092
+    FIELDS = {
+        1: protobuf.Field("signature", "bytes", repeated=False, required=True),
+        2: protobuf.Field("payment_proof", "bytes", repeated=False, required=False, default=None),
+    }
+
+    def __init__(
+        self,
+        *,
+        signature: "bytes",
+        payment_proof: Optional["bytes"] = None,
+    ) -> None:
+        self.signature = signature
+        self.payment_proof = payment_proof
+
+
+class MimbleWimbleCoinGetMqsChallengeSignature(protobuf.MessageType):
+    MESSAGE_WIRE_TYPE = 50965
+    FIELDS = {
+        1: protobuf.Field("coin_type", "MimbleWimbleCoinCoinType", repeated=False, required=True),
+        2: protobuf.Field("network_type", "MimbleWimbleCoinNetworkType", repeated=False, required=True),
+        3: protobuf.Field("account", "uint32", repeated=False, required=True),
+        4: protobuf.Field("index", "uint32", repeated=False, required=True),
+        5: protobuf.Field("timestamp", "uint64", repeated=False, required=False, default=None),
+        6: protobuf.Field("time_zone_offset", "sint32", repeated=False, required=False, default=None),
+    }
+
+    def __init__(
+        self,
+        *,
+        coin_type: "MimbleWimbleCoinCoinType",
+        network_type: "MimbleWimbleCoinNetworkType",
+        account: "int",
+        index: "int",
+        timestamp: Optional["int"] = None,
+        time_zone_offset: Optional["int"] = None,
+    ) -> None:
+        self.coin_type = coin_type
+        self.network_type = network_type
+        self.account = account
+        self.index = index
+        self.timestamp = timestamp
+        self.time_zone_offset = time_zone_offset
+
+
+class MimbleWimbleCoinMqsChallengeSignature(protobuf.MessageType):
+    MESSAGE_WIRE_TYPE = 51093
+    FIELDS = {
+        1: protobuf.Field("mqs_challenge_signature", "bytes", repeated=False, required=True),
+    }
+
+    def __init__(
+        self,
+        *,
+        mqs_challenge_signature: "bytes",
+    ) -> None:
+        self.mqs_challenge_signature = mqs_challenge_signature
 
 
 class MoneroTransactionSourceEntry(protobuf.MessageType):

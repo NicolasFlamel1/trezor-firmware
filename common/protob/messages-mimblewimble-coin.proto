@@ -435,7 +435,7 @@ message MimbleWimbleCoinGetMqsChallengeSignature {
     required uint32 account = 3; // Account
     required uint32 index = 4; // Index
     optional uint64 timestamp = 5; // Timestamp
-    optional int32 time_zone_offset = 6; // Time zone offset
+    optional sint32 time_zone_offset = 6; // Time zone offset
 }
 
 /**
