@@ -16,12 +16,37 @@ async def get_seed_cookie(context: Context, message: MimbleWimbleCoinGetSeedCook
 
 	# Imports
 	from trezor.messages import MimbleWimbleCoinSeedCookie
+	from storage.device import is_initialized
+	from apps.base import unlock_device
+	from apps.common.paths import HARDENED
+	from trezor.wire import NotInitialized, DataError
 	from trezor.crypto.hashlib import sha512
 	from .coins import getCoinInfo
 	from .common import getExtendedPrivateKey
 	
+	# Check if not initialized
+	if not is_initialized():
+	
+		# Raise not initialized error
+		raise NotInitialized("")
+	
+	# Unlock device
+	await unlock_device()
+	
+	# TODO Initialize storage
+	
+	# TODO Get session
+	
+	# TODO Clear session
+	
 	# Get coin info
 	coinInfo = getCoinInfo(message.coin_type, message.network_type)
+	
+	# Check if account is invalid
+	if message.account >= HARDENED:
+	
+		# Raise data error
+		raise DataError("")
 	
 	# Get extended private key
 	extendedPrivateKey = await getExtendedPrivateKey(context, coinInfo, message.account)

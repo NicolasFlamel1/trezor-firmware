@@ -210,6 +210,20 @@ class EmulatorTransport {
 						// Close client
 						client.close(function() {
 						
+							// Check if response type is a failure response
+							if(responseType === HardwareWalletDefinitions.TREZOR_FAILURE_MESSAGE_TYPE) {
+						
+								// Get failure from response
+								const failure = ProtocolBuffers.decode(responseType, response.subarray(0, length), HardwareWalletDefinitions.SCHEMA);
+								
+								// Check if action or pin was canceled
+								if(failure["Failure Type"].at(-1) === HardwareWalletDefinitions.TREZOR_ACTION_CANCELED_FAILURE_TYPE || failure["Failure Type"].at(-1) === HardwareWalletDefinitions.TREZOR_PIN_CANCELED_FAILURE_TYPE) {
+								
+									// Show message
+									console.log("User canceled action on device");
+								}
+							}
+							
 							// Reject
 							reject();
 						});
@@ -220,6 +234,23 @@ class EmulatorTransport {
 					
 						// Close client
 						client.close(function() {
+						
+							// Get button request from response
+							const buttonRequest = ProtocolBuffers.decode(responseType, response.subarray(0, length), HardwareWalletDefinitions.SCHEMA);
+							
+							// Check if passphrase entry is requested
+							if(buttonRequest["Button Request Type"].at(-1) === HardwareWalletDefinitions.TREZOR_PASSPHRASE_ENTRY_BUTTON_REQUEST_TYPE) {
+							
+								// Show message
+								console.log("Enter passphrase on device");
+							}
+							
+							// Check if pin entry is requested
+							else if(buttonRequest["Button Request Type"].at(-1) === HardwareWalletDefinitions.TREZOR_PIN_ENTRY_BUTTON_REQUEST_TYPE) {
+							
+								// Show message
+								console.log("Enter pin on device");
+							}
 						
 							// Send button acknowledge request to the device
 							self.send(HardwareWalletDefinitions.TREZOR_BUTTON_ACKNOWLEDGE_MESSAGE_TYPE, {}, allowedResponseType).then(function(response) {
@@ -1399,13 +1430,19 @@ async function getApplicationInformationTest(hardwareWallet) {
 		await hardwareWallet.send(HardwareWalletDefinitions.TREZOR_LOAD_DEVICE_MESSAGE_TYPE, {
 		
 			// Mnemonic
-			"Mnemonic": MNEMONIC
+			"Mnemonic": MNEMONIC,
+			
+			// Pin
+			//"Pin": "1234"
 			
 		}, HardwareWalletDefinitions.TREZOR_SUCCESS_MESSAGE_TYPE);
 		
 		// Initialize the hardware wallet
 		await hardwareWallet.send(HardwareWalletDefinitions.TREZOR_INITIALIZE_MESSAGE_TYPE, {}, HardwareWalletDefinitions.TREZOR_FEATURES_MESSAGE_TYPE);
 	}
+	
+	// Lock hardware wallet
+	//await hardwareWallet.send(HardwareWalletDefinitions.TREZOR_LOCK_DEVICE_MESSAGE_TYPE, {}, HardwareWalletDefinitions.TREZOR_SUCCESS_MESSAGE_TYPE);
 	
 	// Log message
 	console.log("Passed getting application information test");

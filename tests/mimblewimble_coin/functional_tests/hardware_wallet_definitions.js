@@ -111,6 +111,13 @@ class HardwareWalletDefinitions {
 			// Return Trezor pin matrix acknowledge message type
 			return 0x0013;
 		}
+		
+		// Trezor lock device message type
+		static get TREZOR_LOCK_DEVICE_MESSAGE_TYPE() {
+		
+			// Return Trezor lock device message type
+			return 0x0018;
+		}
 
 		// Trezor button request message type
 		static get TREZOR_BUTTON_REQUEST_MESSAGE_TYPE() {
@@ -159,6 +166,20 @@ class HardwareWalletDefinitions {
 		
 			// Return Trezor pin invalid failure type
 			return 0x07;
+		}
+		
+		// Trezor passphrase entry button request type
+		static get TREZOR_PASSPHRASE_ENTRY_BUTTON_REQUEST_TYPE() {
+		
+			// Return Trezor passphrase entry button request type
+			return 0x13;
+		}
+		
+		// Trezor pin entry button request type
+		static get TREZOR_PIN_ENTRY_BUTTON_REQUEST_TYPE() {
+		
+			// Return Trezor pin entry button request type
+			return 0x14;
 		}
 		
 		// MimbleWimble Coin get root public key message type
@@ -461,6 +482,16 @@ class HardwareWalletDefinitions {
 						
 						// Type
 						"Type": ProtocolBuffers.STRING_SCHEMA_DATA_TYPE
+					},
+					
+					// Pin
+					"3": {
+					
+						// Name
+						"Name": "Pin",
+						
+						// Type
+						"Type": ProtocolBuffers.STRING_SCHEMA_DATA_TYPE
 					}
 				},
 				
@@ -558,6 +589,20 @@ class HardwareWalletDefinitions {
 						
 						// Type
 						"Type": ProtocolBuffers.STRING_SCHEMA_DATA_TYPE
+					}
+				},
+				
+				// Trezor button request
+				[HardwareWalletDefinitions.TREZOR_BUTTON_REQUEST_MESSAGE_TYPE.toFixed()]: {
+				
+					// Button request type
+					"1": {
+					
+						// Name
+						"Name": "Button Request Type",
+						
+						// Type
+						"Type": ProtocolBuffers.ENUM_SCHEMA_DATA_TYPE
 					}
 				},
 				

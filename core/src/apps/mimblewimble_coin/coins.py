@@ -5,10 +5,11 @@
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-	from enum import IntEnum
+	from enum import IntEnum, IntFlag
 	from trezor.enums import MimbleWimbleCoinCoinType, MimbleWimbleCoinNetworkType
 else:
 	IntEnum = object
+	IntFlag = object
 
 
 class AddressDerivationType(IntEnum):
@@ -19,12 +20,12 @@ class PaymentProofMessageType(IntEnum):
 	ASCII_PAYMENT_PROOF_MESSAGE = 0
 	BINARY_PAYMENT_PROOF_MESSAGE = 1
 
-class PaymentProofAddressType(IntEnum):
+class PaymentProofAddressType(IntFlag):
 	MQS_PAYMENT_PROOF_ADDRESS = 1 << 0
 	TOR_PAYMENT_PROOF_ADDRESS = 1 << 1
 	SLATEPACK_PAYMENT_PROOF_ADDRESS = 1 << 2
 
-class SlateEncryptionType(IntEnum):
+class SlateEncryptionType(IntFlag):
 	MQS_SLATE_ENCRYPTION = 1 << 0
 	TOR_SLATE_ENCRYPTION = 1 << 1
 	SLATEPACK_SLATE_ENCRYPTION = 1 << 2
@@ -67,6 +68,7 @@ class CoinInfo:
 
 def getCoinInfo(coinType: MimbleWimbleCoinCoinType, networkType: MimbleWimbleCoinNetworkType) -> CoinInfo:
 	from trezor.enums import MimbleWimbleCoinCoinType, MimbleWimbleCoinNetworkType
+	from trezor.wire import DataError
 	if coinType == MimbleWimbleCoinCoinType.EPIC_CASH and networkType == MimbleWimbleCoinNetworkType.MAINNET:
 		return CoinInfo(
 			"Epic Cash",
@@ -175,4 +177,4 @@ def getCoinInfo(coinType: MimbleWimbleCoinCoinType, networkType: MimbleWimbleCoi
 			SlateEncryptionType.MQS_SLATE_ENCRYPTION|SlateEncryptionType.TOR_SLATE_ENCRYPTION,
 			"MQS",
 		)
-	raise ValueError
+	raise DataError("")

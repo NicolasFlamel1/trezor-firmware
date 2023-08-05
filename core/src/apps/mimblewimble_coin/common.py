@@ -29,12 +29,6 @@ async def getExtendedPrivateKey(context: Context, coinInfo: CoinInfo, account: i
 	from apps.common.paths import AlwaysMatchingSchema, HARDENED
 	from apps.common.keychain import get_keychain
 	
-	# Check if account is invalid
-	if account >= HARDENED:
-	
-		# Raise value error
-		raise ValueError
-	
 	# Get keychain
 	keychain = await get_keychain(context, MIMBLEWIMBLE_COIN_CURVE_NAME, [AlwaysMatchingSchema])
 	

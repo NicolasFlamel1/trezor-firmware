@@ -871,6 +871,7 @@ async def confirm_properties(
     br_type: str,
     title: str,
     props: Iterable[PropertyType],
+    verb: str = "CONFIRM",
     hold: bool = False,
     br_code: ButtonRequestType = ButtonRequestType.ConfirmOutput,
 ) -> None:
@@ -892,6 +893,7 @@ async def confirm_properties(
                 trezorui2.confirm_properties(
                     title=title.upper(),
                     items=map(handle_bytes, props),  # type: ignore [cannot be assigned to parameter "items"]
+                    verb=verb.upper(),
                     hold=hold,
                 )
             ),

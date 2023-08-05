@@ -59,6 +59,7 @@ def confirm_properties(
     *,
     title: str,
     items: list[tuple[str | None, str | bytes | None, bool]],
+    verb: str = "CONFIRM",
     hold: bool = False,
 ) -> object:
     """Confirm list of key-value pairs. The third component in the tuple should be True if
@@ -453,6 +454,7 @@ def confirm_properties(
     *,
     title: str,
     items: list[tuple[str | None, str | bytes | None, bool]],
+    verb: str = "CONFIRM",
     hold: bool = False,
 ) -> object:
     """Confirm list of key-value pairs. The third component in the tuple should be True if
