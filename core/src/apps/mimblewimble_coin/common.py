@@ -28,6 +28,13 @@ async def getExtendedPrivateKey(context: Context, coinInfo: CoinInfo, account: i
 	# Imports
 	from apps.common.paths import AlwaysMatchingSchema, HARDENED
 	from apps.common.keychain import get_keychain
+	from trezor.wire import DataError
+	
+	# Check if account is invalid
+	if account >= HARDENED:
+	
+		# Raise data error
+		raise DataError("")
 	
 	# Get keychain
 	keychain = await get_keychain(context, MIMBLEWIMBLE_COIN_CURVE_NAME, [AlwaysMatchingSchema])

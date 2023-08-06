@@ -673,12 +673,43 @@ class UsbTransport {
 						// Check if response type isn't allowed and isn't requesting a button be pressed, a passphrase to be provided, or a pin matrix to be provided and response isn't a failure response to a pin matrix
 						if(responseType !== allowedResponseType && responseType !== HardwareWalletDefinitions.TREZOR_BUTTON_REQUEST_MESSAGE_TYPE && responseType !== HardwareWalletDefinitions.TREZOR_PASSPHRASE_REQUEST_MESSAGE_TYPE && responseType !== HardwareWalletDefinitions.TREZOR_PIN_MATRIX_REQUEST_MESSAGE_TYPE && (type !== HardwareWalletDefinitions.TREZOR_PIN_MATRIX_ACKNOWLEDGE_MESSAGE_TYPE || responseType !== HardwareWalletDefinitions.TREZOR_FAILURE_MESSAGE_TYPE)) {
 						
+							// Check if response type is a failure response
+							if(responseType === HardwareWalletDefinitions.TREZOR_FAILURE_MESSAGE_TYPE) {
+						
+								// Get failure from response
+								const failure = ProtocolBuffers.decode(responseType, response.subarray(0, length), HardwareWalletDefinitions.SCHEMA);
+								
+								// Check if action or pin was canceled
+								if(failure["Failure Type"].at(-1) === HardwareWalletDefinitions.TREZOR_ACTION_CANCELED_FAILURE_TYPE || failure["Failure Type"].at(-1) === HardwareWalletDefinitions.TREZOR_PIN_CANCELED_FAILURE_TYPE) {
+								
+									// Show message
+									console.log("User canceled action on device");
+								}
+							}
+							
 							// Reject
 							reject();
 						}
 						
 						// Otherwise check if response is requesting a button be pressed
 						else if(responseType === HardwareWalletDefinitions.TREZOR_BUTTON_REQUEST_MESSAGE_TYPE) {
+						
+							// Get button request from response
+							const buttonRequest = ProtocolBuffers.decode(responseType, response.subarray(0, length), HardwareWalletDefinitions.SCHEMA);
+							
+							// Check if passphrase entry is requested
+							if(buttonRequest["Button Request Type"].at(-1) === HardwareWalletDefinitions.TREZOR_PASSPHRASE_ENTRY_BUTTON_REQUEST_TYPE) {
+							
+								// Show message
+								console.log("Enter passphrase on device");
+							}
+							
+							// Check if pin entry is requested
+							else if(buttonRequest["Button Request Type"].at(-1) === HardwareWalletDefinitions.TREZOR_PIN_ENTRY_BUTTON_REQUEST_TYPE) {
+							
+								// Show message
+								console.log("Enter pin on device");
+							}
 						
 							// Return sending button acknowledge request to the device
 							return self.send(HardwareWalletDefinitions.TREZOR_BUTTON_ACKNOWLEDGE_MESSAGE_TYPE, {}, allowedResponseType).then(function(response) {

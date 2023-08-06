@@ -18,10 +18,10 @@ async def get_root_public_key(context: Context, message: MimbleWimbleCoinGetRoot
 	from trezor.messages import MimbleWimbleCoinRootPublicKey
 	from storage.device import is_initialized
 	from apps.base import unlock_device, set_homescreen
-	from apps.common.paths import HARDENED
-	from trezor.wire import NotInitialized, DataError
+	from trezor.wire import NotInitialized, ProcessError
 	from trezor.ui.layouts import confirm_action, confirm_properties, show_warning
 	from trezor.enums import ButtonRequestType
+	from trezor.crypto import mimblewimble_coin
 	from .coins import getCoinInfo
 	from .common import getExtendedPrivateKey
 	
@@ -43,11 +43,8 @@ async def get_root_public_key(context: Context, message: MimbleWimbleCoinGetRoot
 	# Get coin info
 	coinInfo = getCoinInfo(message.coin_type, message.network_type)
 	
-	# Check if account is invalid
-	if message.account >= HARDENED:
-	
-		# Raise data error
-		raise DataError("")
+	# Get extended private key
+	extendedPrivateKey = await getExtendedPrivateKey(context, coinInfo, message.account)
 	
 	# Show prompt
 	await confirm_action(context, "", coinInfo.name, action = "Export root public key?", verb = "Next")
@@ -66,11 +63,17 @@ async def get_root_public_key(context: Context, message: MimbleWimbleCoinGetRoot
 	# Show homescreen
 	set_homescreen()
 	
-	# Get extended private key
-	extendedPrivateKey = await getExtendedPrivateKey(context, coinInfo, message.account)
+	# Try
+	try:
 	
-	# Get root public key from the extended private key's public key
-	rootPublicKey = extendedPrivateKey.public_key()
+		# Get root public key from the extended private key
+		rootPublicKey = mimblewimble_coin.getRootPublicKey(extendedPrivateKey)
+	
+	# Catch errors
+	except:
+	
+		# Raise process error
+		raise ProcessError("")
 	
 	# Return root public key
 	return MimbleWimbleCoinRootPublicKey(root_public_key = rootPublicKey)

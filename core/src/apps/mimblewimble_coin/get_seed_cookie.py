@@ -18,9 +18,8 @@ async def get_seed_cookie(context: Context, message: MimbleWimbleCoinGetSeedCook
 	from trezor.messages import MimbleWimbleCoinSeedCookie
 	from storage.device import is_initialized
 	from apps.base import unlock_device
-	from apps.common.paths import HARDENED
-	from trezor.wire import NotInitialized, DataError
-	from trezor.crypto.hashlib import sha512
+	from trezor.wire import NotInitialized, ProcessError
+	from trezor.crypto import mimblewimble_coin
 	from .coins import getCoinInfo
 	from .common import getExtendedPrivateKey
 	
@@ -42,20 +41,20 @@ async def get_seed_cookie(context: Context, message: MimbleWimbleCoinGetSeedCook
 	# Get coin info
 	coinInfo = getCoinInfo(message.coin_type, message.network_type)
 	
-	# Check if account is invalid
-	if message.account >= HARDENED:
-	
-		# Raise data error
-		raise DataError("")
-	
 	# Get extended private key
 	extendedPrivateKey = await getExtendedPrivateKey(context, coinInfo, message.account)
 	
-	# Get root public key from the extended private key's public key
-	rootPublicKey = extendedPrivateKey.public_key()
+	# Try
+	try:
 	
-	# Get seed cookie from the hash of the root public key
-	seedCookie = sha512(rootPublicKey).digest()
+		# Get seed cookie from the extended private key
+		seedCookie = mimblewimble_coin.getSeedCookie(extendedPrivateKey)
+	
+	# Catch errors
+	except:
+	
+		# Raise process error
+		raise ProcessError("")
 	
 	# Return seed cookie
 	return MimbleWimbleCoinSeedCookie(seed_cookie = seedCookie)
