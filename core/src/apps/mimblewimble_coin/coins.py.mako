@@ -2,35 +2,38 @@
 # (by running `make templates` in `core`)
 # do not edit manually!
 
+# Imports
 from typing import TYPE_CHECKING
+from trezor.crypto import mimblewimble_coin
 
+# Check if type checking
 if TYPE_CHECKING:
-	from enum import IntEnum, IntFlag
+
+	# Imports
 	from trezor.enums import MimbleWimbleCoinCoinType, MimbleWimbleCoinNetworkType
-else:
-	IntEnum = object
-	IntFlag = object
 
 
-class AddressDerivationType(IntEnum):
-	MWC_ADDRESS_DERIVATION = 0
-	GRIN_ADDRESS_DERIVATION = 1
+# Constants
 
-class PaymentProofMessageType(IntEnum):
-	ASCII_PAYMENT_PROOF_MESSAGE = 0
-	BINARY_PAYMENT_PROOF_MESSAGE = 1
+# Address derivation type
+AddressDerivationType = mimblewimble_coin.AddressDerivationType
 
-class PaymentProofAddressType(IntFlag):
-	MQS_PAYMENT_PROOF_ADDRESS = 1 << 0
-	TOR_PAYMENT_PROOF_ADDRESS = 1 << 1
-	SLATEPACK_PAYMENT_PROOF_ADDRESS = 1 << 2
+# Payment proof message type
+PaymentProofMessageType = mimblewimble_coin.PaymentProofMessageType
 
-class SlateEncryptionType(IntFlag):
-	MQS_SLATE_ENCRYPTION = 1 << 0
-	TOR_SLATE_ENCRYPTION = 1 << 1
-	SLATEPACK_SLATE_ENCRYPTION = 1 << 2
+# Payment proof address type
+PaymentProofAddressType = mimblewimble_coin.PaymentProofAddressType
 
+# Slate encryption type
+SlateEncryptionType = mimblewimble_coin.SlateEncryptionType
+
+
+# Classes
+
+# Coin info class
 class CoinInfo:
+
+	# Constructor
 	def __init__(
 		self,
 		name: str,
@@ -49,6 +52,7 @@ class CoinInfo:
 		supportedSlateEncryptionTypes: SlateEncryptionType,
 		mqsName: str,
 	) -> None:
+	
 		self.name = name
 		self.slip44 = slip44
 		self.fractionalDigits = fractionalDigits
@@ -66,11 +70,20 @@ class CoinInfo:
 		self.mqsName = mqsName
 
 
+# Supporting function implementation
+
+# Get coin info
 def getCoinInfo(coinType: MimbleWimbleCoinCoinType, networkType: MimbleWimbleCoinNetworkType) -> CoinInfo:
+
+	# Imports
 	from trezor.enums import MimbleWimbleCoinCoinType, MimbleWimbleCoinNetworkType
 	from trezor.wire import DataError
 % for c in supported_on("trezor2", mimblewimble_coin):
+
+	# Check if coin info is requested
 	if coinType == MimbleWimbleCoinCoinType.${c.coin_type.upper()} and networkType == MimbleWimbleCoinNetworkType.${"TESTNET" if c.is_testnet else "MAINNET"}:
+	
+		# Return coin info
 		return CoinInfo(
 			"${c.name}",
 			${c.slip44},
@@ -89,4 +102,6 @@ def getCoinInfo(coinType: MimbleWimbleCoinCoinType, networkType: MimbleWimbleCoi
 			"${c.mqs_name}",
 		)
 % endfor
+
+	# Raise data error
 	raise DataError("")

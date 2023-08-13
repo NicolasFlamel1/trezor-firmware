@@ -689,7 +689,7 @@ bool mimbleWimbleCoinGetBulletproofComponents(uint8_t *tauX, uint8_t *tOne, uint
 	uint8_t message[BULLETPROOF_MESSAGE_SIZE] = {
 	
 		// Switch type
-		[BULLETPROOF_MESSAGE_SWITCH_TYPE_INDEX] = switchType,
+		[BULLETPROOF_MESSAGE_SWITCH_TYPE_INDEX] = switchType
 	};
 	memcpy(&message[BULLETPROOF_MESSAGE_IDENTIFIER_INDEX], identifier, IDENTIFIER_SIZE);
 	

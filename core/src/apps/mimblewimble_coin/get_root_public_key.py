@@ -17,8 +17,9 @@ async def get_root_public_key(context: Context, message: MimbleWimbleCoinGetRoot
 	# Imports
 	from trezor.messages import MimbleWimbleCoinRootPublicKey
 	from storage.device import is_initialized
-	from apps.base import unlock_device, set_homescreen
+	from apps.base import unlock_device
 	from trezor.wire import NotInitialized, ProcessError
+	from trezor.workflow import close_others
 	from trezor.ui.layouts import confirm_action, confirm_properties, show_warning
 	from trezor.enums import ButtonRequestType
 	from trezor.crypto import mimblewimble_coin
@@ -60,13 +61,13 @@ async def get_root_public_key(context: Context, message: MimbleWimbleCoinGetRoot
 	# Show prompt
 	await show_warning(context, "", "The host will be able to view the account's transactions.", button = "Approve", br_code = ButtonRequestType.Other)
 	
-	# Show homescreen
-	set_homescreen()
+	# Close running layout
+	close_others()
 	
 	# Try
 	try:
 	
-		# Get root public key from the extended private key
+		# Get root public key
 		rootPublicKey = mimblewimble_coin.getRootPublicKey(extendedPrivateKey)
 	
 	# Catch errors

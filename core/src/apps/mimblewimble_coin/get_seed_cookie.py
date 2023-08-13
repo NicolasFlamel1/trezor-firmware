@@ -47,7 +47,7 @@ async def get_seed_cookie(context: Context, message: MimbleWimbleCoinGetSeedCook
 	# Try
 	try:
 	
-		# Get seed cookie from the extended private key
+		# Get seed cookie
 		seedCookie = mimblewimble_coin.getSeedCookie(extendedPrivateKey)
 	
 	# Catch errors

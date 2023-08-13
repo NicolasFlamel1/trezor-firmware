@@ -547,6 +547,12 @@ if not utils.BITCOIN_ONLY:
     import apps.mimblewimble_coin.coins
     apps.mimblewimble_coin.common
     import apps.mimblewimble_coin.common
+    apps.mimblewimble_coin.get_address
+    import apps.mimblewimble_coin.get_address
+    apps.mimblewimble_coin.get_bulletproof_components
+    import apps.mimblewimble_coin.get_bulletproof_components
+    apps.mimblewimble_coin.get_commitment
+    import apps.mimblewimble_coin.get_commitment
     apps.mimblewimble_coin.get_root_public_key
     import apps.mimblewimble_coin.get_root_public_key
     apps.mimblewimble_coin.get_seed_cookie
