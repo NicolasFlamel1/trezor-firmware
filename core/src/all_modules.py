@@ -557,6 +557,10 @@ if not utils.BITCOIN_ONLY:
     import apps.mimblewimble_coin.get_root_public_key
     apps.mimblewimble_coin.get_seed_cookie
     import apps.mimblewimble_coin.get_seed_cookie
+    apps.mimblewimble_coin.verify_address
+    import apps.mimblewimble_coin.verify_address
+    apps.mimblewimble_coin.verify_root_public_key
+    import apps.mimblewimble_coin.verify_root_public_key
     apps.monero
     import apps.monero
     apps.monero.diag

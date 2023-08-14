@@ -6,22 +6,21 @@ if TYPE_CHECKING:
 
 	# Imports
 	from trezor.wire import Context
-	from trezor.messages import MimbleWimbleCoinGetRootPublicKey, MimbleWimbleCoinRootPublicKey
+	from trezor.messages import MimbleWimbleCoinVerifyRootPublicKey, Success
 
 
 # Supporting function implementation
 
-# Get root public key
-async def get_root_public_key(context: Context, message: MimbleWimbleCoinGetRootPublicKey) -> MimbleWimbleCoinRootPublicKey:
+# Verify root public key
+async def verify_root_public_key(context: Context, message: MimbleWimbleCoinVerifyRootPublicKey) -> Success:
 
 	# Imports
-	from trezor.messages import MimbleWimbleCoinRootPublicKey
+	from trezor.messages import Success
 	from storage.device import is_initialized
 	from apps.base import unlock_device
 	from trezor.wire import NotInitialized, ProcessError
 	from trezor.workflow import close_others
-	from trezor.ui.layouts import confirm_action, confirm_value, show_warning
-	from trezor.enums import ButtonRequestType
+	from trezor.ui.layouts import confirm_action, confirm_blob
 	from trezor.crypto import mimblewimble_coin
 	from .coins import getCoinInfo
 	from .common import getExtendedPrivateKey
@@ -47,18 +46,6 @@ async def get_root_public_key(context: Context, message: MimbleWimbleCoinGetRoot
 	# Get extended private key
 	extendedPrivateKey = await getExtendedPrivateKey(context, coinInfo, message.account)
 	
-	# Show prompt
-	await confirm_action(context, "", coinInfo.name, action = "Export root public key?", verb = "Next")
-	
-	# Show prompt
-	await confirm_value(context, "Account Index", f"{str(message.account)}", "", "", verb = "Next")
-	
-	# Show prompt
-	await show_warning(context, "", "The host will be able to view the account's transactions.", button = "Approve", br_code = ButtonRequestType.Other)
-	
-	# Close running layout
-	close_others()
-	
 	# Try
 	try:
 	
@@ -71,5 +58,14 @@ async def get_root_public_key(context: Context, message: MimbleWimbleCoinGetRoot
 		# Raise process error
 		raise ProcessError("")
 	
-	# Return root public key
-	return MimbleWimbleCoinRootPublicKey(root_public_key = rootPublicKey)
+	# Show prompt
+	await confirm_action(context, "", coinInfo.name, action = "Verify root public key.", verb = "Next")
+	
+	# Show prompt
+	await confirm_blob(context, "", "Root Public Key", rootPublicKey, verb = "Valid".upper())
+	
+	# Close running layout
+	close_others()
+	
+	# Return success
+	return Success()
