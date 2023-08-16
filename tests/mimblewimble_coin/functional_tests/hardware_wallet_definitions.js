@@ -567,6 +567,16 @@ class HardwareWalletDefinitions {
 						"Type": ProtocolBuffers.BOOL_SCHEMA_DATA_TYPE
 					},
 					
+					// Model
+					"21": {
+					
+						// Name
+						"Name": "Model",
+						
+						// Type
+						"Type": ProtocolBuffers.STRING_SCHEMA_DATA_TYPE
+					},
+					
 					// Capabilities
 					"30": {
 					
@@ -1836,7 +1846,7 @@ class HardwareWalletDefinitions {
 						"Name": "Time Zone Offset",
 						
 						// Type
-						"Type": ProtocolBuffers.INT_SCHEMA_DATA_TYPE,
+						"Type": ProtocolBuffers.SINT_SCHEMA_DATA_TYPE,
 						
 						// Size
 						"Size": Common.BYTES_IN_A_UINT16,

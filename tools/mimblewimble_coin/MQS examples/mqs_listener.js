@@ -85,7 +85,7 @@ const USB_PRODUCT_ID = 0x53C1;
 	console.log("Timestamp is " + timestamp);
 	
 	// Get time zone offset
-	const timeZoneOffset = Math.max((new Date()).getTimezoneOffset(), 0);
+	const timeZoneOffset = (new Date()).getTimezoneOffset();
 	
 	// Display message
 	console.log("Getting challenge signature from hardware wallet");

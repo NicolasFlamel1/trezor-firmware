@@ -3607,7 +3607,7 @@ async function getMqsTimestampSignatureTest(hardwareWallet, extendedPrivateKey) 
 	const expectedMqsTimestampSignature = Secp256k1Zkp.createMessageHashSignature(timestampHash, mqsPrivateKey);
 	
 	// Get time zone offset
-	const timeZoneOffset = Math.max((new Date()).getTimezoneOffset(), 0);
+	const timeZoneOffset = (new Date()).getTimezoneOffset();
 	
 	// Log time zone offset
 	console.log("Using time zone offset: " + timeZoneOffset.toFixed());
@@ -3619,7 +3619,7 @@ async function getMqsTimestampSignatureTest(hardwareWallet, extendedPrivateKey) 
 	console.log("Verify that the account index on the device is: " + ACCOUNT.toFixed());
 	
 	// Log message
-	console.log("Verify that the timestamp's time and date on the device is: " + date.getUTCHours().toFixed().padStart(2, "0") + ":" + date.getUTCMinutes().toFixed().padStart(2, "0") + ":" + date.getUTCSeconds().toFixed().padStart(2, "0") + " on " + date.getUTCFullYear().toFixed() + "-" + (date.getUTCMonth() + 1).toFixed().padStart(2, "0") + "-" + date.getUTCDate().toFixed().padStart(2, "0") + " UTC" + ((timeZoneOffset > 0) ? "-" : "+") + (timeZoneOffset / Common.MINUTES_IN_AN_HOUR).toFixed().padStart(2, "0") + ":" + (timeZoneOffset % Common.MINUTES_IN_AN_HOUR).toFixed().padStart(2, "0"));
+	console.log("Verify that the timestamp's time and date on the device is: " + date.getUTCHours().toFixed().padStart(2, "0") + ":" + date.getUTCMinutes().toFixed().padStart(2, "0") + ":" + date.getUTCSeconds().toFixed().padStart(2, "0") + " on " + date.getUTCFullYear().toFixed() + "-" + (date.getUTCMonth() + 1).toFixed().padStart(2, "0") + "-" + date.getUTCDate().toFixed().padStart(2, "0") + " UTC" + ((timeZoneOffset > 0) ? "-" : "+") + Math.floor(Math.abs(timeZoneOffset) / Common.MINUTES_IN_AN_HOUR).toFixed().padStart(2, "0") + ":" + (Math.abs(timeZoneOffset) % Common.MINUTES_IN_AN_HOUR).toFixed().padStart(2, "0"));
 	
 	// Get the MQS challenge signature from the hardware wallet
 	const mqsChallengeSignature = (await hardwareWallet.send(HardwareWalletDefinitions.MIMBLEWIMBLE_COIN_GET_MQS_CHALLENGE_SIGNATURE_MESSAGE_TYPE, {
