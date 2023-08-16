@@ -1836,7 +1836,7 @@ class HardwareWalletDefinitions {
 						"Name": "Time Zone Offset",
 						
 						// Type
-						"Type": ProtocolBuffers.UINT_SCHEMA_DATA_TYPE,
+						"Type": ProtocolBuffers.INT_SCHEMA_DATA_TYPE,
 						
 						// Size
 						"Size": Common.BYTES_IN_A_UINT16,

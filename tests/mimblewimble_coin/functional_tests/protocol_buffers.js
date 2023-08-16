@@ -414,6 +414,25 @@ class ProtocolBuffers {
 									
 										// Break
 										break;
+									
+									// Int
+									case ProtocolBuffers.INT_SCHEMA_DATA_TYPE:
+									
+										// Check if value type isn't correct
+										if(data[name] instanceof BigNumber === false) {
+										
+											// Throw error
+											throw "Value's type isn't correct.";
+										}
+										
+										// Set field wire type
+										var fieldWireType = ProtocolBuffers.VARINT_WIRE_TYPE;
+										
+										// Set field payload
+										var fieldPayload = ProtocolBuffers.encodeVarint(data[name].multipliedBy(2));
+									
+										// Break
+										break;
 								}
 								
 								// Break
@@ -481,6 +500,13 @@ class ProtocolBuffers {
 		
 			// Return bytes data type
 			return ProtocolBuffers.STRING_SCHEMA_DATA_TYPE + 1;
+		}
+		
+		// Int schema data type
+		static get INT_SCHEMA_DATA_TYPE() {
+		
+			// Return int data type
+			return ProtocolBuffers.BYTES_SCHEMA_DATA_TYPE + 1;
 		}
 	
 	// Private

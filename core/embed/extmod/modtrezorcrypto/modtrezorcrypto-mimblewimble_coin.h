@@ -175,6 +175,9 @@
 // Path hardened
 #define MIMBLEWIMBLE_COIN_PATH_HARDENED 0x80000000
 
+// Maximum DER signature size
+#define MIMBLEWIMBLE_COIN_MAXIMUM_DER_SIGNATURE_SIZE 72
+
 // Address derivation type
 /// class AddressDerivationType(IntEnum):
 ///     """
@@ -321,6 +324,13 @@ STATIC mp_obj_t mod_trezorcrypto_mimblewimble_coin_getCommitment(const size_t ar
 ///     Get Bulletproof components
 ///     """
 STATIC mp_obj_t mod_trezorcrypto_mimblewimble_coin_getBulletproofComponents(const size_t argumentsLength, const mp_obj_t *arguments);
+
+// Get MQS challenge signature
+/// def getMqsChallengeSignature(extendedPrivateKey: HDNode, coinInfo: CoinInfo, index: int, challenge: str) -> bytes:
+///     """
+///     Get MQS challenge signature
+///     """
+STATIC mp_obj_t mod_trezorcrypto_mimblewimble_coin_getMqsChallengeSignature(const size_t argumentsLength, const mp_obj_t *const arguments);
 
 // Is equal
 STATIC bool mimbleWimbleCoinIsEqual(const uint8_t *dataOne, const uint8_t *dataTwo, const size_t length);
@@ -521,7 +531,7 @@ STATIC const mp_rom_map_elem_t mod_trezorcrypto_mimblewimble_coin_AddressDerivat
 };
 
 // Address derivation type dictionary
-STATIC MP_DEFINE_CONST_DICT(mod_trezorcrypto_mimblewimble_coin_AddressDerivationType_dictionary, mod_trezorcrypto_mimblewimble_coin_AddressDerivationType_table);
+STATIC const MP_DEFINE_CONST_DICT(mod_trezorcrypto_mimblewimble_coin_AddressDerivationType_dictionary, mod_trezorcrypto_mimblewimble_coin_AddressDerivationType_table);
 
 // Address derivation type type
 STATIC const mp_obj_type_t mod_trezorcrypto_mimblewimble_coin_AddressDerivationType_type = {
@@ -541,7 +551,7 @@ STATIC const mp_rom_map_elem_t mod_trezorcrypto_mimblewimble_coin_PaymentProofMe
 };
 
 // Payment proof message type dictionary
-STATIC MP_DEFINE_CONST_DICT(mod_trezorcrypto_mimblewimble_coin_PaymentProofMessageType_dictionary, mod_trezorcrypto_mimblewimble_coin_PaymentProofMessageType_table);
+STATIC const MP_DEFINE_CONST_DICT(mod_trezorcrypto_mimblewimble_coin_PaymentProofMessageType_dictionary, mod_trezorcrypto_mimblewimble_coin_PaymentProofMessageType_table);
 
 // Payment proof message type type
 STATIC const mp_obj_type_t mod_trezorcrypto_mimblewimble_coin_PaymentProofMessageType_type = {
@@ -564,7 +574,7 @@ STATIC const mp_rom_map_elem_t mod_trezorcrypto_mimblewimble_coin_PaymentProofAd
 };
 
 // Payment proof address type dictionary
-STATIC MP_DEFINE_CONST_DICT(mod_trezorcrypto_mimblewimble_coin_PaymentProofAddressType_dictionary, mod_trezorcrypto_mimblewimble_coin_PaymentProofAddressType_table);
+STATIC const MP_DEFINE_CONST_DICT(mod_trezorcrypto_mimblewimble_coin_PaymentProofAddressType_dictionary, mod_trezorcrypto_mimblewimble_coin_PaymentProofAddressType_table);
 
 // Payment proof address type type
 STATIC const mp_obj_type_t mod_trezorcrypto_mimblewimble_coin_PaymentProofAddressType_type = {
@@ -587,7 +597,7 @@ STATIC const mp_rom_map_elem_t mod_trezorcrypto_mimblewimble_coin_SlateEncryptio
 };
 
 // Slate encryption type dictionary
-STATIC MP_DEFINE_CONST_DICT(mod_trezorcrypto_mimblewimble_coin_SlateEncryptionType_dictionary, mod_trezorcrypto_mimblewimble_coin_SlateEncryptionType_table);
+STATIC const MP_DEFINE_CONST_DICT(mod_trezorcrypto_mimblewimble_coin_SlateEncryptionType_dictionary, mod_trezorcrypto_mimblewimble_coin_SlateEncryptionType_table);
 
 // Slate encryption type type
 STATIC const mp_obj_type_t mod_trezorcrypto_mimblewimble_coin_SlateEncryptionType_type = {
@@ -597,25 +607,31 @@ STATIC const mp_obj_type_t mod_trezorcrypto_mimblewimble_coin_SlateEncryptionTyp
 };
 
 // Get root public key function
-STATIC MP_DEFINE_CONST_FUN_OBJ_1(mod_trezorcrypto_mimblewimble_coin_getRootPublicKey_function, mod_trezorcrypto_mimblewimble_coin_getRootPublicKey);
+STATIC const MP_DEFINE_CONST_FUN_OBJ_1(mod_trezorcrypto_mimblewimble_coin_getRootPublicKey_function, mod_trezorcrypto_mimblewimble_coin_getRootPublicKey);
 
 // Get MQS address function
-STATIC MP_DEFINE_CONST_FUN_OBJ_3(mod_trezorcrypto_mimblewimble_coin_getMqsAddress_function, mod_trezorcrypto_mimblewimble_coin_getMqsAddress);
+STATIC const MP_DEFINE_CONST_FUN_OBJ_3(mod_trezorcrypto_mimblewimble_coin_getMqsAddress_function, mod_trezorcrypto_mimblewimble_coin_getMqsAddress);
 
 // Get Tor address function
-STATIC MP_DEFINE_CONST_FUN_OBJ_3(mod_trezorcrypto_mimblewimble_coin_getTorAddress_function, mod_trezorcrypto_mimblewimble_coin_getTorAddress);
+STATIC const MP_DEFINE_CONST_FUN_OBJ_3(mod_trezorcrypto_mimblewimble_coin_getTorAddress_function, mod_trezorcrypto_mimblewimble_coin_getTorAddress);
 
 // Get Slatepack address function
-STATIC MP_DEFINE_CONST_FUN_OBJ_3(mod_trezorcrypto_mimblewimble_coin_getSlatepackAddress_function, mod_trezorcrypto_mimblewimble_coin_getSlatepackAddress);
+STATIC const MP_DEFINE_CONST_FUN_OBJ_3(mod_trezorcrypto_mimblewimble_coin_getSlatepackAddress_function, mod_trezorcrypto_mimblewimble_coin_getSlatepackAddress);
 
 // Get seed cookie function
-STATIC MP_DEFINE_CONST_FUN_OBJ_1(mod_trezorcrypto_mimblewimble_coin_getSeedCookie_function, mod_trezorcrypto_mimblewimble_coin_getSeedCookie);
+STATIC const MP_DEFINE_CONST_FUN_OBJ_1(mod_trezorcrypto_mimblewimble_coin_getSeedCookie_function, mod_trezorcrypto_mimblewimble_coin_getSeedCookie);
 
 // Get commitment function
-STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(mod_trezorcrypto_mimblewimble_coin_getCommitment_function, 4, 4, mod_trezorcrypto_mimblewimble_coin_getCommitment);
+STATIC const MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(mod_trezorcrypto_mimblewimble_coin_getCommitment_function, 4, 4, mod_trezorcrypto_mimblewimble_coin_getCommitment);
 
 // Get Bulletproof components function
-STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(mod_trezorcrypto_mimblewimble_coin_getBulletproofComponents_function, 5, 5, mod_trezorcrypto_mimblewimble_coin_getBulletproofComponents);
+STATIC const MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(mod_trezorcrypto_mimblewimble_coin_getBulletproofComponents_function, 5, 5, mod_trezorcrypto_mimblewimble_coin_getBulletproofComponents);
+
+// Get MQS challenge signature
+STATIC const MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(mod_trezorcrypto_mimblewimble_coin_getMqsChallengeSignature_function, 4, 4, mod_trezorcrypto_mimblewimble_coin_getMqsChallengeSignature);
+
+// Default MQS challenge string
+STATIC const MP_DEFINE_STR_OBJ(mod_trezorcrypto_mimblewimble_coin_DEFAULT_MQS_CHALLENGE_string, MIMBLEWIMBLE_COIN_DEFAULT_MQS_CHALLENGE);
 
 // Globals table
 STATIC const mp_rom_map_elem_t mod_trezorcrypto_mimblewimble_coin_globals_table[] = {
@@ -647,6 +663,9 @@ STATIC const mp_rom_map_elem_t mod_trezorcrypto_mimblewimble_coin_globals_table[
 	// Slate encryption type
 	{MP_ROM_QSTR(MP_QSTR_SlateEncryptionType), MP_ROM_PTR(&mod_trezorcrypto_mimblewimble_coin_SlateEncryptionType_type)},
 	
+	// Default MQS challenge
+	{MP_ROM_QSTR(MP_QSTR_DEFAULT_MQS_CHALLENGE), MP_ROM_PTR(&mod_trezorcrypto_mimblewimble_coin_DEFAULT_MQS_CHALLENGE_string)},
+	
 	// Get root public key
 	{MP_ROM_QSTR(MP_QSTR_getRootPublicKey), MP_ROM_PTR(&mod_trezorcrypto_mimblewimble_coin_getRootPublicKey_function)},
 	
@@ -666,11 +685,14 @@ STATIC const mp_rom_map_elem_t mod_trezorcrypto_mimblewimble_coin_globals_table[
 	{MP_ROM_QSTR(MP_QSTR_getCommitment), MP_ROM_PTR(&mod_trezorcrypto_mimblewimble_coin_getCommitment_function)},
 	
 	// Get Bulletproof components
-	{MP_ROM_QSTR(MP_QSTR_getBulletproofComponents), MP_ROM_PTR(&mod_trezorcrypto_mimblewimble_coin_getBulletproofComponents_function)}
+	{MP_ROM_QSTR(MP_QSTR_getBulletproofComponents), MP_ROM_PTR(&mod_trezorcrypto_mimblewimble_coin_getBulletproofComponents_function)},
+	
+	// Get MQS challenge signature
+	{MP_ROM_QSTR(MP_QSTR_getMqsChallengeSignature), MP_ROM_PTR(&mod_trezorcrypto_mimblewimble_coin_getMqsChallengeSignature_function)}
 };
 
 // Globals dictionary
-STATIC MP_DEFINE_CONST_DICT(mod_trezorcrypto_mimblewimble_coin_globals_dictionary, mod_trezorcrypto_mimblewimble_coin_globals_table);
+STATIC const MP_DEFINE_CONST_DICT(mod_trezorcrypto_mimblewimble_coin_globals_dictionary, mod_trezorcrypto_mimblewimble_coin_globals_table);
 
 // Module
 STATIC const mp_obj_module_t mod_trezorcrypto_mimblewimble_coin_module = {
@@ -896,11 +918,11 @@ mp_obj_t mod_trezorcrypto_mimblewimble_coin_getCommitment(__attribute__((unused)
 	commitment.len = MIMBLEWIMBLE_COIN_COMPRESSED_COMMITMENT_SIZE;
 	
 	// Get identifier depth
-	const uint8_t identifierDepth = ((uint8_t *)identifier.buf)[MIMBLEWIMBLE_COIN_IDENTIFIER_DEPTH_INDEX];
+	const uint8_t identifierDepth = ((const uint8_t *)identifier.buf)[MIMBLEWIMBLE_COIN_IDENTIFIER_DEPTH_INDEX];
 	
 	// Get identifier path
 	uint32_t identifierPath[MIMBLEWIMBLE_COIN_MAXIMUM_IDENTIFIER_DEPTH];
-	memcpy(identifierPath, &((uint8_t *)identifier.buf)[sizeof(identifierDepth)], MIMBLEWIMBLE_COIN_IDENTIFIER_SIZE - sizeof(identifierDepth));
+	memcpy(identifierPath, &((const uint8_t *)identifier.buf)[sizeof(identifierDepth)], MIMBLEWIMBLE_COIN_IDENTIFIER_SIZE - sizeof(identifierDepth));
 	
 	// Check if little endian
 	#if BYTE_ORDER == LITTLE_ENDIAN
@@ -977,11 +999,11 @@ mp_obj_t mod_trezorcrypto_mimblewimble_coin_getBulletproofComponents(__attribute
 	mp_obj_tuple_t *result = MP_OBJ_TO_PTR(mp_obj_new_tuple(3, NULL));
 	
 	// Get identifier depth
-	const uint8_t identifierDepth = ((uint8_t *)identifier.buf)[MIMBLEWIMBLE_COIN_IDENTIFIER_DEPTH_INDEX];
+	const uint8_t identifierDepth = ((const uint8_t *)identifier.buf)[MIMBLEWIMBLE_COIN_IDENTIFIER_DEPTH_INDEX];
 	
 	// Get identifier path
 	uint32_t identifierPath[MIMBLEWIMBLE_COIN_MAXIMUM_IDENTIFIER_DEPTH];
-	memcpy(identifierPath, &((uint8_t *)identifier.buf)[sizeof(identifierDepth)], MIMBLEWIMBLE_COIN_IDENTIFIER_SIZE - sizeof(identifierDepth));
+	memcpy(identifierPath, &((const uint8_t *)identifier.buf)[sizeof(identifierDepth)], MIMBLEWIMBLE_COIN_IDENTIFIER_SIZE - sizeof(identifierDepth));
 	
 	// Check if little endian
 	#if BYTE_ORDER == LITTLE_ENDIAN
@@ -1164,6 +1186,58 @@ mp_obj_t mod_trezorcrypto_mimblewimble_coin_getBulletproofComponents(__attribute
 	result->items[1] = mp_obj_new_str_from_vstr(&mp_type_bytes, &tOne);
 	result->items[2] = mp_obj_new_str_from_vstr(&mp_type_bytes, &tTwo);
 	return MP_OBJ_FROM_PTR(result);
+}
+
+// Get MQS challenge signature
+mp_obj_t mod_trezorcrypto_mimblewimble_coin_getMqsChallengeSignature(__attribute__((unused)) const size_t argumentsLength, const mp_obj_t *const arguments) {
+
+	// Get arguments
+	const mp_obj_t extendedPrivateKeyObject = arguments[0];
+	const mp_obj_t coinInfoObject = arguments[1];
+	const mp_obj_t indexObject = arguments[2];
+	const mp_obj_t challengeObject = arguments[3];
+	
+	// Get extended private key
+	const HDNode *extendedPrivateKey = &((mp_obj_HDNode_t *)MP_OBJ_TO_PTR(extendedPrivateKeyObject))->hdnode;
+	
+	// Get index
+	const uint32_t index = mp_obj_get_int(indexObject);
+	
+	// Get challenge
+	mp_buffer_info_t challenge;
+	mp_get_buffer(challengeObject, &challenge, MP_BUFFER_READ);
+	
+	// Initialize MQS challenge signature
+	vstr_t mqsChallengeSignature;
+	vstr_init(&mqsChallengeSignature, MIMBLEWIMBLE_COIN_MAXIMUM_DER_SIGNATURE_SIZE);
+	
+	// Check if getting address private key failed
+	uint8_t addressPrivateKey[MIMBLEWIMBLE_COIN_SECP256K1_PRIVATE_KEY_SIZE];
+	if(!mimbleWimbleCoinGetAddressPrivateKey(addressPrivateKey, extendedPrivateKey, coinInfoObject, index, SECP256K1_NAME)) {
+	
+		// Raise error
+		mp_raise_ValueError(NULL);
+	}
+	
+	// Check if getting signature of the challenge failed
+	uint8_t signature[MIMBLEWIMBLE_COIN_SECP256K1_COMPACT_SIGNATURE_SIZE];
+	if(ecdsa_sign(&secp256k1, HASHER_SHA2, addressPrivateKey, challenge.buf, challenge.len, signature, NULL, NULL)) {
+	
+		// Clear address private key
+		memzero(addressPrivateKey, sizeof(addressPrivateKey));
+		
+		// Raise error
+		mp_raise_ValueError(NULL);
+	}
+	
+	// Clear address private key
+	memzero(addressPrivateKey, sizeof(addressPrivateKey));
+	
+	// Get signature in DER format
+	mqsChallengeSignature.len = ecdsa_sig_to_der(signature, (uint8_t *)mqsChallengeSignature.buf);
+	
+	// Return MQS challenge signature
+	return mp_obj_new_str_from_vstr(&mp_type_bytes, &mqsChallengeSignature);
 }
 
 // Is equal

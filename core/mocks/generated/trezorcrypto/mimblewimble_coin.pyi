@@ -90,3 +90,10 @@ def getBulletproofComponents(extendedPrivateKey: HDNode, value: int, identifier:
     """
     Get Bulletproof components
     """
+
+
+# extmod/modtrezorcrypto/modtrezorcrypto-mimblewimble_coin.h
+def getMqsChallengeSignature(extendedPrivateKey: HDNode, coinInfo: CoinInfo, index: int, challenge: str) -> bytes:
+    """
+    Get MQS challenge signature
+    """

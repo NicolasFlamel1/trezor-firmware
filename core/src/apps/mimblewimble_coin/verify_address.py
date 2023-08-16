@@ -19,7 +19,6 @@ async def verify_address(context: Context, message: MimbleWimbleCoinVerifyAddres
 	from storage.device import is_initialized
 	from apps.base import unlock_device
 	from trezor.wire import NotInitialized, ProcessError, DataError
-	from trezor.workflow import close_others
 	from trezor.ui.layouts import confirm_action, confirm_blob
 	from trezor.crypto import mimblewimble_coin
 	from trezor.enums import MimbleWimbleCoinAddressType
@@ -133,9 +132,6 @@ async def verify_address(context: Context, message: MimbleWimbleCoinVerifyAddres
 		
 		# Show prompt
 		await confirm_blob(context, "", "Slatepack Address", address, verb = "Valid".upper())
-	
-	# Close running layout
-	close_others()
 	
 	# Return success
 	return Success()

@@ -19,7 +19,6 @@ async def verify_root_public_key(context: Context, message: MimbleWimbleCoinVeri
 	from storage.device import is_initialized
 	from apps.base import unlock_device
 	from trezor.wire import NotInitialized, ProcessError
-	from trezor.workflow import close_others
 	from trezor.ui.layouts import confirm_action, confirm_blob
 	from trezor.crypto import mimblewimble_coin
 	from .coins import getCoinInfo
@@ -63,9 +62,6 @@ async def verify_root_public_key(context: Context, message: MimbleWimbleCoinVeri
 	
 	# Show prompt
 	await confirm_blob(context, "", "Root Public Key", rootPublicKey, verb = "Valid".upper())
-	
-	# Close running layout
-	close_others()
 	
 	# Return success
 	return Success()
