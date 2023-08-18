@@ -18,6 +18,7 @@ async def get_root_public_key(context: Context, message: MimbleWimbleCoinGetRoot
 	from trezor.messages import MimbleWimbleCoinRootPublicKey
 	from storage.device import is_initialized
 	from apps.base import unlock_device
+	from storage.cache import delete, APP_MIMBLEWIMBLE_COIN_ENCRYPTION_AND_DECRYPTION_CONTEXT, APP_MIMBLEWIMBLE_COIN_TRANSACTION_CONTEXT
 	from trezor.wire import NotInitialized, ProcessError
 	from trezor.workflow import close_others
 	from trezor.ui.layouts import confirm_action, confirm_value, show_warning
@@ -37,9 +38,9 @@ async def get_root_public_key(context: Context, message: MimbleWimbleCoinGetRoot
 	
 	# TODO Initialize storage
 	
-	# TODO Get session
-	
-	# TODO Clear session
+	# Clear session
+	delete(APP_MIMBLEWIMBLE_COIN_ENCRYPTION_AND_DECRYPTION_CONTEXT)
+	delete(APP_MIMBLEWIMBLE_COIN_TRANSACTION_CONTEXT)
 	
 	# Get coin info
 	coinInfo = getCoinInfo(message.coin_type, message.network_type)
@@ -51,7 +52,7 @@ async def get_root_public_key(context: Context, message: MimbleWimbleCoinGetRoot
 	await confirm_action(context, "", coinInfo.name, action = "Export root public key?", verb = "Next")
 	
 	# Show prompt
-	await confirm_value(context, "Account Index", f"{str(message.account)}", "", "", verb = "Next")
+	await confirm_value(context, "Account Index", str(message.account), "", "", verb = "Next")
 	
 	# Show prompt
 	await show_warning(context, "", "The host will be able to view the account's transactions.", button = "Approve", br_code = ButtonRequestType.Other)

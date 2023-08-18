@@ -25,6 +25,8 @@ if not utils.BITCOIN_ONLY:
     APP_CARDANO_ICARUS_SECRET = const(5)
     APP_CARDANO_ICARUS_TREZOR_SECRET = const(6)
     APP_MONERO_LIVE_REFRESH = const(7)
+    APP_MIMBLEWIMBLE_COIN_ENCRYPTION_AND_DECRYPTION_CONTEXT = const(8)
+    APP_MIMBLEWIMBLE_COIN_TRANSACTION_CONTEXT = const(9)
 
 # Keys that are valid across sessions
 APP_COMMON_SEED_WITHOUT_PASSPHRASE = const(0 | _SESSIONLESS_FLAG)
@@ -84,12 +86,22 @@ class DataCache:
             return default
         return bytes(self.data[key][1:])
 
+    def get_memory_view(self, key: int) -> memoryview:  # noqa: F811
+        utils.ensure(key < len(self.fields))
+        if self.data[key][0] != 1:
+            self.data[key][0] = 1
+            self.data[key][1:] = bytearray(self.fields[key])
+        return memoryview(self.data[key])[1:]
+
     def is_set(self, key: int) -> bool:
         utils.ensure(key < len(self.fields))
         return self.data[key][0] == 1
 
     def delete(self, key: int) -> None:
         utils.ensure(key < len(self.fields))
+        if self.data[key][0] == 1:
+            for i in range(len(self.data[key])):
+                self.data[key][i] = 0
         self.data[key][:] = b"\x00"
 
     def clear(self) -> None:
@@ -108,6 +120,8 @@ class SessionCache(DataCache):
                 32,  # APP_COMMON_NONCE
             )
         else:
+            from trezorcrypto import mimblewimble_coin  # avoid pulling in trezor.crypto
+
             self.fields = (
                 64,  # APP_COMMON_SEED
                 2,  # APP_COMMON_AUTHORIZATION_TYPE
@@ -117,6 +131,8 @@ class SessionCache(DataCache):
                 96,  # APP_CARDANO_ICARUS_SECRET
                 96,  # APP_CARDANO_ICARUS_TREZOR_SECRET
                 1,  # APP_MONERO_LIVE_REFRESH
+                mimblewimble_coin.ENCRYPTION_AND_DECRYPTION_CONTEXT_SIZE, # APP_MIMBLEWIMBLE_COIN_ENCRYPTION_AND_DECRYPTION_CONTEXT
+                mimblewimble_coin.TRANSACTION_CONTEXT_SIZE, # APP_MIMBLEWIMBLE_COIN_TRANSACTION_CONTEXT
             )
         self.last_usage = 0
         super().__init__()
@@ -268,6 +284,14 @@ def get(key: int, default: T | None = None) -> bytes | T | None:  # noqa: F811
     if _active_session_idx is None:
         raise InvalidSessionError
     return _SESSIONS[_active_session_idx].get(key, default)
+
+
+def get_memory_view(key: int) -> memoryview:  # noqa: F811
+    if key & _SESSIONLESS_FLAG:
+        return _SESSIONLESS_CACHE.get_memory_view(key ^ _SESSIONLESS_FLAG)
+    if _active_session_idx is None:
+        raise InvalidSessionError
+    return _SESSIONS[_active_session_idx].get_memory_view(key)
 
 
 def get_int(key: int, default: T | None = None) -> int | T | None:  # noqa: F811

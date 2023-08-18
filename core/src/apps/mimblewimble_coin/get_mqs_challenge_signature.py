@@ -23,7 +23,7 @@ SECONDS_IN_A_MINUTE = const(60)
 MINUTES_IN_AN_HOUR = const(60)
 
 # Maximum timestamp
-MAXIMUM_TIMESTAMP = const(UINT32_MAX * MINUTES_IN_AN_HOUR * SECONDS_IN_A_MINUTE * MILLISECONDS_IN_A_SECOND + MILLISECONDS_IN_A_SECOND - 1)
+MAXIMUM_TIMESTAMP = UINT32_MAX * MINUTES_IN_AN_HOUR * SECONDS_IN_A_MINUTE * MILLISECONDS_IN_A_SECOND + MILLISECONDS_IN_A_SECOND - 1
 
 # Minimum time zone offset
 MINIMUM_TIME_ZONE_OFFSET = const(-13 * MINUTES_IN_AN_HOUR)
@@ -41,6 +41,7 @@ async def get_mqs_challenge_signature(context: Context, message: MimbleWimbleCoi
 	from trezor.messages import MimbleWimbleCoinMqsChallengeSignature
 	from storage.device import is_initialized
 	from apps.base import unlock_device
+	from storage.cache import delete, APP_MIMBLEWIMBLE_COIN_ENCRYPTION_AND_DECRYPTION_CONTEXT, APP_MIMBLEWIMBLE_COIN_TRANSACTION_CONTEXT
 	from trezor.wire import NotInitialized, ProcessError, DataError
 	from trezor.workflow import close_others
 	from trezor.ui.layouts import confirm_action, confirm_value, show_warning
@@ -62,9 +63,9 @@ async def get_mqs_challenge_signature(context: Context, message: MimbleWimbleCoi
 	
 	# TODO Initialize storage
 	
-	# TODO Get session
-	
-	# TODO Clear session
+	# Clear session
+	delete(APP_MIMBLEWIMBLE_COIN_ENCRYPTION_AND_DECRYPTION_CONTEXT)
+	delete(APP_MIMBLEWIMBLE_COIN_TRANSACTION_CONTEXT)
 	
 	# Get coin info
 	coinInfo = getCoinInfo(message.coin_type, message.network_type)
@@ -100,7 +101,7 @@ async def get_mqs_challenge_signature(context: Context, message: MimbleWimbleCoi
 	await confirm_action(context, "", coinInfo.name, action = f"Sign {coinInfo.mqsName} challenge?", verb = "Next")
 	
 	# Show prompt
-	await confirm_value(context, "Account Index", f"{str(message.account)}", "", "", verb = "Next")
+	await confirm_value(context, "Account Index", str(message.account), "", "", verb = "Next")
 	
 	# Check if a timestamp is provided
 	if message.timestamp is not None:

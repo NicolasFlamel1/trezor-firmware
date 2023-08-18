@@ -44,7 +44,18 @@ class SlateEncryptionType(IntFlag):
 
 
 # extmod/modtrezorcrypto/modtrezorcrypto-mimblewimble_coin.h
-def getRootPublicKey(extendedPrivateKey: HDNode) -> bytes:
+class EncryptingOrDecryptingState(IntEnum):
+    """
+    Encrypting or decryption state
+    """
+    INACTIVE_STATE = 0
+    READY_STATE = 1
+    ACTIVE_STATE = 2
+    COMPLETE_STATE = 3
+
+
+# extmod/modtrezorcrypto/modtrezorcrypto-mimblewimble_coin.h
+def getRootPublicKey(extendedPrivateKey: HDNode) -> bytearray:
     """
     Get root public key
     """
@@ -89,6 +100,55 @@ def getCommitment(extendedPrivateKey: HDNode, value: int, identifier: bytes, swi
 def getBulletproofComponents(extendedPrivateKey: HDNode, value: int, identifier: bytes, switchType: MimbleWimbleCoinSwitchType, updateProgress: Callable[[int], None] | None) -> tuple[bytes, bytes, bytes]:
     """
     Get Bulletproof components
+    """
+
+
+# extmod/modtrezorcrypto/modtrezorcrypto-mimblewimble_coin.h
+def isValidMqsAddressDomain(mqsAddressDomain: str) -> bool:
+    """
+    Is valid MQS address domain
+    """
+
+
+# extmod/modtrezorcrypto/modtrezorcrypto-mimblewimble_coin.h
+def isValidMqsAddress(mqsAddress: str, coinInfo: CoinInfo) -> bool:
+    """
+    Is valid MQS address
+    """
+
+
+# extmod/modtrezorcrypto/modtrezorcrypto-mimblewimble_coin.h
+def startMqsEncryption(encryptionAndDecryptionContext: memoryview, extendedPrivateKey: HDNode, coinInfo: CoinInfo, index: int, recipientAddress: str, recipientAddressDomain: str | None) -> tuple[bytes, bytes]:
+    """
+    Start MQS encryption
+    """
+
+
+# extmod/modtrezorcrypto/modtrezorcrypto-mimblewimble_coin.h
+def isValidTorAddress(torAddress: str) -> bool:
+    """
+    Is valid Tor address
+    """
+
+
+# extmod/modtrezorcrypto/modtrezorcrypto-mimblewimble_coin.h
+def startTorEncryption(encryptionAndDecryptionContext: memoryview, extendedPrivateKey: HDNode, coinInfo: CoinInfo, index: int, recipientAddress: str) -> bytes:
+    """
+    Start Tor encryption
+    """
+
+
+# extmod/modtrezorcrypto/modtrezorcrypto-mimblewimble_coin.h
+def encryptData(encryptionAndDecryptionContext: memoryview, data: bytes) -> bytes:
+    """
+    Encrypt data
+    """
+
+
+# extmod/modtrezorcrypto/modtrezorcrypto-mimblewimble_coin.h
+def finishEncryption(encryptionAndDecryptionContext: memoryview, extendedPrivateKey: HDNode, coinInfo: CoinInfo) -> tuple[bytes, bytes | None]:
+    """
+    Finish encryption
     """
 
 

@@ -18,6 +18,7 @@ async def get_bulletproof_components(context: Context, message: MimbleWimbleCoin
 	from trezor.messages import MimbleWimbleCoinBulletproofComponents
 	from storage.device import is_initialized
 	from apps.base import unlock_device
+	from storage.cache import delete, APP_MIMBLEWIMBLE_COIN_ENCRYPTION_AND_DECRYPTION_CONTEXT, APP_MIMBLEWIMBLE_COIN_TRANSACTION_CONTEXT
 	from trezor.wire import NotInitialized, ProcessError, DataError
 	from trezor.workflow import close_others
 	from trezor.crypto import mimblewimble_coin
@@ -38,9 +39,9 @@ async def get_bulletproof_components(context: Context, message: MimbleWimbleCoin
 	
 	# TODO Initialize storage
 	
-	# TODO Get session
-	
-	# TODO Clear session
+	# Clear session
+	delete(APP_MIMBLEWIMBLE_COIN_ENCRYPTION_AND_DECRYPTION_CONTEXT)
+	delete(APP_MIMBLEWIMBLE_COIN_TRANSACTION_CONTEXT)
 	
 	# Get coin info
 	coinInfo = getCoinInfo(message.coin_type, message.network_type)
