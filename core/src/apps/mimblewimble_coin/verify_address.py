@@ -23,6 +23,7 @@ async def verify_address(context: Context, message: MimbleWimbleCoinVerifyAddres
 	from trezor.ui.layouts import confirm_action, confirm_blob
 	from trezor.crypto import mimblewimble_coin
 	from trezor.enums import MimbleWimbleCoinAddressType
+	from apps.common.paths import HARDENED
 	from .coins import getCoinInfo
 	from .common import getExtendedPrivateKey, UINT32_MAX
 	
@@ -44,14 +45,20 @@ async def verify_address(context: Context, message: MimbleWimbleCoinVerifyAddres
 	# Get coin info
 	coinInfo = getCoinInfo(message.coin_type, message.network_type)
 	
-	# Get extended private key
-	extendedPrivateKey = await getExtendedPrivateKey(context, coinInfo, message.account)
+	# Check if account is invalid
+	if message.account >= HARDENED:
+	
+		# Raise data error
+		raise DataError("")
 	
 	# Check if index is invalid
 	if message.index > UINT32_MAX:
 	
 		# Raise data error
 		raise DataError("")
+	
+	# Get extended private key
+	extendedPrivateKey = await getExtendedPrivateKey(context, coinInfo, message.account)
 	
 	# Check if address type is MQS
 	if message.address_type == MimbleWimbleCoinAddressType.MQS:

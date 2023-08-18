@@ -19,9 +19,10 @@ async def verify_root_public_key(context: Context, message: MimbleWimbleCoinVeri
 	from storage.device import is_initialized
 	from apps.base import unlock_device
 	from storage.cache import delete, APP_MIMBLEWIMBLE_COIN_ENCRYPTION_AND_DECRYPTION_CONTEXT, APP_MIMBLEWIMBLE_COIN_TRANSACTION_CONTEXT
-	from trezor.wire import NotInitialized, ProcessError
+	from trezor.wire import NotInitialized, ProcessError, DataError
 	from trezor.ui.layouts import confirm_action, confirm_blob
 	from trezor.crypto import mimblewimble_coin
+	from apps.common.paths import HARDENED
 	from .coins import getCoinInfo
 	from .common import getExtendedPrivateKey
 	
@@ -42,6 +43,12 @@ async def verify_root_public_key(context: Context, message: MimbleWimbleCoinVeri
 	
 	# Get coin info
 	coinInfo = getCoinInfo(message.coin_type, message.network_type)
+	
+	# Check if account is invalid
+	if message.account >= HARDENED:
+	
+		# Raise data error
+		raise DataError("")
 	
 	# Get extended private key
 	extendedPrivateKey = await getExtendedPrivateKey(context, coinInfo, message.account)

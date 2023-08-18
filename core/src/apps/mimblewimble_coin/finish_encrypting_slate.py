@@ -64,8 +64,17 @@ async def finish_encrypting_slate(context: Context, message: MimbleWimbleCoinFin
 		# Raise invalid session
 		raise InvalidSession("")
 	
-	# Get coin info
-	coinInfo = getCoinInfo(encryptionAndDecryptionContextStructure.coinType, encryptionAndDecryptionContextStructure.networkType)
+	# Try
+	try:
+	
+		# Get coin info
+		coinInfo = getCoinInfo(encryptionAndDecryptionContextStructure.coinType, encryptionAndDecryptionContextStructure.networkType)
+	
+	# Catch errors
+	except:
+	
+		# Raise invalid session
+		raise InvalidSession("")
 	
 	# Get extended private key
 	extendedPrivateKey = await getExtendedPrivateKey(context, coinInfo, encryptionAndDecryptionContextStructure.account)

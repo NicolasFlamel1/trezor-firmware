@@ -19,11 +19,12 @@ async def get_root_public_key(context: Context, message: MimbleWimbleCoinGetRoot
 	from storage.device import is_initialized
 	from apps.base import unlock_device
 	from storage.cache import delete, APP_MIMBLEWIMBLE_COIN_ENCRYPTION_AND_DECRYPTION_CONTEXT, APP_MIMBLEWIMBLE_COIN_TRANSACTION_CONTEXT
-	from trezor.wire import NotInitialized, ProcessError
+	from trezor.wire import NotInitialized, ProcessError, DataError
 	from trezor.workflow import close_others
 	from trezor.ui.layouts import confirm_action, confirm_value, show_warning
 	from trezor.enums import ButtonRequestType
 	from trezor.crypto import mimblewimble_coin
+	from apps.common.paths import HARDENED
 	from .coins import getCoinInfo
 	from .common import getExtendedPrivateKey
 	
@@ -45,8 +46,11 @@ async def get_root_public_key(context: Context, message: MimbleWimbleCoinGetRoot
 	# Get coin info
 	coinInfo = getCoinInfo(message.coin_type, message.network_type)
 	
-	# Get extended private key
-	extendedPrivateKey = await getExtendedPrivateKey(context, coinInfo, message.account)
+	# Check if account is invalid
+	if message.account >= HARDENED:
+	
+		# Raise data error
+		raise DataError("")
 	
 	# Show prompt
 	await confirm_action(context, "", coinInfo.name, action = "Export root public key?", verb = "Next")
@@ -59,6 +63,9 @@ async def get_root_public_key(context: Context, message: MimbleWimbleCoinGetRoot
 	
 	# Close running layout
 	close_others()
+	
+	# Get extended private key
+	extendedPrivateKey = await getExtendedPrivateKey(context, coinInfo, message.account)
 	
 	# Try
 	try:

@@ -180,10 +180,11 @@ async def get_keychain(
     curve: str,
     schemas: Iterable[paths.PathSchemaType],
     slip21_namespaces: Iterable[paths.Slip21Path] = (),
+    progress_bar: bool = True,
 ) -> Keychain:
     from .seed import get_seed
 
-    seed = await get_seed(ctx)
+    seed = await get_seed(ctx, progress_bar)
     keychain = Keychain(seed, curve, schemas, slip21_namespaces)
     return keychain
 

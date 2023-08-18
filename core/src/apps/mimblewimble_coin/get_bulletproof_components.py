@@ -25,6 +25,7 @@ async def get_bulletproof_components(context: Context, message: MimbleWimbleCoin
 	from trezor.enums import MimbleWimbleCoinSwitchType, MimbleWimbleCoinMessageType
 	from trezor.ui.layouts.progress import progress
 	from trezor.utils import DISABLE_ANIMATION
+	from apps.common.paths import HARDENED
 	from .coins import getCoinInfo
 	from .common import getExtendedPrivateKey, UINT64_MAX
 	
@@ -46,8 +47,11 @@ async def get_bulletproof_components(context: Context, message: MimbleWimbleCoin
 	# Get coin info
 	coinInfo = getCoinInfo(message.coin_type, message.network_type)
 	
-	# Get extended private key
-	extendedPrivateKey = await getExtendedPrivateKey(context, coinInfo, message.account)
+	# Check if account is invalid
+	if message.account >= HARDENED:
+	
+		# Raise data error
+		raise DataError("")
 	
 	# Check if identifier is invalid
 	if len(message.identifier) != mimblewimble_coin.IDENTIFIER_SIZE:
@@ -72,6 +76,9 @@ async def get_bulletproof_components(context: Context, message: MimbleWimbleCoin
 	
 		# Raise data error
 		raise DataError("")
+	
+	# Get extended private key
+	extendedPrivateKey = await getExtendedPrivateKey(context, coinInfo, message.account)
 	
 	# Check if animation isn't disabled
 	if not DISABLE_ANIMATION:

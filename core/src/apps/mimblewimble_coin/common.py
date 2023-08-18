@@ -34,31 +34,13 @@ async def getExtendedPrivateKey(context: Context, coinInfo: CoinInfo, account: i
 	# Imports
 	from apps.common.paths import AlwaysMatchingSchema, HARDENED
 	from apps.common.keychain import get_keychain
-	from trezor.wire import DataError, ProcessError
-	from storage.cache import is_set, APP_COMMON_SEED
-	from trezor.utils import DISABLE_ANIMATION
-	from trezor.workflow import close_others
-	
-	# Check if account is invalid
-	if account >= HARDENED:
-	
-		# Raise data error
-		raise DataError("")
+	from trezor.wire import ProcessError
 	
 	# Try
 	try:
 	
-		# Get if progress is shown
-		progressShown = not is_set(APP_COMMON_SEED) and not DISABLE_ANIMATION
-		
 		# Get keychain
-		keychain = await get_keychain(context, MIMBLEWIMBLE_COIN_CURVE_NAME, [AlwaysMatchingSchema])
-		
-		# Check if progress was shown
-		if progressShown:
-		
-			# Close running layout
-			close_others()
+		keychain = await get_keychain(context, MIMBLEWIMBLE_COIN_CURVE_NAME, [AlwaysMatchingSchema], progress_bar = False)
 		
 		# Derive node at BIP44 path
 		node = keychain.derive([

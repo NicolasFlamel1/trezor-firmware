@@ -47,6 +47,7 @@ async def get_mqs_challenge_signature(context: Context, message: MimbleWimbleCoi
 	from trezor.ui.layouts import confirm_action, confirm_value, show_warning
 	from trezor.enums import ButtonRequestType
 	from trezor.crypto import mimblewimble_coin
+	from apps.common.paths import HARDENED
 	from utime import gmtime2000
 	from trezor.strings import _SECONDS_1970_TO_2000
 	from .coins import getCoinInfo
@@ -70,11 +71,14 @@ async def get_mqs_challenge_signature(context: Context, message: MimbleWimbleCoi
 	# Get coin info
 	coinInfo = getCoinInfo(message.coin_type, message.network_type)
 	
-	# Get extended private key
-	extendedPrivateKey = await getExtendedPrivateKey(context, coinInfo, message.account)
-	
 	# Check if currency doesn't allow MQS addresses
 	if not coinInfo.enableMqsAddress:
+	
+		# Raise data error
+		raise DataError("")
+	
+	# Check if account is invalid
+	if message.account >= HARDENED:
 	
 		# Raise data error
 		raise DataError("")
@@ -130,6 +134,9 @@ async def get_mqs_challenge_signature(context: Context, message: MimbleWimbleCoi
 	
 	# Close running layout
 	close_others()
+	
+	# Get extended private key
+	extendedPrivateKey = await getExtendedPrivateKey(context, coinInfo, message.account)
 	
 	# Try
 	try:

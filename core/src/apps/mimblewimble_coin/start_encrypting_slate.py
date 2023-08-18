@@ -21,6 +21,7 @@ async def start_encrypting_slate(context: Context, message: MimbleWimbleCoinStar
 	from storage.cache import delete, get_memory_view, APP_MIMBLEWIMBLE_COIN_ENCRYPTION_AND_DECRYPTION_CONTEXT, APP_MIMBLEWIMBLE_COIN_TRANSACTION_CONTEXT
 	from trezor.wire import NotInitialized, ProcessError, DataError
 	from trezor.crypto import mimblewimble_coin
+	from apps.common.paths import HARDENED
 	from uctypes import struct, addressof, UINT8, UINT32
 	from .coins import getCoinInfo, SlateEncryptionType
 	from .common import getExtendedPrivateKey, UINT32_MAX
@@ -43,17 +44,36 @@ async def start_encrypting_slate(context: Context, message: MimbleWimbleCoinStar
 	# Get session's encryption and decryption context
 	encryptionAndDecryptionContext = get_memory_view(APP_MIMBLEWIMBLE_COIN_ENCRYPTION_AND_DECRYPTION_CONTEXT)
 	
+	# Get session's encryption and decryption context's structure
+	encryptionAndDecryptionContextStructure = struct(addressof(encryptionAndDecryptionContext), {
+	
+		# Coin type
+		"coinType": mimblewimble_coin.ENCRYPTION_AND_DECRYPTION_CONTEXT_COIN_TYPE_OFFSET | UINT8,
+		
+		# Network type
+		"networkType": mimblewimble_coin.ENCRYPTION_AND_DECRYPTION_CONTEXT_NETWORK_TYPE_OFFSET | UINT8,
+		
+		# Account
+		"account": mimblewimble_coin.ENCRYPTION_AND_DECRYPTION_CONTEXT_ACCOUNT_OFFSET | UINT32
+	})
+	
 	# Get coin info
 	coinInfo = getCoinInfo(message.coin_type, message.network_type)
 	
-	# Get extended private key
-	extendedPrivateKey = await getExtendedPrivateKey(context, coinInfo, message.account)
+	# Check if account is invalid
+	if message.account >= HARDENED:
+	
+		# Raise data error
+		raise DataError("")
 	
 	# Check if index is invalid
 	if message.index > UINT32_MAX:
 	
 		# Raise data error
 		raise DataError("")
+	
+	# Get extended private key
+	extendedPrivateKey = await getExtendedPrivateKey(context, coinInfo, message.account)
 	
 	# Get address components
 	addressComponents = message.recipient_address.split(b"@", 1)
@@ -133,19 +153,6 @@ async def start_encrypting_slate(context: Context, message: MimbleWimbleCoinStar
 	
 		# Raise data error
 		raise DataError("")
-	
-	# Get session's encryption and decryption context's structure
-	encryptionAndDecryptionContextStructure = struct(addressof(encryptionAndDecryptionContext), {
-	
-		# Coin type
-		"coinType": mimblewimble_coin.ENCRYPTION_AND_DECRYPTION_CONTEXT_COIN_TYPE_OFFSET | UINT8,
-		
-		# Network type
-		"networkType": mimblewimble_coin.ENCRYPTION_AND_DECRYPTION_CONTEXT_NETWORK_TYPE_OFFSET | UINT8,
-		
-		# Account
-		"account": mimblewimble_coin.ENCRYPTION_AND_DECRYPTION_CONTEXT_ACCOUNT_OFFSET | UINT32
-	})
 	
 	# Set session's encryption and decryption context's coin type
 	encryptionAndDecryptionContextStructure.coinType = message.coin_type

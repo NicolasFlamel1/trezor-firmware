@@ -47,17 +47,17 @@ async def continue_encrypting_slate(context: Context, message: MimbleWimbleCoinC
 		"encryptingState": mimblewimble_coin.ENCRYPTION_AND_DECRYPTION_CONTEXT_ENCRYPTING_STATE_OFFSET | INT
 	})
 	
-	# Check if session's encryption and decryption context's encrypting state isn't ready or active
-	if encryptionAndDecryptionContextStructure.encryptingState != mimblewimble_coin.EncryptingOrDecryptingState.READY_STATE and encryptionAndDecryptionContextStructure.encryptingState != mimblewimble_coin.EncryptingOrDecryptingState.ACTIVE_STATE:
-	
-		# Raise invalid session
-		raise InvalidSession("")
-	
 	# Check if data is invalid
 	if len(message.data) == 0:
 	
 		# Raise data error
 		raise DataError("")
+	
+	# Check if session's encryption and decryption context's encrypting state isn't ready or active
+	if encryptionAndDecryptionContextStructure.encryptingState != mimblewimble_coin.EncryptingOrDecryptingState.READY_STATE and encryptionAndDecryptionContextStructure.encryptingState != mimblewimble_coin.EncryptingOrDecryptingState.ACTIVE_STATE:
+	
+		# Raise invalid session
+		raise InvalidSession("")
 	
 	# Try
 	try:

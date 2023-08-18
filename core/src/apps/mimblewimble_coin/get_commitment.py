@@ -22,6 +22,7 @@ async def get_commitment(context: Context, message: MimbleWimbleCoinGetCommitmen
 	from trezor.wire import NotInitialized, ProcessError, DataError
 	from trezor.crypto import mimblewimble_coin
 	from trezor.enums import MimbleWimbleCoinSwitchType
+	from apps.common.paths import HARDENED
 	from .coins import getCoinInfo
 	from .common import getExtendedPrivateKey, UINT64_MAX
 	
@@ -43,8 +44,11 @@ async def get_commitment(context: Context, message: MimbleWimbleCoinGetCommitmen
 	# Get coin info
 	coinInfo = getCoinInfo(message.coin_type, message.network_type)
 	
-	# Get extended private key
-	extendedPrivateKey = await getExtendedPrivateKey(context, coinInfo, message.account)
+	# Check if account is invalid
+	if message.account >= HARDENED:
+	
+		# Raise data error
+		raise DataError("")
 	
 	# Check if identifier is invalid
 	if len(message.identifier) != mimblewimble_coin.IDENTIFIER_SIZE:
@@ -69,6 +73,9 @@ async def get_commitment(context: Context, message: MimbleWimbleCoinGetCommitmen
 	
 		# Raise data error
 		raise DataError("")
+	
+	# Get extended private key
+	extendedPrivateKey = await getExtendedPrivateKey(context, coinInfo, message.account)
 	
 	# Try
 	try:
