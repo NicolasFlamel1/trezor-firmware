@@ -18,6 +18,7 @@ async def get_seed_cookie(context: Context, message: MimbleWimbleCoinGetSeedCook
 	from trezor.messages import MimbleWimbleCoinSeedCookie
 	from storage.device import is_initialized
 	from apps.base import unlock_device
+	from apps.common.seed import derive_and_store_roots
 	from storage.cache import delete, APP_MIMBLEWIMBLE_COIN_ENCRYPTION_AND_DECRYPTION_CONTEXT, APP_MIMBLEWIMBLE_COIN_TRANSACTION_CONTEXT
 	from trezor.wire import NotInitialized, ProcessError, DataError
 	from trezor.crypto import mimblewimble_coin
@@ -33,6 +34,9 @@ async def get_seed_cookie(context: Context, message: MimbleWimbleCoinGetSeedCook
 	
 	# Unlock device
 	await unlock_device()
+	
+	# Cache seed
+	await derive_and_store_roots(context, False)
 	
 	# TODO Initialize storage
 	

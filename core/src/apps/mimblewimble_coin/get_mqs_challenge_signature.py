@@ -41,6 +41,7 @@ async def get_mqs_challenge_signature(context: Context, message: MimbleWimbleCoi
 	from trezor.messages import MimbleWimbleCoinMqsChallengeSignature
 	from storage.device import is_initialized
 	from apps.base import unlock_device
+	from apps.common.seed import derive_and_store_roots
 	from storage.cache import delete, APP_MIMBLEWIMBLE_COIN_ENCRYPTION_AND_DECRYPTION_CONTEXT, APP_MIMBLEWIMBLE_COIN_TRANSACTION_CONTEXT
 	from trezor.wire import NotInitialized, ProcessError, DataError
 	from trezor.workflow import close_others
@@ -61,6 +62,9 @@ async def get_mqs_challenge_signature(context: Context, message: MimbleWimbleCoi
 	
 	# Unlock device
 	await unlock_device()
+	
+	# Cache seed
+	await derive_and_store_roots(context, False)
 	
 	# TODO Initialize storage
 	

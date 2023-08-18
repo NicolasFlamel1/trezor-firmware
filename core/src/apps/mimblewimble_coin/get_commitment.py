@@ -18,6 +18,7 @@ async def get_commitment(context: Context, message: MimbleWimbleCoinGetCommitmen
 	from trezor.messages import MimbleWimbleCoinCommitment
 	from storage.device import is_initialized
 	from apps.base import unlock_device
+	from apps.common.seed import derive_and_store_roots
 	from storage.cache import delete, APP_MIMBLEWIMBLE_COIN_ENCRYPTION_AND_DECRYPTION_CONTEXT, APP_MIMBLEWIMBLE_COIN_TRANSACTION_CONTEXT
 	from trezor.wire import NotInitialized, ProcessError, DataError
 	from trezor.crypto import mimblewimble_coin
@@ -34,6 +35,9 @@ async def get_commitment(context: Context, message: MimbleWimbleCoinGetCommitmen
 	
 	# Unlock device
 	await unlock_device()
+	
+	# Cache seed
+	await derive_and_store_roots(context, False)
 	
 	# TODO Initialize storage
 	

@@ -62,6 +62,13 @@ void fsm_msgMimbleWimbleCoinGetRootPublicKey(const MimbleWimbleCoinGetRootPublic
 	// Require pin
 	CHECK_PIN
 	
+	// Check if caching seed failed
+	if(!config_getSeed()) {
+	
+		// Return
+		return;
+	}
+	
 	// Check if initializing storage failed
 	if(!mimbleWimbleCoinInitializeStorage()) {
 	
@@ -220,6 +227,13 @@ void fsm_msgMimbleWimbleCoinGetAddress(const MimbleWimbleCoinGetAddress *message
 	
 	// Require pin
 	CHECK_PIN
+	
+	// Check if caching seed failed
+	if(!config_getSeed()) {
+	
+		// Return
+		return;
+	}
 	
 	// Check if initializing storage failed
 	if(!mimbleWimbleCoinInitializeStorage()) {
@@ -415,6 +429,13 @@ void fsm_msgMimbleWimbleCoinGetSeedCookie(const MimbleWimbleCoinGetSeedCookie *m
 	// Require pin
 	CHECK_PIN
 	
+	// Check if caching seed failed
+	if(!config_getSeed()) {
+	
+		// Return
+		return;
+	}
+	
 	// Check if initializing storage failed
 	if(!mimbleWimbleCoinInitializeStorage()) {
 	
@@ -518,6 +539,13 @@ void fsm_msgMimbleWimbleCoinGetCommitment(const MimbleWimbleCoinGetCommitment *m
 	
 	// Require pin
 	CHECK_PIN
+	
+	// Check if caching seed failed
+	if(!config_getSeed()) {
+	
+		// Return
+		return;
+	}
 	
 	// Check if initializing storage failed
 	if(!mimbleWimbleCoinInitializeStorage()) {
@@ -665,6 +693,13 @@ void fsm_msgMimbleWimbleCoinGetBulletproofComponents(const MimbleWimbleCoinGetBu
 	
 	// Require pin
 	CHECK_PIN
+	
+	// Check if caching seed failed
+	if(!config_getSeed()) {
+	
+		// Return
+		return;
+	}
 	
 	// Check if initializing storage failed
 	if(!mimbleWimbleCoinInitializeStorage()) {
@@ -882,6 +917,13 @@ void fsm_msgMimbleWimbleCoinVerifyRootPublicKey(const MimbleWimbleCoinVerifyRoot
 	// Require pin
 	CHECK_PIN
 	
+	// Check if caching seed failed
+	if(!config_getSeed()) {
+	
+		// Return
+		return;
+	}
+	
 	// Check if initializing storage failed
 	if(!mimbleWimbleCoinInitializeStorage()) {
 	
@@ -1028,6 +1070,13 @@ void fsm_msgMimbleWimbleCoinVerifyAddress(const MimbleWimbleCoinVerifyAddress *m
 	
 	// Require pin
 	CHECK_PIN
+	
+	// Check if caching seed failed
+	if(!config_getSeed()) {
+	
+		// Return
+		return;
+	}
 	
 	// Check if initializing storage failed
 	if(!mimbleWimbleCoinInitializeStorage()) {
@@ -1337,6 +1386,13 @@ void fsm_msgMimbleWimbleCoinStartEncryptingSlate(const MimbleWimbleCoinStartEncr
 	// Require pin
 	CHECK_PIN
 	
+	// Check if caching seed failed
+	if(!config_getSeed()) {
+	
+		// Return
+		return;
+	}
+	
 	// Check if initializing storage failed
 	if(!mimbleWimbleCoinInitializeStorage()) {
 	
@@ -1572,6 +1628,13 @@ void fsm_msgMimbleWimbleCoinContinueEncryptingSlate(const MimbleWimbleCoinContin
 	// Require pin
 	CHECK_PIN
 	
+	// Check if caching seed failed
+	if(!config_getSeed()) {
+	
+		// Return
+		return;
+	}
+	
 	// Check if initializing storage failed
 	if(!mimbleWimbleCoinInitializeStorage()) {
 	
@@ -1660,6 +1723,13 @@ void fsm_msgMimbleWimbleCoinFinishEncryptingSlate(__attribute__((unused)) const 
 	
 	// Require pin
 	CHECK_PIN
+	
+	// Check if caching seed failed
+	if(!config_getSeed()) {
+	
+		// Return
+		return;
+	}
 	
 	// Check if initializing storage failed
 	if(!mimbleWimbleCoinInitializeStorage()) {
@@ -1760,6 +1830,13 @@ void fsm_msgMimbleWimbleCoinStartDecryptingSlate(const MimbleWimbleCoinStartDecr
 	
 	// Require pin
 	CHECK_PIN
+	
+	// Check if caching seed failed
+	if(!config_getSeed()) {
+	
+		// Return
+		return;
+	}
 	
 	// Check if initializing storage failed
 	if(!mimbleWimbleCoinInitializeStorage()) {
@@ -2084,6 +2161,13 @@ void fsm_msgMimbleWimbleCoinContinueDecryptingSlate(const MimbleWimbleCoinContin
 	// Require pin
 	CHECK_PIN
 	
+	// Check if caching seed failed
+	if(!config_getSeed()) {
+	
+		// Return
+		return;
+	}
+	
 	// Check if initializing storage failed
 	if(!mimbleWimbleCoinInitializeStorage()) {
 	
@@ -2173,6 +2257,13 @@ void fsm_msgMimbleWimbleCoinFinishDecryptingSlate(const MimbleWimbleCoinFinishDe
 	// Require pin
 	CHECK_PIN
 	
+	// Check if caching seed failed
+	if(!config_getSeed()) {
+	
+		// Return
+		return;
+	}
+	
 	// Check if initializing storage failed
 	if(!mimbleWimbleCoinInitializeStorage()) {
 	
@@ -2261,6 +2352,13 @@ void fsm_msgMimbleWimbleCoinStartTransaction(const MimbleWimbleCoinStartTransact
 	
 	// Require pin
 	CHECK_PIN
+	
+	// Check if caching seed failed
+	if(!config_getSeed()) {
+	
+		// Return
+		return;
+	}
 	
 	// Check if initializing storage failed
 	if(!mimbleWimbleCoinInitializeStorage()) {
@@ -2579,6 +2677,13 @@ void fsm_msgMimbleWimbleCoinContinueTransactionIncludeOutput(const MimbleWimbleC
 	// Require pin
 	CHECK_PIN
 	
+	// Check if caching seed failed
+	if(!config_getSeed()) {
+	
+		// Return
+		return;
+	}
+	
 	// Check if initializing storage failed
 	if(!mimbleWimbleCoinInitializeStorage()) {
 	
@@ -2750,6 +2855,13 @@ void fsm_msgMimbleWimbleCoinContinueTransactionIncludeInput(const MimbleWimbleCo
 	
 	// Require pin
 	CHECK_PIN
+	
+	// Check if caching seed failed
+	if(!config_getSeed()) {
+	
+		// Return
+		return;
+	}
 	
 	// Check if initializing storage failed
 	if(!mimbleWimbleCoinInitializeStorage()) {
@@ -2926,6 +3038,13 @@ void fsm_msgMimbleWimbleCoinContinueTransactionApplyOffset(const MimbleWimbleCoi
 	// Require pin
 	CHECK_PIN
 	
+	// Check if caching seed failed
+	if(!config_getSeed()) {
+	
+		// Return
+		return;
+	}
+	
 	// Check if initializing storage failed
 	if(!mimbleWimbleCoinInitializeStorage()) {
 	
@@ -3055,6 +3174,13 @@ void fsm_msgMimbleWimbleCoinContinueTransactionGetPublicKey(__attribute__((unuse
 	// Require pin
 	CHECK_PIN
 	
+	// Check if caching seed failed
+	if(!config_getSeed()) {
+	
+		// Return
+		return;
+	}
+	
 	// Check if initializing storage failed
 	if(!mimbleWimbleCoinInitializeStorage()) {
 	
@@ -3157,6 +3283,13 @@ void fsm_msgMimbleWimbleCoinContinueTransactionGetPublicNonce(__attribute__((unu
 	// Require pin
 	CHECK_PIN
 	
+	// Check if caching seed failed
+	if(!config_getSeed()) {
+	
+		// Return
+		return;
+	}
+	
 	// Check if initializing storage failed
 	if(!mimbleWimbleCoinInitializeStorage()) {
 	
@@ -3258,6 +3391,13 @@ void fsm_msgMimbleWimbleCoinContinueTransactionGetMessageSignature(const MimbleW
 	
 	// Require pin
 	CHECK_PIN
+	
+	// Check if caching seed failed
+	if(!config_getSeed()) {
+	
+		// Return
+		return;
+	}
 	
 	// Check if initializing storage failed
 	if(!mimbleWimbleCoinInitializeStorage()) {
@@ -3386,6 +3526,13 @@ void fsm_msgMimbleWimbleCoinFinishTransaction(const MimbleWimbleCoinFinishTransa
 	
 	// Require pin
 	CHECK_PIN
+	
+	// Check if caching seed failed
+	if(!config_getSeed()) {
+	
+		// Return
+		return;
+	}
 	
 	// Check if initializing storage failed
 	if(!mimbleWimbleCoinInitializeStorage()) {
@@ -4128,6 +4275,13 @@ void fsm_msgMimbleWimbleCoinGetMqsChallengeSignature(const MimbleWimbleCoinGetMq
 	
 	// Require pin
 	CHECK_PIN
+	
+	// Check if caching seed failed
+	if(!config_getSeed()) {
+	
+		// Return
+		return;
+	}
 	
 	// Check if initializing storage failed
 	if(!mimbleWimbleCoinInitializeStorage()) {

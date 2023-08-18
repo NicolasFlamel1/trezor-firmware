@@ -18,6 +18,7 @@ async def verify_address(context: Context, message: MimbleWimbleCoinVerifyAddres
 	from trezor.messages import Success
 	from storage.device import is_initialized
 	from apps.base import unlock_device
+	from apps.common.seed import derive_and_store_roots
 	from storage.cache import delete, APP_MIMBLEWIMBLE_COIN_ENCRYPTION_AND_DECRYPTION_CONTEXT, APP_MIMBLEWIMBLE_COIN_TRANSACTION_CONTEXT
 	from trezor.wire import NotInitialized, ProcessError, DataError
 	from trezor.ui.layouts import confirm_action, confirm_blob
@@ -35,6 +36,9 @@ async def verify_address(context: Context, message: MimbleWimbleCoinVerifyAddres
 	
 	# Unlock device
 	await unlock_device()
+	
+	# Cache seed
+	await derive_and_store_roots(context, False)
 	
 	# TODO Initialize storage
 	

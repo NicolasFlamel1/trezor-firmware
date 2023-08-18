@@ -18,6 +18,7 @@ async def finish_encrypting_slate(context: Context, message: MimbleWimbleCoinFin
 	from trezor.messages import MimbleWimbleCoinEncryptedSlateTagAndSignature
 	from storage.device import is_initialized
 	from apps.base import unlock_device
+	from apps.common.seed import derive_and_store_roots
 	from storage.cache import delete, get_memory_view, APP_MIMBLEWIMBLE_COIN_ENCRYPTION_AND_DECRYPTION_CONTEXT, APP_MIMBLEWIMBLE_COIN_TRANSACTION_CONTEXT
 	from trezor.wire import NotInitialized, ProcessError, InvalidSession
 	from trezor.crypto import mimblewimble_coin
@@ -33,6 +34,9 @@ async def finish_encrypting_slate(context: Context, message: MimbleWimbleCoinFin
 	
 	# Unlock device
 	await unlock_device()
+	
+	# Cache seed
+	await derive_and_store_roots(context, False)
 	
 	# TODO Initialize storage
 	
