@@ -153,6 +153,48 @@ def finishEncryption(encryptionAndDecryptionContext: memoryview, extendedPrivate
 
 
 # extmod/modtrezorcrypto/modtrezorcrypto-mimblewimble_coin.h
+def startMqsDecryption(encryptionAndDecryptionContext: memoryview, extendedPrivateKey: HDNode, coinInfo: CoinInfo, index: int, senderAddress: str, nonce: bytes, salt: bytes) -> None:
+    """
+    Start MQS decryption
+    """
+
+
+# extmod/modtrezorcrypto/modtrezorcrypto-mimblewimble_coin.h
+def startTorDecryption(encryptionAndDecryptionContext: memoryview, extendedPrivateKey: HDNode, coinInfo: CoinInfo, index: int, senderAddress: str, nonce: bytes) -> None:
+    """
+    Start Tor decryption
+    """
+
+
+# extmod/modtrezorcrypto/modtrezorcrypto-mimblewimble_coin.h
+def isValidX25519PublicKey(x25519PublicKey: bytes) -> bool:
+    """
+    Is valid X25519 public key
+    """
+
+
+# extmod/modtrezorcrypto/modtrezorcrypto-mimblewimble_coin.h
+def startSlatepackDecryption(encryptionAndDecryptionContext: memoryview, extendedPrivateKey: HDNode, coinInfo: CoinInfo, index: int, ephemeralX25519PublicKey: bytes, nonce: bytes, encryptedFileKey: bytes, payloadNonce: bytes) -> None:
+    """
+    Start Slatepack decryption
+    """
+
+
+# extmod/modtrezorcrypto/modtrezorcrypto-mimblewimble_coin.h
+def decryptData(encryptionAndDecryptionContext: memoryview, encryptedData: bytes) -> bytes:
+    """
+    Decrypt data
+    """
+
+
+# extmod/modtrezorcrypto/modtrezorcrypto-mimblewimble_coin.h
+def finishDecryption(encryptionAndDecryptionContext: memoryview, tag: bytes) -> bytes:
+    """
+    Finish decryption
+    """
+
+
+# extmod/modtrezorcrypto/modtrezorcrypto-mimblewimble_coin.h
 def getMqsChallengeSignature(extendedPrivateKey: HDNode, coinInfo: CoinInfo, index: int, challenge: str) -> bytes:
     """
     Get MQS challenge signature

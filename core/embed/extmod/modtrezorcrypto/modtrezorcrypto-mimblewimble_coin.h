@@ -179,6 +179,9 @@
 // Maximum DER signature size
 #define MIMBLEWIMBLE_COIN_MAXIMUM_DER_SIGNATURE_SIZE 72
 
+// Slatepack encryption file key size
+#define MIMBLEWIMBLE_COIN_SLATEPACK_ENCRYPTION_ENCRYPTED_FILE_KEY_SIZE (MIMBLEWIMBLE_COIN_AGE_FILE_KEY_SIZE + MIMBLEWIMBLE_COIN_AGE_PAYLOAD_NONCE_SIZE)
+
 // Address derivation type
 /// class AddressDerivationType(IntEnum):
 ///     """
@@ -490,6 +493,48 @@ STATIC mp_obj_t mod_trezorcrypto_mimblewimble_coin_encryptData(mp_obj_t encrypti
 ///     Finish encryption
 ///     """
 STATIC mp_obj_t mod_trezorcrypto_mimblewimble_coin_finishEncryption(mp_obj_t encryptionAndDecryptionContextObject, const mp_obj_t extendedPrivateKeyObject, const mp_obj_t coinInfoObject);
+
+// Start MQS decryption
+/// def startMqsDecryption(encryptionAndDecryptionContext: memoryview, extendedPrivateKey: HDNode, coinInfo: CoinInfo, index: int, senderAddress: str, nonce: bytes, salt: bytes) -> None:
+///     """
+///     Start MQS decryption
+///     """
+STATIC mp_obj_t mod_trezorcrypto_mimblewimble_coin_startMqsDecryption(const size_t argumentsLength, const mp_obj_t *arguments);
+
+// Start Tor decryption
+/// def startTorDecryption(encryptionAndDecryptionContext: memoryview, extendedPrivateKey: HDNode, coinInfo: CoinInfo, index: int, senderAddress: str, nonce: bytes) -> None:
+///     """
+///     Start Tor decryption
+///     """
+STATIC mp_obj_t mod_trezorcrypto_mimblewimble_coin_startTorDecryption(const size_t argumentsLength, const mp_obj_t *arguments);
+
+// Is valid X25519 public key
+/// def isValidX25519PublicKey(x25519PublicKey: bytes) -> bool:
+///     """
+///     Is valid X25519 public key
+///     """
+STATIC mp_obj_t mod_trezorcrypto_mimblewimble_coin_isValidX25519PublicKey(const mp_obj_t x25519PublicKeyObject);
+
+// Start Slatepack decryption
+/// def startSlatepackDecryption(encryptionAndDecryptionContext: memoryview, extendedPrivateKey: HDNode, coinInfo: CoinInfo, index: int, ephemeralX25519PublicKey: bytes, nonce: bytes, encryptedFileKey: bytes, payloadNonce: bytes) -> None:
+///     """
+///     Start Slatepack decryption
+///     """
+STATIC mp_obj_t mod_trezorcrypto_mimblewimble_coin_startSlatepackDecryption(const size_t argumentsLength, const mp_obj_t *arguments);
+
+// Decrypt data
+/// def decryptData(encryptionAndDecryptionContext: memoryview, encryptedData: bytes) -> bytes:
+///     """
+///     Decrypt data
+///     """
+STATIC mp_obj_t mod_trezorcrypto_mimblewimble_coin_decryptData(mp_obj_t encryptionAndDecryptionContextObject, const mp_obj_t encryptedDataObject);
+
+// Finish decryption
+/// def finishDecryption(encryptionAndDecryptionContext: memoryview, tag: bytes) -> bytes:
+///     """
+///     Finish decryption
+///     """
+STATIC mp_obj_t mod_trezorcrypto_mimblewimble_coin_finishDecryption(mp_obj_t encryptionAndDecryptionContextObject, const mp_obj_t tagObject);
 
 // Get MQS challenge signature
 /// def getMqsChallengeSignature(extendedPrivateKey: HDNode, coinInfo: CoinInfo, index: int, challenge: str) -> bytes:
@@ -840,6 +885,24 @@ STATIC const MP_DEFINE_CONST_FUN_OBJ_2(mod_trezorcrypto_mimblewimble_coin_encryp
 // Finish encryption
 STATIC const MP_DEFINE_CONST_FUN_OBJ_3(mod_trezorcrypto_mimblewimble_coin_finishEncryption_function, mod_trezorcrypto_mimblewimble_coin_finishEncryption);
 
+// Start MQS decryption
+STATIC const MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(mod_trezorcrypto_mimblewimble_coin_startMqsDecryption_function, 7, 7, mod_trezorcrypto_mimblewimble_coin_startMqsDecryption);
+
+// Start Tor decryption
+STATIC const MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(mod_trezorcrypto_mimblewimble_coin_startTorDecryption_function, 6, 6, mod_trezorcrypto_mimblewimble_coin_startTorDecryption);
+
+// Is valid X25519 public key
+STATIC const MP_DEFINE_CONST_FUN_OBJ_1(mod_trezorcrypto_mimblewimble_coin_isValidX25519PublicKey_function, mod_trezorcrypto_mimblewimble_coin_isValidX25519PublicKey);
+
+// Start Slatepack decryption
+STATIC const MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(mod_trezorcrypto_mimblewimble_coin_startSlatepackDecryption_function, 8, 8, mod_trezorcrypto_mimblewimble_coin_startSlatepackDecryption);
+
+// Decrypt data
+STATIC const MP_DEFINE_CONST_FUN_OBJ_2(mod_trezorcrypto_mimblewimble_coin_decryptData_function, mod_trezorcrypto_mimblewimble_coin_decryptData);
+
+// Finish decryption
+STATIC const MP_DEFINE_CONST_FUN_OBJ_2(mod_trezorcrypto_mimblewimble_coin_finishDecryption_function, mod_trezorcrypto_mimblewimble_coin_finishDecryption);
+
 // Get MQS challenge signature
 STATIC const MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(mod_trezorcrypto_mimblewimble_coin_getMqsChallengeSignature_function, 4, 4, mod_trezorcrypto_mimblewimble_coin_getMqsChallengeSignature);
 
@@ -866,6 +929,24 @@ STATIC const mp_rom_map_elem_t mod_trezorcrypto_mimblewimble_coin_globals_table[
 	
 	// Identifier size
 	{MP_ROM_QSTR(MP_QSTR_IDENTIFIER_SIZE), MP_ROM_INT(MIMBLEWIMBLE_COIN_IDENTIFIER_SIZE)},
+	
+	// X25519 public key size
+	{MP_ROM_QSTR(MP_QSTR_X25519_PUBLIC_KEY_SIZE), MP_ROM_INT(MIMBLEWIMBLE_COIN_X25519_PUBLIC_KEY_SIZE)},
+	
+	// MQS encryption salt size
+	{MP_ROM_QSTR(MP_QSTR_MQS_ENCRYPTION_SALT_SIZE), MP_ROM_INT(MIMBLEWIMBLE_COIN_MQS_ENCRYPTION_SALT_SIZE)},
+	
+	// ChaCha 20 nonce size
+	{MP_ROM_QSTR(MP_QSTR_CHACHA20_NONCE_SIZE), MP_ROM_INT(MIMBLEWIMBLE_COIN_CHACHA20_NONCE_SIZE)},
+	
+	// Poly1305 tag size
+	{MP_ROM_QSTR(MP_QSTR_POLY1305_TAG_SIZE), MP_ROM_INT(MIMBLEWIMBLE_COIN_POLY1305_TAG_SIZE)},
+	
+	// Age payload nonce size
+	{MP_ROM_QSTR(MP_QSTR_AGE_PAYLOAD_NONCE_SIZE), MP_ROM_INT(MIMBLEWIMBLE_COIN_AGE_PAYLOAD_NONCE_SIZE)},
+	
+	// Slatepack encryption encrypted file key size
+	{MP_ROM_QSTR(MP_QSTR_SLATEPACK_ENCRYPTION_ENCRYPTED_FILE_KEY_SIZE), MP_ROM_INT(MIMBLEWIMBLE_COIN_SLATEPACK_ENCRYPTION_ENCRYPTED_FILE_KEY_SIZE)},
 	
 	// Address derivation type
 	{MP_ROM_QSTR(MP_QSTR_AddressDerivationType), MP_ROM_PTR(&mod_trezorcrypto_mimblewimble_coin_AddressDerivationType_type)},
@@ -947,6 +1028,24 @@ STATIC const mp_rom_map_elem_t mod_trezorcrypto_mimblewimble_coin_globals_table[
 	
 	// Finish encryption
 	{MP_ROM_QSTR(MP_QSTR_finishEncryption), MP_ROM_PTR(&mod_trezorcrypto_mimblewimble_coin_finishEncryption_function)},
+	
+	// Start MQS decryption
+	{MP_ROM_QSTR(MP_QSTR_startMqsDecryption), MP_ROM_PTR(&mod_trezorcrypto_mimblewimble_coin_startMqsDecryption_function)},
+
+	// Start Tor decryption
+	{MP_ROM_QSTR(MP_QSTR_startTorDecryption), MP_ROM_PTR(&mod_trezorcrypto_mimblewimble_coin_startTorDecryption_function)},
+
+	// Is valid X25519 public key
+	{MP_ROM_QSTR(MP_QSTR_isValidX25519PublicKey), MP_ROM_PTR(&mod_trezorcrypto_mimblewimble_coin_isValidX25519PublicKey_function)},
+
+	// Start Slatepack decryption
+	{MP_ROM_QSTR(MP_QSTR_startSlatepackDecryption), MP_ROM_PTR(&mod_trezorcrypto_mimblewimble_coin_startSlatepackDecryption_function)},
+	
+	// Decrypt data
+	{MP_ROM_QSTR(MP_QSTR_decryptData), MP_ROM_PTR(&mod_trezorcrypto_mimblewimble_coin_decryptData_function)},
+	
+	// Finish decryption
+	{MP_ROM_QSTR(MP_QSTR_finishDecryption), MP_ROM_PTR(&mod_trezorcrypto_mimblewimble_coin_finishDecryption_function)},
 	
 	// Get MQS challenge signature
 	{MP_ROM_QSTR(MP_QSTR_getMqsChallengeSignature), MP_ROM_PTR(&mod_trezorcrypto_mimblewimble_coin_getMqsChallengeSignature_function)}
@@ -1875,6 +1974,297 @@ mp_obj_t mod_trezorcrypto_mimblewimble_coin_finishEncryption(mp_obj_t encryption
 	result->items[0] = mp_obj_new_str_from_vstr(&mp_type_bytes, &tag);
 	result->items[1] = encryptionAndDecryptionContext->messageHashContextInitialized ? mp_obj_new_str_from_vstr(&mp_type_bytes, &mqsMessageSignature) : mp_const_none;
 	return MP_OBJ_FROM_PTR(result);
+}
+
+// Start MQS decryption
+mp_obj_t mod_trezorcrypto_mimblewimble_coin_startMqsDecryption(const size_t argumentsLength, const mp_obj_t *arguments) {
+
+	// Get arguments
+	mp_obj_t encryptionAndDecryptionContextObject = arguments[0];
+	const mp_obj_t extendedPrivateKeyObject = arguments[1];
+	const mp_obj_t coinInfoObject = arguments[2];
+	const mp_obj_t indexObject = arguments[3];
+	const mp_obj_t senderAddressObject = arguments[4];
+	const mp_obj_t nonceObject = arguments[5];
+	const mp_obj_t saltObject = arguments[6];
+	
+	// Get encryption and decryption context
+	mp_buffer_info_t encryptionAndDecryptionContextBuffer;
+	mp_get_buffer(encryptionAndDecryptionContextObject, &encryptionAndDecryptionContextBuffer, MP_BUFFER_RW);
+	MimbleWimbleCoinEncryptionAndDecryptionContext *encryptionAndDecryptionContext = encryptionAndDecryptionContextBuffer.buf;
+	
+	// Get extended private key
+	const HDNode *extendedPrivateKey = &((mp_obj_HDNode_t *)MP_OBJ_TO_PTR(extendedPrivateKeyObject))->hdnode;
+	
+	// Get index
+	const uint32_t index = mp_obj_get_int(indexObject);
+	
+	// Get sender address
+	mp_buffer_info_t senderAddress;
+	mp_get_buffer(senderAddressObject, &senderAddress, MP_BUFFER_READ);
+	
+	// Get nonce
+	mp_buffer_info_t nonce;
+	mp_get_buffer(nonceObject, &nonce, MP_BUFFER_READ);
+	
+	// Get salt
+	mp_buffer_info_t salt;
+	mp_get_buffer(saltObject, &salt, MP_BUFFER_READ);
+	
+	// Check if getting MQS shared private key failed
+	uint8_t mqsSharedPrivateKey[MIMBLEWIMBLE_COIN_CHACHA20_KEY_SIZE];
+	if(!mimbleWimbleCoinGetMqsSharedPrivateKey(mqsSharedPrivateKey, extendedPrivateKey, coinInfoObject, index, senderAddress.buf, salt.buf)) {
+	
+		// Raise error
+		mp_raise_ValueError(NULL);
+	}
+	
+	// Initialize encryption and decryption context's ChaCha20 Poly1305 context with the MQS shared private key and nonce
+	rfc7539_init(&encryptionAndDecryptionContext->chaCha20Poly1305Context, mqsSharedPrivateKey, nonce.buf);
+	
+	// Clear MQS shared private key
+	memzero(mqsSharedPrivateKey, sizeof(mqsSharedPrivateKey));
+	
+	// Create random encryption and decryption context's AES key
+	random_buffer(encryptionAndDecryptionContext->aesKey, sizeof(encryptionAndDecryptionContext->aesKey));
+	
+	// Set encryption and decryption context's decrypting state to ready
+	encryptionAndDecryptionContext->decryptingState = MimbleWimbleCoinEncryptingOrDecryptingState_READY_STATE;
+
+	// Return none
+	return mp_const_none;
+}
+
+// Start Tor decryption
+mp_obj_t mod_trezorcrypto_mimblewimble_coin_startTorDecryption(const size_t argumentsLength, const mp_obj_t *arguments) {
+
+	// Get arguments
+	mp_obj_t encryptionAndDecryptionContextObject = arguments[0];
+	const mp_obj_t extendedPrivateKeyObject = arguments[1];
+	const mp_obj_t coinInfoObject = arguments[2];
+	const mp_obj_t indexObject = arguments[3];
+	const mp_obj_t senderAddressObject = arguments[4];
+	const mp_obj_t nonceObject = arguments[5];
+	
+	// Get encryption and decryption context
+	mp_buffer_info_t encryptionAndDecryptionContextBuffer;
+	mp_get_buffer(encryptionAndDecryptionContextObject, &encryptionAndDecryptionContextBuffer, MP_BUFFER_RW);
+	MimbleWimbleCoinEncryptionAndDecryptionContext *encryptionAndDecryptionContext = encryptionAndDecryptionContextBuffer.buf;
+	
+	// Get extended private key
+	const HDNode *extendedPrivateKey = &((mp_obj_HDNode_t *)MP_OBJ_TO_PTR(extendedPrivateKeyObject))->hdnode;
+	
+	// Get index
+	const uint32_t index = mp_obj_get_int(indexObject);
+	
+	// Get sender address
+	mp_buffer_info_t senderAddress;
+	mp_get_buffer(senderAddressObject, &senderAddress, MP_BUFFER_READ);
+	
+	// Get nonce
+	mp_buffer_info_t nonce;
+	mp_get_buffer(nonceObject, &nonce, MP_BUFFER_READ);
+	
+	// Check if getting Tor shared private key failed
+	uint8_t torSharedPrivateKey[MIMBLEWIMBLE_COIN_CHACHA20_KEY_SIZE];
+	if(!mimbleWimbleCoinGetTorSharedPrivateKey(torSharedPrivateKey, extendedPrivateKey, coinInfoObject, index, senderAddress.buf)) {
+	
+		// Raise error
+		mp_raise_ValueError(NULL);
+	}
+	
+	// Initialize encryption and decryption context's ChaCha20 Poly1305 context with the Tor shared private key and nonce
+	rfc7539_init(&encryptionAndDecryptionContext->chaCha20Poly1305Context, torSharedPrivateKey, nonce.buf);
+	
+	// Clear Tor shared private key
+	memzero(torSharedPrivateKey, sizeof(torSharedPrivateKey));
+	
+	// Create random encryption and decryption context's AES key
+	random_buffer(encryptionAndDecryptionContext->aesKey, sizeof(encryptionAndDecryptionContext->aesKey));
+	
+	// Set encryption and decryption context's decrypting state to ready
+	encryptionAndDecryptionContext->decryptingState = MimbleWimbleCoinEncryptingOrDecryptingState_READY_STATE;
+	
+	// Return none
+	return mp_const_none;
+}
+
+// Is valid X25519 public key
+mp_obj_t mod_trezorcrypto_mimblewimble_coin_isValidX25519PublicKey(const mp_obj_t x25519PublicKeyObject) {
+
+	// Get X25519 public key
+	mp_buffer_info_t x25519PublicKey;
+	mp_get_buffer(x25519PublicKeyObject, &x25519PublicKey, MP_BUFFER_READ);
+	
+	// Return if X25519 public key is a valid X25519 public key
+	return mimbleWimbleCoinIsValidX25519PublicKey(x25519PublicKey.buf, x25519PublicKey.len) ? mp_const_true : mp_const_false;
+}
+
+// Start Slatepack decryption
+mp_obj_t mod_trezorcrypto_mimblewimble_coin_startSlatepackDecryption(const size_t argumentsLength, const mp_obj_t *arguments) {
+
+	// Get arguments
+	mp_obj_t encryptionAndDecryptionContextObject = arguments[0];
+	const mp_obj_t extendedPrivateKeyObject = arguments[1];
+	const mp_obj_t coinInfoObject = arguments[2];
+	const mp_obj_t indexObject = arguments[3];
+	const mp_obj_t ephemeralX25519PublicKeyObject = arguments[4];
+	const mp_obj_t nonceObject = arguments[5];
+	const mp_obj_t encryptedFileKeyObject = arguments[6];
+	const mp_obj_t payloadNonceObject = arguments[7];
+	
+	// Get encryption and decryption context
+	mp_buffer_info_t encryptionAndDecryptionContextBuffer;
+	mp_get_buffer(encryptionAndDecryptionContextObject, &encryptionAndDecryptionContextBuffer, MP_BUFFER_RW);
+	MimbleWimbleCoinEncryptionAndDecryptionContext *encryptionAndDecryptionContext = encryptionAndDecryptionContextBuffer.buf;
+	
+	// Get extended private key
+	const HDNode *extendedPrivateKey = &((mp_obj_HDNode_t *)MP_OBJ_TO_PTR(extendedPrivateKeyObject))->hdnode;
+	
+	// Get index
+	const uint32_t index = mp_obj_get_int(indexObject);
+	
+	// Get ephemeral X25519 public key
+	mp_buffer_info_t ephemeralX25519PublicKey;
+	mp_get_buffer(ephemeralX25519PublicKeyObject, &ephemeralX25519PublicKey, MP_BUFFER_READ);
+	
+	// Get nonce
+	mp_buffer_info_t nonce;
+	mp_get_buffer(nonceObject, &nonce, MP_BUFFER_READ);
+	
+	// Get encrypted file key
+	mp_buffer_info_t encryptedFileKey;
+	mp_get_buffer(encryptedFileKeyObject, &encryptedFileKey, MP_BUFFER_READ);
+	
+	// Get payload nonce
+	mp_buffer_info_t payloadNonce;
+	mp_get_buffer(payloadNonceObject, &payloadNonce, MP_BUFFER_READ);
+	
+	// Check if getting Slatepack shared private key failed
+	uint8_t slatepackSharedPrivateKey[MIMBLEWIMBLE_COIN_CHACHA20_KEY_SIZE];
+	if(!mimbleWimbleCoinGetSlatepackSharedPrivateKey(slatepackSharedPrivateKey, extendedPrivateKey, coinInfoObject, index, ephemeralX25519PublicKey.buf, encryptedFileKey.buf, payloadNonce.buf)) {
+	
+		// Raise error
+		mp_raise_ValueError(NULL);
+	}
+	
+	// Initialize encryption and decryption context's ChaCha20 Poly1305 context with the Slatepack shared private key and nonce
+	rfc7539_init(&encryptionAndDecryptionContext->chaCha20Poly1305Context, slatepackSharedPrivateKey, nonce.buf);
+	
+	// Clear Slatepack shared private key
+	memzero(slatepackSharedPrivateKey, sizeof(slatepackSharedPrivateKey));
+	
+	// Create random encryption and decryption context's AES key
+	random_buffer(encryptionAndDecryptionContext->aesKey, sizeof(encryptionAndDecryptionContext->aesKey));
+	
+	// Set encryption and decryption context's decrypting state to ready
+	encryptionAndDecryptionContext->decryptingState = MimbleWimbleCoinEncryptingOrDecryptingState_READY_STATE;
+	
+	// Return none
+	return mp_const_none;
+}
+
+// Decrypt data
+mp_obj_t mod_trezorcrypto_mimblewimble_coin_decryptData(mp_obj_t encryptionAndDecryptionContextObject, const mp_obj_t encryptedDataObject) {
+
+	// Get encryption and decryption context
+	mp_buffer_info_t encryptionAndDecryptionContextBuffer;
+	mp_get_buffer(encryptionAndDecryptionContextObject, &encryptionAndDecryptionContextBuffer, MP_BUFFER_RW);
+	MimbleWimbleCoinEncryptionAndDecryptionContext *encryptionAndDecryptionContext = encryptionAndDecryptionContextBuffer.buf;
+	
+	// Get encrypted data
+	mp_buffer_info_t encryptedData;
+	mp_get_buffer(encryptedDataObject, &encryptedData, MP_BUFFER_READ);
+	
+	// Initialize data
+	vstr_t data;
+	vstr_init(&data, mimbleWimbleCoinGetAesEncryptedDataLength(encryptedData.len));
+	data.len = mimbleWimbleCoinGetAesEncryptedDataLength(encryptedData.len);
+	
+	// Check if data length or block counter will overflow
+	if((size_t)UINT64_MAX - encryptionAndDecryptionContext->dataLength < encryptedData.len || encryptionAndDecryptionContext->chaCha20Poly1305Context.chacha20.input[MIMBLEWIMBLE_COIN_CHACHA20_BLOCK_COUNTER_INDEX] == UINT32_MAX) {
+	
+		// Raise error
+		mp_raise_ValueError(NULL);
+	}
+	
+	// Decrypt data
+	uint8_t decryptedData[encryptedData.len];
+	chacha20poly1305_decrypt(&encryptionAndDecryptionContext->chaCha20Poly1305Context, encryptedData.buf, decryptedData, sizeof(decryptedData));
+	
+	// Update encryption and decryption context's data length
+	encryptionAndDecryptionContext->dataLength += encryptedData.len;
+	
+	// Check if at the last data
+	if(encryptedData.len < MIMBLEWIMBLE_COIN_CHACHA20_BLOCK_SIZE) {
+	
+		// Set encryption and decryption context's decrypting state to complete
+		encryptionAndDecryptionContext->decryptingState = MimbleWimbleCoinEncryptingOrDecryptingState_COMPLETE_STATE;
+	}
+	
+	// Otherwise
+	else {
+	
+		// Set encryption and decryption context's decrypting state to active
+		encryptionAndDecryptionContext->decryptingState = MimbleWimbleCoinEncryptingOrDecryptingState_ACTIVE_STATE;
+	}
+	
+	// Check if AES encrypting the decrypted data with the encryption and decryption context's AES key failed
+	if(!mimbleWimbleCoinAesEncrypt((uint8_t *)data.buf, encryptionAndDecryptionContext->aesKey, decryptedData, sizeof(decryptedData))) {
+	
+		// Clear decrypted data
+		memzero(decryptedData, sizeof(decryptedData));
+		
+		// Raise error
+		mp_raise_ValueError(NULL);
+	}
+	
+	// Clear decrypted data
+	memzero(decryptedData, sizeof(decryptedData));
+	
+	// Return data
+	return mp_obj_new_str_from_vstr(&mp_type_bytes, &data);
+}
+
+// Finish decryption
+mp_obj_t mod_trezorcrypto_mimblewimble_coin_finishDecryption(mp_obj_t encryptionAndDecryptionContextObject, const mp_obj_t tagObject) {
+
+	// Get encryption and decryption context
+	mp_buffer_info_t encryptionAndDecryptionContextBuffer;
+	mp_get_buffer(encryptionAndDecryptionContextObject, &encryptionAndDecryptionContextBuffer, MP_BUFFER_RW);
+	MimbleWimbleCoinEncryptionAndDecryptionContext *encryptionAndDecryptionContext = encryptionAndDecryptionContextBuffer.buf;
+	
+	// Get tag
+	mp_buffer_info_t tag;
+	mp_get_buffer(tagObject, &tag, MP_BUFFER_READ);
+	
+	// Initialize AES key
+	vstr_t aesKey;
+	vstr_init(&aesKey, MIMBLEWIMBLE_COIN_AES_KEY_SIZE);
+	aesKey.len = MIMBLEWIMBLE_COIN_AES_KEY_SIZE;
+	
+	// Get decrypted data tags
+	uint8_t decryptedDataTag[MIMBLEWIMBLE_COIN_POLY1305_TAG_SIZE];
+	rfc7539_finish(&encryptionAndDecryptionContext->chaCha20Poly1305Context, 0, encryptionAndDecryptionContext->dataLength, decryptedDataTag);
+	
+	// Check if tag is invalid
+	if(!mimbleWimbleCoinIsEqual(tag.buf, decryptedDataTag, sizeof(decryptedDataTag))) {
+	
+		// Clear decrypted data tag
+		memzero(decryptedDataTag, sizeof(decryptedDataTag));
+		
+		// Raise error
+		mp_raise_ValueError(NULL);
+	}
+	
+	// Clear decrypted data tag
+	memzero(decryptedDataTag, sizeof(decryptedDataTag));
+	
+	// Set AES key to the encryption and decryption context's AES key
+	memcpy(aesKey.buf, encryptionAndDecryptionContext->aesKey, sizeof(encryptionAndDecryptionContext->aesKey));
+	
+	// Return AES key
+	return mp_obj_new_str_from_vstr(&mp_type_bytes, &aesKey);
 }
 
 // Get MQS challenge signature
