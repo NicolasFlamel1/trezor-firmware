@@ -22,7 +22,7 @@ async def finish_encrypting_slate(context: Context, message: MimbleWimbleCoinFin
 	from storage.cache import delete, get_memory_view, APP_MIMBLEWIMBLE_COIN_ENCRYPTION_AND_DECRYPTION_CONTEXT, APP_MIMBLEWIMBLE_COIN_TRANSACTION_CONTEXT
 	from trezor.wire import NotInitialized, ProcessError, InvalidSession
 	from trezor.crypto import mimblewimble_coin
-	from uctypes import struct, addressof, UINT8, UINT32, INT
+	from uctypes import struct, addressof, UINT8, UINT32
 	from .coins import getCoinInfo
 	from .common import getExtendedPrivateKey
 	
@@ -59,7 +59,7 @@ async def finish_encrypting_slate(context: Context, message: MimbleWimbleCoinFin
 		"account": mimblewimble_coin.ENCRYPTION_AND_DECRYPTION_CONTEXT_ACCOUNT_OFFSET | UINT32,
 		
 		# Encrypting state
-		"encryptingState": mimblewimble_coin.ENCRYPTION_AND_DECRYPTION_CONTEXT_ENCRYPTING_STATE_OFFSET | INT
+		"encryptingState": mimblewimble_coin.ENCRYPTION_AND_DECRYPTION_CONTEXT_ENCRYPTING_STATE_OFFSET | UINT8
 	})
 	
 	# Check if session's encryption and decryption context's encrypting state isn't active or complete

@@ -1,7 +1,6 @@
 # Imports
 from typing import TYPE_CHECKING
 from micropython import const
-from .common import UINT32_MAX
 
 # Check if type checking
 if TYPE_CHECKING:
@@ -23,7 +22,7 @@ SECONDS_IN_A_MINUTE = const(60)
 MINUTES_IN_AN_HOUR = const(60)
 
 # Maximum timestamp
-MAXIMUM_TIMESTAMP = UINT32_MAX * MINUTES_IN_AN_HOUR * SECONDS_IN_A_MINUTE * MILLISECONDS_IN_A_SECOND + MILLISECONDS_IN_A_SECOND - 1
+MAXIMUM_TIMESTAMP = const(0xFFFFFFFF * MINUTES_IN_AN_HOUR * SECONDS_IN_A_MINUTE * MILLISECONDS_IN_A_SECOND + MILLISECONDS_IN_A_SECOND - 1)
 
 # Minimum time zone offset
 MINIMUM_TIME_ZONE_OFFSET = const(-13 * MINUTES_IN_AN_HOUR)
@@ -50,9 +49,9 @@ async def get_mqs_challenge_signature(context: Context, message: MimbleWimbleCoi
 	from trezor.crypto import mimblewimble_coin
 	from apps.common.paths import HARDENED
 	from utime import gmtime2000
-	from trezor.strings import _SECONDS_1970_TO_2000
+	from trezor.strings import SECONDS_1970_TO_2000
 	from .coins import getCoinInfo
-	from .common import getExtendedPrivateKey
+	from .common import getExtendedPrivateKey, UINT32_MAX
 	
 	# Check if not initialized
 	if not is_initialized():
@@ -94,7 +93,7 @@ async def get_mqs_challenge_signature(context: Context, message: MimbleWimbleCoi
 		raise DataError("")
 	
 	# Check if timestamp is provided and it is invalid
-	if message.timestamp is not None and (message.time_zone_offset is None or message.timestamp // MILLISECONDS_IN_A_SECOND < _SECONDS_1970_TO_2000 or message.timestamp > MAXIMUM_TIMESTAMP):
+	if message.timestamp is not None and (message.time_zone_offset is None or message.timestamp // MILLISECONDS_IN_A_SECOND < SECONDS_1970_TO_2000 or message.timestamp > MAXIMUM_TIMESTAMP):
 	
 		# Raise data error
 		raise DataError("")
@@ -115,7 +114,7 @@ async def get_mqs_challenge_signature(context: Context, message: MimbleWimbleCoi
 	if message.timestamp is not None:
 	
 		# Get timestamp from timestamp
-		timestamp = message.timestamp // MILLISECONDS_IN_A_SECOND - _SECONDS_1970_TO_2000
+		timestamp = message.timestamp // MILLISECONDS_IN_A_SECOND - SECONDS_1970_TO_2000
 		
 		# Get time zone offset
 		timeZoneOffset = 0 if message.time_zone_offset * SECONDS_IN_A_MINUTE > timestamp else message.time_zone_offset

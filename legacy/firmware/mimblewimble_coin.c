@@ -119,7 +119,7 @@
 // ChaCha20 block counter index
 #define CHACHA20_BLOCK_COUNTER_INDEX 12
 
-// ChaCha 20 nonce size
+// ChaCha20 nonce size
 #define CHACHA20_NONCE_SIZE 12
 
 // ChaCha20 block size

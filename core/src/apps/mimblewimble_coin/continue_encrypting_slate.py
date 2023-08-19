@@ -22,7 +22,7 @@ async def continue_encrypting_slate(context: Context, message: MimbleWimbleCoinC
 	from storage.cache import delete, get_memory_view, APP_MIMBLEWIMBLE_COIN_ENCRYPTION_AND_DECRYPTION_CONTEXT, APP_MIMBLEWIMBLE_COIN_TRANSACTION_CONTEXT
 	from trezor.wire import NotInitialized, ProcessError, DataError, InvalidSession
 	from trezor.crypto import mimblewimble_coin
-	from uctypes import struct, addressof, INT
+	from uctypes import struct, addressof, UINT8
 	
 	# Check if not initialized
 	if not is_initialized():
@@ -48,11 +48,11 @@ async def continue_encrypting_slate(context: Context, message: MimbleWimbleCoinC
 	encryptionAndDecryptionContextStructure = struct(addressof(encryptionAndDecryptionContext), {
 	
 		# Encrypting state
-		"encryptingState": mimblewimble_coin.ENCRYPTION_AND_DECRYPTION_CONTEXT_ENCRYPTING_STATE_OFFSET | INT
+		"encryptingState": mimblewimble_coin.ENCRYPTION_AND_DECRYPTION_CONTEXT_ENCRYPTING_STATE_OFFSET | UINT8
 	})
 	
 	# Check if data is invalid
-	if len(message.data) == 0:
+	if len(message.data) == 0 or len(message.data) > mimblewimble_coin.CHACHA20_BLOCK_SIZE:
 	
 		# Raise data error
 		raise DataError("")

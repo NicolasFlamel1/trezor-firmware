@@ -1,7 +1,7 @@
 import utime
 from micropython import const
 
-_SECONDS_1970_TO_2000 = const(946684800)
+SECONDS_1970_TO_2000 = const(946684800)
 
 
 def format_amount(amount: int, decimals: int) -> str:
@@ -88,5 +88,5 @@ def format_timestamp(timestamp: int) -> str:
     # By doing the conversion to 2000-based epoch in Python, we take advantage of the
     # bignum implementation, and get another 30 years out of the 32-bit mp_int_t
     # that is used internally.
-    d = utime.gmtime2000(timestamp - _SECONDS_1970_TO_2000)
+    d = utime.gmtime2000(timestamp - SECONDS_1970_TO_2000)
     return f"{d[0]}-{d[1]:02d}-{d[2]:02d} {d[3]:02d}:{d[4]:02d}:{d[5]:02d}"
