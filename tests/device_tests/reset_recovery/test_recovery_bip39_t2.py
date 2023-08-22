@@ -20,7 +20,7 @@ from trezorlib import device, exceptions, messages
 from trezorlib.debuglink import TrezorClientDebugLink as Client
 
 from ...common import MNEMONIC12
-from ...input_flows import InputFlowBip39RecoveryNoPIN, InputFlowBip39RecoveryPIN
+from ...input_flows import InputFlowBip39Recovery
 
 pytestmark = pytest.mark.skip_t1
 
@@ -28,9 +28,8 @@ pytestmark = pytest.mark.skip_t1
 @pytest.mark.setup_client(uninitialized=True)
 def test_tt_pin_passphrase(client: Client):
     with client:
-        IF = InputFlowBip39RecoveryPIN(client, MNEMONIC12.split(" "))
+        IF = InputFlowBip39Recovery(client, MNEMONIC12.split(" "), pin="654")
         client.set_input_flow(IF.get())
-        client.watch_layout()
         device.recover(
             client,
             pin_protection=True,
@@ -49,9 +48,8 @@ def test_tt_pin_passphrase(client: Client):
 @pytest.mark.setup_client(uninitialized=True)
 def test_tt_nopin_nopassphrase(client: Client):
     with client:
-        IF = InputFlowBip39RecoveryNoPIN(client, MNEMONIC12.split(" "))
+        IF = InputFlowBip39Recovery(client, MNEMONIC12.split(" "))
         client.set_input_flow(IF.get())
-        client.watch_layout()
         device.recover(
             client,
             pin_protection=False,

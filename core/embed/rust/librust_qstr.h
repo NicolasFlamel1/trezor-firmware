@@ -37,6 +37,7 @@ static void _librust_qstrs(void) {
   MP_QSTR_case_sensitive;
   MP_QSTR_confirm_action;
   MP_QSTR_confirm_address;
+  MP_QSTR_confirm_backup;
   MP_QSTR_confirm_blob;
   MP_QSTR_confirm_coinjoin;
   MP_QSTR_confirm_emphasized;
@@ -55,10 +56,13 @@ static void _librust_qstrs(void) {
   MP_QSTR_confirm_with_info;
   MP_QSTR_count;
   MP_QSTR_data;
+  MP_QSTR_decode;
   MP_QSTR_description;
   MP_QSTR_disable_animation;
   MP_QSTR_draw_welcome_screen;
   MP_QSTR_dry_run;
+  MP_QSTR_encode;
+  MP_QSTR_encoded_length;
   MP_QSTR_extra;
   MP_QSTR_fee_amount;
   MP_QSTR_fee_label;
@@ -83,6 +87,7 @@ static void _librust_qstrs(void) {
   MP_QSTR_max_len;
   MP_QSTR_max_rounds;
   MP_QSTR_min_count;
+  MP_QSTR_multiple_pages_texts;
   MP_QSTR_notification;
   MP_QSTR_notification_level;
   MP_QSTR_page_count;
@@ -109,6 +114,7 @@ static void _librust_qstrs(void) {
   MP_QSTR_show_info;
   MP_QSTR_show_lockscreen;
   MP_QSTR_show_mismatch;
+  MP_QSTR_show_passphrase;
   MP_QSTR_show_progress;
   MP_QSTR_show_progress_coinjoin;
   MP_QSTR_show_remaining_shares;
@@ -131,13 +137,17 @@ static void _librust_qstrs(void) {
   MP_QSTR_total_label;
   MP_QSTR_touch_event;
   MP_QSTR_trace;
+  MP_QSTR_trezorproto;
   MP_QSTR_trezorui2;
   MP_QSTR_tutorial;
+  MP_QSTR_type_for_name;
+  MP_QSTR_type_for_wire;
   MP_QSTR_usb_event;
   MP_QSTR_user_fee_change;
   MP_QSTR_value;
   MP_QSTR_verb;
   MP_QSTR_verb_cancel;
+  MP_QSTR_warning;
   MP_QSTR_words;
   MP_QSTR_wrong_pin;
   MP_QSTR_xpubs;

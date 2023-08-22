@@ -1,19 +1,18 @@
 from typing import TYPE_CHECKING
 
-from trezor.enums import ButtonRequestType
-
 import trezorui2
+from trezor.enums import ButtonRequestType
 
 from ..common import interact
 from . import RustLayout
 
 if TYPE_CHECKING:
     from trezor.loop import AwaitableTask
-    from trezor.wire import GenericContext
 
 
 if __debug__:
     from trezor import io, ui
+
     from ... import Result
 
     class _RustFidoLayoutImpl(RustLayout):
@@ -49,7 +48,6 @@ else:
 
 
 async def confirm_fido(
-    ctx: GenericContext | None,
     header: str,
     app_name: str,
     icon_name: str | None,
@@ -64,11 +62,7 @@ async def confirm_fido(
             accounts=accounts,
         )
     )
-
-    if ctx is None:
-        result = await confirm
-    else:
-        result = await interact(ctx, confirm, "confirm_fido", ButtonRequestType.Other)
+    result = await interact(confirm, "confirm_fido", ButtonRequestType.Other)
 
     # The Rust side returns either an int or `CANCELLED`. We detect the int situation
     # and assume cancellation otherwise.

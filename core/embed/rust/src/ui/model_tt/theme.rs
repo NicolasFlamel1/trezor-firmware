@@ -99,6 +99,7 @@ include_icon!(IMAGE_BG_BACK_BTN_TALL, "model_tt/res/bg-back52.toif");
 
 // Welcome screen.
 include_icon!(ICON_LOGO, "model_tt/res/lock_full.toif");
+include_icon!(ICON_LOGO_EMPTY, "model_tt/res/lock_empty.toif");
 
 // Default homescreen
 pub const IMAGE_HOMESCREEN: &[u8] = include_res!("model_tt/res/bg.jpg");
@@ -119,6 +120,10 @@ pub const fn label_default() -> TextStyle {
 
 pub const fn label_keyboard() -> TextStyle {
     TextStyle::new(Font::DEMIBOLD, OFF_WHITE, BG, GREY_LIGHT, GREY_LIGHT)
+}
+
+pub const fn label_keyboard_prompt() -> TextStyle {
+    TextStyle::new(Font::DEMIBOLD, GREY_LIGHT, BG, GREY_LIGHT, GREY_LIGHT)
 }
 
 pub const fn label_keyboard_warning() -> TextStyle {
@@ -215,8 +220,8 @@ pub const fn button_confirm() -> ButtonStyleSheet {
         },
         disabled: &ButtonStyle {
             font: Font::BOLD,
-            text_color: FG,
-            button_color: GREEN,
+            text_color: GREY_LIGHT,
+            button_color: GREEN_DARK,
             background_color: BG,
             border_color: BG,
             border_radius: RADIUS,
@@ -380,7 +385,7 @@ pub const fn button_pin() -> ButtonStyleSheet {
         disabled: &ButtonStyle {
             font: Font::MONO,
             text_color: GREY_LIGHT,
-            button_color: GREY_DARK,
+            button_color: BG, // so there is no "button" itself, just the text
             background_color: BG,
             border_color: BG,
             border_radius: RADIUS,
@@ -412,7 +417,7 @@ pub const fn button_pin_confirm() -> ButtonStyleSheet {
         disabled: &ButtonStyle {
             font: Font::MONO,
             text_color: GREY_LIGHT,
-            button_color: GREEN,
+            button_color: GREY_DARK,
             background_color: BG,
             border_color: BG,
             border_radius: RADIUS,
@@ -426,7 +431,7 @@ pub const fn button_pin_autocomplete() -> ButtonStyleSheet {
         normal: &ButtonStyle {
             font: Font::MONO,
             text_color: FG,
-            button_color: BG,
+            button_color: GREY_DARK, // same as PIN buttons
             background_color: BG,
             border_color: BG,
             border_radius: RADIUS,

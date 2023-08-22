@@ -44,6 +44,7 @@ elif TREZOR_MODEL in ('T', ):
 CCFLAGS_MOD += '-Wno-sequence-point '
 CPPPATH_MOD += [
     'vendor/trezor-crypto',
+    'vendor/trezor-storage',
 ]
 CPPDEFINES_MOD += [
     'AES_128',
@@ -82,11 +83,28 @@ SOURCE_MOD += [
     'embed/lib/display.c',
     'embed/lib/fonts/fonts.c',
     'embed/lib/fonts/font_bitmap.c',
+    'embed/lib/image.c',
+    'embed/lib/touch.c',
     'embed/extmod/modtrezorcrypto/rand.c',
     'vendor/micropython/lib/uzlib/adler32.c',
     'vendor/micropython/lib/uzlib/crc32.c',
     'vendor/micropython/lib/uzlib/tinflate.c',
+    'vendor/trezor-storage/flash_common.c',
 ]
+
+if TREZOR_MODEL in ('1', ):
+    SOURCE_MOD += [
+        'embed/models/model_T1B1_layout.c',
+    ]
+elif TREZOR_MODEL in ('T', ):
+    SOURCE_MOD += [
+        'embed/models/model_T2T1_layout.c',
+    ]
+elif TREZOR_MODEL in ('R', ):
+    SOURCE_MOD += [
+        'embed/models/model_T2B1_layout.c',
+    ]
+
 
 SOURCE_NANOPB = [
     'vendor/nanopb/pb_common.c',
@@ -103,18 +121,18 @@ SOURCE_BOOTLOADER = [
 ]
 
 SOURCE_TREZORHAL = [
-    'embed/trezorhal/image.c',
+    'embed/trezorhal/unix/display-unix.c',
+    'embed/trezorhal/unix/flash.c',
+    'embed/trezorhal/unix/common.c',
+    'embed/trezorhal/unix/touch/touch.c',
+    'embed/trezorhal/unix/rng.c',
+    'embed/trezorhal/unix/usb.c',
+    'embed/trezorhal/unix/random_delays.c',
+    'embed/trezorhal/unix/secret.c',
 ]
 
 SOURCE_UNIX = [
-    'embed/unix/common.c',
-    'embed/unix/display-unix.c',
-    'embed/unix/flash.c',
     'embed/unix/profile.c',
-    'embed/unix/random_delays.c',
-    'embed/unix/rng.c',
-    'embed/unix/touch/touch.c',
-    'embed/unix/usb.c',
 ]
 
 # fonts
@@ -170,6 +188,8 @@ env.Replace(
         'embed/bootloader/protob',
         'embed/lib',
         'embed/models',
+        'embed/trezorhal',
+        'embed/trezorhal/unix',
         'embed/unix',
         'embed/extmod/modtrezorui',
         'vendor/nanopb',
@@ -181,7 +201,8 @@ env.Replace(
         'HW_MODEL=' + MODEL_AS_NUMBER,
         'HW_REVISION=' + ('6' if TREZOR_MODEL in ('R',) else '0'),
         'TREZOR_MODEL_'+TREZOR_MODEL,
-        'TREZOR_BOARD=\\"board-unix.h\\"',
+        'TREZOR_BOARD=\\"boards/board-unix.h\\"',
+        'MCU_TYPE='+CPU_MODEL,
         'PB_FIELD_16BIT',
         'PB_ENCODE_ARRAYS_UNPACKED',
         'PB_VALIDATE_UTF8',

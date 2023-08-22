@@ -24,16 +24,11 @@
 #include "display.h"
 #include "flash.h"
 #include "image.h"
+#include "messages.pb.h"
 #include "random_delays.h"
 #include "secbool.h"
-#ifdef TREZOR_EMULATOR
-#include "emulator.h"
-#else
-#include "compiler_traits.h"
-#include "mini_printf.h"
-#include "mpu.h"
-#include "stm32.h"
-#endif
+#include "secret.h"
+
 #ifdef USE_DMA2D
 #include "dma2d.h"
 #endif
@@ -41,7 +36,7 @@
 #include "i2c.h"
 #endif
 #ifdef USE_TOUCH
-#include "touch/touch.h"
+#include "touch.h"
 #endif
 #ifdef USE_BUTTON
 #include "button.h"
@@ -61,10 +56,19 @@
 #include "rust_ui.h"
 #include "unit_variant.h"
 
+#ifdef TREZOR_EMULATOR
+#include "emulator.h"
+#else
+#include "compiler_traits.h"
+#include "mini_printf.h"
+#include "mpu.h"
+#include "platform.h"
+#endif
+
 const uint8_t BOOTLOADER_KEY_M = 2;
 const uint8_t BOOTLOADER_KEY_N = 3;
 static const uint8_t * const BOOTLOADER_KEYS[] = {
-#if BOOTLOADER_QA
+#if !PRODUCTION
     /*** DEVEL/QA KEYS  ***/
     (const uint8_t *)"\xd7\x59\x79\x3b\xbc\x13\xa2\x81\x9a\x82\x7c\x76\xad\xb6\xfb\xa8\xa4\x9a\xee\x00\x7f\x49\xf2\xd0\x99\x2d\x99\xb8\x25\xad\x2c\x48",
     (const uint8_t *)"\x63\x55\x69\x1c\x17\x8a\x8f\xf9\x10\x07\xa7\x47\x8a\xfb\x95\x5e\xf7\x35\x2c\x63\xe7\xb2\x57\x03\x98\x4c\xf7\x8b\x26\xe2\x1a\x56",
@@ -147,13 +151,13 @@ static usb_result_t bootloader_usb_loop(const vendor_header *const vhdr,
       continue;
     }
     switch (msg_id) {
-      case 0:  // Initialize
+      case MessageType_MessageType_Initialize:
         process_msg_Initialize(USB_IFACE_NUM, msg_size, buf, vhdr, hdr);
         break;
-      case 1:  // Ping
+      case MessageType_MessageType_Ping:
         process_msg_Ping(USB_IFACE_NUM, msg_size, buf);
         break;
-      case 5:  // WipeDevice
+      case MessageType_MessageType_WipeDevice:
         response = ui_screen_wipe_confirm();
         if (INPUT_CANCEL == response) {
           send_user_abort(USB_IFACE_NUM, "Wipe cancelled");
@@ -178,10 +182,10 @@ static usb_result_t bootloader_usb_loop(const vendor_header *const vhdr,
           return SHUTDOWN;
         }
         break;
-      case 6:  // FirmwareErase
+      case MessageType_MessageType_FirmwareErase:
         process_msg_FirmwareErase(USB_IFACE_NUM, msg_size, buf);
         break;
-      case 7:  // FirmwareUpload
+      case MessageType_MessageType_FirmwareUpload:
         r = process_msg_FirmwareUpload(USB_IFACE_NUM, msg_size, buf);
         if (r < 0 && r != UPLOAD_ERR_USER_ABORT) {  // error, but not user abort
           ui_screen_fail();
@@ -208,9 +212,27 @@ static usb_result_t bootloader_usb_loop(const vendor_header *const vhdr,
           return CONTINUE;
         }
         break;
-      case 55:  // GetFeatures
+      case MessageType_MessageType_GetFeatures:
         process_msg_GetFeatures(USB_IFACE_NUM, msg_size, buf, vhdr, hdr);
         break;
+#ifdef USE_OPTIGA
+      case MessageType_MessageType_UnlockBootloader:
+        response = ui_screen_unlock_bootloader_confirm();
+        if (INPUT_CANCEL == response) {
+          send_user_abort(USB_IFACE_NUM, "Bootloader unlock cancelled");
+          hal_delay(100);
+          usb_stop();
+          usb_deinit();
+          return RETURN;
+        }
+        process_msg_AttestationDelete(USB_IFACE_NUM, msg_size, buf);
+        screen_unlock_bootloader_success();
+        hal_delay(100);
+        usb_stop();
+        usb_deinit();
+        return SHUTDOWN;
+        break;
+#endif
       default:
         process_msg_unknown(USB_IFACE_NUM, msg_size, buf);
         break;
@@ -285,6 +307,8 @@ int bootloader_main(void) {
 
   display_reinit();
 
+  ui_screen_boot_empty(false);
+
   mpu_config_bootloader();
 
   const image_header *hdr = NULL;
@@ -305,9 +329,10 @@ int bootloader_main(void) {
   }
 
   if (sectrue == firmware_present) {
-    hdr = read_image_header((const uint8_t *)(FIRMWARE_START + vhdr.hdrlen),
-                            FIRMWARE_IMAGE_MAGIC, FIRMWARE_IMAGE_MAXSIZE);
-    if (hdr != (const image_header *)(FIRMWARE_START + vhdr.hdrlen)) {
+    hdr = read_image_header(
+        (const uint8_t *)(size_t)(FIRMWARE_START + vhdr.hdrlen),
+        FIRMWARE_IMAGE_MAGIC, FIRMWARE_IMAGE_MAXSIZE);
+    if (hdr != (const image_header *)(size_t)(FIRMWARE_START + vhdr.hdrlen)) {
       firmware_present = secfalse;
     }
   }
@@ -319,17 +344,14 @@ int bootloader_main(void) {
         check_image_header_sig(hdr, vhdr.vsig_m, vhdr.vsig_n, vhdr.vpub);
   }
   if (sectrue == firmware_present) {
-    firmware_present =
-        check_image_contents(hdr, IMAGE_HEADER_SIZE + vhdr.hdrlen,
-                             FIRMWARE_SECTORS, FIRMWARE_SECTORS_COUNT);
+    firmware_present = check_image_contents(
+        hdr, IMAGE_HEADER_SIZE + vhdr.hdrlen, &FIRMWARE_AREA);
   }
 
 #if defined TREZOR_MODEL_T
   set_core_clock(CLOCK_180_MHZ);
   display_set_little_endian();
 #endif
-
-  ui_screen_boot_empty(false);
 
 #ifdef USE_I2C
   i2c_init();
@@ -399,16 +421,21 @@ int bootloader_main(void) {
     stay_in_bootloader = secfalse;
     touched = false;
 
-    // show intro animation
-
     ui_set_initial_setup(true);
 
-    ui_screen_welcome_model();
+    // keep the model screen up for a while
+#ifndef USE_BACKLIGHT
+    hal_delay(1500);
+#else
+    // backlight fading takes some time so the explicit delay here is shorter
     hal_delay(1000);
+#endif
+
+    // show welcome screen
     ui_screen_welcome();
 
     // erase storage
-    ensure(flash_erase_sectors(STORAGE_SECTORS, STORAGE_SECTORS_COUNT, NULL),
+    ensure(flash_area_erase_bulk(STORAGE_AREAS, STORAGE_AREAS_COUNT, NULL),
            NULL);
 
     // and start the usb loop
@@ -502,11 +529,13 @@ int bootloader_main(void) {
 
   ensure(check_vendor_header_lock(&vhdr), "Unauthorized vendor keys");
 
-  hdr = read_image_header((const uint8_t *)(FIRMWARE_START + vhdr.hdrlen),
-                          FIRMWARE_IMAGE_MAGIC, FIRMWARE_IMAGE_MAXSIZE);
+  hdr =
+      read_image_header((const uint8_t *)(size_t)(FIRMWARE_START + vhdr.hdrlen),
+                        FIRMWARE_IMAGE_MAGIC, FIRMWARE_IMAGE_MAXSIZE);
 
-  ensure(hdr == (const image_header *)(FIRMWARE_START + vhdr.hdrlen) ? sectrue
-                                                                     : secfalse,
+  ensure(hdr == (const image_header *)(size_t)(FIRMWARE_START + vhdr.hdrlen)
+             ? sectrue
+             : secfalse,
          "Firmware is corrupted");
 
   ensure(check_image_model(hdr), "Wrong firmware model");
@@ -515,11 +544,23 @@ int bootloader_main(void) {
          "Firmware is corrupted");
 
   ensure(check_image_contents(hdr, IMAGE_HEADER_SIZE + vhdr.hdrlen,
-                              FIRMWARE_SECTORS, FIRMWARE_SECTORS_COUNT),
+                              &FIRMWARE_AREA),
          "Firmware is corrupted");
 
-  // if all VTRUST flags are unset = ultimate trust => skip the procedure
+#ifdef USE_OPTIGA
+  if (((vhdr.vtrust & VTRUST_SECRET) != 0) && (sectrue != secret_wiped())) {
+    display_clear();
+    screen_fatal_error_rust(
+        "INSTALL RESTRICTED",
+        "Installation of custom firmware is currently restricted.",
+        "Please visit\ntrezor.io/bootloader");
 
+    display_refresh();
+    return 1;
+  }
+#endif
+
+  // if all VTRUST flags are unset = ultimate trust => skip the procedure
   if ((vhdr.vtrust & VTRUST_ALL) != VTRUST_ALL) {
     ui_fadeout();
     ui_screen_boot(&vhdr, hdr);

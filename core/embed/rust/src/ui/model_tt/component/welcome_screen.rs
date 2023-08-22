@@ -15,11 +15,15 @@ use crate::ui::{constant::MODEL_NAME, display};
 
 pub struct WelcomeScreen {
     area: Rect,
+    empty_lock: bool,
 }
 
 impl WelcomeScreen {
-    pub fn new() -> Self {
-        Self { area: Rect::zero() }
+    pub fn new(empty_lock: bool) -> Self {
+        Self {
+            area: Rect::zero(),
+            empty_lock,
+        }
     }
 }
 
@@ -36,7 +40,12 @@ impl Component for WelcomeScreen {
     }
 
     fn paint(&mut self) {
-        theme::ICON_LOGO.draw(
+        let logo = if self.empty_lock {
+            theme::ICON_LOGO_EMPTY
+        } else {
+            theme::ICON_LOGO
+        };
+        logo.draw(
             self.area.top_center() + Offset::y(ICON_TOP_MARGIN),
             Alignment2D::TOP_CENTER,
             theme::FG,
@@ -52,7 +61,7 @@ impl Component for WelcomeScreen {
         );
         #[cfg(feature = "bootloader")]
         Icon::new(DEVICE_NAME).draw(
-            self.area.bottom_center() - Offset::y(TEXT_BOTTOM_MARGIN) + Offset::y(1),
+            self.area.bottom_center() - Offset::y(TEXT_BOTTOM_MARGIN),
             Alignment2D::BOTTOM_CENTER,
             theme::FG,
             theme::BG,

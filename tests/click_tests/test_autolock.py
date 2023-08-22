@@ -31,8 +31,9 @@ from . import recovery
 from .common import go_next
 
 if TYPE_CHECKING:
-    from ..device_handler import BackgroundDeviceHandler
     from trezorlib.debuglink import DebugLink, LayoutContent
+
+    from ..device_handler import BackgroundDeviceHandler
 
 TX_CACHE_MAINNET = TxCache("Bitcoin")
 TX_CACHE_TESTNET = TxCache("Testnet")
@@ -58,12 +59,12 @@ def set_autolock_delay(device_handler: "BackgroundDeviceHandler", delay_ms: int)
 
     device_handler.run(device.apply_settings, auto_lock_delay_ms=delay_ms)  # type: ignore
 
-    assert debug.wait_layout().main_component() == "PinKeyboard"
+    assert "PinKeyboard" in debug.wait_layout().all_components()
 
     debug.input("1234")
 
     assert (
-        f"auto-lock your device after {delay_ms // 1000} seconds"
+        f"Auto-lock your Trezor after {delay_ms // 1000} seconds"
         in debug.wait_layout().text_content()
     )
     layout = go_next(debug, wait=True)
@@ -106,7 +107,7 @@ def test_autolock_interrupts_signing(device_handler: "BackgroundDeviceHandler"):
     elif debug.model == "R":
         debug.press_right(wait=True)
         layout = debug.press_right(wait=True)
-        assert "TOTAL AMOUNT 0.0039 BTC" in layout.text_content()
+        assert "Total amount: 0.0039 BTC" in layout.text_content()
 
     # wait for autolock to kick in
     time.sleep(10.1)
@@ -151,7 +152,7 @@ def test_autolock_does_not_interrupt_signing(device_handler: "BackgroundDeviceHa
     elif debug.model == "R":
         debug.press_right(wait=True)
         layout = debug.press_right(wait=True)
-        assert "TOTAL AMOUNT 0.0039 BTC" in layout.text_content()
+        assert "Total amount: 0.0039 BTC" in layout.text_content()
 
     def sleepy_filter(msg: MessageType) -> MessageType:
         time.sleep(10.1)
@@ -241,12 +242,9 @@ def test_autolock_interrupts_passphrase(device_handler: "BackgroundDeviceHandler
 
 
 def unlock_dry_run(debug: "DebugLink") -> "LayoutContent":
-    assert (
-        "Do you really want to check the recovery seed?"
-        in debug.wait_layout().text_content()
-    )
+    assert "Check your backup?" in debug.wait_layout().text_content()
     layout = go_next(debug, wait=True)
-    assert layout.main_component() == "PinKeyboard"
+    assert "PinKeyboard" in layout.all_components()
 
     layout = debug.input(PIN4, wait=True)
     assert layout is not None
@@ -276,7 +274,7 @@ def test_dryrun_locks_at_number_of_words(device_handler: "BackgroundDeviceHandle
     # lockscreen triggered automatically
     debug.wait_layout(wait_for_external_change=True)
     layout = go_next(debug, wait=True)
-    assert layout.main_component() == "PinKeyboard"
+    assert "PinKeyboard" in layout.all_components()
     layout = debug.input(PIN4, wait=True)
     assert layout is not None
 
@@ -301,9 +299,7 @@ def test_dryrun_locks_at_word_entry(device_handler: "BackgroundDeviceHandler"):
         assert layout.main_component() == "MnemonicKeyboard"
     elif debug.model == "R":
         layout = debug.press_right(wait=True)
-        assert "WORD ENTERING" in layout.title()
-        layout = debug.press_right(wait=True)
-        assert "Slip39Entry" in layout.all_components()
+        assert "MnemonicKeyboard" in layout.all_components()
 
     # make sure keyboard locks
     time.sleep(10.1)
@@ -337,19 +333,18 @@ def test_dryrun_enter_word_slowly(device_handler: "BackgroundDeviceHandler"):
         assert layout.main_component() == "MnemonicKeyboard"
     elif debug.model == "R":
         layout = debug.press_right(wait=True)
-        assert "WORD ENTERING" in layout.title()
-        layout = debug.press_right(wait=True)
-        assert "Slip39Entry" in layout.all_components()
+        assert "MnemonicKeyboard" in layout.all_components()
 
-        # type the word `ACADEMIC` slowly (A, C, and the whole word confirmation)
+        # pressing middle button three times
         for _ in range(3):
             time.sleep(9)
             debug.press_middle()
         layout = debug.wait_layout()
         # should not have locked, even though we took 9 seconds to type each letter
-        assert "Slip39Entry" in layout.all_components()
+        assert "MnemonicKeyboard" in layout.all_components()
 
-    device_handler.kill_task()
+    with pytest.raises(exceptions.Cancelled):
+        device_handler.result()
 
 
 @pytest.mark.setup_client(pin=PIN4)

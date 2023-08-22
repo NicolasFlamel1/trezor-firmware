@@ -77,6 +77,11 @@ def confirm_reset_device(
 
 
 # rust/src/ui/model_tr/layout.rs
+def confirm_backup() -> object:
+    """Strongly recommend user to do backup."""
+
+
+# rust/src/ui/model_tr/layout.rs
 def show_address_details(
     *,
     address: str,
@@ -176,6 +181,26 @@ def confirm_fido(
 
 
 # rust/src/ui/model_tr/layout.rs
+def multiple_pages_texts(
+    *,
+    title: str,
+    verb: str,
+    items: list[str],
+) -> object:
+    """Show multiple texts, each on its own page."""
+
+
+# rust/src/ui/model_tr/layout.rs
+def show_warning(
+    *,
+    button: str,
+    warning: str,
+    description: str,
+) -> object:
+    """Warning modal with middle button and centered text."""
+
+
+# rust/src/ui/model_tr/layout.rs
 def show_info(
     *,
     title: str,
@@ -183,6 +208,11 @@ def show_info(
     time_ms: int = 0,
 ) -> object:
     """Info modal."""
+
+
+# rust/src/ui/model_tr/layout.rs
+def show_passphrase() -> object:
+    """Show passphrase on host dialog."""
 
 
 # rust/src/ui/model_tr/layout.rs
@@ -261,7 +291,6 @@ def select_word(
 # rust/src/ui/model_tr/layout.rs
 def show_share_words(
     *,
-    title: str,
     share_words: Iterable[str],
 ) -> object:
     """Shows a backup seed."""
@@ -299,6 +328,7 @@ def confirm_recovery(
     button: str,
     dry_run: bool,
     info_button: bool,  # unused on TR
+    show_info: bool,
 ) -> object:
    """Device recovery homescreen."""
 

@@ -23,13 +23,18 @@ from unittest import mock
 
 import pytest
 
-from trezorlib import btc, tools
+from trezorlib import btc, messages, tools
 from trezorlib.messages import ButtonRequestType
 
 if TYPE_CHECKING:
-    from trezorlib.debuglink import DebugLink, TrezorClientDebugLink as Client
-    from trezorlib.messages import ButtonRequest
     from _pytest.mark.structures import MarkDecorator
+
+    from trezorlib.debuglink import DebugLink
+    from trezorlib.debuglink import TrezorClientDebugLink as Client
+    from trezorlib.messages import ButtonRequest
+
+
+BRGeneratorType = Generator[None, messages.ButtonRequest, None]
 
 
 # fmt: off
@@ -129,134 +134,6 @@ def generate_entropy(
     return entropy_stripped
 
 
-def recovery_enter_shares(
-    debug: "DebugLink",
-    shares: list[str],
-    groups: bool = False,
-    click_info: bool = False,
-) -> Generator[None, "ButtonRequest", None]:
-    if debug.model == "T":
-        yield from recovery_enter_shares_tt(
-            debug, shares, groups=groups, click_info=click_info
-        )
-    elif debug.model == "R":
-        yield from recovery_enter_shares_tr(debug, shares, groups=groups)
-    else:
-        raise ValueError(f"Unknown model: {debug.model}")
-
-
-def recovery_enter_shares_tt(
-    debug: "DebugLink",
-    shares: list[str],
-    groups: bool = False,
-    click_info: bool = False,
-) -> Generator[None, "ButtonRequest", None]:
-    """Perform the recovery flow for a set of Shamir shares.
-
-    For use in an input flow function.
-    Example:
-
-    def input_flow():
-        yield  # start recovery
-        client.debug.press_yes()
-        yield from recovery_enter_shares(client.debug, SOME_SHARES)
-    """
-    word_count = len(shares[0].split(" "))
-
-    # Homescreen - proceed to word number selection
-    yield
-    debug.press_yes()
-    # Input word number
-    br = yield
-    assert br.code == ButtonRequestType.MnemonicWordCount
-    debug.input(str(word_count))
-    # Homescreen - proceed to share entry
-    yield
-    debug.press_yes()
-    # Enter shares
-    for share in shares:
-        br = yield
-        assert br.code == ButtonRequestType.MnemonicInput
-        # Enter mnemonic words
-        for word in share.split(" "):
-            debug.input(word)
-
-        if groups:
-            # Confirm share entered
-            yield
-            debug.press_yes()
-
-        # Homescreen - continue
-        # or Homescreen - confirm success
-        yield
-
-        if click_info:
-            # Moving through the INFO button
-            debug.press_info()
-            yield
-            debug.swipe_up()
-            debug.press_yes()
-
-        # Finishing with current share
-        debug.press_yes()
-
-
-def recovery_enter_shares_tr(
-    debug: "DebugLink",
-    shares: list[str],
-    groups: bool = False,
-) -> Generator[None, "ButtonRequest", None]:
-    """Perform the recovery flow for a set of Shamir shares.
-
-    For use in an input flow function.
-    Example:
-
-    def input_flow():
-        yield  # start recovery
-        client.debug.press_yes()
-        yield from recovery_enter_shares(client.debug, SOME_SHARES)
-    """
-    word_count = len(shares[0].split(" "))
-
-    # Homescreen - proceed to word number selection
-    yield
-    debug.press_yes()
-    # Input word number
-    br = yield
-    assert br.code == ButtonRequestType.MnemonicWordCount
-    debug.input(str(word_count))
-    # Homescreen - proceed to share entry
-    yield
-    debug.press_yes()
-
-    # Enter shares
-    for share in shares:
-        br = yield
-        assert br.code == ButtonRequestType.RecoveryHomepage
-
-        # Word entering
-        yield
-        debug.press_yes()
-
-        # Enter mnemonic words
-        for word in share.split(" "):
-            debug.input(word)
-
-        if groups:
-            # Confirm share entered
-            yield
-            debug.press_yes()
-
-        # Homescreen - continue
-        # or Homescreen - confirm success
-        yield
-
-        # Finishing with current share
-        debug.press_yes()
-
-    yield
-
-
 def click_through(
     debug: "DebugLink", screens: int, code: Optional[ButtonRequestType] = None
 ) -> Generator[None, "ButtonRequest", None]:
@@ -339,14 +216,14 @@ def read_and_confirm_mnemonic_tr(
     debug: "DebugLink", choose_wrong: bool = False
 ) -> Generator[None, "ButtonRequest", Optional[str]]:
     mnemonic: list[str] = []
+    yield  # write down all 12 words in order
+    debug.press_yes()
     br = yield
     assert br.pages is not None
-    for i in range(br.pages - 1):
+    for _ in range(br.pages - 1):
         layout = debug.wait_layout()
-        # First two pages have just instructions
-        if i > 1:
-            words = layout.seed_words()
-            mnemonic.extend(words)
+        words = layout.seed_words()
+        mnemonic.extend(words)
         debug.press_right()
     debug.press_yes()
 
@@ -368,7 +245,7 @@ def read_and_confirm_mnemonic_tr(
     return " ".join(mnemonic)
 
 
-def click_info_button(debug: "DebugLink"):
+def click_info_button_tt(debug: "DebugLink"):
     """Click Shamir backup info button and return back."""
     debug.press_info()
     yield  # Info screen with text

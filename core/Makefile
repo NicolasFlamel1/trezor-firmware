@@ -23,6 +23,7 @@ PRODUCTION ?= 0
 PYOPT      ?= 1
 BITCOIN_ONLY ?= 0
 BOOTLOADER_QA ?= 0
+BOOTLOADER_DEVEL ?= 0
 TREZOR_MODEL ?= T
 TREZOR_MEMPERF ?= 0
 ADDRESS_SANITIZER ?= 0
@@ -115,26 +116,28 @@ test_emu_click: ## run click tests
 	$(EMU_TEST) $(PYTEST) $(TESTPATH)/click_tests $(TESTOPTS)
 
 test_emu_click_ui: ## run click tests with UI testing
-	$(EMU_TEST) $(PYTEST) $(TESTPATH)/click_tests --ui=test --ui-check-missing $(TESTOPTS)
+	$(EMU_TEST) $(PYTEST) $(TESTPATH)/click_tests $(TESTOPTS) \
+		--ui=test --ui-check-missing --do-master-diff
 
 test_emu_persistence: ## run persistence tests
 	$(PYTEST) $(TESTPATH)/persistence_tests $(TESTOPTS)
 
 test_emu_persistence_ui: ## run persistence tests with UI testing
-	$(PYTEST) $(TESTPATH)/persistence_tests --ui=test --ui-check-missing $(TESTOPTS)
+	$(PYTEST) $(TESTPATH)/persistence_tests $(TESTOPTS) \
+		--ui=test --ui-check-missing --do-master-diff
 
 test_emu_ui: ## run ui integration tests
 	$(EMU_TEST) $(PYTEST) $(TESTPATH)/device_tests $(TESTOPTS) \
-		--ui=test --ui-check-missing --record-text-layout
+		--ui=test --ui-check-missing --record-text-layout --do-master-diff
 
 test_emu_ui_multicore: ## run ui integration tests using multiple cores
 	$(PYTEST) -n $(MULTICORE) $(TESTPATH)/device_tests $(TESTOPTS) --timeout $(PYTEST_TIMEOUT) \
-		--ui=test --ui-check-missing --record-text-layout \
+		--ui=test --ui-check-missing --record-text-layout --do-master-diff \
 		--control-emulators --model=core --random-order-seed=$(shell echo $$RANDOM)
 
 test_emu_ui_record: ## record and hash screens for ui integration tests
 	$(EMU_TEST) $(PYTEST) $(TESTPATH)/device_tests $(TESTOPTS) \
-		--ui=record --ui-check-missing
+		--ui=record --ui-check-missing --do-master-diff
 
 test_emu_ui_record_multicore: ## quickly record all screens
 	make test_emu_ui_multicore || echo "All errors are recorded in fixtures.json"
@@ -175,7 +178,7 @@ build_boardloader: ## build boardloader
 
 build_bootloader: ## build bootloader
 	$(SCONS) CFLAGS="$(CFLAGS)" PRODUCTION="$(PRODUCTION)" TREZOR_MODEL="$(TREZOR_MODEL)" \
-		CMAKELISTS="$(CMAKELISTS)" BOOTLOADER_QA="$(BOOTLOADER_QA)" $(BOOTLOADER_BUILD_DIR)/bootloader.bin
+		CMAKELISTS="$(CMAKELISTS)" BOOTLOADER_QA="$(BOOTLOADER_QA)" BOOTLOADER_DEVEL="$(BOOTLOADER_DEVEL)" $(BOOTLOADER_BUILD_DIR)/bootloader.bin
 
 build_bootloader_ci: ## build CI device testing bootloader
 	$(SCONS) CFLAGS="$(CFLAGS)" PRODUCTION="$(PRODUCTION)" TREZOR_MODEL="$(TREZOR_MODEL)" \
@@ -186,7 +189,7 @@ build_bootloader_emu: ## build the unix bootloader emulator
 
 build_prodtest: ## build production test firmware
 	$(SCONS) CFLAGS="$(CFLAGS)" PRODUCTION="$(PRODUCTION)" TREZOR_MODEL="$(TREZOR_MODEL)" \
-		CMAKELISTS="$(CMAKELISTS)" $(PRODTEST_BUILD_DIR)/prodtest.bin
+		CMAKELISTS="$(CMAKELISTS)" BOOTLOADER_DEVEL="$(BOOTLOADER_DEVEL)" $(PRODTEST_BUILD_DIR)/prodtest.bin
 
 build_reflash: ## build reflash firmware + reflash image
 	$(SCONS) CFLAGS="$(CFLAGS)" PRODUCTION="$(PRODUCTION)" TREZOR_MODEL="$(TREZOR_MODEL)" \
@@ -198,7 +201,7 @@ build_firmware: templates build_cross ## build firmware with frozen modules
 	$(SCONS) CFLAGS="$(CFLAGS)" PRODUCTION="$(PRODUCTION)" \
 		TREZOR_MODEL="$(TREZOR_MODEL)" CMAKELISTS="$(CMAKELISTS)" \
 		PYOPT="$(PYOPT)" BITCOIN_ONLY="$(BITCOIN_ONLY)" \
-		BOOTLOADER_QA="$(BOOTLOADER_QA)" $(FIRMWARE_BUILD_DIR)/firmware.bin
+		BOOTLOADER_QA="$(BOOTLOADER_QA)" BOOTLOADER_DEVEL="$(BOOTLOADER_DEVEL)" $(FIRMWARE_BUILD_DIR)/firmware.bin
 
 build_unix: templates ## build unix port
 	$(SCONS) CFLAGS="$(CFLAGS)" $(UNIX_BUILD_DIR)/trezor-emu-core $(UNIX_PORT_OPTS) \

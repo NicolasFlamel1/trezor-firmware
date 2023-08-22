@@ -51,8 +51,8 @@ from .log import DUMP_BYTES
 from .tools import expect
 
 if TYPE_CHECKING:
-    from .transport import Transport
     from .messages import PinMatrixRequestType
+    from .transport import Transport
 
     ExpectedMessage = Union[
         protobuf.MessageType, Type[protobuf.MessageType], "MessageFilter"
@@ -77,7 +77,7 @@ class UnstructuredJSONReader:
             self.dict = {}
 
     def top_level_value(self, key: str) -> Any:
-        return self.dict[key]
+        return self.dict.get(key)
 
     def find_objects_with_key_and_value(self, key: str, value: Any) -> List["AnyDict"]:
         def recursively_find(data: Any) -> Iterator[Any]:
@@ -140,7 +140,7 @@ class LayoutContent(UnstructuredJSONReader):
 
     def main_component(self) -> str:
         """Getting the main component of the layout."""
-        return self.top_level_value("component")
+        return self.top_level_value("component") or "no main component"
 
     def all_components(self) -> List[str]:
         """Getting all components of the layout."""
@@ -252,6 +252,11 @@ class LayoutContent(UnstructuredJSONReader):
             text_lines = flow_page["text"]
             return "".join(text_lines)
 
+        # Looking for any "text": "something" values
+        text_values = self.find_values_by_key("text", only_type=str)
+        if text_values:
+            return "\n".join(text_values)
+
         # Default when not finding anything
         return self.main_component()
 
@@ -308,7 +313,7 @@ class LayoutContent(UnstructuredJSONReader):
 
     def pin(self) -> str:
         """Get PIN from the layout."""
-        assert self.main_component() == "PinKeyboard"
+        assert "PinKeyboard" in self.all_components()
         return self.find_unique_value_by_key("pin", default="", only_type=str)
 
     def passphrase(self) -> str:
@@ -332,7 +337,7 @@ class LayoutContent(UnstructuredJSONReader):
 
     def tt_pin_digits_order(self) -> str:
         """In what order the PIN buttons are shown on the screen. Only for TT."""
-        return self.top_level_value("digits_order")
+        return self.top_level_value("digits_order") or "no digits order"
 
     def get_middle_choice(self) -> str:
         """What is the choice being selected right now."""
@@ -581,20 +586,20 @@ class DebugLink:
         x, y = click
         return self.input(x=x, y=y, hold_ms=hold_ms, wait=True)
 
-    def press_yes(self, wait: bool = False) -> None:
-        self.input(button=messages.DebugButton.YES, wait=wait)
+    def press_yes(self, wait: bool = False) -> Optional[LayoutContent]:
+        return self.input(button=messages.DebugButton.YES, wait=wait)
 
-    def press_no(self, wait: bool = False) -> None:
-        self.input(button=messages.DebugButton.NO, wait=wait)
+    def press_no(self, wait: bool = False) -> Optional[LayoutContent]:
+        return self.input(button=messages.DebugButton.NO, wait=wait)
 
-    def press_info(self, wait: bool = False) -> None:
-        self.input(button=messages.DebugButton.INFO, wait=wait)
+    def press_info(self, wait: bool = False) -> Optional[LayoutContent]:
+        return self.input(button=messages.DebugButton.INFO, wait=wait)
 
-    def swipe_up(self, wait: bool = False) -> None:
-        self.input(swipe=messages.DebugSwipeDirection.UP, wait=wait)
+    def swipe_up(self, wait: bool = False) -> Optional[LayoutContent]:
+        return self.input(swipe=messages.DebugSwipeDirection.UP, wait=wait)
 
-    def swipe_down(self, wait: bool = False) -> None:
-        self.input(swipe=messages.DebugSwipeDirection.DOWN, wait=wait)
+    def swipe_down(self, wait: bool = False) -> Optional[LayoutContent]:
+        return self.input(swipe=messages.DebugSwipeDirection.DOWN, wait=wait)
 
     @overload
     def swipe_right(self) -> None:

@@ -372,7 +372,13 @@ extern "C" fn new_confirm_properties(n_args: usize, args: *const Obj, kwargs: *m
 
             if let Some(key) = key {
                 if value.is_some() {
-                    paragraphs.add(Paragraph::new(&theme::TEXT_BOLD, key).no_break());
+                    // Decreasing the margin between key and value (default is 5 px, we use 2 px)
+                    // (this enables 4 lines - 2 key:value pairs - on the same screen)
+                    paragraphs.add(
+                        Paragraph::new(&theme::TEXT_BOLD, key)
+                            .no_break()
+                            .with_bottom_padding(2),
+                    );
                 } else {
                     paragraphs.add(Paragraph::new(&theme::TEXT_BOLD, key));
                 }
@@ -410,9 +416,43 @@ extern "C" fn new_confirm_reset_device(n_args: usize, args: *const Obj, kwargs: 
             .text_normal("More info at".into())
             .newline()
             .text_bold("trezor.io/tos".into());
-        let formatted = FormattedText::new(ops);
+        let formatted = FormattedText::new(ops).vertically_centered();
 
-        content_in_button_page(title, formatted, button, None, false)
+        content_in_button_page(title, formatted, button, Some("".into()), false)
+    };
+    unsafe { util::try_with_args_and_kwargs(n_args, args, kwargs, block) }
+}
+
+extern "C" fn new_confirm_backup(n_args: usize, args: *const Obj, kwargs: *mut Map) -> Obj {
+    let block = move |_args: &[Obj], _kwargs: &Map| {
+        let get_page = move |page_index| match page_index {
+            0 => {
+                let btn_layout = ButtonLayout::text_none_arrow_wide("SKIP".into());
+                let btn_actions = ButtonActions::cancel_none_next();
+                let ops = OpTextLayout::new(theme::TEXT_NORMAL)
+                    .text_normal("New wallet created.".into())
+                    .newline()
+                    .newline()
+                    .text_normal("It should be backed up now!".into());
+                let formatted = FormattedText::new(ops).vertically_centered();
+                Page::new(btn_layout, btn_actions, formatted).with_title("SUCCESS".into())
+            }
+            1 => {
+                let btn_layout = ButtonLayout::up_arrow_none_text("BACK UP".into());
+                let btn_actions = ButtonActions::prev_none_confirm();
+                let ops = OpTextLayout::new(theme::TEXT_NORMAL).text_normal(
+                    "You can use your backup to recover your wallet at any time.".into(),
+                );
+                let formatted = FormattedText::new(ops).vertically_centered();
+                Page::<StrBuffer>::new(btn_layout, btn_actions, formatted)
+                    .with_title("BACK UP WALLET".into())
+            }
+            _ => unreachable!(),
+        };
+        let pages = FlowPages::new(get_page, 2);
+
+        let obj = LayoutObj::new(Flow::new(pages))?;
+        Ok(obj.into())
     };
     unsafe { util::try_with_args_and_kwargs(n_args, args, kwargs, block) }
 }
@@ -460,7 +500,7 @@ extern "C" fn new_confirm_value(n_args: usize, args: *const Obj, kwargs: *mut Ma
             title,
             paragraphs,
             verb.unwrap_or_else(|| "CONFIRM".into()),
-            None,
+            Some("".into()),
             hold,
         )
     };
@@ -483,7 +523,7 @@ extern "C" fn new_confirm_joint_total(n_args: usize, args: *const Obj, kwargs: *
             "JOINT TRANSACTION".into(),
             paragraphs,
             "HOLD TO CONFIRM".into(),
-            None,
+            Some("".into()),
             true,
         )
     };
@@ -507,7 +547,7 @@ extern "C" fn new_confirm_modify_output(n_args: usize, args: *const Obj, kwargs:
             Paragraph::new(&theme::TEXT_BOLD, "Address:".into()),
             Paragraph::new(&theme::TEXT_MONO, address).break_after(),
             Paragraph::new(&theme::TEXT_NORMAL, description.into()),
-            Paragraph::new(&theme::TEXT_MONO, amount_change),
+            Paragraph::new(&theme::TEXT_MONO, amount_change).break_after(),
             Paragraph::new(&theme::TEXT_BOLD, "New amount:".into()),
             Paragraph::new(&theme::TEXT_MONO, amount_new),
         ]);
@@ -516,7 +556,7 @@ extern "C" fn new_confirm_modify_output(n_args: usize, args: *const Obj, kwargs:
             "MODIFY AMOUNT".into(),
             paragraphs,
             "CONFIRM".into(),
-            None,
+            Some("".into()),
             false,
         )
     };
@@ -529,7 +569,6 @@ extern "C" fn new_confirm_output(n_args: usize, args: *const Obj, kwargs: *mut M
         let address_label: StrBuffer = kwargs.get(Qstr::MP_QSTR_address_label)?.try_into()?;
         let amount: StrBuffer = kwargs.get(Qstr::MP_QSTR_amount)?.try_into()?;
         let address_title: StrBuffer = kwargs.get(Qstr::MP_QSTR_address_title)?.try_into()?;
-        let address_title_clone = address_title.clone();
         let amount_title: StrBuffer = kwargs.get(Qstr::MP_QSTR_amount_title)?.try_into()?;
 
         let get_page = move |page_index| {
@@ -547,8 +586,7 @@ extern "C" fn new_confirm_output(n_args: usize, args: *const Obj, kwargs: *mut M
                         ops = ops.text_normal(address_label.clone()).newline();
                     }
                     ops = ops.text_mono(address.clone());
-                    let formatted =
-                        FormattedText::new(ops).vertically_aligned(geometry::Alignment::Center);
+                    let formatted = FormattedText::new(ops).vertically_centered();
                     Page::new(btn_layout, btn_actions, formatted).with_title(address_title.clone())
                 }
                 1 => {
@@ -556,8 +594,7 @@ extern "C" fn new_confirm_output(n_args: usize, args: *const Obj, kwargs: *mut M
                     let btn_layout = ButtonLayout::up_arrow_none_text("CONFIRM".into());
                     let btn_actions = ButtonActions::prev_none_confirm();
                     let ops = OpTextLayout::new(theme::TEXT_MONO).text_mono(amount.clone());
-                    let formatted =
-                        FormattedText::new(ops).vertically_aligned(geometry::Alignment::Center);
+                    let formatted = FormattedText::new(ops).vertically_centered();
                     Page::new(btn_layout, btn_actions, formatted).with_title(amount_title.clone())
                 }
                 _ => unreachable!(),
@@ -565,7 +602,7 @@ extern "C" fn new_confirm_output(n_args: usize, args: *const Obj, kwargs: *mut M
         };
         let pages = FlowPages::new(get_page, 2);
 
-        let obj = LayoutObj::new(Flow::new(pages).with_common_title(address_title_clone))?;
+        let obj = LayoutObj::new(Flow::new(pages))?;
         Ok(obj.into())
     };
     unsafe { util::try_with_args_and_kwargs(n_args, args, kwargs, block) }
@@ -668,11 +705,11 @@ extern "C" fn new_confirm_address(n_args: usize, args: *const Obj, kwargs: *mut 
                 .line_breaking(LineBreaking::BreakWordsNoHyphen)
                 .text_mono(address.clone());
             let formatted = FormattedText::new(ops);
-            Page::new(btn_layout, btn_actions, formatted)
+            Page::new(btn_layout, btn_actions, formatted).with_title(title.clone())
         };
         let pages = FlowPages::new(get_page, 1);
 
-        let obj = LayoutObj::new(Flow::new(pages).with_common_title(title))?;
+        let obj = LayoutObj::new(Flow::new(pages))?;
         Ok(obj.into())
     };
     unsafe { util::try_with_args_and_kwargs(n_args, args, kwargs, block) }
@@ -687,7 +724,7 @@ fn tutorial_screen(
     btn_actions: ButtonActions,
 ) -> Page<StrBuffer> {
     let ops = OpTextLayout::<StrBuffer>::new(theme::TEXT_NORMAL).text_normal(text.into());
-    let formatted = FormattedText::new(ops).vertically_aligned(geometry::Alignment::Center);
+    let formatted = FormattedText::new(ops).vertically_centered();
     Page::new(btn_layout, btn_actions, formatted).with_title(title.into())
 }
 
@@ -740,7 +777,7 @@ extern "C" fn tutorial(n_args: usize, args: *const Obj, kwargs: *mut Map) -> Obj
                         "CONFIRM",
                         "Press both left and right at the same\ntime to confirm.",
                         ButtonLayout::none_armed_none("CONFIRM".into()),
-                        ButtonActions::prev_next_none(),
+                        ButtonActions::none_next_none(),
                     )
                 },
                 5 => {
@@ -765,11 +802,7 @@ extern "C" fn tutorial(n_args: usize, args: *const Obj, kwargs: *mut Map) -> Obj
 
         let pages = FlowPages::new(get_page, PAGE_COUNT);
 
-        let obj = LayoutObj::new(
-            Flow::new(pages)
-                .with_scrollbar(false)
-                .with_common_title("HELLO".into()),
-        )?;
+        let obj = LayoutObj::new(Flow::new(pages).with_scrollbar(false))?;
         Ok(obj.into())
     };
     unsafe { util::try_with_args_and_kwargs(n_args, args, kwargs, block) }
@@ -810,6 +843,61 @@ extern "C" fn new_confirm_modify_fee(n_args: usize, args: *const Obj, kwargs: *m
             Some("".into()),
             false,
         )
+    };
+    unsafe { util::try_with_args_and_kwargs(n_args, args, kwargs, block) }
+}
+
+extern "C" fn new_multiple_pages_texts(n_args: usize, args: *const Obj, kwargs: *mut Map) -> Obj {
+    let block = move |_args: &[Obj], kwargs: &Map| {
+        let title: StrBuffer = kwargs.get(Qstr::MP_QSTR_title)?.try_into()?;
+        let verb: StrBuffer = kwargs.get(Qstr::MP_QSTR_verb)?.try_into()?;
+        let items: Gc<List> = kwargs.get(Qstr::MP_QSTR_items)?.try_into()?;
+
+        // Cache the page count so that we can move `items` into the closure.
+        let page_count = items.len();
+
+        // Closure to lazy-load the information on given page index.
+        // Done like this to allow arbitrarily many pages without
+        // the need of any allocation here in Rust.
+        let get_page = move |page_index| {
+            let item_obj = unwrap!(items.get(page_index));
+            let text = unwrap!(item_obj.try_into());
+
+            let (btn_layout, btn_actions) = if page_count == 1 {
+                // There is only one page
+                (
+                    ButtonLayout::cancel_none_text(verb.clone()),
+                    ButtonActions::cancel_none_confirm(),
+                )
+            } else if page_index == 0 {
+                // First page
+                (
+                    ButtonLayout::cancel_none_arrow_wide(),
+                    ButtonActions::cancel_none_next(),
+                )
+            } else if page_index == page_count - 1 {
+                // Last page
+                (
+                    ButtonLayout::up_arrow_none_text(verb.clone()),
+                    ButtonActions::prev_none_confirm(),
+                )
+            } else {
+                // Page in the middle
+                (
+                    ButtonLayout::up_arrow_none_arrow_wide(),
+                    ButtonActions::prev_none_next(),
+                )
+            };
+
+            let ops = OpTextLayout::new(theme::TEXT_NORMAL).text_normal(text);
+            let formatted = FormattedText::new(ops).vertically_centered();
+
+            Page::new(btn_layout, btn_actions, formatted)
+        };
+
+        let pages = FlowPages::new(get_page, page_count);
+        let obj = LayoutObj::new(Flow::new(pages).with_common_title(title))?;
+        Ok(obj.into())
     };
     unsafe { util::try_with_args_and_kwargs(n_args, args, kwargs, block) }
 }
@@ -878,6 +966,35 @@ extern "C" fn new_confirm_fido(n_args: usize, args: *const Obj, kwargs: *mut Map
     unsafe { util::try_with_args_and_kwargs(n_args, args, kwargs, block) }
 }
 
+extern "C" fn new_show_warning(n_args: usize, args: *const Obj, kwargs: *mut Map) -> Obj {
+    let block = move |_args: &[Obj], kwargs: &Map| {
+        let button: StrBuffer = kwargs.get(Qstr::MP_QSTR_button)?.try_into()?;
+        let warning: StrBuffer = kwargs.get(Qstr::MP_QSTR_warning)?.try_into()?;
+        let description: StrBuffer = kwargs.get(Qstr::MP_QSTR_description)?.try_into()?;
+
+        let get_page = move |page_index| {
+            assert!(page_index == 0);
+
+            let btn_layout = ButtonLayout::none_armed_none(button.clone());
+            let btn_actions = ButtonActions::none_confirm_none();
+            let mut ops = OpTextLayout::<StrBuffer>::new(theme::TEXT_NORMAL);
+            ops = ops.alignment(geometry::Alignment::Center);
+            if !warning.is_empty() {
+                ops = ops.text_bold(warning.clone()).newline().newline();
+            }
+            if !description.is_empty() {
+                ops = ops.text_normal(description.clone());
+            }
+            let formatted = FormattedText::new(ops).vertically_centered();
+            Page::new(btn_layout, btn_actions, formatted)
+        };
+        let pages = FlowPages::new(get_page, 1);
+        let obj = LayoutObj::new(Flow::new(pages))?;
+        Ok(obj.into())
+    };
+    unsafe { util::try_with_args_and_kwargs(n_args, args, kwargs, block) }
+}
+
 extern "C" fn new_show_info(n_args: usize, args: *const Obj, kwargs: *mut Map) -> Obj {
     let block = move |_args: &[Obj], kwargs: &Map| {
         let title: StrBuffer = kwargs.get(Qstr::MP_QSTR_title)?.try_into()?;
@@ -902,6 +1019,17 @@ extern "C" fn new_show_info(n_args: usize, args: *const Obj, kwargs: *mut Map) -
         Ok(obj.into())
     };
     unsafe { util::try_with_args_and_kwargs(n_args, args, kwargs, block) }
+}
+
+extern "C" fn new_show_passphrase() -> Obj {
+    let block = move || {
+        let text: StrBuffer = "Please enter your passphrase.".into();
+        let paragraph = Paragraph::new(&theme::TEXT_NORMAL, text).centered();
+        let content = Paragraphs::new([paragraph]);
+        let obj = LayoutObj::new(content)?;
+        Ok(obj.into())
+    };
+    unsafe { util::try_or_raise(block) }
 }
 
 extern "C" fn new_show_mismatch() -> Obj {
@@ -962,11 +1090,14 @@ extern "C" fn new_confirm_coinjoin(n_args: usize, args: *const Obj, kwargs: *mut
         let max_rounds: StrBuffer = kwargs.get(Qstr::MP_QSTR_max_rounds)?.try_into()?;
         let max_feerate: StrBuffer = kwargs.get(Qstr::MP_QSTR_max_feerate)?.try_into()?;
 
+        // Decreasing bottom padding between paragraphs to fit one screen
         let paragraphs = Paragraphs::new([
-            Paragraph::new(&theme::TEXT_BOLD, "Max rounds".into()),
+            Paragraph::new(&theme::TEXT_BOLD, "Max rounds".into()).with_bottom_padding(2),
             Paragraph::new(&theme::TEXT_MONO, max_rounds),
-            Paragraph::new(&theme::TEXT_BOLD, "Max mining fee".into()).no_break(),
-            Paragraph::new(&theme::TEXT_MONO, max_feerate),
+            Paragraph::new(&theme::TEXT_BOLD, "Max mining fee".into())
+                .with_bottom_padding(2)
+                .no_break(),
+            Paragraph::new(&theme::TEXT_MONO, max_feerate).with_bottom_padding(2),
         ]);
 
         content_in_button_page(
@@ -985,7 +1116,9 @@ extern "C" fn new_request_pin(n_args: usize, args: *const Obj, kwargs: *mut Map)
         let prompt: StrBuffer = kwargs.get(Qstr::MP_QSTR_prompt)?.try_into()?;
         let subprompt: StrBuffer = kwargs.get(Qstr::MP_QSTR_subprompt)?.try_into()?;
 
-        let obj = LayoutObj::new(PinEntry::new(prompt, subprompt))?;
+        let obj =
+            LayoutObj::new(Frame::new(prompt, PinEntry::new(subprompt)).with_title_centered())?;
+
         Ok(obj.into())
     };
     unsafe { util::try_with_args_and_kwargs(n_args, args, kwargs, block) }
@@ -1057,16 +1190,17 @@ extern "C" fn new_select_word(n_args: usize, args: *const Obj, kwargs: *mut Map)
 
 extern "C" fn new_show_share_words(n_args: usize, args: *const Obj, kwargs: *mut Map) -> Obj {
     let block = |_args: &[Obj], kwargs: &Map| {
-        let title: StrBuffer = kwargs.get(Qstr::MP_QSTR_title)?.try_into()?;
         let share_words_obj: Obj = kwargs.get(Qstr::MP_QSTR_share_words)?;
         let share_words: Vec<StrBuffer, 33> = iter_into_vec(share_words_obj)?;
 
+        let cancel_btn = Some(ButtonDetails::up_arrow_icon());
         let confirm_btn = Some(
             ButtonDetails::<StrBuffer>::text("HOLD TO CONFIRM".into()).with_default_duration(),
         );
 
         let obj = LayoutObj::new(
-            ButtonPage::new(ShareWords::new(title, share_words), theme::BG)
+            ButtonPage::new(ShareWords::new(share_words), theme::BG)
+                .with_cancel_btn(cancel_btn)
                 .with_confirm_btn(confirm_btn),
         )?;
         Ok(obj.into())
@@ -1138,16 +1272,32 @@ extern "C" fn new_confirm_recovery(n_args: usize, args: *const Obj, kwargs: *mut
         let description: StrBuffer = kwargs.get(Qstr::MP_QSTR_description)?.try_into()?;
         let button: StrBuffer = kwargs.get(Qstr::MP_QSTR_button)?.try_into()?;
         let dry_run: bool = kwargs.get(Qstr::MP_QSTR_dry_run)?.try_into()?;
+        let show_info: bool = kwargs.get(Qstr::MP_QSTR_show_info)?.try_into()?;
 
-        let paragraphs = Paragraphs::new([Paragraph::new(&theme::TEXT_NORMAL, description)]);
+        let mut paragraphs = ParagraphVecShort::new();
+        paragraphs.add(Paragraph::new(&theme::TEXT_NORMAL, description));
+        if show_info {
+            let first = "You'll only have to select the first 2-3 letters of each word.";
+            let second =
+                "Position of the cursor will change between entries for enhanced security.";
+            paragraphs
+                .add(Paragraph::new(&theme::TEXT_NORMAL, first.into()))
+                .add(Paragraph::new(&theme::TEXT_NORMAL, second.into()));
+        }
 
         let title = if dry_run {
-            "SEED CHECK"
+            "BACKUP CHECK"
         } else {
-            "WALLET RECOVERY"
+            "RECOVER WALLET"
         };
 
-        content_in_button_page(title.into(), paragraphs, button, Some("".into()), false)
+        content_in_button_page(
+            title.into(),
+            paragraphs.into_paragraphs(),
+            button,
+            Some("".into()),
+            false,
+        )
     };
     unsafe { util::try_with_args_and_kwargs(n_args, args, kwargs, block) }
 }
@@ -1276,7 +1426,7 @@ extern "C" fn new_show_lockscreen(n_args: usize, args: *const Obj, kwargs: *mut 
 
 extern "C" fn draw_welcome_screen() -> Obj {
     // No need of util::try_or_raise, this does not allocate
-    let mut screen = WelcomeScreen::new();
+    let mut screen = WelcomeScreen::new(false);
     screen.place(constant::screen());
     display::sync();
     screen.paint();
@@ -1361,6 +1511,10 @@ pub static mp_module_trezorui2: Module = obj_module! {
     /// ) -> object:
     ///     """Confirm TOS before device setup."""
     Qstr::MP_QSTR_confirm_reset_device => obj_fn_kw!(0, new_confirm_reset_device).as_obj(),
+
+    /// def confirm_backup() -> object:
+    ///     """Strongly recommend user to do backup."""
+    Qstr::MP_QSTR_confirm_backup => obj_fn_kw!(0, new_confirm_backup).as_obj(),
 
     /// def show_address_details(
     ///     *,
@@ -1453,6 +1607,24 @@ pub static mp_module_trezorui2: Module = obj_module! {
     ///     """
     Qstr::MP_QSTR_confirm_fido => obj_fn_kw!(0, new_confirm_fido).as_obj(),
 
+    /// def multiple_pages_texts(
+    ///     *,
+    ///     title: str,
+    ///     verb: str,
+    ///     items: list[str],
+    /// ) -> object:
+    ///     """Show multiple texts, each on its own page."""
+    Qstr::MP_QSTR_multiple_pages_texts => obj_fn_kw!(0, new_multiple_pages_texts).as_obj(),
+
+    /// def show_warning(
+    ///     *,
+    ///     button: str,
+    ///     warning: str,
+    ///     description: str,
+    /// ) -> object:
+    ///     """Warning modal with middle button and centered text."""
+    Qstr::MP_QSTR_show_warning => obj_fn_kw!(0, new_show_warning).as_obj(),
+
     /// def show_info(
     ///     *,
     ///     title: str,
@@ -1461,6 +1633,10 @@ pub static mp_module_trezorui2: Module = obj_module! {
     /// ) -> object:
     ///     """Info modal."""
     Qstr::MP_QSTR_show_info => obj_fn_kw!(0, new_show_info).as_obj(),
+
+    /// def show_passphrase() -> object:
+    ///     """Show passphrase on host dialog."""
+    Qstr::MP_QSTR_show_passphrase => obj_fn_0!(new_show_passphrase).as_obj(),
 
     /// def show_mismatch() -> object:
     ///     """Warning modal, receiving address mismatch."""
@@ -1529,7 +1705,6 @@ pub static mp_module_trezorui2: Module = obj_module! {
 
     /// def show_share_words(
     ///     *,
-    ///     title: str,
     ///     share_words: Iterable[str],
     /// ) -> object:
     ///     """Shows a backup seed."""
@@ -1564,6 +1739,7 @@ pub static mp_module_trezorui2: Module = obj_module! {
     ///     button: str,
     ///     dry_run: bool,
     ///     info_button: bool,  # unused on TR
+    ///     show_info: bool,
     /// ) -> object:
     ///    """Device recovery homescreen."""
     Qstr::MP_QSTR_confirm_recovery => obj_fn_kw!(0, new_confirm_recovery).as_obj(),

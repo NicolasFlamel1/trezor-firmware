@@ -1,32 +1,46 @@
+use core::mem;
+
 use crate::{
     strutil::StringType,
     ui::{
         component::{
-            base::Never, text::util::text_multiline_split_words, Component, Event, EventCtx,
+            base::Never,
+            text::util::{text_multiline, text_multiline_bottom},
+            Component, Event, EventCtx,
         },
-        display::Font,
-        geometry::{Alignment, Rect},
+        display::{self, Font},
+        geometry::{Alignment, Insets, Rect},
+        util::animation_disabled,
     },
 };
 
 use super::theme;
 
 const HEADER: &str = "COINJOIN IN PROGRESS";
-const FOOTER: &str = "Don't disconnect your Trezor";
+const FOOTER: &str = "Do not disconnect your Trezor!";
+const FOOTER_TEXT_MARGIN: i16 = 8;
+const LOADER_OFFSET: i16 = -15;
+const LOADER_SPEED: u16 = 10;
 
 pub struct CoinJoinProgress<T> {
+    value: u16,
+    loader_y_offset: i16,
     text: T,
     area: Rect,
+    indeterminate: bool,
 }
 
 impl<T> CoinJoinProgress<T>
 where
     T: StringType,
 {
-    pub fn new(text: T, _indeterminate: bool) -> Self {
+    pub fn new(text: T, indeterminate: bool) -> Self {
         Self {
+            value: 0,
+            loader_y_offset: LOADER_OFFSET,
             text,
             area: Rect::zero(),
+            indeterminate,
         }
     }
 }
@@ -42,38 +56,75 @@ where
         bounds
     }
 
-    fn event(&mut self, _ctx: &mut EventCtx, _event: Event) -> Option<Self::Msg> {
+    fn event(&mut self, ctx: &mut EventCtx, event: Event) -> Option<Self::Msg> {
+        if animation_disabled() {
+            return None;
+        }
+
+        // Indeterminate needs to request frames to animate.
+        // Determinate ones are receiving Event::Progress events.
+        if self.indeterminate {
+            match event {
+                Event::Attach => {
+                    ctx.request_anim_frame();
+                }
+                Event::Timer(EventCtx::ANIM_FRAME_TIMER) => {
+                    self.value = (self.value + LOADER_SPEED) % 1000;
+                    ctx.request_anim_frame();
+                    ctx.request_paint();
+                }
+                _ => {}
+            }
+        } else if let Event::Progress(new_value, _new_description) = event {
+            if mem::replace(&mut self.value, new_value) != new_value {
+                ctx.request_paint();
+            }
+        }
+
         None
     }
 
     fn paint(&mut self) {
-        // Trying to paint all three parts into the area, stopping if any of them
-        // doesn't fit.
-        let mut possible_rest = text_multiline_split_words(
+        // TOP
+        if self.indeterminate {
+            text_multiline(
+                self.area,
+                HEADER,
+                Font::BOLD,
+                theme::FG,
+                theme::BG,
+                Alignment::Center,
+            );
+            display::loader::loader_small_indeterminate(
+                self.value,
+                self.loader_y_offset,
+                theme::FG,
+                theme::BG,
+            );
+        } else {
+            display::loader(
+                self.value,
+                self.loader_y_offset,
+                theme::FG,
+                theme::BG,
+                Some((theme::ICON_TICK_FAT, theme::FG)),
+            );
+        }
+
+        // BOTTOM
+        let top_rest = text_multiline_bottom(
             self.area,
-            HEADER,
+            FOOTER,
             Font::BOLD,
             theme::FG,
             theme::BG,
             Alignment::Center,
         );
-        if let Some(rest) = possible_rest {
-            possible_rest = text_multiline_split_words(
-                rest,
+        if let Some(rest) = top_rest {
+            text_multiline_bottom(
+                rest.inset(Insets::bottom(FOOTER_TEXT_MARGIN)),
                 self.text.as_ref(),
-                Font::MONO,
-                theme::FG,
-                theme::BG,
-                Alignment::Center,
-            );
-        } else {
-            return;
-        }
-        if let Some(rest) = possible_rest {
-            text_multiline_split_words(
-                rest,
-                FOOTER,
-                Font::BOLD,
+                Font::NORMAL,
                 theme::FG,
                 theme::BG,
                 Alignment::Center,

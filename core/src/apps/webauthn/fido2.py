@@ -18,6 +18,7 @@ from .credential import Credential, Fido2Credential
 
 if TYPE_CHECKING:
     from typing import Any, Awaitable, Callable, Coroutine, Iterable, Iterator
+
     from .credential import U2fCredential
 
     HID = io.HID
@@ -566,9 +567,10 @@ class KeepaliveCallback:
 
 
 async def verify_user(keepalive_callback: KeepaliveCallback) -> bool:
-    from trezor.wire import PinCancelled, PinInvalid
-    from apps.common.request_pin import verify_user_pin
     import trezor.pin
+    from trezor.wire import PinCancelled, PinInvalid
+
+    from apps.common.request_pin import verify_user_pin
 
     try:
         trezor.pin.keepalive_callback = keepalive_callback
@@ -584,6 +586,7 @@ async def verify_user(keepalive_callback: KeepaliveCallback) -> bool:
 
 def _confirm_fido_choose(title: str, credentials: list[Credential]) -> Awaitable[int]:
     from trezor.ui.layouts.fido import confirm_fido
+
     from . import knownapps
 
     assert len(credentials) > 0
@@ -597,7 +600,7 @@ def _confirm_fido_choose(title: str, credentials: list[Credential]) -> Awaitable
     app = knownapps.by_rp_id_hash(repr_credential.rp_id_hash)
     icon_name = None if app is None else app.icon_name
     return confirm_fido(
-        None, title, app_name, icon_name, [c.account_name() for c in credentials]
+        title, app_name, icon_name, [c.account_name() for c in credentials]
     )
 
 
@@ -643,7 +646,7 @@ class State:
     def timeout_ms(self) -> int:
         raise NotImplementedError
 
-    async def confirm_dialog(self) -> bool | "State":
+    async def confirm_dialog(self) -> "bool | State":
         raise NotImplementedError
 
     async def on_confirm(self) -> None:
@@ -706,6 +709,7 @@ class U2fUnlock(State):
 
     async def confirm_dialog(self) -> bool:
         from trezor.wire import PinCancelled, PinInvalid
+
         from apps.common.request_pin import verify_user_pin
 
         try:
@@ -762,7 +766,7 @@ class Fido2Unlock(Fido2State):
         self.resp: Cmd | None = None
         self.dialog_mgr = dialog_mgr
 
-    async def confirm_dialog(self) -> bool | "State":
+    async def confirm_dialog(self) -> "bool | State":
         if not await verify_user(KeepaliveCallback(self.cid, self.iface)):
             return False
 
@@ -1793,8 +1797,7 @@ def _cbor_get_assertion_hmac_secret(
     cred: Credential, hmac_secret: dict
 ) -> bytes | None:
     from storage.fido2 import KEY_AGREEMENT_PRIVKEY
-    from trezor.crypto import aes
-    from trezor.crypto import hmac
+    from trezor.crypto import aes, hmac
 
     key_agreement = hmac_secret[1]  # The public key of platform key agreement key.
     # NOTE: We should check the key_agreement[COSE_KEY_ALG] here, but to avoid compatibility issues we don't,

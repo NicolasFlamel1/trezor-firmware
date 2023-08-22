@@ -1,8 +1,8 @@
 use crate::ui::{
     component::{Child, Component, Event, EventCtx, Label, Never, Pad},
-    constant::screen,
+    constant::{screen, WIDTH},
     display,
-    geometry::{Alignment::Center, Alignment2D, Offset, Point, Rect},
+    geometry::{Alignment2D, Offset, Point, Rect},
 };
 
 use super::super::{
@@ -11,7 +11,6 @@ use super::super::{
 };
 
 const FOOTER_AREA_HEIGHT: i16 = 20;
-const MESSAGE_AREA_HEIGHT: i16 = 32;
 const DIVIDER_POSITION: i16 = 43;
 
 pub struct ErrorScreen<T> {
@@ -25,9 +24,9 @@ pub struct ErrorScreen<T> {
 
 impl<T: AsRef<str>> ErrorScreen<T> {
     pub fn new(title: T, message: T, footer: T) -> Self {
-        let title = Label::new(title, Center, theme::TEXT_BOLD);
-        let message = Label::new(message, Center, theme::TEXT_NORMAL).vertically_aligned(Center);
-        let footer = Label::new(footer, Center, theme::TEXT_NORMAL).vertically_aligned(Center);
+        let title = Label::centered(title, theme::TEXT_BOLD);
+        let message = Label::centered(message, theme::TEXT_NORMAL).vertically_centered();
+        let footer = Label::centered(footer, theme::TEXT_NORMAL).vertically_centered();
 
         Self {
             bg: Pad::with_background(BG).with_clear(),
@@ -55,9 +54,15 @@ impl<T: AsRef<str>> Component for ErrorScreen<T> {
             self.show_icons = false;
         }
 
+        let top_offset = if self.show_icons {
+            Offset::y(11)
+        } else {
+            Offset::y(8)
+        };
+
         let message_area = Rect::new(
-            title_area.bottom_left(),
-            title_area.bottom_right() + Offset::y(MESSAGE_AREA_HEIGHT),
+            title_area.top_left() + top_offset,
+            Point::new(title_area.bottom_right().x, DIVIDER_POSITION),
         );
         self.message.place(message_area);
 
@@ -84,12 +89,9 @@ impl<T: AsRef<str>> Component for ErrorScreen<T> {
         }
         self.title.paint();
         self.message.paint();
-        // divider line
-        let bar = Rect::from_center_and_size(
-            Point::new(self.area.center().x, DIVIDER_POSITION),
-            Offset::new(self.area.width(), 1),
-        );
-        display::rect_fill(bar, FG);
+
+        // // divider line
+        display::dotted_line(Point::new(0, DIVIDER_POSITION), WIDTH, FG, 3);
 
         self.footer.paint();
     }

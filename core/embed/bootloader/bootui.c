@@ -19,6 +19,8 @@
 
 #include <string.h>
 
+#include TREZOR_BOARD
+
 #include "bootui.h"
 #include "display.h"
 #ifdef TREZOR_EMULATOR
@@ -44,6 +46,14 @@
 #define COLOR_BL_DONE COLOR_BL_FG
 #define COLOR_BL_PROCESS COLOR_BL_FG
 #define COLOR_BL_GRAY COLOR_BL_FG
+#endif
+
+#ifndef TREZOR_MODEL_R
+#define BOOT_WAIT_HEIGHT 25
+#define BOOT_WAIT_Y_TOP (DISPLAY_RESY - BOOT_WAIT_HEIGHT)
+#else
+#define BOOT_WAIT_HEIGHT 12
+#define BOOT_WAIT_Y_TOP (DISPLAY_RESY - BOOT_WAIT_HEIGHT)
 #endif
 
 // common shared functions
@@ -77,10 +87,10 @@ void ui_screen_boot(const vendor_header *const vhdr,
 
   display_bar(0, 0, DISPLAY_RESX, DISPLAY_RESY, boot_background);
 
+#ifndef TREZOR_MODEL_R
   int image_top = show_string ? 30 : (DISPLAY_RESY - 120) / 2;
-
   // check whether vendor image is 120x120
-  if (memcmp(vimg, "TOIF\x78\x00\x78\x00", 4) == 0) {
+  if (memcmp(vimg, "TOIF\x78\x00\x78\x00", 8) == 0) {
     uint32_t datalen = *(uint32_t *)(vimg + 8);
     display_image((DISPLAY_RESX - 120) / 2, image_top, vimg, datalen + 12);
   }
@@ -94,6 +104,24 @@ void ui_screen_boot(const vendor_header *const vhdr,
     display_text_center(DISPLAY_RESX / 2, DISPLAY_RESY - 5 - 25, ver_str, -1,
                         FONT_NORMAL, COLOR_BL_BG, boot_background);
   }
+#else
+  // check whether vendor image is 24x24
+  if (memcmp(vimg, "TOIG\x18\x00\x18\x00", 8) == 0) {
+    uint32_t datalen = *(uint32_t *)(vimg + 8);
+    display_icon((DISPLAY_RESX - 22) / 2, 0, vimg, datalen + 12, COLOR_BL_BG,
+                 boot_background);
+  }
+
+  if (show_string) {
+    char ver_str[64];
+    display_text_center(DISPLAY_RESX / 2, 36, vhdr->vstr, vhdr->vstr_len,
+                        FONT_NORMAL, COLOR_BL_BG, boot_background);
+    format_ver("%d.%d.%d", fw_version, ver_str, sizeof(ver_str));
+    display_text_center(DISPLAY_RESX / 2, 46, ver_str, -1, FONT_NORMAL,
+                        COLOR_BL_BG, boot_background);
+  }
+
+#endif
 
   PIXELDATA_DIRTY();
   display_refresh();
@@ -102,7 +130,8 @@ void ui_screen_boot(const vendor_header *const vhdr,
 void ui_screen_boot_wait(int wait_seconds) {
   char wait_str[16];
   mini_snprintf(wait_str, sizeof(wait_str), "starting in %d s", wait_seconds);
-  display_bar(0, DISPLAY_RESY - 5 - 20, DISPLAY_RESX, 5 + 20, boot_background);
+  display_bar(0, BOOT_WAIT_Y_TOP, DISPLAY_RESX, BOOT_WAIT_HEIGHT,
+              boot_background);
   display_text_center(DISPLAY_RESX / 2, DISPLAY_RESY - 5, wait_str, -1,
                       FONT_NORMAL, COLOR_BL_BG, boot_background);
   PIXELDATA_DIRTY();
@@ -110,7 +139,7 @@ void ui_screen_boot_wait(int wait_seconds) {
 }
 
 #if defined USE_TOUCH
-#include "touch/touch.h"
+#include "touch.h"
 
 void ui_click(void) {
   // flush touch events if any
@@ -150,10 +179,9 @@ void ui_click(void) {
 #endif
 
 void ui_screen_boot_click(void) {
-  display_bar(0, DISPLAY_RESY - 5 - 20, DISPLAY_RESX, 5 + 20, boot_background);
-  display_text_center(DISPLAY_RESX / 2, DISPLAY_RESY - 5,
-                      "click to continue ...", -1, FONT_NORMAL, COLOR_BL_BG,
-                      boot_background);
+  display_bar(0, BOOT_WAIT_Y_TOP, DISPLAY_RESX, BOOT_WAIT_HEIGHT,
+              boot_background);
+  bld_continue_label(boot_background);
   PIXELDATA_DIRTY();
   display_refresh();
   ui_click();
@@ -161,7 +189,6 @@ void ui_screen_boot_click(void) {
 
 // welcome UI
 
-void ui_screen_welcome_model(void) { screen_welcome_model(); }
 void ui_screen_welcome(void) { screen_welcome(); }
 
 uint32_t ui_screen_intro(const vendor_header *const vhdr,
@@ -232,6 +259,12 @@ void ui_screen_boot_empty(bool fading) { screen_boot_empty(fading); }
 
 // error UI
 void ui_screen_fail(void) { screen_install_fail(); }
+
+#ifdef USE_OPTIGA
+uint32_t ui_screen_unlock_bootloader_confirm(void) {
+  return screen_unlock_bootloader_confirm();
+}
+#endif
 
 // general functions
 

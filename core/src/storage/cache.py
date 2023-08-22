@@ -329,7 +329,7 @@ def delete(key: int) -> None:
 
 
 if TYPE_CHECKING:
-    from typing import Awaitable, Callable, TypeVar, ParamSpec
+    from typing import Awaitable, Callable, ParamSpec, TypeVar
 
     P = ParamSpec("P")
     ByteFunc = Callable[P, bytes]

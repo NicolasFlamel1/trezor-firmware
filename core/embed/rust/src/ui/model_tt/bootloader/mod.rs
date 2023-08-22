@@ -6,7 +6,7 @@ use crate::{
         constant::{screen, HEIGHT},
         display::{self, Color, Font, Icon},
         event::TouchEvent,
-        geometry::{Alignment, Alignment2D, Point},
+        geometry::Point,
         model_tt::{
             bootloader::{
                 confirm::ConfirmTitle,
@@ -14,13 +14,13 @@ use crate::{
                 theme::{
                     button_bld, button_confirm, button_wipe_cancel, button_wipe_confirm, BLD_BG,
                     BLD_FG, BLD_WIPE_COLOR, CHECK24, CHECK40, DOWNLOAD32, FIRE32, FIRE40,
-                    LOGO_EMPTY, TEXT_WIPE_BOLD, TEXT_WIPE_NORMAL, WARNING40, WELCOME_COLOR, X24,
+                    TEXT_WIPE_BOLD, TEXT_WIPE_NORMAL, WARNING40, WELCOME_COLOR, X24,
                 },
                 welcome::Welcome,
             },
             component::{Button, ResultScreen, WelcomeScreen},
             constant,
-            theme::{BACKLIGHT_DIM, BACKLIGHT_NORMAL, BLACK, FG, WHITE},
+            theme::{BACKLIGHT_DIM, BACKLIGHT_NORMAL, FG, WHITE},
         },
         util::{from_c_array, from_c_str},
     },
@@ -35,6 +35,7 @@ pub mod menu;
 pub mod theme;
 pub mod welcome;
 
+use crate::ui::model_tt::theme::BLACK;
 use confirm::Confirm;
 use intro::Intro;
 use menu::Menu;
@@ -162,12 +163,10 @@ extern "C" fn screen_install_confirm(
     } else {
         "DOWNGRADE FW"
     };
-    let title = Label::new(title_str, Alignment::Start, theme::TEXT_BOLD)
-        .vertically_aligned(Alignment::Center);
-    let msg = Label::new(version_str.as_ref(), Alignment::Start, theme::TEXT_NORMAL);
-    let alert = (!should_keep_seed).then_some(Label::new(
+    let title = Label::left_aligned(title_str, theme::TEXT_BOLD).vertically_centered();
+    let msg = Label::left_aligned(version_str.as_ref(), theme::TEXT_NORMAL);
+    let alert = (!should_keep_seed).then_some(Label::left_aligned(
         "SEED WILL BE ERASED!",
-        Alignment::Start,
         theme::TEXT_BOLD,
     ));
 
@@ -198,16 +197,11 @@ extern "C" fn screen_install_confirm(
 extern "C" fn screen_wipe_confirm() -> u32 {
     let icon = Icon::new(FIRE40);
 
-    let msg = Label::new(
+    let msg = Label::centered(
         "Are you sure you want to factory reset the device?",
-        Alignment::Center,
         TEXT_WIPE_NORMAL,
     );
-    let alert = Label::new(
-        "SEED AND FIRMWARE\nWILL BE ERASED!",
-        Alignment::Center,
-        TEXT_WIPE_BOLD,
-    );
+    let alert = Label::centered("SEED AND FIRMWARE\nWILL BE ERASED!", TEXT_WIPE_BOLD);
 
     let right = Button::with_text("RESET").styled(button_wipe_confirm());
     let left = Button::with_text("CANCEL").styled(button_wipe_cancel());
@@ -345,17 +339,10 @@ extern "C" fn screen_boot_empty(fading: bool) {
         fadeout();
     }
 
-    let fg = WHITE;
-    let bg = BLACK;
+    display::rect_fill(constant::screen(), BLACK);
 
-    display::rect_fill(constant::screen(), bg);
-    let icon = Icon::new(LOGO_EMPTY);
-    icon.draw(
-        Point::new(screen().center().x, 48),
-        Alignment2D::TOP_CENTER,
-        fg,
-        bg,
-    );
+    let mut frame = WelcomeScreen::new(true);
+    show(&mut frame, false);
 
     if fading {
         fadein();
@@ -415,7 +402,7 @@ extern "C" fn screen_install_success(
 
 #[no_mangle]
 extern "C" fn screen_welcome_model() {
-    let mut frame = WelcomeScreen::new();
+    let mut frame = WelcomeScreen::new(false);
     show(&mut frame, false);
 }
 
@@ -423,4 +410,15 @@ extern "C" fn screen_welcome_model() {
 extern "C" fn screen_welcome() {
     let mut frame = Welcome::new();
     show(&mut frame, true);
+}
+
+#[no_mangle]
+extern "C" fn bld_continue_label(bg_color: cty::uint16_t) {
+    display::text_center(
+        Point::new(constant::WIDTH / 2, HEIGHT - 5),
+        "click to continue ...",
+        Font::NORMAL,
+        WHITE,
+        Color::from_u16(bg_color),
+    );
 }

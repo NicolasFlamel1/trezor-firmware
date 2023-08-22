@@ -43,8 +43,12 @@
 #include "display.h"
 #include "flash.h"
 #include "image.h"
+#include "model.h"
 #include "mpu.h"
 #include "random_delays.h"
+
+#include TREZOR_BOARD
+
 #ifdef USE_RGB_LED
 #include "rgb_led.h"
 #endif
@@ -61,18 +65,21 @@
 #include "i2c.h"
 #endif
 #ifdef USE_TOUCH
-#include "touch/touch.h"
+#include "touch.h"
 #endif
 #ifdef USE_SD_CARD
 #include "sdcard.h"
+#endif
+#ifdef USE_OPTIGA
+#include "optiga_transport.h"
 #endif
 #include "unit_variant.h"
 
 #ifdef SYSTEM_VIEW
 #include "systemview.h"
 #endif
+#include "platform.h"
 #include "rng.h"
-#include "stm32.h"
 #include "supervise.h"
 #ifdef USE_SECP256K1_ZKP
 #include "zkp_context.h"
@@ -153,11 +160,12 @@ int main(void) {
   sdcard_init();
 #endif
 
+#ifdef USE_OPTIGA
+  optiga_init();
+#endif
+
 #if !defined TREZOR_MODEL_1
-  // jump to unprivileged mode
-  // http://infocenter.arm.com/help/topic/com.arm.doc.dui0552a/CHDBIBGJ.html
-  __asm__ volatile("msr control, %0" ::"r"(0x1));
-  __asm__ volatile("isb");
+  drop_privileges();
 #endif
 
 #ifdef USE_SECP256K1_ZKP

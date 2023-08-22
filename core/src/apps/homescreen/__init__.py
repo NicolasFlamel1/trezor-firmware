@@ -24,7 +24,6 @@ async def homescreen() -> None:
     notification = None
     notification_is_error = False
     if is_set_any_session(MessageType.AuthorizeCoinJoin):
-        # TODO: is too long for TR
         notification = "COINJOIN AUTHORIZED"
     elif storage.device.is_initialized() and storage.device.no_backup():
         notification = "SEEDLESS"
@@ -37,7 +36,6 @@ async def homescreen() -> None:
     elif storage.device.is_initialized() and not config.has_pin():
         notification = "PIN NOT SET"
     elif storage.device.get_experimental_features():
-        # TODO: is too long for TR
         notification = "EXPERIMENTAL MODE"
 
     await Homescreen(
@@ -50,8 +48,8 @@ async def homescreen() -> None:
 
 
 async def lockscreen() -> None:
-    from apps.common.request_pin import can_lock_device
     from apps.base import unlock_device
+    from apps.common.request_pin import can_lock_device
 
     # Only show the lockscreen UI if the device can in fact be locked.
     if can_lock_device():

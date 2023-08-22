@@ -35,7 +35,9 @@ use crate::{
 pub use crate::ui::display::toif::Icon;
 pub use color::Color;
 pub use font::{Font, Glyph, GlyphMetrics};
-pub use loader::{loader, loader_indeterminate, LOADER_MAX, LOADER_MIN};
+pub use loader::{
+    loader, loader_indeterminate, loader_small_indeterminate, LOADER_MAX, LOADER_MIN,
+};
 
 pub fn backlight() -> u16 {
     display::backlight(-1) as u16
@@ -856,9 +858,8 @@ pub fn marquee(area: Rect, text: &str, offset: i16, font: Font, fg: Color, bg: C
     pixeldata_dirty();
 }
 
-// Used on T1 only.
-pub fn dotted_line(start: Point, width: i16, color: Color) {
-    for x in (start.x..width).step_by(2) {
+pub fn dotted_line(start: Point, width: i16, color: Color, step: i16) {
+    for x in (start.x..width).step_by(step as usize) {
         display::bar(x, start.y, 1, 1, color.into());
     }
 }

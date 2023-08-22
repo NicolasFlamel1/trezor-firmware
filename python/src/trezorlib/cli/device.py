@@ -24,8 +24,8 @@ from . import ChoiceType, with_client
 
 if TYPE_CHECKING:
     from ..client import TrezorClient
-    from . import TrezorConnection
     from ..protobuf import MessageType
+    from . import TrezorConnection
 
 RECOVERY_TYPE = {
     "scrambled": messages.RecoveryDeviceType.ScrambledWords,
@@ -297,6 +297,13 @@ def reboot_to_bootloader(obj: "TrezorConnection") -> str:
 def tutorial(client: "TrezorClient") -> str:
     """Show on-device tutorial."""
     return device.show_device_tutorial(client)
+
+
+@cli.command()
+@with_client
+def unlock_bootloader(client: "TrezorClient") -> str:
+    """Unlocks bootloader. Irreversible."""
+    return device.unlock_bootloader(client)
 
 
 @cli.command()

@@ -517,3 +517,12 @@ message UnlockedPathRequest {
  */
 message ShowDeviceTutorial {
 }
+
+/**
+ * Request: Unlocks bootloader, !irreversible!
+ * @start
+ * @next Success
+ * @next Failure
+ */
+message UnlockBootloader {
+}

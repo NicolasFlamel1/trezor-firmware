@@ -1,9 +1,17 @@
 from __future__ import annotations
 
+import subprocess
 from pathlib import Path
 
-import subprocess
-from boards import trezor_1, trezor_r_v3, trezor_r_v4, trezor_t, trezor_r_v6, trezor_r_v10, discovery
+from boards import (
+    discovery,
+    trezor_1,
+    trezor_r_v3,
+    trezor_r_v4,
+    trezor_r_v6,
+    trezor_r_v10,
+    trezor_t,
+)
 
 HERE = Path(__file__).parent.resolve()
 
@@ -30,26 +38,27 @@ def configure_board(
     env: dict,  # type: ignore
     defines: list[str | tuple[str, str]],
     sources: list[str],
-):
+    paths: list[str],
+) -> list[str]:
     model_r_version = 10
 
     if model in ("1",):
-        return trezor_1.configure(env, features_wanted, defines, sources)
+        return trezor_1.configure(env, features_wanted, defines, sources, paths)
     elif model in ("T",):
-        return trezor_t.configure(env, features_wanted, defines, sources)
+        return trezor_t.configure(env, features_wanted, defines, sources, paths)
     elif model in ("R",):
         if model_r_version == 3:
-            return trezor_r_v3.configure(env, features_wanted, defines, sources)
+            return trezor_r_v3.configure(env, features_wanted, defines, sources, paths)
         elif model_r_version == 4:
-            return trezor_r_v4.configure(env, features_wanted, defines, sources)
-        elif  model_r_version == 6:
-            return trezor_r_v6.configure(env, features_wanted, defines, sources)
+            return trezor_r_v4.configure(env, features_wanted, defines, sources, paths)
+        elif model_r_version == 6:
+            return trezor_r_v6.configure(env, features_wanted, defines, sources, paths)
         elif model_r_version == 10:
-            return trezor_r_v10.configure(env, features_wanted, defines, sources)
-    elif model in ('DISC1',):
-        return discovery.configure(env, features_wanted, defines, sources)
-    else:
-        raise Exception("Unknown model")
+            return trezor_r_v10.configure(env, features_wanted, defines, sources, paths)
+        raise Exception("Unknown model_r_version")
+    elif model in ("DISC1",):
+        return discovery.configure(env, features_wanted, defines, sources, paths)
+    raise Exception("Unknown model")
 
 
 def get_model_identifier(model: str) -> str:
@@ -59,7 +68,7 @@ def get_model_identifier(model: str) -> str:
         return "T2T1"
     elif model == "R":
         return "T2B1"
-    elif model == 'DISC1':
+    elif model == "DISC1":
         return "D001"
     else:
         raise Exception("Unknown model")

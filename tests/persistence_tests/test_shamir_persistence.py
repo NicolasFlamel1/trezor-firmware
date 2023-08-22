@@ -42,7 +42,7 @@ def test_abort(core_emulator: Emulator):
 
     device_handler.run(device.recover, pin_protection=False)
 
-    assert debug.wait_layout().title() == "WALLET RECOVERY"
+    assert debug.wait_layout().title() == "RECOVER WALLET"
 
     layout = debug.click(buttons.OK, wait=True)
     assert "number of words" in layout.text_content()
@@ -54,9 +54,14 @@ def test_abort(core_emulator: Emulator):
 
     # no waiting for layout because layout doesn't change
     assert "number of words" in debug.read_layout().text_content()
+    # clicking at 24 in word choice (the same coords as CANCEL)
     layout = debug.click(buttons.CANCEL, wait=True)
 
-    assert layout.title() == "ABORT RECOVERY"
+    # Cancelling the backup
+    assert "Enter your backup" in debug.read_layout().text_content()
+    layout = debug.click(buttons.CANCEL, wait=True)
+
+    assert layout.title() in ("ABORT RECOVERY", "CANCEL RECOVERY")
     layout = debug.click(buttons.OK, wait=True)
 
     assert layout.main_component() == "Homescreen"
@@ -146,7 +151,7 @@ def test_recovery_on_old_wallet(core_emulator: Emulator):
         layout = debug.wait_layout()
 
     # check that we entered the first share successfully
-    assert "2 more shares" in layout.text_content()
+    assert "1 of 3 shares entered" in layout.text_content()
 
     # try entering the remaining shares
     for share in MNEMONIC_SLIP39_BASIC_20_3of6[1:3]:
@@ -174,7 +179,7 @@ def test_recovery_multiple_resets(core_emulator: Emulator):
             expected_text = "You have entered"
             debug = _restart(device_handler, core_emulator)
 
-        assert "You have finished recovering your wallet" in layout.text_content()
+        assert "Wallet recovered successfully" in layout.text_content()
 
     device_handler = BackgroundDeviceHandler(core_emulator.client)
     debug = device_handler.debuglink()
