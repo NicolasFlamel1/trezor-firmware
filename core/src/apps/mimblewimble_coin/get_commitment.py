@@ -5,14 +5,13 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
 
 	# Imports
-	from trezor.wire import Context
 	from trezor.messages import MimbleWimbleCoinGetCommitment, MimbleWimbleCoinCommitment
 
 
 # Supporting function implementation
 
 # Get commitment
-async def get_commitment(context: Context, message: MimbleWimbleCoinGetCommitment) -> MimbleWimbleCoinCommitment:
+async def get_commitment(message: MimbleWimbleCoinGetCommitment) -> MimbleWimbleCoinCommitment:
 
 	# Imports
 	from trezor.messages import MimbleWimbleCoinCommitment
@@ -38,7 +37,7 @@ async def get_commitment(context: Context, message: MimbleWimbleCoinGetCommitmen
 	await unlock_device()
 	
 	# Cache seed
-	await derive_and_store_roots(context, False)
+	await derive_and_store_roots(False)
 	
 	# Initialize storage
 	initializeStorage()
@@ -81,7 +80,7 @@ async def get_commitment(context: Context, message: MimbleWimbleCoinGetCommitmen
 		raise DataError("")
 	
 	# Get extended private key
-	extendedPrivateKey = await getExtendedPrivateKey(context, coinInfo, message.account)
+	extendedPrivateKey = await getExtendedPrivateKey(coinInfo, message.account)
 	
 	# Try
 	try:

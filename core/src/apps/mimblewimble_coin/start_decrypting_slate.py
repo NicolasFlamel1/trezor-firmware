@@ -5,14 +5,13 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
 
 	# Imports
-	from trezor.wire import Context
 	from trezor.messages import MimbleWimbleCoinStartDecryptingSlate, Success
 
 
 # Supporting function implementation
 
 # Start decrypting slate
-async def start_decrypting_slate(context: Context, message: MimbleWimbleCoinStartDecryptingSlate) -> Success:
+async def start_decrypting_slate(message: MimbleWimbleCoinStartDecryptingSlate) -> Success:
 
 	# Imports
 	from trezor.messages import Success
@@ -37,7 +36,7 @@ async def start_decrypting_slate(context: Context, message: MimbleWimbleCoinStar
 	await unlock_device()
 	
 	# Cache seed
-	await derive_and_store_roots(context, False)
+	await derive_and_store_roots(False)
 	
 	# Initialize storage
 	initializeStorage()
@@ -71,7 +70,7 @@ async def start_decrypting_slate(context: Context, message: MimbleWimbleCoinStar
 		raise DataError("")
 	
 	# Get extended private key
-	extendedPrivateKey = await getExtendedPrivateKey(context, coinInfo, message.account)
+	extendedPrivateKey = await getExtendedPrivateKey(coinInfo, message.account)
 	
 	# Check if sender address or ephemeral X25519 public key is an MQS address
 	if len(message.sender_address_or_ephemeral_x25519_public_key) == mimblewimble_coin.MQS_ADDRESS_SIZE:

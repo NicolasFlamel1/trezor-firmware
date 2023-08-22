@@ -5,14 +5,13 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
 
 	# Imports
-	from trezor.wire import Context
 	from trezor.messages import MimbleWimbleCoinGetAddress, MimbleWimbleCoinAddress
 
 
 # Supporting function implementation
 
 # Get address
-async def get_address(context: Context, message: MimbleWimbleCoinGetAddress) -> MimbleWimbleCoinAddress:
+async def get_address(message: MimbleWimbleCoinGetAddress) -> MimbleWimbleCoinAddress:
 
 	# Imports
 	from trezor.messages import MimbleWimbleCoinAddress
@@ -38,7 +37,7 @@ async def get_address(context: Context, message: MimbleWimbleCoinGetAddress) -> 
 	await unlock_device()
 	
 	# Cache seed
-	await derive_and_store_roots(context, False)
+	await derive_and_store_roots(False)
 	
 	# Initialize storage
 	initializeStorage()
@@ -63,7 +62,7 @@ async def get_address(context: Context, message: MimbleWimbleCoinGetAddress) -> 
 		raise DataError("")
 	
 	# Get extended private key
-	extendedPrivateKey = await getExtendedPrivateKey(context, coinInfo, message.account)
+	extendedPrivateKey = await getExtendedPrivateKey(coinInfo, message.account)
 	
 	# Check if address type is MQS
 	if message.address_type == MimbleWimbleCoinAddressType.MQS:

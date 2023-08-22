@@ -5,14 +5,13 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
 
 	# Imports
-	from trezor.wire import Context
 	from trezor.messages import MimbleWimbleCoinContinueTransactionApplyOffset, MimbleWimbleCoinTransactionSecretNonceIndex
 
 
 # Supporting function implementation
 
 # Continue transaction apply offset
-async def continue_transaction_apply_offset(context: Context, message: MimbleWimbleCoinContinueTransactionApplyOffset) -> MimbleWimbleCoinTransactionSecretNonceIndex:
+async def continue_transaction_apply_offset(message: MimbleWimbleCoinContinueTransactionApplyOffset) -> MimbleWimbleCoinTransactionSecretNonceIndex:
 
 	# Imports
 	from trezor.messages import MimbleWimbleCoinTransactionSecretNonceIndex
@@ -37,7 +36,7 @@ async def continue_transaction_apply_offset(context: Context, message: MimbleWim
 	await unlock_device()
 	
 	# Cache seed
-	await derive_and_store_roots(context, False)
+	await derive_and_store_roots(False)
 	
 	# Initialize storage
 	initializeStorage()

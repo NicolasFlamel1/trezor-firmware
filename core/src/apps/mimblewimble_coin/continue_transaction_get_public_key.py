@@ -5,14 +5,13 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
 
 	# Imports
-	from trezor.wire import Context
 	from trezor.messages import MimbleWimbleCoinContinueTransactionGetPublicKey, MimbleWimbleCoinTransactionPublicKey
 
 
 # Supporting function implementation
 
 # Continue transaction get public key
-async def continue_transaction_get_public_key(context: Context, message: MimbleWimbleCoinContinueTransactionGetPublicKey) -> MimbleWimbleCoinTransactionPublicKey:
+async def continue_transaction_get_public_key(message: MimbleWimbleCoinContinueTransactionGetPublicKey) -> MimbleWimbleCoinTransactionPublicKey:
 
 	# Imports
 	from trezor.messages import MimbleWimbleCoinTransactionPublicKey
@@ -37,7 +36,7 @@ async def continue_transaction_get_public_key(context: Context, message: MimbleW
 	await unlock_device()
 	
 	# Cache seed
-	await derive_and_store_roots(context, False)
+	await derive_and_store_roots(False)
 	
 	# Initialize storage
 	initializeStorage()

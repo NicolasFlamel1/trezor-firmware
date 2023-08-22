@@ -6,7 +6,6 @@ from .common import UINT8_MAX
 if TYPE_CHECKING:
 
 	# Imports
-	from trezor.wire import Context
 	from trezor.messages import MimbleWimbleCoinStartEncryptingSlate, MimbleWimbleCoinEncryptedSlateNonceAndSalt
 
 
@@ -19,7 +18,7 @@ MAXIMUM_RECIPIENT_ADDRESS_SIZE = UINT8_MAX - 8
 # Supporting function implementation
 
 # Start encrypting slate
-async def start_encrypting_slate(context: Context, message: MimbleWimbleCoinStartEncryptingSlate) -> MimbleWimbleCoinEncryptedSlateNonceAndSalt:
+async def start_encrypting_slate(message: MimbleWimbleCoinStartEncryptingSlate) -> MimbleWimbleCoinEncryptedSlateNonceAndSalt:
 
 	# Imports
 	from trezor.messages import MimbleWimbleCoinEncryptedSlateNonceAndSalt
@@ -45,7 +44,7 @@ async def start_encrypting_slate(context: Context, message: MimbleWimbleCoinStar
 	await unlock_device()
 	
 	# Cache seed
-	await derive_and_store_roots(context, False)
+	await derive_and_store_roots(False)
 	
 	# Initialize storage
 	initializeStorage()
@@ -92,7 +91,7 @@ async def start_encrypting_slate(context: Context, message: MimbleWimbleCoinStar
 		raise DataError("")
 	
 	# Get extended private key
-	extendedPrivateKey = await getExtendedPrivateKey(context, coinInfo, message.account)
+	extendedPrivateKey = await getExtendedPrivateKey(coinInfo, message.account)
 	
 	# Get address components
 	addressComponents = message.recipient_address.split(b"@", 1)

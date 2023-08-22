@@ -5,14 +5,13 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
 
 	# Imports
-	from trezor.wire import Context
 	from trezor.messages import MimbleWimbleCoinGetSeedCookie, MimbleWimbleCoinSeedCookie
 
 
 # Supporting function implementation
 
 # Get seed cookie
-async def get_seed_cookie(context: Context, message: MimbleWimbleCoinGetSeedCookie) -> MimbleWimbleCoinSeedCookie:
+async def get_seed_cookie(message: MimbleWimbleCoinGetSeedCookie) -> MimbleWimbleCoinSeedCookie:
 
 	# Imports
 	from trezor.messages import MimbleWimbleCoinSeedCookie
@@ -37,7 +36,7 @@ async def get_seed_cookie(context: Context, message: MimbleWimbleCoinGetSeedCook
 	await unlock_device()
 	
 	# Cache seed
-	await derive_and_store_roots(context, False)
+	await derive_and_store_roots(False)
 	
 	# Initialize storage
 	initializeStorage()
@@ -56,7 +55,7 @@ async def get_seed_cookie(context: Context, message: MimbleWimbleCoinGetSeedCook
 		raise DataError("")
 	
 	# Get extended private key
-	extendedPrivateKey = await getExtendedPrivateKey(context, coinInfo, message.account)
+	extendedPrivateKey = await getExtendedPrivateKey(coinInfo, message.account)
 	
 	# Try
 	try:

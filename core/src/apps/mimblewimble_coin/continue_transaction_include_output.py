@@ -5,14 +5,13 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
 
 	# Imports
-	from trezor.wire import Context
 	from trezor.messages import MimbleWimbleCoinContinueTransactionIncludeOutput, Success
 
 
 # Supporting function implementation
 
 # Continue transaction include output
-async def continue_transaction_include_output(context: Context, message: MimbleWimbleCoinContinueTransactionIncludeOutput) -> Success:
+async def continue_transaction_include_output(message: MimbleWimbleCoinContinueTransactionIncludeOutput) -> Success:
 
 	# Imports
 	from trezor.messages import Success
@@ -39,7 +38,7 @@ async def continue_transaction_include_output(context: Context, message: MimbleW
 	await unlock_device()
 	
 	# Cache seed
-	await derive_and_store_roots(context, False)
+	await derive_and_store_roots(False)
 	
 	# Initialize storage
 	initializeStorage()
@@ -125,7 +124,7 @@ async def continue_transaction_include_output(context: Context, message: MimbleW
 		raise DataError("")
 	
 	# Get extended private key
-	extendedPrivateKey = await getExtendedPrivateKey(context, coinInfo, transactionContextStructure.account)
+	extendedPrivateKey = await getExtendedPrivateKey(coinInfo, transactionContextStructure.account)
 	
 	# Try
 	try:

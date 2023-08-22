@@ -5,14 +5,13 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
 
 	# Imports
-	from trezor.wire import Context
 	from trezor.messages import MimbleWimbleCoinFinishEncryptingSlate, MimbleWimbleCoinEncryptedSlateTagAndSignature
 
 
 # Supporting function implementation
 
 # Finish encrypting slate
-async def finish_encrypting_slate(context: Context, message: MimbleWimbleCoinFinishEncryptingSlate) -> MimbleWimbleCoinEncryptedSlateTagAndSignature:
+async def finish_encrypting_slate(message: MimbleWimbleCoinFinishEncryptingSlate) -> MimbleWimbleCoinEncryptedSlateTagAndSignature:
 
 	# Imports
 	from trezor.messages import MimbleWimbleCoinEncryptedSlateTagAndSignature
@@ -37,7 +36,7 @@ async def finish_encrypting_slate(context: Context, message: MimbleWimbleCoinFin
 	await unlock_device()
 	
 	# Cache seed
-	await derive_and_store_roots(context, False)
+	await derive_and_store_roots(False)
 	
 	# Initialize storage
 	initializeStorage()
@@ -83,7 +82,7 @@ async def finish_encrypting_slate(context: Context, message: MimbleWimbleCoinFin
 		raise InvalidSession("")
 	
 	# Get extended private key
-	extendedPrivateKey = await getExtendedPrivateKey(context, coinInfo, encryptionAndDecryptionContextStructure.account)
+	extendedPrivateKey = await getExtendedPrivateKey(coinInfo, encryptionAndDecryptionContextStructure.account)
 	
 	# Try
 	try:

@@ -5,14 +5,13 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
 
 	# Imports
-	from trezor.wire import Context
 	from trezor.messages import MimbleWimbleCoinStartTransaction, Success
 
 
 # Supporting function implementation
 
 # Start transaction
-async def start_transaction(context: Context, message: MimbleWimbleCoinStartTransaction) -> Success:
+async def start_transaction(message: MimbleWimbleCoinStartTransaction) -> Success:
 
 	# Imports
 	from trezor.messages import Success
@@ -38,7 +37,7 @@ async def start_transaction(context: Context, message: MimbleWimbleCoinStartTran
 	await unlock_device()
 	
 	# Cache seed
-	await derive_and_store_roots(context, False)
+	await derive_and_store_roots(False)
 	
 	# Initialize storage
 	initializeStorage()

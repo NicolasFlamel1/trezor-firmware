@@ -5,14 +5,13 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
 
 	# Imports
-	from trezor.wire import Context
 	from trezor.messages import MimbleWimbleCoinGetBulletproofComponents, MimbleWimbleCoinBulletproofComponents
 
 
 # Supporting function implementation
 
 # Get Bulletproof components
-async def get_bulletproof_components(context: Context, message: MimbleWimbleCoinGetBulletproofComponents) -> MimbleWimbleCoinBulletproofComponents:
+async def get_bulletproof_components(message: MimbleWimbleCoinGetBulletproofComponents) -> MimbleWimbleCoinBulletproofComponents:
 
 	# Imports
 	from trezor.messages import MimbleWimbleCoinBulletproofComponents
@@ -41,7 +40,7 @@ async def get_bulletproof_components(context: Context, message: MimbleWimbleCoin
 	await unlock_device()
 	
 	# Cache seed
-	await derive_and_store_roots(context, False)
+	await derive_and_store_roots(False)
 	
 	# Initialize storage
 	initializeStorage()
@@ -84,7 +83,7 @@ async def get_bulletproof_components(context: Context, message: MimbleWimbleCoin
 		raise DataError("")
 	
 	# Get extended private key
-	extendedPrivateKey = await getExtendedPrivateKey(context, coinInfo, message.account)
+	extendedPrivateKey = await getExtendedPrivateKey(coinInfo, message.account)
 	
 	# Check if animation isn't disabled
 	if not DISABLE_ANIMATION:

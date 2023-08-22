@@ -5,14 +5,13 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
 
 	# Imports
-	from trezor.wire import Context
 	from trezor.messages import MimbleWimbleCoinContinueTransactionGetPublicNonce, MimbleWimbleCoinTransactionPublicNonce
 
 
 # Supporting function implementation
 
 # Continue transaction get public nonce
-async def continue_transaction_get_public_nonce(context: Context, message: MimbleWimbleCoinContinueTransactionGetPublicNonce) -> MimbleWimbleCoinTransactionPublicNonce:
+async def continue_transaction_get_public_nonce(message: MimbleWimbleCoinContinueTransactionGetPublicNonce) -> MimbleWimbleCoinTransactionPublicNonce:
 
 	# Imports
 	from trezor.messages import MimbleWimbleCoinTransactionPublicNonce
@@ -37,7 +36,7 @@ async def continue_transaction_get_public_nonce(context: Context, message: Mimbl
 	await unlock_device()
 	
 	# Cache seed
-	await derive_and_store_roots(context, False)
+	await derive_and_store_roots(False)
 	
 	# Initialize storage
 	initializeStorage()

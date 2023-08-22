@@ -5,14 +5,13 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
 
 	# Imports
-	from trezor.wire import Context
 	from trezor.messages import MimbleWimbleCoinVerifyAddress, Success
 
 
 # Supporting function implementation
 
 # Verify address
-async def verify_address(context: Context, message: MimbleWimbleCoinVerifyAddress) -> Success:
+async def verify_address(message: MimbleWimbleCoinVerifyAddress) -> Success:
 
 	# Imports
 	from trezor.messages import Success
@@ -39,7 +38,7 @@ async def verify_address(context: Context, message: MimbleWimbleCoinVerifyAddres
 	await unlock_device()
 	
 	# Cache seed
-	await derive_and_store_roots(context, False)
+	await derive_and_store_roots(False)
 	
 	# Initialize storage
 	initializeStorage()
@@ -64,7 +63,7 @@ async def verify_address(context: Context, message: MimbleWimbleCoinVerifyAddres
 		raise DataError("")
 	
 	# Get extended private key
-	extendedPrivateKey = await getExtendedPrivateKey(context, coinInfo, message.account)
+	extendedPrivateKey = await getExtendedPrivateKey(coinInfo, message.account)
 	
 	# Check if address type is MQS
 	if message.address_type == MimbleWimbleCoinAddressType.MQS:
@@ -88,10 +87,10 @@ async def verify_address(context: Context, message: MimbleWimbleCoinVerifyAddres
 			raise ProcessError("")
 		
 		# Show prompt
-		await confirm_action(context, "", coinInfo.name, action = f"Verify {coinInfo.mqsName} address.", verb = "Next")
+		await confirm_action("", coinInfo.name, action = f"Verify {coinInfo.mqsName} address.", verb = "Next")
 		
 		# Show prompt
-		await confirm_blob(context, "", f"{coinInfo.mqsName} Address", address, verb = "Valid".upper())
+		await confirm_blob("", f"{coinInfo.mqsName} Address", address, verb = "Valid".upper())
 	
 	# Otherwise check if address type is Tor
 	elif message.address_type == MimbleWimbleCoinAddressType.TOR:
@@ -115,10 +114,10 @@ async def verify_address(context: Context, message: MimbleWimbleCoinVerifyAddres
 			raise ProcessError("")
 		
 		# Show prompt
-		await confirm_action(context, "", coinInfo.name, action = "Verify Tor address.", verb = "Next")
+		await confirm_action("", coinInfo.name, action = "Verify Tor address.", verb = "Next")
 		
 		# Show prompt
-		await confirm_blob(context, "", "Tor Address", address, verb = "Valid".upper())
+		await confirm_blob("", "Tor Address", address, verb = "Valid".upper())
 	
 	# Otherwise check if address type is Slatepack
 	elif message.address_type == MimbleWimbleCoinAddressType.SLATEPACK:
@@ -142,10 +141,10 @@ async def verify_address(context: Context, message: MimbleWimbleCoinVerifyAddres
 			raise ProcessError("")
 		
 		# Show prompt
-		await confirm_action(context, "", coinInfo.name, action = "Verify Slatepack address.", verb = "Next")
+		await confirm_action("", coinInfo.name, action = "Verify Slatepack address.", verb = "Next")
 		
 		# Show prompt
-		await confirm_blob(context, "", "Slatepack Address", address, verb = "Valid".upper())
+		await confirm_blob("", "Slatepack Address", address, verb = "Valid".upper())
 	
 	# Return success
 	return Success()

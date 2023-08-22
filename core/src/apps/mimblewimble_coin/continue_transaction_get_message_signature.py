@@ -6,7 +6,6 @@ from .common import UINT8_MAX
 if TYPE_CHECKING:
 
 	# Imports
-	from trezor.wire import Context
 	from trezor.messages import MimbleWimbleCoinContinueTransactionGetMessageSignature, MimbleWimbleCoinTransactionMessageSignature
 
 
@@ -19,7 +18,7 @@ MAXIMUM_MESSAGE_SIZE = UINT8_MAX
 # Supporting function implementation
 
 # Continue transaction get message signature
-async def continue_transaction_get_message_signature(context: Context, message: MimbleWimbleCoinContinueTransactionGetMessageSignature) -> MimbleWimbleCoinTransactionMessageSignature:
+async def continue_transaction_get_message_signature(message: MimbleWimbleCoinContinueTransactionGetMessageSignature) -> MimbleWimbleCoinTransactionMessageSignature:
 
 	# Imports
 	from trezor.messages import MimbleWimbleCoinTransactionMessageSignature
@@ -44,7 +43,7 @@ async def continue_transaction_get_message_signature(context: Context, message: 
 	await unlock_device()
 	
 	# Cache seed
-	await derive_and_store_roots(context, False)
+	await derive_and_store_roots(False)
 	
 	# Initialize storage
 	initializeStorage()

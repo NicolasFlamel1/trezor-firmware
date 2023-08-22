@@ -5,14 +5,13 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
 
 	# Imports
-	from trezor.wire import Context
 	from trezor.messages import MimbleWimbleCoinVerifyRootPublicKey, Success
 
 
 # Supporting function implementation
 
 # Verify root public key
-async def verify_root_public_key(context: Context, message: MimbleWimbleCoinVerifyRootPublicKey) -> Success:
+async def verify_root_public_key(message: MimbleWimbleCoinVerifyRootPublicKey) -> Success:
 
 	# Imports
 	from trezor.messages import Success
@@ -38,7 +37,7 @@ async def verify_root_public_key(context: Context, message: MimbleWimbleCoinVeri
 	await unlock_device()
 	
 	# Cache seed
-	await derive_and_store_roots(context, False)
+	await derive_and_store_roots(False)
 	
 	# Initialize storage
 	initializeStorage()
@@ -57,7 +56,7 @@ async def verify_root_public_key(context: Context, message: MimbleWimbleCoinVeri
 		raise DataError("")
 	
 	# Get extended private key
-	extendedPrivateKey = await getExtendedPrivateKey(context, coinInfo, message.account)
+	extendedPrivateKey = await getExtendedPrivateKey(coinInfo, message.account)
 	
 	# Try
 	try:
@@ -75,10 +74,10 @@ async def verify_root_public_key(context: Context, message: MimbleWimbleCoinVeri
 	try:
 	
 		# Show prompt
-		await confirm_action(context, "", coinInfo.name, action = "Verify root public key.", verb = "Next")
+		await confirm_action("", coinInfo.name, action = "Verify root public key.", verb = "Next")
 		
 		# Show prompt
-		await confirm_blob(context, "", "Root Public Key", rootPublicKey, verb = "Valid".upper())
+		await confirm_blob("", "Root Public Key", rootPublicKey, verb = "Valid".upper())
 	
 	# Finally
 	finally:

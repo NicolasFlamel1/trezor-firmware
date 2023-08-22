@@ -5,14 +5,13 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
 
 	# Imports
-	from trezor.wire import Context
 	from trezor.messages import MimbleWimbleCoinFinishDecryptingSlate, MimbleWimbleCoinDecryptedSlateAesKey
 
 
 # Supporting function implementation
 
 # Finish decrypting slate
-async def finish_decrypting_slate(context: Context, message: MimbleWimbleCoinFinishDecryptingSlate) -> MimbleWimbleCoinDecryptedSlateAesKey:
+async def finish_decrypting_slate(message: MimbleWimbleCoinFinishDecryptingSlate) -> MimbleWimbleCoinDecryptedSlateAesKey:
 
 	# Imports
 	from trezor.messages import MimbleWimbleCoinDecryptedSlateAesKey
@@ -35,7 +34,7 @@ async def finish_decrypting_slate(context: Context, message: MimbleWimbleCoinFin
 	await unlock_device()
 	
 	# Cache seed
-	await derive_and_store_roots(context, False)
+	await derive_and_store_roots(False)
 	
 	# Initialize storage
 	initializeStorage()

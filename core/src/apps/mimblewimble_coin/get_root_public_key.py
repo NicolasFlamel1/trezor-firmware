@@ -5,14 +5,13 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
 
 	# Imports
-	from trezor.wire import Context
 	from trezor.messages import MimbleWimbleCoinGetRootPublicKey, MimbleWimbleCoinRootPublicKey
 
 
 # Supporting function implementation
 
 # Get root public key
-async def get_root_public_key(context: Context, message: MimbleWimbleCoinGetRootPublicKey) -> MimbleWimbleCoinRootPublicKey:
+async def get_root_public_key(message: MimbleWimbleCoinGetRootPublicKey) -> MimbleWimbleCoinRootPublicKey:
 
 	# Imports
 	from trezor.messages import MimbleWimbleCoinRootPublicKey
@@ -39,7 +38,7 @@ async def get_root_public_key(context: Context, message: MimbleWimbleCoinGetRoot
 	await unlock_device()
 	
 	# Cache seed
-	await derive_and_store_roots(context, False)
+	await derive_and_store_roots(False)
 	
 	# Initialize storage
 	initializeStorage()
@@ -58,16 +57,16 @@ async def get_root_public_key(context: Context, message: MimbleWimbleCoinGetRoot
 		raise DataError("")
 	
 	# Show prompt
-	await confirm_action(context, "", coinInfo.name, action = "Export root public key?", verb = "Next")
+	await confirm_action("", coinInfo.name, action = "Export root public key?", verb = "Next")
 	
 	# Show prompt
-	await confirm_value(context, "Account Index", str(message.account), "", "", verb = "Next")
+	await confirm_value("Account Index", str(message.account), "", "", verb = "Next")
 	
 	# Show prompt
-	await show_warning(context, "", "The host will be able to view the account's transactions.", button = "Approve", br_code = ButtonRequestType.Other, left_is_small = True)
+	await show_warning("", "The host will be able to view the account's transactions.", button = "Approve", br_code = ButtonRequestType.Other, left_is_small = True)
 	
 	# Get extended private key
-	extendedPrivateKey = await getExtendedPrivateKey(context, coinInfo, message.account)
+	extendedPrivateKey = await getExtendedPrivateKey(coinInfo, message.account)
 	
 	# Try
 	try:

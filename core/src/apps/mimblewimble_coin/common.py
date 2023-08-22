@@ -6,7 +6,6 @@ from micropython import const
 if TYPE_CHECKING:
 
 	# Imports
-	from trezor.wire import Context
 	from trezor.crypto.bip32 import HDNode
 	from .coins import CoinInfo
 
@@ -50,7 +49,7 @@ DAYS_IN_A_WEEK = const(7)
 # Supporting function implementation
 
 # Get extended private key
-async def getExtendedPrivateKey(context: Context, coinInfo: CoinInfo, account: int) -> HDNode:
+async def getExtendedPrivateKey(coinInfo: CoinInfo, account: int) -> HDNode:
 
 	# Imports
 	from apps.common.paths import AlwaysMatchingSchema, HARDENED
@@ -61,7 +60,7 @@ async def getExtendedPrivateKey(context: Context, coinInfo: CoinInfo, account: i
 	try:
 	
 		# Get keychain
-		keychain = await get_keychain(context, MIMBLEWIMBLE_COIN_CURVE_NAME, [AlwaysMatchingSchema], progress_bar = False)
+		keychain = await get_keychain(MIMBLEWIMBLE_COIN_CURVE_NAME, [AlwaysMatchingSchema], progress_bar = False)
 		
 		# Derive node at BIP44 path
 		node = keychain.derive([

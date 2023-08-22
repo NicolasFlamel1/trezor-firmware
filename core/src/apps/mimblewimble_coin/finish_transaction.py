@@ -6,7 +6,6 @@ from .common import MINUTES_IN_AN_HOUR, HOURS_IN_A_DAY, DAYS_IN_A_WEEK
 if TYPE_CHECKING:
 
 	# Imports
-	from trezor.wire import Context
 	from trezor.messages import MimbleWimbleCoinFinishTransaction, MimbleWimbleCoinTransactionSignatureAndPaymentProof
 
 
@@ -19,7 +18,7 @@ MAXIMUM_RELATIVE_HEIGHT = DAYS_IN_A_WEEK * HOURS_IN_A_DAY * MINUTES_IN_AN_HOUR
 # Supporting function implementation
 
 # Finish transaction
-async def finish_transaction(context: Context, message: MimbleWimbleCoinFinishTransaction) -> MimbleWimbleCoinTransactionSignatureAndPaymentProof:
+async def finish_transaction(message: MimbleWimbleCoinFinishTransaction) -> MimbleWimbleCoinTransactionSignatureAndPaymentProof:
 
 	# Imports
 	from trezor.messages import MimbleWimbleCoinTransactionSignatureAndPaymentProof
@@ -49,7 +48,7 @@ async def finish_transaction(context: Context, message: MimbleWimbleCoinFinishTr
 	await unlock_device()
 	
 	# Cache seed
-	await derive_and_store_roots(context, False)
+	await derive_and_store_roots(False)
 	
 	# Initialize storage
 	initializeStorage()
@@ -234,7 +233,7 @@ async def finish_transaction(context: Context, message: MimbleWimbleCoinFinishTr
 			raise DataError("")
 	
 	# Get extended private key
-	extendedPrivateKey = await getExtendedPrivateKey(context, coinInfo, transactionContextStructure.account)
+	extendedPrivateKey = await getExtendedPrivateKey(coinInfo, transactionContextStructure.account)
 	
 	# Check if session's transaction context is sending
 	if send != 0:
@@ -299,66 +298,66 @@ async def finish_transaction(context: Context, message: MimbleWimbleCoinFinishTr
 	try:
 	
 		# Show prompt
-		await confirm_action(context, "", coinInfo.name, action = "Send transaction?" if send != 0 else "Receive transaction?", verb = "Next")
+		await confirm_action("", coinInfo.name, action = "Send transaction?" if send != 0 else "Receive transaction?", verb = "Next")
 		
 		# Show prompt
-		await confirm_value(context, "Account Index", str(transactionContextStructure.account), "", "", verb = "Next")
+		await confirm_value("Account Index", str(transactionContextStructure.account), "", "", verb = "Next")
 		
 		# Show prompt
 		receive = unpack(NATIVE_UINT64_PACK_FORMAT, transactionContextStructure.receive)[0]
-		await confirm_value(context, "Amount", format_amount(send if send != 0 else receive, coinInfo.fractionalDigits, useGrouping = False), "", "", verb = "Next")
+		await confirm_value("Amount", format_amount(send if send != 0 else receive, coinInfo.fractionalDigits, useGrouping = False), "", "", verb = "Next")
 		
 		# Show prompt
 		fee = unpack(NATIVE_UINT64_PACK_FORMAT, transactionContextStructure.fee)[0]
-		await confirm_value(context, "Fee", format_amount(fee, coinInfo.fractionalDigits, useGrouping = False), "", "", verb = "Next")
+		await confirm_value("Fee", format_amount(fee, coinInfo.fractionalDigits, useGrouping = False), "", "", verb = "Next")
 		
 		# Check kernel information's features is plain features
 		if message.kernel_information[0] == mimblewimble_coin.KernelFeatures.PLAIN_FEATURES:
 		
 			# Show prompt
-			await confirm_action(context, "", "Kernel Features", action = "Plain", verb = "Next")
+			await confirm_action("", "Kernel Features", action = "Plain", verb = "Next")
 		
 		# Otherwise check kernel information's features is coinbase features
 		elif message.kernel_information[0] == mimblewimble_coin.KernelFeatures.COINBASE_FEATURES:
 		
 			# Show prompt
-			await confirm_action(context, "", "Kernel Features", action = "Coinbase", verb = "Next")
+			await confirm_action("", "Kernel Features", action = "Coinbase", verb = "Next")
 		
 		# Otherwise check kernel information's features is height locked features
 		elif message.kernel_information[0] == mimblewimble_coin.KernelFeatures.HEIGHT_LOCKED_FEATURES:
 		
 			# Show prompt
-			await confirm_action(context, "", "Kernel Features", action = "Height locked", verb = "Next")
+			await confirm_action("", "Kernel Features", action = "Height locked", verb = "Next")
 			
 			# Get lock height from kernel information
 			lockHeight = unpack("<BQ", message.kernel_information)[1]
 			
 			# Show prompt
-			await confirm_value(context, "Lock Height", str(lockHeight), "", "", verb = "Next")
+			await confirm_value("Lock Height", str(lockHeight), "", "", verb = "Next")
 		
 		# Otherwise check kernel information's features is no recent duplicate features
 		elif message.kernel_information[0] == mimblewimble_coin.KernelFeatures.NO_RECENT_DUPLICATE_FEATURES:
 		
 			# Show prompt
-			await confirm_action(context, "", "Kernel Features", action = "No recent duplicate", verb = "Next")
+			await confirm_action("", "Kernel Features", action = "No recent duplicate", verb = "Next")
 			
 			# Get relative height from kernel information
 			relativeHeight = unpack("<BH", message.kernel_information)[1]
 			
 			# Show prompt
-			await confirm_value(context, "Relative Height", str(relativeHeight), "", "", verb = "Next")
+			await confirm_value("Relative Height", str(relativeHeight), "", "", verb = "Next")
 		
 		# Check if kernel commitment exists
 		if message.kernel_commitment is not None:
 		
 			# Show prompt
-			await confirm_blob(context, "", "Proof Address", bytes(transactionContextStructure.address).split(b"\0", 1)[0].decode(), verb = "Approve".upper())
+			await confirm_blob("", "Proof Address", bytes(transactionContextStructure.address).split(b"\0", 1)[0].decode(), verb = "Approve".upper())
 			
 		# Otherwise
 		else:
 		
 			# Show prompt
-			await show_warning(context, "", "No payment proof.", button = "Approve", br_code = ButtonRequestType.Other, left_is_small = True)
+			await show_warning("", "No payment proof.", button = "Approve", br_code = ButtonRequestType.Other, left_is_small = True)
 	
 	# Catch action cancelled errors
 	except ActionCancelled:
