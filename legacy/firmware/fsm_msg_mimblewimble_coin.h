@@ -69,7 +69,7 @@ void fsm_msgMimbleWimbleCoinGetRootPublicKey(const MimbleWimbleCoinGetRootPublic
 	CHECK_PIN
 	
 	// Check if caching seed failed
-	if(!config_getSeed()) {
+	if(!config_getSeed(false)) {
 	
 		// Return
 		return;
@@ -235,7 +235,7 @@ void fsm_msgMimbleWimbleCoinGetAddress(const MimbleWimbleCoinGetAddress *message
 	CHECK_PIN
 	
 	// Check if caching seed failed
-	if(!config_getSeed()) {
+	if(!config_getSeed(false)) {
 	
 		// Return
 		return;
@@ -436,7 +436,7 @@ void fsm_msgMimbleWimbleCoinGetSeedCookie(const MimbleWimbleCoinGetSeedCookie *m
 	CHECK_PIN
 	
 	// Check if caching seed failed
-	if(!config_getSeed()) {
+	if(!config_getSeed(false)) {
 	
 		// Return
 		return;
@@ -547,7 +547,7 @@ void fsm_msgMimbleWimbleCoinGetCommitment(const MimbleWimbleCoinGetCommitment *m
 	CHECK_PIN
 	
 	// Check if caching seed failed
-	if(!config_getSeed()) {
+	if(!config_getSeed(false)) {
 	
 		// Return
 		return;
@@ -701,7 +701,7 @@ void fsm_msgMimbleWimbleCoinGetBulletproofComponents(const MimbleWimbleCoinGetBu
 	CHECK_PIN
 	
 	// Check if caching seed failed
-	if(!config_getSeed()) {
+	if(!config_getSeed(false)) {
 	
 		// Return
 		return;
@@ -924,7 +924,7 @@ void fsm_msgMimbleWimbleCoinVerifyRootPublicKey(const MimbleWimbleCoinVerifyRoot
 	CHECK_PIN
 	
 	// Check if caching seed failed
-	if(!config_getSeed()) {
+	if(!config_getSeed(false)) {
 	
 		// Return
 		return;
@@ -1078,7 +1078,7 @@ void fsm_msgMimbleWimbleCoinVerifyAddress(const MimbleWimbleCoinVerifyAddress *m
 	CHECK_PIN
 	
 	// Check if caching seed failed
-	if(!config_getSeed()) {
+	if(!config_getSeed(false)) {
 	
 		// Return
 		return;
@@ -1393,7 +1393,7 @@ void fsm_msgMimbleWimbleCoinStartEncryptingSlate(const MimbleWimbleCoinStartEncr
 	CHECK_PIN
 	
 	// Check if caching seed failed
-	if(!config_getSeed()) {
+	if(!config_getSeed(false)) {
 	
 		// Return
 		return;
@@ -1635,7 +1635,7 @@ void fsm_msgMimbleWimbleCoinContinueEncryptingSlate(const MimbleWimbleCoinContin
 	CHECK_PIN
 	
 	// Check if caching seed failed
-	if(!config_getSeed()) {
+	if(!config_getSeed(false)) {
 	
 		// Return
 		return;
@@ -1731,7 +1731,7 @@ void fsm_msgMimbleWimbleCoinFinishEncryptingSlate(__attribute__((unused)) const 
 	CHECK_PIN
 	
 	// Check if caching seed failed
-	if(!config_getSeed()) {
+	if(!config_getSeed(false)) {
 	
 		// Return
 		return;
@@ -1838,7 +1838,7 @@ void fsm_msgMimbleWimbleCoinStartDecryptingSlate(const MimbleWimbleCoinStartDecr
 	CHECK_PIN
 	
 	// Check if caching seed failed
-	if(!config_getSeed()) {
+	if(!config_getSeed(false)) {
 	
 		// Return
 		return;
@@ -2168,7 +2168,7 @@ void fsm_msgMimbleWimbleCoinContinueDecryptingSlate(const MimbleWimbleCoinContin
 	CHECK_PIN
 	
 	// Check if caching seed failed
-	if(!config_getSeed()) {
+	if(!config_getSeed(false)) {
 	
 		// Return
 		return;
@@ -2264,7 +2264,7 @@ void fsm_msgMimbleWimbleCoinFinishDecryptingSlate(const MimbleWimbleCoinFinishDe
 	CHECK_PIN
 	
 	// Check if caching seed failed
-	if(!config_getSeed()) {
+	if(!config_getSeed(false)) {
 	
 		// Return
 		return;
@@ -2360,7 +2360,7 @@ void fsm_msgMimbleWimbleCoinStartTransaction(const MimbleWimbleCoinStartTransact
 	CHECK_PIN
 	
 	// Check if caching seed failed
-	if(!config_getSeed()) {
+	if(!config_getSeed(false)) {
 	
 		// Return
 		return;
@@ -2684,7 +2684,7 @@ void fsm_msgMimbleWimbleCoinContinueTransactionIncludeOutput(const MimbleWimbleC
 	CHECK_PIN
 	
 	// Check if caching seed failed
-	if(!config_getSeed()) {
+	if(!config_getSeed(false)) {
 	
 		// Return
 		return;
@@ -2863,7 +2863,7 @@ void fsm_msgMimbleWimbleCoinContinueTransactionIncludeInput(const MimbleWimbleCo
 	CHECK_PIN
 	
 	// Check if caching seed failed
-	if(!config_getSeed()) {
+	if(!config_getSeed(false)) {
 	
 		// Return
 		return;
@@ -3045,7 +3045,7 @@ void fsm_msgMimbleWimbleCoinContinueTransactionApplyOffset(const MimbleWimbleCoi
 	CHECK_PIN
 	
 	// Check if caching seed failed
-	if(!config_getSeed()) {
+	if(!config_getSeed(false)) {
 	
 		// Return
 		return;
@@ -3181,7 +3181,7 @@ void fsm_msgMimbleWimbleCoinContinueTransactionGetPublicKey(__attribute__((unuse
 	CHECK_PIN
 	
 	// Check if caching seed failed
-	if(!config_getSeed()) {
+	if(!config_getSeed(false)) {
 	
 		// Return
 		return;
@@ -3290,7 +3290,7 @@ void fsm_msgMimbleWimbleCoinContinueTransactionGetPublicNonce(__attribute__((unu
 	CHECK_PIN
 	
 	// Check if caching seed failed
-	if(!config_getSeed()) {
+	if(!config_getSeed(false)) {
 	
 		// Return
 		return;
@@ -3399,7 +3399,7 @@ void fsm_msgMimbleWimbleCoinContinueTransactionGetMessageSignature(const MimbleW
 	CHECK_PIN
 	
 	// Check if caching seed failed
-	if(!config_getSeed()) {
+	if(!config_getSeed(false)) {
 	
 		// Return
 		return;
@@ -3534,7 +3534,7 @@ void fsm_msgMimbleWimbleCoinFinishTransaction(const MimbleWimbleCoinFinishTransa
 	CHECK_PIN
 	
 	// Check if caching seed failed
-	if(!config_getSeed()) {
+	if(!config_getSeed(false)) {
 	
 		// Return
 		return;
@@ -4307,7 +4307,7 @@ void fsm_msgMimbleWimbleCoinGetMqsChallengeSignature(const MimbleWimbleCoinGetMq
 	CHECK_PIN
 	
 	// Check if caching seed failed
-	if(!config_getSeed()) {
+	if(!config_getSeed(false)) {
 	
 		// Return
 		return;

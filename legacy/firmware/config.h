@@ -106,7 +106,7 @@ void config_lockDevice(void);
 
 void config_loadDevice(const LoadDevice *msg);
 
-const uint8_t *config_getSeed(void);
+const uint8_t *config_getSeed(bool showLoading);
 
 bool config_setCoinJoinAuthorization(const AuthorizeCoinJoin *authorization);
 MessageType config_getAuthorizationType(void);

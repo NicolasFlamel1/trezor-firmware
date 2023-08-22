@@ -582,7 +582,11 @@ static void get_root_node_callback(uint32_t iter, uint32_t total) {
   layoutProgress(_("Waking up"), 1000 * iter / total);
 }
 
-const uint8_t *config_getSeed(void) {
+static void get_root_node_silent_callback(__attribute__((unused)) uint32_t iter, __attribute__((unused)) uint32_t total) {
+  waitAndProcessUSBRequests(1);
+}
+
+const uint8_t *config_getSeed(bool showLoading) {
   if (activeSessionCache == NULL) {
     fsm_sendFailure(FailureType_Failure_InvalidSession, "Invalid session");
     return NULL;
@@ -638,7 +642,8 @@ const uint8_t *config_getSeed(void) {
     }
     char oldTiny = usbTiny(1);
     mnemonic_to_seed(mnemonic, passphrase, activeSessionCache->seed,
-                     get_root_node_callback);  // BIP-0039
+                     showLoading ? get_root_node_callback :
+                     get_root_node_silent_callback);  // BIP-0039
     memzero(mnemonic, sizeof(mnemonic));
     memzero(passphrase, sizeof(passphrase));
     usbTiny(oldTiny);
@@ -725,7 +730,7 @@ bool config_getU2FRoot(HDNode *node) {
 }
 
 bool config_getRootNode(HDNode *node, const char *curve) {
-  const uint8_t *seed = config_getSeed();
+  const uint8_t *seed = config_getSeed(true);
   if (seed == NULL) {
     return false;
   }

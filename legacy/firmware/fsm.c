@@ -254,7 +254,7 @@ static HDNode *fsm_getDerivedNode(const char *curve, const uint32_t *address_n,
 
 static bool fsm_getSlip21Key(const char *path[], size_t path_count,
                              uint8_t key[32]) {
-  const uint8_t *seed = config_getSeed();
+  const uint8_t *seed = config_getSeed(true);
   if (seed == NULL) {
     return false;
   }
