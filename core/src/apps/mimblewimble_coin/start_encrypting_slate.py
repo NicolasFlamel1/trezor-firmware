@@ -1,5 +1,6 @@
 # Imports
 from typing import TYPE_CHECKING
+from micropython import const
 
 # Check if type checking
 if TYPE_CHECKING:
@@ -7,6 +8,12 @@ if TYPE_CHECKING:
 	# Imports
 	from trezor.wire import Context
 	from trezor.messages import MimbleWimbleCoinStartEncryptingSlate, MimbleWimbleCoinEncryptedSlateNonceAndSalt
+
+
+# Constants
+
+# Maximum recipient address size
+MAXIMUM_RECIPIENT_ADDRESS_SIZE = const(0xFF - 8)
 
 
 # Supporting function implementation
@@ -26,6 +33,7 @@ async def start_encrypting_slate(context: Context, message: MimbleWimbleCoinStar
 	from uctypes import struct, addressof, UINT8, UINT32
 	from .coins import getCoinInfo, SlateEncryptionType
 	from .common import getExtendedPrivateKey, UINT32_MAX
+	from .storage import initializeStorage
 	
 	# Check if not initialized
 	if not is_initialized():
@@ -39,7 +47,8 @@ async def start_encrypting_slate(context: Context, message: MimbleWimbleCoinStar
 	# Cache seed
 	await derive_and_store_roots(context, False)
 	
-	# TODO Initialize storage
+	# Initialize storage
+	initializeStorage()
 	
 	# Clear session
 	delete(APP_MIMBLEWIMBLE_COIN_ENCRYPTION_AND_DECRYPTION_CONTEXT)
@@ -72,6 +81,12 @@ async def start_encrypting_slate(context: Context, message: MimbleWimbleCoinStar
 	
 	# Check if index is invalid
 	if message.index > UINT32_MAX:
+	
+		# Raise data error
+		raise DataError("")
+	
+	# Check if recipient address is invalid
+	if len(message.recipient_address) > MAXIMUM_RECIPIENT_ADDRESS_SIZE:
 	
 		# Raise data error
 		raise DataError("")

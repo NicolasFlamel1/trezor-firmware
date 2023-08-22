@@ -1921,7 +1921,7 @@ size_t mimbleWimbleCoinFinishTransaction(uint8_t *signature, uint8_t *paymentPro
 					return 0;
 				}
 				
-				// Return if address public key isn't a valid secp256k1 public key
+				// Check if address public key isn't a valid secp256k1 public key
 				curve_point temp;
 				if(!ecdsa_read_pubkey(&secp256k1, addressPublicKey, &temp)) {
 				

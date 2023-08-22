@@ -21,13 +21,13 @@ async def get_root_public_key(context: Context, message: MimbleWimbleCoinGetRoot
 	from apps.common.seed import derive_and_store_roots
 	from storage.cache import delete, APP_MIMBLEWIMBLE_COIN_ENCRYPTION_AND_DECRYPTION_CONTEXT, APP_MIMBLEWIMBLE_COIN_TRANSACTION_CONTEXT
 	from trezor.wire import NotInitialized, ProcessError, DataError
-	from trezor.workflow import close_others
 	from trezor.ui.layouts import confirm_action, confirm_value, show_warning
 	from trezor.enums import ButtonRequestType
 	from trezor.crypto import mimblewimble_coin
 	from apps.common.paths import HARDENED
 	from .coins import getCoinInfo
 	from .common import getExtendedPrivateKey
+	from .storage import initializeStorage
 	
 	# Check if not initialized
 	if not is_initialized():
@@ -41,7 +41,8 @@ async def get_root_public_key(context: Context, message: MimbleWimbleCoinGetRoot
 	# Cache seed
 	await derive_and_store_roots(context, False)
 	
-	# TODO Initialize storage
+	# Initialize storage
+	initializeStorage()
 	
 	# Clear session
 	delete(APP_MIMBLEWIMBLE_COIN_ENCRYPTION_AND_DECRYPTION_CONTEXT)
@@ -64,9 +65,6 @@ async def get_root_public_key(context: Context, message: MimbleWimbleCoinGetRoot
 	
 	# Show prompt
 	await show_warning(context, "", "The host will be able to view the account's transactions.", button = "Approve", br_code = ButtonRequestType.Other)
-	
-	# Close running layout
-	close_others()
 	
 	# Get extended private key
 	extendedPrivateKey = await getExtendedPrivateKey(context, coinInfo, message.account)

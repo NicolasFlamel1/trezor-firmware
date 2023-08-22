@@ -96,9 +96,6 @@ const USB_PRODUCT_ID = 0x53C1;
 // Default currency
 const DEFAULT_CURRENCY = "mimblewimble_coin";
 
-// Seconds from 1970 to 2000
-const SECONDS_FROM_1970_TO_2000 = 946684800;
-
 
 // Classes
 
@@ -3592,7 +3589,7 @@ async function getMqsTimestampSignatureTest(hardwareWallet, extendedPrivateKey) 
 	console.log("Running get MQS timestamp signature test");
 	
 	// Timestamp
-	const TIMESTAMP = new BigNumber(Math.floor(Math.random() * (Common.UINT32_MAX_VALUE - SECONDS_FROM_1970_TO_2000 + 1)) + SECONDS_FROM_1970_TO_2000)
+	const TIMESTAMP = new BigNumber(Math.round(Math.random() * Common.UINT32_MAX_VALUE));
 	
 	// Log timestamp
 	console.log("Using timestamp: " + TIMESTAMP.multipliedBy(Common.MILLISECONDS_IN_A_SECOND).toFixed());

@@ -23,6 +23,7 @@ async def continue_encrypting_slate(context: Context, message: MimbleWimbleCoinC
 	from trezor.wire import NotInitialized, ProcessError, DataError, InvalidSession
 	from trezor.crypto import mimblewimble_coin
 	from uctypes import struct, addressof, UINT8
+	from .storage import initializeStorage
 	
 	# Check if not initialized
 	if not is_initialized():
@@ -36,7 +37,8 @@ async def continue_encrypting_slate(context: Context, message: MimbleWimbleCoinC
 	# Cache seed
 	await derive_and_store_roots(context, False)
 	
-	# TODO Initialize storage
+	# Initialize storage
+	initializeStorage()
 	
 	# Clear unrelated session
 	delete(APP_MIMBLEWIMBLE_COIN_TRANSACTION_CONTEXT)

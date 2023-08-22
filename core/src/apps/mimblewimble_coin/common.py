@@ -25,6 +25,9 @@ UINT32_MAX = const(0xFFFFFFFF)
 # Uint64 max
 UINT64_MAX = const(0xFFFFFFFFFFFFFFFF)
 
+# Native uint64 pack format
+NATIVE_UINT64_PACK_FORMAT = const("@Q")
+
 
 # Supporting function implementation
 

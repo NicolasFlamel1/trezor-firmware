@@ -2,7 +2,7 @@ from typing import *
 from enum import IntEnum, IntFlag
 from trezorcrypto.bip32 import HDNode
 from apps.mimblewimble_coin.coins import CoinInfo
-from trezor.enums import MimbleWimbleCoinSwitchType
+from trezor.enums import MimbleWimbleCoinSwitchType, MimbleWimbleCoinAddressType
 
 
 # extmod/modtrezorcrypto/modtrezorcrypto-mimblewimble_coin.h
@@ -52,6 +52,17 @@ class EncryptingOrDecryptingState(IntEnum):
     READY_STATE = 1
     ACTIVE_STATE = 2
     COMPLETE_STATE = 3
+
+
+# extmod/modtrezorcrypto/modtrezorcrypto-mimblewimble_coin.h
+class KernelFeatures(IntEnum):
+    """
+    Kernel features
+    """
+    PLAIN_FEATURES = 0
+    COINBASE_FEATURES = 1
+    HEIGHT_LOCKED_FEATURES = 2
+    NO_RECENT_DUPLICATE_FEATURES = 3
 
 
 # extmod/modtrezorcrypto/modtrezorcrypto-mimblewimble_coin.h
@@ -191,6 +202,111 @@ def decryptData(encryptionAndDecryptionContext: memoryview, encryptedData: bytes
 def finishDecryption(encryptionAndDecryptionContext: memoryview, tag: bytes) -> bytes:
     """
     Finish decryption
+    """
+
+
+# extmod/modtrezorcrypto/modtrezorcrypto-mimblewimble_coin.h
+def isValidSlatepackAddress(slatepackAddress: str, coinInfo: CoinInfo) -> bool:
+    """
+    Is valid Slatepack address
+    """
+
+
+# extmod/modtrezorcrypto/modtrezorcrypto-mimblewimble_coin.h
+def isZero(data: bytes) -> bool:
+    """
+    Is zero
+    """
+
+
+# extmod/modtrezorcrypto/modtrezorcrypto-mimblewimble_coin.h
+def startTransaction(transactionContext: memoryview, index: int, output: int, input: int, fee: int, secretNonceIndex: int, address: str) -> None:
+    """
+    Start transaction
+    """
+
+
+# extmod/modtrezorcrypto/modtrezorcrypto-mimblewimble_coin.h
+def includeOutputInTransaction(transactionContext: memoryview, extendedPrivateKey: HDNode, value: int, identifier: bytes, switchType: MimbleWimbleCoinSwitchType) -> None:
+    """
+    Include output in transaction
+    """
+
+
+# extmod/modtrezorcrypto/modtrezorcrypto-mimblewimble_coin.h
+def includeInputInTransaction(transactionContext: memoryview, extendedPrivateKey: HDNode, value: int, identifier: bytes, switchType: MimbleWimbleCoinSwitchType) -> None:
+    """
+    Include input in transaction
+    """
+
+
+# extmod/modtrezorcrypto/modtrezorcrypto-mimblewimble_coin.h
+def isValidSecp256k1PrivateKey(privateKey: bytes) -> bool:
+    """
+    Is valid secp256k1 private key
+    """
+
+
+# extmod/modtrezorcrypto/modtrezorcrypto-mimblewimble_coin.h
+def applyOffsetToTransaction(transactionContext: memoryview, offset: bytes) -> int | None:
+    """
+    Apply offset to transaction
+    """
+
+
+# extmod/modtrezorcrypto/modtrezorcrypto-mimblewimble_coin.h
+def getTransactionPublicKey(transactionContext: memoryview) -> bytes:
+    """
+    Get transaction public key
+    """
+
+
+# extmod/modtrezorcrypto/modtrezorcrypto-mimblewimble_coin.h
+def getTransactionPublicNonce(transactionContext: memoryview) -> bytes:
+    """
+    Get transaction public nonce
+    """
+
+
+# extmod/modtrezorcrypto/modtrezorcrypto-mimblewimble_coin.h
+def getTransactionMessageSignature(transactionContext: memoryview, message: str) -> bytes:
+    """
+    Get transaction message signature
+    """
+
+
+# extmod/modtrezorcrypto/modtrezorcrypto-mimblewimble_coin.h
+def isValidSecp256k1PublicKey(publicKey: bytes) -> bool:
+    """
+    Is valid secp256k1 public key
+    """
+
+
+# extmod/modtrezorcrypto/modtrezorcrypto-mimblewimble_coin.h
+def isValidCommitment(commitment: bytes) -> bool:
+    """
+    Is valid commitment
+    """
+
+
+# extmod/modtrezorcrypto/modtrezorcrypto-mimblewimble_coin.h
+def verifyTransactionPaymentProof(transactionContext: memoryview, extendedPrivateKey: HDNode, coinInfo: CoinInfo, addressType: MimbleWimbleCoinAddressType, kernelCommitment: bytes, paymentProof: bytes) -> bool:
+    """
+    Verify transaction payment proof
+    """
+
+
+# extmod/modtrezorcrypto/modtrezorcrypto-mimblewimble_coin.h
+def finishTransaction(transactionContext: memoryview, extendedPrivateKey: HDNode, coinInfo: CoinInfo, addressType: MimbleWimbleCoinAddressType, publicNonce: bytes, publicKey: bytes, kernelInformation: bytes, kernelCommitment: bytes | None) -> tuple[bytes, bytes | None]:
+    """
+    Finish transaction
+    """
+
+
+# extmod/modtrezorcrypto/modtrezorcrypto-mimblewimble_coin.h
+def getTimestampComponents(timestamp: int) -> tuple[int, int, int, int, int, int]:
+    """
+    Get timestamp components
     """
 
 

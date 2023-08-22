@@ -332,8 +332,8 @@ message MimbleWimbleCoinContinueTransactionIncludeInput {
 /**
  * Request: Continue transaction apply offset
  * @start
- * @next Success
  * @next MimbleWimbleCoinTransactionSecretNonceIndex
+ * @next Failure
  */
 message MimbleWimbleCoinContinueTransactionApplyOffset {
     required bytes offset = 1; // Offset
@@ -350,8 +350,8 @@ message MimbleWimbleCoinTransactionSecretNonceIndex {
 /**
  * Request: Continue transaction get public key
  * @start
- * @next Success
  * @next MimbleWimbleCoinTransactionPublicKey
+ * @next Failure
  */
 message MimbleWimbleCoinContinueTransactionGetPublicKey {
 }
@@ -367,8 +367,8 @@ message MimbleWimbleCoinTransactionPublicKey {
 /**
  * Request: Continue transaction get public nonce
  * @start
- * @next Success
  * @next MimbleWimbleCoinTransactionPublicNonce
+ * @next Failure
  */
 message MimbleWimbleCoinContinueTransactionGetPublicNonce {
 }
@@ -384,8 +384,8 @@ message MimbleWimbleCoinTransactionPublicNonce {
 /**
  * Request: Continue transaction get message signature
  * @start
- * @next Success
  * @next MimbleWimbleCoinTransactionMessageSignature
+ * @next Failure
  */
 message MimbleWimbleCoinContinueTransactionGetMessageSignature {
     required bytes message = 1; // Message
@@ -402,8 +402,8 @@ message MimbleWimbleCoinTransactionMessageSignature {
 /**
  * Request: Finish transaction
  * @start
- * @next Success
  * @next MimbleWimbleCoinTransactionSignatureAndPaymentProof
+ * @next Failure
  */
 message MimbleWimbleCoinFinishTransaction {
     required MimbleWimbleCoinAddressType address_type = 1; // Address type

@@ -25,6 +25,7 @@ async def get_seed_cookie(context: Context, message: MimbleWimbleCoinGetSeedCook
 	from apps.common.paths import HARDENED
 	from .coins import getCoinInfo
 	from .common import getExtendedPrivateKey
+	from .storage import initializeStorage
 	
 	# Check if not initialized
 	if not is_initialized():
@@ -38,7 +39,8 @@ async def get_seed_cookie(context: Context, message: MimbleWimbleCoinGetSeedCook
 	# Cache seed
 	await derive_and_store_roots(context, False)
 	
-	# TODO Initialize storage
+	# Initialize storage
+	initializeStorage()
 	
 	# Clear session
 	delete(APP_MIMBLEWIMBLE_COIN_ENCRYPTION_AND_DECRYPTION_CONTEXT)

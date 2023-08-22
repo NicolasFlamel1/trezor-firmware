@@ -1,5 +1,6 @@
 // Header files
 #include <ctype.h>
+#include <time.h>
 #include "base58.h"
 #include "base32.h"
 #include "mimblewimble_coin_generators.h"
@@ -9,7 +10,7 @@
 /// from enum import IntEnum, IntFlag
 /// from trezorcrypto.bip32 import HDNode
 /// from apps.mimblewimble_coin.coins import CoinInfo
-/// from trezor.enums import MimbleWimbleCoinSwitchType
+/// from trezor.enums import MimbleWimbleCoinSwitchType, MimbleWimbleCoinAddressType
 
 
 // Definitions
@@ -19,12 +20,6 @@
 
 // Blinding factor size
 #define MIMBLEWIMBLE_COIN_BLINDING_FACTOR_SIZE 32
-
-// Slatepack address size without human-readable part
-#define MIMBLEWIMBLE_COIN_SLATEPACK_ADDRESS_SIZE_WITHOUT_HUMAN_READABLE_PART 59
-
-// Number of transaction secret nonces
-#define MIMBLEWIMBLE_COIN_NUMBER_OF_TRANSACTION_SECRET_NONCES 30
 
 // Transaction secret nonce size
 #define MIMBLEWIMBLE_COIN_TRANSACTION_SECRET_NONCE_SIZE 32
@@ -37,6 +32,9 @@
 
 // Tor address size
 #define MIMBLEWIMBLE_COIN_TOR_ADDRESS_SIZE 56
+
+// Slatepack address size without human-readable part
+#define MIMBLEWIMBLE_COIN_SLATEPACK_ADDRESS_SIZE_WITHOUT_HUMAN_READABLE_PART 59
 
 // Identifier depth index
 #define MIMBLEWIMBLE_COIN_IDENTIFIER_DEPTH_INDEX 0
@@ -284,6 +282,14 @@ typedef enum __attribute__((__packed__)) _MimbleWimbleCoinEncryptingOrDecrypting
 } MimbleWimbleCoinEncryptingOrDecryptingState;
 
 // Kernel features
+/// class KernelFeatures(IntEnum):
+///     """
+///     Kernel features
+///     """
+///     PLAIN_FEATURES = 0
+///     COINBASE_FEATURES = 1
+///     HEIGHT_LOCKED_FEATURES = 2
+///     NO_RECENT_DUPLICATE_FEATURES = 3
 typedef enum __attribute__((__packed__)) _MimbleWimbleCoinKernelFeatures {
 
 	// Plain features
@@ -536,6 +542,111 @@ STATIC mp_obj_t mod_trezorcrypto_mimblewimble_coin_decryptData(mp_obj_t encrypti
 ///     """
 STATIC mp_obj_t mod_trezorcrypto_mimblewimble_coin_finishDecryption(mp_obj_t encryptionAndDecryptionContextObject, const mp_obj_t tagObject);
 
+// Is valid Slatepack address
+/// def isValidSlatepackAddress(slatepackAddress: str, coinInfo: CoinInfo) -> bool:
+///     """
+///     Is valid Slatepack address
+///     """
+STATIC mp_obj_t mod_trezorcrypto_mimblewimble_coin_isValidSlatepackAddress(const mp_obj_t slatepackAddressObject, const mp_obj_t coinInfoObject);
+
+// Is zero
+/// def isZero(data: bytes) -> bool:
+///     """
+///     Is zero
+///     """
+STATIC mp_obj_t mod_trezorcrypto_mimblewimble_coin_isZero(const mp_obj_t dataObject);
+
+// Start transaction
+/// def startTransaction(transactionContext: memoryview, index: int, output: int, input: int, fee: int, secretNonceIndex: int, address: str) -> None:
+///     """
+///     Start transaction
+///     """
+STATIC mp_obj_t mod_trezorcrypto_mimblewimble_coin_startTransaction(const size_t argumentsLength, const mp_obj_t *arguments);
+
+// Include output in transaction
+/// def includeOutputInTransaction(transactionContext: memoryview, extendedPrivateKey: HDNode, value: int, identifier: bytes, switchType: MimbleWimbleCoinSwitchType) -> None:
+///     """
+///     Include output in transaction
+///     """
+STATIC mp_obj_t mod_trezorcrypto_mimblewimble_coin_includeOutputInTransaction(const size_t argumentsLength, const mp_obj_t *arguments);
+
+// Include input in transaction
+/// def includeInputInTransaction(transactionContext: memoryview, extendedPrivateKey: HDNode, value: int, identifier: bytes, switchType: MimbleWimbleCoinSwitchType) -> None:
+///     """
+///     Include input in transaction
+///     """
+STATIC mp_obj_t mod_trezorcrypto_mimblewimble_coin_includeInputInTransaction(const size_t argumentsLength, const mp_obj_t *arguments);
+
+// Is valid secp256k1 private key
+/// def isValidSecp256k1PrivateKey(privateKey: bytes) -> bool:
+///     """
+///     Is valid secp256k1 private key
+///     """
+STATIC mp_obj_t mod_trezorcrypto_mimblewimble_coin_isValidSecp256k1PrivateKey(const mp_obj_t privateKeyObject);
+
+// Apply offset to transaction
+/// def applyOffsetToTransaction(transactionContext: memoryview, offset: bytes) -> int | None:
+///     """
+///     Apply offset to transaction
+///     """
+STATIC mp_obj_t mod_trezorcrypto_mimblewimble_coin_applyOffsetToTransaction(mp_obj_t transactionContextObject, const mp_obj_t offsetObject);
+
+// Get transaction public key
+/// def getTransactionPublicKey(transactionContext: memoryview) -> bytes:
+///     """
+///     Get transaction public key
+///     """
+STATIC mp_obj_t mod_trezorcrypto_mimblewimble_coin_getTransactionPublicKey(const mp_obj_t transactionContextObject);
+
+// Get transaction public nonce
+/// def getTransactionPublicNonce(transactionContext: memoryview) -> bytes:
+///     """
+///     Get transaction public nonce
+///     """
+STATIC mp_obj_t mod_trezorcrypto_mimblewimble_coin_getTransactionPublicNonce(const mp_obj_t transactionContextObject);
+
+// Get transaction message signature
+/// def getTransactionMessageSignature(transactionContext: memoryview, message: str) -> bytes:
+///     """
+///     Get transaction message signature
+///     """
+STATIC mp_obj_t mod_trezorcrypto_mimblewimble_coin_getTransactionMessageSignature(mp_obj_t transactionContextObject, const mp_obj_t messageObject);
+
+// Is valid secp256k1 public key
+/// def isValidSecp256k1PublicKey(publicKey: bytes) -> bool:
+///     """
+///     Is valid secp256k1 public key
+///     """
+STATIC mp_obj_t mod_trezorcrypto_mimblewimble_coin_isValidSecp256k1PublicKey(const mp_obj_t publicKeyObject);
+
+// Is valid commitment
+/// def isValidCommitment(commitment: bytes) -> bool:
+///     """
+///     Is valid commitment
+///     """
+STATIC mp_obj_t mod_trezorcrypto_mimblewimble_coin_isValidCommitment(const mp_obj_t commitmentObject);
+
+// Verify transaction payment proof
+/// def verifyTransactionPaymentProof(transactionContext: memoryview, extendedPrivateKey: HDNode, coinInfo: CoinInfo, addressType: MimbleWimbleCoinAddressType, kernelCommitment: bytes, paymentProof: bytes) -> bool:
+///     """
+///     Verify transaction payment proof
+///     """
+STATIC mp_obj_t mod_trezorcrypto_mimblewimble_coin_verifyTransactionPaymentProof(const size_t argumentsLength, const mp_obj_t *const arguments);
+
+// Finish transaction
+/// def finishTransaction(transactionContext: memoryview, extendedPrivateKey: HDNode, coinInfo: CoinInfo, addressType: MimbleWimbleCoinAddressType, publicNonce: bytes, publicKey: bytes, kernelInformation: bytes, kernelCommitment: bytes | None) -> tuple[bytes, bytes | None]:
+///     """
+///     Finish transaction
+///     """
+STATIC mp_obj_t mod_trezorcrypto_mimblewimble_coin_finishTransaction(const size_t argumentsLength, const mp_obj_t *const arguments);
+
+// Get timestamp components
+/// def getTimestampComponents(timestamp: int) -> tuple[int, int, int, int, int, int]:
+///     """
+///     Get timestamp components
+///     """
+STATIC mp_obj_t mod_trezorcrypto_mimblewimble_coin_getTimestampComponents(const mp_obj_t timestampObject);
+
 // Get MQS challenge signature
 /// def getMqsChallengeSignature(extendedPrivateKey: HDNode, coinInfo: CoinInfo, index: int, challenge: str) -> bytes:
 ///     """
@@ -662,6 +773,15 @@ STATIC bool mimbleWimbleCoinIsValidX25519PublicKey(const uint8_t *publicKey, con
 
 // Is valid secp256k1 private key
 STATIC bool mimbleWimbleCoinIsValidSecp256k1PrivateKey(const uint8_t *privateKey, const size_t privateKeyLength);
+
+// Get MQS address
+STATIC bool mimbleWimbleCoinGetMqsAddress(char *mqsAddress, const HDNode *extendedPrivateKey, const mp_obj_t coinInfoObject, const uint32_t index);
+
+// Get Tor address
+STATIC bool mimbleWimbleCoinGetTorAddress(char *torAddress, const HDNode *extendedPrivateKey, const mp_obj_t coinInfoObject, const uint32_t index);
+
+// Get Slatepack address
+STATIC bool mimbleWimbleCoinGetSlatepackAddress(char *slatepackAddress, const HDNode *extendedPrivateKey, const mp_obj_t coinInfoObject, const uint32_t index);
 
 
 // Constants
@@ -843,6 +963,32 @@ STATIC const mp_obj_type_t mod_trezorcrypto_mimblewimble_coin_EncryptingOrDecryp
 	.locals_dict = (mp_obj_dict_t *)&mod_trezorcrypto_mimblewimble_coin_EncryptingOrDecryptingState_dictionary
 };
 
+// Kernel features table
+STATIC const mp_rom_map_elem_t mod_trezorcrypto_mimblewimble_coin_KernelFeatures_table[] = {
+
+	// Plain features
+	{MP_ROM_QSTR(MP_QSTR_PLAIN_FEATURES), MP_ROM_INT(MimbleWimbleCoinKernelFeatures_PLAIN_FEATURES)},
+	
+	// Coinbase features
+	{MP_ROM_QSTR(MP_QSTR_COINBASE_FEATURES), MP_ROM_INT(MimbleWimbleCoinKernelFeatures_COINBASE_FEATURES)},
+	
+	// Height locked features
+	{MP_ROM_QSTR(MP_QSTR_HEIGHT_LOCKED_FEATURES), MP_ROM_INT(MimbleWimbleCoinKernelFeatures_HEIGHT_LOCKED_FEATURES)},
+	
+	// No recent duplicate features
+	{MP_ROM_QSTR(MP_QSTR_NO_RECENT_DUPLICATE_FEATURES), MP_ROM_INT(MimbleWimbleCoinKernelFeatures_NO_RECENT_DUPLICATE_FEATURES)}
+};
+
+// Kernel features dictionary
+STATIC const MP_DEFINE_CONST_DICT(mod_trezorcrypto_mimblewimble_coin_KernelFeatures_dictionary, mod_trezorcrypto_mimblewimble_coin_KernelFeatures_table);
+
+// Kernel features type
+STATIC const mp_obj_type_t mod_trezorcrypto_mimblewimble_coin_KernelFeatures_type = {
+	.base = {&mp_type_type},
+	.name = MP_QSTR_KernelFeatures,
+	.locals_dict = (mp_obj_dict_t *)&mod_trezorcrypto_mimblewimble_coin_KernelFeatures_dictionary
+};
+
 // Get root public key function
 STATIC const MP_DEFINE_CONST_FUN_OBJ_1(mod_trezorcrypto_mimblewimble_coin_getRootPublicKey_function, mod_trezorcrypto_mimblewimble_coin_getRootPublicKey);
 
@@ -903,6 +1049,51 @@ STATIC const MP_DEFINE_CONST_FUN_OBJ_2(mod_trezorcrypto_mimblewimble_coin_decryp
 // Finish decryption
 STATIC const MP_DEFINE_CONST_FUN_OBJ_2(mod_trezorcrypto_mimblewimble_coin_finishDecryption_function, mod_trezorcrypto_mimblewimble_coin_finishDecryption);
 
+// Is valid Slatepack address
+STATIC const MP_DEFINE_CONST_FUN_OBJ_2(mod_trezorcrypto_mimblewimble_coin_isValidSlatepackAddress_function, mod_trezorcrypto_mimblewimble_coin_isValidSlatepackAddress);
+
+// Is zero
+STATIC const MP_DEFINE_CONST_FUN_OBJ_1(mod_trezorcrypto_mimblewimble_coin_isZero_function, mod_trezorcrypto_mimblewimble_coin_isZero);
+
+// Start transaction
+STATIC const MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(mod_trezorcrypto_mimblewimble_coin_startTransaction_function, 7, 7, mod_trezorcrypto_mimblewimble_coin_startTransaction);
+
+// Include output in transaction
+STATIC const MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(mod_trezorcrypto_mimblewimble_coin_includeOutputInTransaction_function, 5, 5, mod_trezorcrypto_mimblewimble_coin_includeOutputInTransaction);
+
+// Include input in transaction
+STATIC const MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(mod_trezorcrypto_mimblewimble_coin_includeInputInTransaction_function, 5, 5, mod_trezorcrypto_mimblewimble_coin_includeInputInTransaction);
+
+// Is valid secp256k1 private key
+STATIC const MP_DEFINE_CONST_FUN_OBJ_1(mod_trezorcrypto_mimblewimble_coin_isValidSecp256k1PrivateKey_function, mod_trezorcrypto_mimblewimble_coin_isValidSecp256k1PrivateKey);
+
+// Apply offset to transaction
+STATIC const MP_DEFINE_CONST_FUN_OBJ_2(mod_trezorcrypto_mimblewimble_coin_applyOffsetToTransaction_function, mod_trezorcrypto_mimblewimble_coin_applyOffsetToTransaction);
+
+// Get transaction public key
+STATIC const MP_DEFINE_CONST_FUN_OBJ_1(mod_trezorcrypto_mimblewimble_coin_getTransactionPublicKey_function, mod_trezorcrypto_mimblewimble_coin_getTransactionPublicKey);
+
+// Get transaction public nonce
+STATIC const MP_DEFINE_CONST_FUN_OBJ_1(mod_trezorcrypto_mimblewimble_coin_getTransactionPublicNonce_function, mod_trezorcrypto_mimblewimble_coin_getTransactionPublicNonce);
+
+// Get transaction message signature
+STATIC const MP_DEFINE_CONST_FUN_OBJ_2(mod_trezorcrypto_mimblewimble_coin_getTransactionMessageSignature_function, mod_trezorcrypto_mimblewimble_coin_getTransactionMessageSignature);
+
+// Is valid secp256k1 public key
+STATIC const MP_DEFINE_CONST_FUN_OBJ_1(mod_trezorcrypto_mimblewimble_coin_isValidSecp256k1PublicKey_function, mod_trezorcrypto_mimblewimble_coin_isValidSecp256k1PublicKey);
+
+// Is valid commitment
+STATIC const MP_DEFINE_CONST_FUN_OBJ_1(mod_trezorcrypto_mimblewimble_coin_isValidCommitment_function, mod_trezorcrypto_mimblewimble_coin_isValidCommitment);
+
+// Verify transaction payment proof
+STATIC const MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(mod_trezorcrypto_mimblewimble_coin_verifyTransactionPaymentProof_function, 6, 6, mod_trezorcrypto_mimblewimble_coin_verifyTransactionPaymentProof);
+
+// Finish transaction
+STATIC const MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(mod_trezorcrypto_mimblewimble_coin_finishTransaction_function, 8, 8, mod_trezorcrypto_mimblewimble_coin_finishTransaction);
+
+// Get timestamp components
+STATIC const MP_DEFINE_CONST_FUN_OBJ_1(mod_trezorcrypto_mimblewimble_coin_getTimestampComponents_function, mod_trezorcrypto_mimblewimble_coin_getTimestampComponents);
+
 // Get MQS challenge signature
 STATIC const MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(mod_trezorcrypto_mimblewimble_coin_getMqsChallengeSignature_function, 4, 4, mod_trezorcrypto_mimblewimble_coin_getMqsChallengeSignature);
 
@@ -915,11 +1106,17 @@ STATIC const mp_rom_map_elem_t mod_trezorcrypto_mimblewimble_coin_globals_table[
 	// Name
 	{MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR_mimblewimble_coin)},
 	
+	// Encrypted transaction secret nonce size
+	{MP_ROM_QSTR(MP_QSTR_ENCRYPTED_TRANSACTION_SECRET_NONCE_SIZE), MP_ROM_INT(MIMBLEWIMBLE_COIN_ENCRYPTED_TRANSACTION_SECRET_NONCE_SIZE)},
+	
 	// MQS address size
 	{MP_ROM_QSTR(MP_QSTR_MQS_ADDRESS_SIZE), MP_ROM_INT(MIMBLEWIMBLE_COIN_MQS_ADDRESS_SIZE)},
 	
 	// Tor address size
 	{MP_ROM_QSTR(MP_QSTR_TOR_ADDRESS_SIZE), MP_ROM_INT(MIMBLEWIMBLE_COIN_TOR_ADDRESS_SIZE)},
+	
+	// Slatepack address size without human-readable part
+	{MP_ROM_QSTR(MP_QSTR_SLATEPACK_ADDRESS_SIZE_WITHOUT_HUMAN_READABLE_PART), MP_ROM_INT(MIMBLEWIMBLE_COIN_SLATEPACK_ADDRESS_SIZE_WITHOUT_HUMAN_READABLE_PART)},
 	
 	// Identifier depth index
 	{MP_ROM_QSTR(MP_QSTR_IDENTIFIER_DEPTH_INDEX), MP_ROM_INT(MIMBLEWIMBLE_COIN_IDENTIFIER_DEPTH_INDEX)},
@@ -966,6 +1163,9 @@ STATIC const mp_rom_map_elem_t mod_trezorcrypto_mimblewimble_coin_globals_table[
 	// Encrypting or decrypting state
 	{MP_ROM_QSTR(MP_QSTR_EncryptingOrDecryptingState), MP_ROM_PTR(&mod_trezorcrypto_mimblewimble_coin_EncryptingOrDecryptingState_type)},
 	
+	// Kernel features
+	{MP_ROM_QSTR(MP_QSTR_KernelFeatures), MP_ROM_PTR(&mod_trezorcrypto_mimblewimble_coin_KernelFeatures_type)},
+	
 	// Encryption and decryption context size
 	{MP_ROM_QSTR(MP_QSTR_ENCRYPTION_AND_DECRYPTION_CONTEXT_SIZE), MP_ROM_INT(sizeof(MimbleWimbleCoinEncryptionAndDecryptionContext))},
 	
@@ -986,6 +1186,45 @@ STATIC const mp_rom_map_elem_t mod_trezorcrypto_mimblewimble_coin_globals_table[
 	
 	// Transaction context size
 	{MP_ROM_QSTR(MP_QSTR_TRANSACTION_CONTEXT_SIZE), MP_ROM_INT(sizeof(MimbleWimbleCoinTransactionContext))},
+	
+	// Transaction context coin type offset
+	{MP_ROM_QSTR(MP_QSTR_TRANSACTION_CONTEXT_COIN_TYPE_OFFSET), MP_ROM_INT(offsetof(MimbleWimbleCoinTransactionContext, coinType))},
+	
+	// Transaction context network type offset
+	{MP_ROM_QSTR(MP_QSTR_TRANSACTION_CONTEXT_NETWORK_TYPE_OFFSET), MP_ROM_INT(offsetof(MimbleWimbleCoinTransactionContext, networkType))},
+	
+	// Transaction context account offset
+	{MP_ROM_QSTR(MP_QSTR_TRANSACTION_CONTEXT_ACCOUNT_OFFSET), MP_ROM_INT(offsetof(MimbleWimbleCoinTransactionContext, account))},
+	
+	// Transaction context send offset
+	{MP_ROM_QSTR(MP_QSTR_TRANSACTION_CONTEXT_SEND_OFFSET), MP_ROM_INT(offsetof(MimbleWimbleCoinTransactionContext, send))},
+	
+	// Transaction context receive offset
+	{MP_ROM_QSTR(MP_QSTR_TRANSACTION_CONTEXT_RECEIVE_OFFSET), MP_ROM_INT(offsetof(MimbleWimbleCoinTransactionContext, receive))},
+	
+	// Transaction context fee offset
+	{MP_ROM_QSTR(MP_QSTR_TRANSACTION_CONTEXT_FEE_OFFSET), MP_ROM_INT(offsetof(MimbleWimbleCoinTransactionContext, fee))},
+	
+	// Transaction context remaining output offset
+	{MP_ROM_QSTR(MP_QSTR_TRANSACTION_CONTEXT_REMAINING_OUTPUT_OFFSET), MP_ROM_INT(offsetof(MimbleWimbleCoinTransactionContext, remainingOutput))},
+	
+	// Transaction context remaining input offset
+	{MP_ROM_QSTR(MP_QSTR_TRANSACTION_CONTEXT_REMAINING_INPUT_OFFSET), MP_ROM_INT(offsetof(MimbleWimbleCoinTransactionContext, remainingInput))},
+	
+	// Transaction context started offset
+	{MP_ROM_QSTR(MP_QSTR_TRANSACTION_CONTEXT_STARTED_OFFSET), MP_ROM_INT(offsetof(MimbleWimbleCoinTransactionContext, started))},
+	
+	// Transaction context offset applied offset
+	{MP_ROM_QSTR(MP_QSTR_TRANSACTION_CONTEXT_OFFSET_APPLIED_OFFSET), MP_ROM_INT(offsetof(MimbleWimbleCoinTransactionContext, offsetApplied))},
+	
+	// Transaction context message signed offset
+	{MP_ROM_QSTR(MP_QSTR_TRANSACTION_CONTEXT_MESSAGE_SIGNED_OFFSET), MP_ROM_INT(offsetof(MimbleWimbleCoinTransactionContext, messageSigned))},
+	
+	// Transaction context address offset
+	{MP_ROM_QSTR(MP_QSTR_TRANSACTION_CONTEXT_ADDRESS_OFFSET), MP_ROM_INT(offsetof(MimbleWimbleCoinTransactionContext, address))},
+	
+	// Transaction context address size
+	{MP_ROM_QSTR(MP_QSTR_TRANSACTION_CONTEXT_ADDRESS_SIZE), MP_ROM_INT(sizeof(((const MimbleWimbleCoinTransactionContext *)NULL)->address))},
 	
 	// Default MQS challenge
 	{MP_ROM_QSTR(MP_QSTR_DEFAULT_MQS_CHALLENGE), MP_ROM_PTR(&mod_trezorcrypto_mimblewimble_coin_DEFAULT_MQS_CHALLENGE_string)},
@@ -1050,6 +1289,51 @@ STATIC const mp_rom_map_elem_t mod_trezorcrypto_mimblewimble_coin_globals_table[
 	// Finish decryption
 	{MP_ROM_QSTR(MP_QSTR_finishDecryption), MP_ROM_PTR(&mod_trezorcrypto_mimblewimble_coin_finishDecryption_function)},
 	
+	// Is valid Slatepack address
+	{MP_ROM_QSTR(MP_QSTR_isValidSlatepackAddress), MP_ROM_PTR(&mod_trezorcrypto_mimblewimble_coin_isValidSlatepackAddress_function)},
+	
+	// Is zero
+	{MP_ROM_QSTR(MP_QSTR_isZero), MP_ROM_PTR(&mod_trezorcrypto_mimblewimble_coin_isZero_function)},
+	
+	// Start transaction
+	{MP_ROM_QSTR(MP_QSTR_startTransaction), MP_ROM_PTR(&mod_trezorcrypto_mimblewimble_coin_startTransaction_function)},
+	
+	// Include output in transaction
+	{MP_ROM_QSTR(MP_QSTR_includeOutputInTransaction), MP_ROM_PTR(&mod_trezorcrypto_mimblewimble_coin_includeOutputInTransaction_function)},
+	
+	// Include input in transaction
+	{MP_ROM_QSTR(MP_QSTR_includeInputInTransaction), MP_ROM_PTR(&mod_trezorcrypto_mimblewimble_coin_includeInputInTransaction_function)},
+	
+	// Is valid secp256k1 private key
+	{MP_ROM_QSTR(MP_QSTR_isValidSecp256k1PrivateKey), MP_ROM_PTR(&mod_trezorcrypto_mimblewimble_coin_isValidSecp256k1PrivateKey_function)},
+	
+	// Apply offset to transaction
+	{MP_ROM_QSTR(MP_QSTR_applyOffsetToTransaction), MP_ROM_PTR(&mod_trezorcrypto_mimblewimble_coin_applyOffsetToTransaction_function)},
+	
+	// Get transaction public key
+	{MP_ROM_QSTR(MP_QSTR_getTransactionPublicKey), MP_ROM_PTR(&mod_trezorcrypto_mimblewimble_coin_getTransactionPublicKey_function)},
+	
+	// Get transaction public nonce
+	{MP_ROM_QSTR(MP_QSTR_getTransactionPublicNonce), MP_ROM_PTR(&mod_trezorcrypto_mimblewimble_coin_getTransactionPublicNonce_function)},
+	
+	// Get transaction message signature
+	{MP_ROM_QSTR(MP_QSTR_getTransactionMessageSignature), MP_ROM_PTR(&mod_trezorcrypto_mimblewimble_coin_getTransactionMessageSignature_function)},
+	
+	// Is valid secp256k1 public key
+	{MP_ROM_QSTR(MP_QSTR_isValidSecp256k1PublicKey), MP_ROM_PTR(&mod_trezorcrypto_mimblewimble_coin_isValidSecp256k1PublicKey_function)},
+	
+	// Is valid commitment
+	{MP_ROM_QSTR(MP_QSTR_isValidCommitment), MP_ROM_PTR(&mod_trezorcrypto_mimblewimble_coin_isValidCommitment_function)},
+	
+	// Verify transaction payment proof
+	{MP_ROM_QSTR(MP_QSTR_verifyTransactionPaymentProof), MP_ROM_PTR(&mod_trezorcrypto_mimblewimble_coin_verifyTransactionPaymentProof_function)},
+	
+	// Finish transaction
+	{MP_ROM_QSTR(MP_QSTR_finishTransaction), MP_ROM_PTR(&mod_trezorcrypto_mimblewimble_coin_finishTransaction_function)},
+	
+	// Get timestamp components
+	{MP_ROM_QSTR(MP_QSTR_getTimestampComponents), MP_ROM_PTR(&mod_trezorcrypto_mimblewimble_coin_getTimestampComponents_function)},
+	
 	// Get MQS challenge signature
 	{MP_ROM_QSTR(MP_QSTR_getMqsChallengeSignature), MP_ROM_PTR(&mod_trezorcrypto_mimblewimble_coin_getMqsChallengeSignature_function)}
 };
@@ -1096,7 +1380,7 @@ mp_obj_t mod_trezorcrypto_mimblewimble_coin_getRootPublicKey(mp_obj_t extendedPr
 mp_obj_t mod_trezorcrypto_mimblewimble_coin_getMqsAddress(const mp_obj_t extendedPrivateKeyObject, const mp_obj_t coinInfoObject, const mp_obj_t indexObject) {
 
 	// Get extended private key
-	const HDNode *extendedPrivateKey = &((mp_obj_HDNode_t *)MP_OBJ_TO_PTR(extendedPrivateKeyObject))->hdnode;
+	const HDNode *extendedPrivateKey = &((const mp_obj_HDNode_t *)MP_OBJ_TO_PTR(extendedPrivateKeyObject))->hdnode;
 	
 	// Get index
 	const uint32_t index = mp_obj_get_int(indexObject);
@@ -1105,36 +1389,8 @@ mp_obj_t mod_trezorcrypto_mimblewimble_coin_getMqsAddress(const mp_obj_t extende
 	vstr_t mqsAddress;
 	vstr_init_len(&mqsAddress, MIMBLEWIMBLE_COIN_MQS_ADDRESS_SIZE);
 	
-	// Check if getting address private key failed
-	uint8_t addressPrivateKey[MIMBLEWIMBLE_COIN_SECP256K1_PRIVATE_KEY_SIZE];
-	if(!mimbleWimbleCoinGetAddressPrivateKey(addressPrivateKey, extendedPrivateKey, coinInfoObject, index, SECP256K1_NAME)) {
-	
-		// Free MQS address
-		vstr_clear(&mqsAddress);
-		
-		// Raise error
-		mp_raise_ValueError(NULL);
-	}
-	
-	// Check if getting address private key's public key failed
-	uint8_t addressPublicKey[MIMBLEWIMBLE_COIN_SECP256K1_COMPRESSED_PUBLIC_KEY_SIZE];
-	if(!mimbleWimbleCoinGetPublicKeyFromSecp256k1PrivateKey(addressPublicKey, addressPrivateKey)) {
-	
-		// Clear address private key
-		memzero(addressPrivateKey, sizeof(addressPrivateKey));
-		
-		// Free MQS address
-		vstr_clear(&mqsAddress);
-		
-		// Raise error
-		mp_raise_ValueError(NULL);
-	}
-	
-	// Clear address private key
-	memzero(addressPrivateKey, sizeof(addressPrivateKey));
-	
-	// Check if getting MQS address from the public key failed
-	if(!mimbleWimbleCoinGetMqsAddressFromPublicKey(mqsAddress.buf, coinInfoObject, addressPublicKey)) {
+	// Check if getting MQS address failed
+	if(!mimbleWimbleCoinGetMqsAddress(mqsAddress.buf, extendedPrivateKey, coinInfoObject, index)) {
 	
 		// Free MQS address
 		vstr_clear(&mqsAddress);
@@ -1151,7 +1407,7 @@ mp_obj_t mod_trezorcrypto_mimblewimble_coin_getMqsAddress(const mp_obj_t extende
 mp_obj_t mod_trezorcrypto_mimblewimble_coin_getTorAddress(const mp_obj_t extendedPrivateKeyObject, const mp_obj_t coinInfoObject, const mp_obj_t indexObject) {
 
 	// Get extended private key
-	const HDNode *extendedPrivateKey = &((mp_obj_HDNode_t *)MP_OBJ_TO_PTR(extendedPrivateKeyObject))->hdnode;
+	const HDNode *extendedPrivateKey = &((const mp_obj_HDNode_t *)MP_OBJ_TO_PTR(extendedPrivateKeyObject))->hdnode;
 	
 	// Get index
 	const uint32_t index = mp_obj_get_int(indexObject);
@@ -1160,26 +1416,8 @@ mp_obj_t mod_trezorcrypto_mimblewimble_coin_getTorAddress(const mp_obj_t extende
 	vstr_t torAddress;
 	vstr_init_len(&torAddress, MIMBLEWIMBLE_COIN_TOR_ADDRESS_SIZE);
 	
-	// Check if getting address private key failed
-	uint8_t addressPrivateKey[MIMBLEWIMBLE_COIN_ED25519_PRIVATE_KEY_SIZE];
-	if(!mimbleWimbleCoinGetAddressPrivateKey(addressPrivateKey, extendedPrivateKey, coinInfoObject, index, ED25519_NAME)) {
-	
-		// Free Tor address
-		vstr_clear(&torAddress);
-		
-		// Raise error
-		mp_raise_ValueError(NULL);
-	}
-	
-	// Get address private key's public key
-	uint8_t addressPublicKey[MIMBLEWIMBLE_COIN_ED25519_PUBLIC_KEY_SIZE];
-	ed25519_publickey(addressPrivateKey, addressPublicKey);
-	
-	// Clear address private key
-	memzero(addressPrivateKey, sizeof(addressPrivateKey));
-	
-	// Check if getting Tor address from the public key failed
-	if(!mimbleWimbleCoinGetTorAddressFromPublicKey(torAddress.buf, addressPublicKey)) {
+	// Check if getting Tor address failed
+	if(!mimbleWimbleCoinGetTorAddress(torAddress.buf, extendedPrivateKey, coinInfoObject, index)) {
 	
 		// Free Tor address
 		vstr_clear(&torAddress);
@@ -1196,7 +1434,7 @@ mp_obj_t mod_trezorcrypto_mimblewimble_coin_getTorAddress(const mp_obj_t extende
 mp_obj_t mod_trezorcrypto_mimblewimble_coin_getSlatepackAddress(const mp_obj_t extendedPrivateKeyObject, const mp_obj_t coinInfoObject, const mp_obj_t indexObject) {
 
 	// Get extended private key
-	const HDNode *extendedPrivateKey = &((mp_obj_HDNode_t *)MP_OBJ_TO_PTR(extendedPrivateKeyObject))->hdnode;
+	const HDNode *extendedPrivateKey = &((const mp_obj_HDNode_t *)MP_OBJ_TO_PTR(extendedPrivateKeyObject))->hdnode;
 	
 	// Get currency's Slatepack address human-readable part
 	mp_buffer_info_t slatepackAddressHumanReadablePart;
@@ -1209,26 +1447,8 @@ mp_obj_t mod_trezorcrypto_mimblewimble_coin_getSlatepackAddress(const mp_obj_t e
 	vstr_t slatepackAddress;
 	vstr_init_len(&slatepackAddress, MIMBLEWIMBLE_COIN_SLATEPACK_ADDRESS_SIZE_WITHOUT_HUMAN_READABLE_PART + slatepackAddressHumanReadablePart.len);
 	
-	// Check if getting address private key failed
-	uint8_t addressPrivateKey[MIMBLEWIMBLE_COIN_ED25519_PRIVATE_KEY_SIZE];
-	if(!mimbleWimbleCoinGetAddressPrivateKey(addressPrivateKey, extendedPrivateKey, coinInfoObject, index, ED25519_NAME)) {
-	
-		// Free Slatepack address
-		vstr_clear(&slatepackAddress);
-		
-		// Raise error
-		mp_raise_ValueError(NULL);
-	}
-	
-	// Get address private key's public key
-	uint8_t addressPublicKey[MIMBLEWIMBLE_COIN_ED25519_PUBLIC_KEY_SIZE];
-	ed25519_publickey(addressPrivateKey, addressPublicKey);
-	
-	// Clear address private key
-	memzero(addressPrivateKey, sizeof(addressPrivateKey));
-	
-	// Check if getting Slatepack address from the public key failed
-	if(!mimbleWimbleCoinGetSlatepackAddressFromPublicKey(slatepackAddress.buf, coinInfoObject, addressPublicKey)) {
+	// Check if getting Slatepack address failed
+	if(!mimbleWimbleCoinGetSlatepackAddress(slatepackAddress.buf, extendedPrivateKey, coinInfoObject, index)) {
 	
 		// Free Slatepack address
 		vstr_clear(&slatepackAddress);
@@ -1285,7 +1505,7 @@ mp_obj_t mod_trezorcrypto_mimblewimble_coin_getCommitment(__attribute__((unused)
 	const mp_obj_t switchTypeObject = arguments[3];
 	
 	// Get extended private key
-	const HDNode *extendedPrivateKey = &((mp_obj_HDNode_t *)MP_OBJ_TO_PTR(extendedPrivateKeyObject))->hdnode;
+	const HDNode *extendedPrivateKey = &((const mp_obj_HDNode_t *)MP_OBJ_TO_PTR(extendedPrivateKeyObject))->hdnode;
 	
 	// Get value
 	const uint64_t value = trezor_obj_get_uint64(valueObject);
@@ -1417,6 +1637,9 @@ mp_obj_t mod_trezorcrypto_mimblewimble_coin_getBulletproofComponents(__attribute
 		// Free t two
 		vstr_clear(&tTwo);
 		
+		// Free result
+		mp_obj_tuple_del(MP_OBJ_FROM_PTR(result));
+		
 		// Raise error
 		mp_raise_ValueError(NULL);
 	}
@@ -1436,6 +1659,9 @@ mp_obj_t mod_trezorcrypto_mimblewimble_coin_getBulletproofComponents(__attribute
 		
 		// Free t two
 		vstr_clear(&tTwo);
+		
+		// Free result
+		mp_obj_tuple_del(MP_OBJ_FROM_PTR(result));
 		
 		// Raise error
 		mp_raise_ValueError(NULL);
@@ -1459,6 +1685,9 @@ mp_obj_t mod_trezorcrypto_mimblewimble_coin_getBulletproofComponents(__attribute
 		
 		// Free t two
 		vstr_clear(&tTwo);
+		
+		// Free result
+		mp_obj_tuple_del(MP_OBJ_FROM_PTR(result));
 		
 		// Raise error
 		mp_raise_ValueError(NULL);
@@ -1486,6 +1715,9 @@ mp_obj_t mod_trezorcrypto_mimblewimble_coin_getBulletproofComponents(__attribute
 		// Free t two
 		vstr_clear(&tTwo);
 		
+		// Free result
+		mp_obj_tuple_del(MP_OBJ_FROM_PTR(result));
+		
 		// Raise error
 		mp_raise_ValueError(NULL);
 	}
@@ -1511,6 +1743,9 @@ mp_obj_t mod_trezorcrypto_mimblewimble_coin_getBulletproofComponents(__attribute
 		// Free t two
 		vstr_clear(&tTwo);
 		
+		// Free result
+		mp_obj_tuple_del(MP_OBJ_FROM_PTR(result));
+		
 		// Raise error
 		mp_raise_ValueError(NULL);
 	}
@@ -1535,6 +1770,9 @@ mp_obj_t mod_trezorcrypto_mimblewimble_coin_getBulletproofComponents(__attribute
 		
 		// Free t two
 		vstr_clear(&tTwo);
+		
+		// Free result
+		mp_obj_tuple_del(MP_OBJ_FROM_PTR(result));
 		
 		// Raise error
 		mp_raise_ValueError(NULL);
@@ -1565,6 +1803,9 @@ mp_obj_t mod_trezorcrypto_mimblewimble_coin_getBulletproofComponents(__attribute
 		// Free t two
 		vstr_clear(&tTwo);
 		
+		// Free result
+		mp_obj_tuple_del(MP_OBJ_FROM_PTR(result));
+		
 		// Raise error
 		mp_raise_ValueError(NULL);
 	}
@@ -1594,6 +1835,9 @@ mp_obj_t mod_trezorcrypto_mimblewimble_coin_getBulletproofComponents(__attribute
 		// Free t two
 		vstr_clear(&tTwo);
 		
+		// Free result
+		mp_obj_tuple_del(MP_OBJ_FROM_PTR(result));
+		
 		// Raise error
 		mp_raise_ValueError(NULL);
 	}
@@ -1618,6 +1862,9 @@ mp_obj_t mod_trezorcrypto_mimblewimble_coin_getBulletproofComponents(__attribute
 		
 		// Free t two
 		vstr_clear(&tTwo);
+		
+		// Free result
+		mp_obj_tuple_del(MP_OBJ_FROM_PTR(result));
 		
 		// Raise error
 		mp_raise_ValueError(NULL);
@@ -1648,6 +1895,9 @@ mp_obj_t mod_trezorcrypto_mimblewimble_coin_getBulletproofComponents(__attribute
 		
 		// Free t two
 		vstr_clear(&tTwo);
+		
+		// Free result
+		mp_obj_tuple_del(MP_OBJ_FROM_PTR(result));
 		
 		// Raise error
 		mp_raise_ValueError(NULL);
@@ -1762,7 +2012,7 @@ mp_obj_t mod_trezorcrypto_mimblewimble_coin_startMqsEncryption(__attribute__((un
 	memcpy(&workingEncryptionAndDecryptionContext, encryptionAndDecryptionContext.buf, encryptionAndDecryptionContext.len);
 	
 	// Get extended private key
-	const HDNode *extendedPrivateKey = &((mp_obj_HDNode_t *)MP_OBJ_TO_PTR(extendedPrivateKeyObject))->hdnode;
+	const HDNode *extendedPrivateKey = &((const mp_obj_HDNode_t *)MP_OBJ_TO_PTR(extendedPrivateKeyObject))->hdnode;
 	
 	// Get index
 	const uint32_t index = mp_obj_get_int(indexObject);
@@ -1805,6 +2055,9 @@ mp_obj_t mod_trezorcrypto_mimblewimble_coin_startMqsEncryption(__attribute__((un
 		
 		// Free salt
 		vstr_clear(&salt);
+		
+		// Free result
+		mp_obj_tuple_del(MP_OBJ_FROM_PTR(result));
 		
 		// Clear working encryption and decryption context
 		memzero(&workingEncryptionAndDecryptionContext, sizeof(workingEncryptionAndDecryptionContext));
@@ -1947,7 +2200,7 @@ mp_obj_t mod_trezorcrypto_mimblewimble_coin_startTorEncryption(__attribute__((un
 	memcpy(&workingEncryptionAndDecryptionContext, encryptionAndDecryptionContext.buf, encryptionAndDecryptionContext.len);
 	
 	// Get extended private key
-	const HDNode *extendedPrivateKey = &((mp_obj_HDNode_t *)MP_OBJ_TO_PTR(extendedPrivateKeyObject))->hdnode;
+	const HDNode *extendedPrivateKey = &((const mp_obj_HDNode_t *)MP_OBJ_TO_PTR(extendedPrivateKeyObject))->hdnode;
 	
 	// Get index
 	const uint32_t index = mp_obj_get_int(indexObject);
@@ -2084,7 +2337,7 @@ mp_obj_t mod_trezorcrypto_mimblewimble_coin_finishEncryption(mp_obj_t encryption
 	memcpy(&workingEncryptionAndDecryptionContext, encryptionAndDecryptionContext.buf, encryptionAndDecryptionContext.len);
 	
 	// Get extended private key
-	const HDNode *extendedPrivateKey = &((mp_obj_HDNode_t *)MP_OBJ_TO_PTR(extendedPrivateKeyObject))->hdnode;
+	const HDNode *extendedPrivateKey = &((const mp_obj_HDNode_t *)MP_OBJ_TO_PTR(extendedPrivateKeyObject))->hdnode;
 	
 	// Initialize nonce
 	vstr_t tag;
@@ -2128,6 +2381,9 @@ mp_obj_t mod_trezorcrypto_mimblewimble_coin_finishEncryption(mp_obj_t encryption
 			// Free MQS message signature
 			vstr_clear(&mqsMessageSignature);
 			
+			// Free result
+			mp_obj_tuple_del(MP_OBJ_FROM_PTR(result));
+			
 			// Clear working encryption and decryption context
 			memzero(&workingEncryptionAndDecryptionContext, sizeof(workingEncryptionAndDecryptionContext));
 			
@@ -2147,6 +2403,9 @@ mp_obj_t mod_trezorcrypto_mimblewimble_coin_finishEncryption(mp_obj_t encryption
 			
 			// Free MQS message signature
 			vstr_clear(&mqsMessageSignature);
+			
+			// Free result
+			mp_obj_tuple_del(MP_OBJ_FROM_PTR(result));
 			
 			// Clear working encryption and decryption context
 			memzero(&workingEncryptionAndDecryptionContext, sizeof(workingEncryptionAndDecryptionContext));
@@ -2190,7 +2449,7 @@ mp_obj_t mod_trezorcrypto_mimblewimble_coin_finishEncryption(mp_obj_t encryption
 }
 
 // Start MQS decryption
-mp_obj_t mod_trezorcrypto_mimblewimble_coin_startMqsDecryption(const size_t argumentsLength, const mp_obj_t *arguments) {
+mp_obj_t mod_trezorcrypto_mimblewimble_coin_startMqsDecryption(__attribute__((unused)) const size_t argumentsLength, const mp_obj_t *arguments) {
 
 	// Get arguments
 	mp_obj_t encryptionAndDecryptionContextObject = arguments[0];
@@ -2210,7 +2469,7 @@ mp_obj_t mod_trezorcrypto_mimblewimble_coin_startMqsDecryption(const size_t argu
 	memcpy(&workingEncryptionAndDecryptionContext, encryptionAndDecryptionContext.buf, encryptionAndDecryptionContext.len);
 	
 	// Get extended private key
-	const HDNode *extendedPrivateKey = &((mp_obj_HDNode_t *)MP_OBJ_TO_PTR(extendedPrivateKeyObject))->hdnode;
+	const HDNode *extendedPrivateKey = &((const mp_obj_HDNode_t *)MP_OBJ_TO_PTR(extendedPrivateKeyObject))->hdnode;
 	
 	// Get index
 	const uint32_t index = mp_obj_get_int(indexObject);
@@ -2261,7 +2520,7 @@ mp_obj_t mod_trezorcrypto_mimblewimble_coin_startMqsDecryption(const size_t argu
 }
 
 // Start Tor decryption
-mp_obj_t mod_trezorcrypto_mimblewimble_coin_startTorDecryption(const size_t argumentsLength, const mp_obj_t *arguments) {
+mp_obj_t mod_trezorcrypto_mimblewimble_coin_startTorDecryption(__attribute__((unused)) const size_t argumentsLength, const mp_obj_t *arguments) {
 
 	// Get arguments
 	mp_obj_t encryptionAndDecryptionContextObject = arguments[0];
@@ -2280,7 +2539,7 @@ mp_obj_t mod_trezorcrypto_mimblewimble_coin_startTorDecryption(const size_t argu
 	memcpy(&workingEncryptionAndDecryptionContext, encryptionAndDecryptionContext.buf, encryptionAndDecryptionContext.len);
 	
 	// Get extended private key
-	const HDNode *extendedPrivateKey = &((mp_obj_HDNode_t *)MP_OBJ_TO_PTR(extendedPrivateKeyObject))->hdnode;
+	const HDNode *extendedPrivateKey = &((const mp_obj_HDNode_t *)MP_OBJ_TO_PTR(extendedPrivateKeyObject))->hdnode;
 	
 	// Get index
 	const uint32_t index = mp_obj_get_int(indexObject);
@@ -2338,7 +2597,7 @@ mp_obj_t mod_trezorcrypto_mimblewimble_coin_isValidX25519PublicKey(const mp_obj_
 }
 
 // Start Slatepack decryption
-mp_obj_t mod_trezorcrypto_mimblewimble_coin_startSlatepackDecryption(const size_t argumentsLength, const mp_obj_t *arguments) {
+mp_obj_t mod_trezorcrypto_mimblewimble_coin_startSlatepackDecryption(__attribute__((unused)) const size_t argumentsLength, const mp_obj_t *arguments) {
 
 	// Get arguments
 	mp_obj_t encryptionAndDecryptionContextObject = arguments[0];
@@ -2359,7 +2618,7 @@ mp_obj_t mod_trezorcrypto_mimblewimble_coin_startSlatepackDecryption(const size_
 	memcpy(&workingEncryptionAndDecryptionContext, encryptionAndDecryptionContext.buf, encryptionAndDecryptionContext.len);
 	
 	// Get extended private key
-	const HDNode *extendedPrivateKey = &((mp_obj_HDNode_t *)MP_OBJ_TO_PTR(extendedPrivateKeyObject))->hdnode;
+	const HDNode *extendedPrivateKey = &((const mp_obj_HDNode_t *)MP_OBJ_TO_PTR(extendedPrivateKeyObject))->hdnode;
 	
 	// Get index
 	const uint32_t index = mp_obj_get_int(indexObject);
@@ -2552,6 +2811,1609 @@ mp_obj_t mod_trezorcrypto_mimblewimble_coin_finishDecryption(mp_obj_t encryption
 	return mp_obj_new_str_from_vstr(&mp_type_bytes, &aesKey);
 }
 
+// Is valid Slatepack address
+mp_obj_t mod_trezorcrypto_mimblewimble_coin_isValidSlatepackAddress(const mp_obj_t slatepackAddressObject, const mp_obj_t coinInfoObject) {
+
+	// Get Slatepack address
+	mp_buffer_info_t slatepackAddress;
+	mp_get_buffer(slatepackAddressObject, &slatepackAddress, MP_BUFFER_READ);
+	
+	// Return if getting the public key from the Slatepack address was successful
+	return mimbleWimbleCoinGetPublicKeyFromSlatepackAddress(NULL, coinInfoObject, slatepackAddress.buf, slatepackAddress.len) ? mp_const_true : mp_const_false;
+}
+
+// Is zero
+mp_obj_t mod_trezorcrypto_mimblewimble_coin_isZero(const mp_obj_t dataObject) {
+
+	// Get data
+	mp_buffer_info_t data;
+	mp_get_buffer(dataObject, &data, MP_BUFFER_READ);
+	
+	// Return if data is zero
+	return mimbleWimbleCoinIsZero(data.buf, data.len) ? mp_const_true : mp_const_false;
+}
+
+// Start transaction
+mp_obj_t mod_trezorcrypto_mimblewimble_coin_startTransaction(__attribute__((unused)) const size_t argumentsLength, const mp_obj_t *arguments) {
+
+	// Get arguments
+	mp_obj_t transactionContextObject = arguments[0];
+	const mp_obj_t indexObject = arguments[1];
+	const mp_obj_t outputObject = arguments[2];
+	const mp_obj_t inputObject = arguments[3];
+	const mp_obj_t feeObject = arguments[4];
+	const mp_obj_t secretNonceIndexObject = arguments[5];
+	const mp_obj_t addressObject = arguments[6];
+	
+	// Get transaction context
+	mp_buffer_info_t transactionContext;
+	mp_get_buffer(transactionContextObject, &transactionContext, MP_BUFFER_RW);
+	
+	// Copy transaction context
+	MimbleWimbleCoinTransactionContext workingTransactionContext;
+	memcpy(&workingTransactionContext, transactionContext.buf, transactionContext.len);
+	
+	// Get index
+	const uint32_t index = mp_obj_get_int(indexObject);
+	
+	// Get output
+	const uint64_t output = trezor_obj_get_uint64(outputObject);
+	
+	// Get input
+	const uint64_t input = trezor_obj_get_uint64(inputObject);
+	
+	// Get fee
+	const uint64_t fee = trezor_obj_get_uint64(feeObject);
+	
+	// Get secret nonce index
+	const uint32_t secretNonceIndex = mp_obj_get_int(secretNonceIndexObject);
+	
+	// Get address
+	mp_buffer_info_t address;
+	if(addressObject != mp_const_none) {
+		mp_get_buffer(addressObject, &address, MP_BUFFER_READ);
+	}
+	
+	// Check if an input exists
+	if(input) {
+	
+		// Set working transaction context's remaining input
+		workingTransactionContext.remainingInput = input + fee;
+		
+		// Set working transaction context's send
+		workingTransactionContext.send = input - output;
+		
+		// Set working transaction context's secret nonce index
+		workingTransactionContext.secretNonceIndex = secretNonceIndex;
+	}
+	
+	// Otherwise
+	else {
+	
+		// Check if creating working transaction context's secret nonce failed
+		if(!mimbleWimbleCoinCreateSingleSignerNonces(workingTransactionContext.secretNonce, NULL)) {
+		
+			// Clear working transaction context
+			memzero(&workingTransactionContext, sizeof(workingTransactionContext));
+			
+			// Raise error
+			mp_raise_ValueError(NULL);
+		}
+		
+		// Set working transaction context's receive
+		workingTransactionContext.receive = output;
+	}
+	
+	// Set working transaction context's index
+	workingTransactionContext.index = index;
+	
+	// Set working transaction context's remaining output
+	workingTransactionContext.remainingOutput = output;
+	
+	// Set working transaction context's fee
+	workingTransactionContext.fee = fee;
+	
+	// Check if address exists
+	if(addressObject != mp_const_none) {
+	
+		// Set working transaction context's address
+		memcpy(workingTransactionContext.address, address.buf, address.len);
+	}
+	
+	// Set that working transaction context has been started
+	workingTransactionContext.started = true;
+	
+	// Update transaction context
+	memcpy(transactionContext.buf, &workingTransactionContext, sizeof(workingTransactionContext));
+	
+	// Clear working transaction context
+	memzero(&workingTransactionContext, sizeof(workingTransactionContext));
+	
+	// Return none
+	return mp_const_none;
+}
+
+// Include output in transaction
+mp_obj_t mod_trezorcrypto_mimblewimble_coin_includeOutputInTransaction(__attribute__((unused)) const size_t argumentsLength, const mp_obj_t *arguments) {
+
+	// Get arguments
+	mp_obj_t transactionContextObject = arguments[0];
+	const mp_obj_t extendedPrivateKeyObject = arguments[1];
+	const mp_obj_t valueObject = arguments[2];
+	const mp_obj_t identifierObject = arguments[3];
+	const mp_obj_t switchTypeObject = arguments[4];
+	
+	// Get transaction context
+	mp_buffer_info_t transactionContext;
+	mp_get_buffer(transactionContextObject, &transactionContext, MP_BUFFER_RW);
+	
+	// Copy transaction context
+	MimbleWimbleCoinTransactionContext workingTransactionContext;
+	memcpy(&workingTransactionContext, transactionContext.buf, transactionContext.len);
+	
+	// Get extended private key
+	const HDNode *extendedPrivateKey = &((const mp_obj_HDNode_t *)MP_OBJ_TO_PTR(extendedPrivateKeyObject))->hdnode;
+	
+	// Get value
+	const uint64_t value = trezor_obj_get_uint64(valueObject);
+	
+	// Get identifier
+	mp_buffer_info_t identifier;
+	mp_get_buffer(identifierObject, &identifier, MP_BUFFER_READ);
+	
+	// Get identifier depth
+	const uint8_t identifierDepth = ((const uint8_t *)identifier.buf)[MIMBLEWIMBLE_COIN_IDENTIFIER_DEPTH_INDEX];
+	
+	// Get identifier path
+	uint32_t identifierPath[MIMBLEWIMBLE_COIN_MAXIMUM_IDENTIFIER_DEPTH];
+	memcpy(identifierPath, &((const uint8_t *)identifier.buf)[sizeof(identifierDepth)], MIMBLEWIMBLE_COIN_IDENTIFIER_SIZE - sizeof(identifierDepth));
+	
+	// Check if little endian
+	#if BYTE_ORDER == LITTLE_ENDIAN
+	
+		// Go through all parts of the identifier path
+		for(size_t i = 0; i < sizeof(identifierPath) / sizeof(identifierPath[0]); ++i) {
+		
+			// Make part little endian
+			REVERSE32(identifierPath[i], identifierPath[i]);
+		}
+	#endif
+	
+	// Check if deriving blinding factor failed
+	uint8_t blindingFactor[MIMBLEWIMBLE_COIN_BLINDING_FACTOR_SIZE];
+	if(!mimbleWimbleCoinDeriveBlindingFactor(blindingFactor, extendedPrivateKey, value, identifierPath, identifierDepth, switchTypeObject)) {
+	
+		// Clear working transaction context
+		memzero(&workingTransactionContext, sizeof(workingTransactionContext));
+		
+		// Raise error
+		mp_raise_ValueError(NULL);
+	}
+	
+	// Check if updating the transaction's blinding factor failed
+	if(!mimbleWimbleCoinUpdateBlindingFactorSum(workingTransactionContext.blindingFactor, blindingFactor, true)) {
+	
+		// Clear blinding factor
+		memzero(blindingFactor, sizeof(blindingFactor));
+		
+		// Clear working transaction context
+		memzero(&workingTransactionContext, sizeof(workingTransactionContext));
+		
+		// Raise error
+		mp_raise_ValueError(NULL);
+	}
+	
+	// Clear blinding factor
+	memzero(blindingFactor, sizeof(blindingFactor));
+	
+	// Remove value from the working transaction context's remaining output
+	workingTransactionContext.remainingOutput -= value;
+	
+	// Update transaction context
+	memcpy(transactionContext.buf, &workingTransactionContext, sizeof(workingTransactionContext));
+	
+	// Clear working transaction context
+	memzero(&workingTransactionContext, sizeof(workingTransactionContext));
+	
+	// Return none
+	return mp_const_none;
+}
+
+// Include input in transaction
+mp_obj_t mod_trezorcrypto_mimblewimble_coin_includeInputInTransaction(__attribute__((unused)) const size_t argumentsLength, const mp_obj_t *arguments) {
+
+	// Get arguments
+	mp_obj_t transactionContextObject = arguments[0];
+	const mp_obj_t extendedPrivateKeyObject = arguments[1];
+	const mp_obj_t valueObject = arguments[2];
+	const mp_obj_t identifierObject = arguments[3];
+	const mp_obj_t switchTypeObject = arguments[4];
+	
+	// Get transaction context
+	mp_buffer_info_t transactionContext;
+	mp_get_buffer(transactionContextObject, &transactionContext, MP_BUFFER_RW);
+	
+	// Copy transaction context
+	MimbleWimbleCoinTransactionContext workingTransactionContext;
+	memcpy(&workingTransactionContext, transactionContext.buf, transactionContext.len);
+	
+	// Get extended private key
+	const HDNode *extendedPrivateKey = &((const mp_obj_HDNode_t *)MP_OBJ_TO_PTR(extendedPrivateKeyObject))->hdnode;
+	
+	// Get value
+	const uint64_t value = trezor_obj_get_uint64(valueObject);
+	
+	// Get identifier
+	mp_buffer_info_t identifier;
+	mp_get_buffer(identifierObject, &identifier, MP_BUFFER_READ);
+	
+	// Get identifier depth
+	const uint8_t identifierDepth = ((const uint8_t *)identifier.buf)[MIMBLEWIMBLE_COIN_IDENTIFIER_DEPTH_INDEX];
+	
+	// Get identifier path
+	uint32_t identifierPath[MIMBLEWIMBLE_COIN_MAXIMUM_IDENTIFIER_DEPTH];
+	memcpy(identifierPath, &((const uint8_t *)identifier.buf)[sizeof(identifierDepth)], MIMBLEWIMBLE_COIN_IDENTIFIER_SIZE - sizeof(identifierDepth));
+	
+	// Check if little endian
+	#if BYTE_ORDER == LITTLE_ENDIAN
+	
+		// Go through all parts of the identifier path
+		for(size_t i = 0; i < sizeof(identifierPath) / sizeof(identifierPath[0]); ++i) {
+		
+			// Make part little endian
+			REVERSE32(identifierPath[i], identifierPath[i]);
+		}
+	#endif
+	
+	// Check if deriving blinding factor failed
+	uint8_t blindingFactor[MIMBLEWIMBLE_COIN_BLINDING_FACTOR_SIZE];
+	if(!mimbleWimbleCoinDeriveBlindingFactor(blindingFactor, extendedPrivateKey, value, identifierPath, identifierDepth, switchTypeObject)) {
+	
+		// Clear working transaction context
+		memzero(&workingTransactionContext, sizeof(workingTransactionContext));
+		
+		// Raise error
+		mp_raise_ValueError(NULL);
+	}
+	
+	// Check if updating the transaction's blinding factor failed
+	if(!mimbleWimbleCoinUpdateBlindingFactorSum(workingTransactionContext.blindingFactor, blindingFactor, false)) {
+	
+		// Clear blinding factor
+		memzero(blindingFactor, sizeof(blindingFactor));
+		
+		// Clear working transaction context
+		memzero(&workingTransactionContext, sizeof(workingTransactionContext));
+		
+		// Raise error
+		mp_raise_ValueError(NULL);
+	}
+	
+	// Clear blinding factor
+	memzero(blindingFactor, sizeof(blindingFactor));
+	
+	// Remove value from the working transaction context's remaining input
+	workingTransactionContext.remainingInput -= value;
+	
+	// Update transaction context
+	memcpy(transactionContext.buf, &workingTransactionContext, sizeof(workingTransactionContext));
+	
+	// Clear working transaction context
+	memzero(&workingTransactionContext, sizeof(workingTransactionContext));
+	
+	// Return none
+	return mp_const_none;
+}
+
+// Is valid secp256k1 private key
+mp_obj_t mod_trezorcrypto_mimblewimble_coin_isValidSecp256k1PrivateKey(const mp_obj_t privateKeyObject) {
+
+	// Get private key
+	mp_buffer_info_t privateKey;
+	mp_get_buffer(privateKeyObject, &privateKey, MP_BUFFER_READ);
+	
+	// Return if private key is a valid secp256k1 private key
+	return mimbleWimbleCoinIsValidSecp256k1PrivateKey(privateKey.buf, privateKey.len) ? mp_const_true : mp_const_false;
+}
+
+// Apply offset to transaction
+mp_obj_t mod_trezorcrypto_mimblewimble_coin_applyOffsetToTransaction(mp_obj_t transactionContextObject, const mp_obj_t offsetObject) {
+
+	// Import storage module
+	const mp_obj_t storageModule = mp_import_name(qstr_from_str("apps.mimblewimble_coin.storage"), mp_const_empty_tuple, MP_OBJ_NEW_SMALL_INT(0));
+	
+	// Get transaction context
+	mp_buffer_info_t transactionContext;
+	mp_get_buffer(transactionContextObject, &transactionContext, MP_BUFFER_RW);
+	
+	// Copy transaction context
+	MimbleWimbleCoinTransactionContext workingTransactionContext;
+	memcpy(&workingTransactionContext, transactionContext.buf, transactionContext.len);
+	
+	// Get offset
+	mp_buffer_info_t offset;
+	mp_get_buffer(offsetObject, &offset, MP_BUFFER_READ);
+	
+	// Initialize secret nonce index
+	mp_obj_t secretNonceIndex = mp_const_none;
+	
+	// Check if updating the working transaction's blinding factor failed
+	if(!mimbleWimbleCoinUpdateBlindingFactorSum(workingTransactionContext.blindingFactor, offset.buf, false)) {
+	
+		// Clear working transaction context
+		memzero(&workingTransactionContext, sizeof(workingTransactionContext));
+		
+		// Raise error
+		mp_raise_ValueError(NULL);
+	}
+	
+	// Set that working transaction context's offset was applied
+	workingTransactionContext.offsetApplied = true;
+	
+	// Check if working transaction context is sending
+	if(workingTransactionContext.send) {
+	
+		// Check if working transaction context doesn't have a secret nonce index
+		if(!workingTransactionContext.secretNonceIndex) {
+		
+			// Check if creating working transaction context's secret nonce failed
+			if(!mimbleWimbleCoinCreateSingleSignerNonces(workingTransactionContext.secretNonce, NULL)) {
+			
+				// Clear working transaction context
+				memzero(&workingTransactionContext, sizeof(workingTransactionContext));
+				
+				// Raise error
+				mp_raise_ValueError(NULL);
+			}
+			
+			// Check if AES encrypting the working transaction context's secret nonce with the working transaction context's blinding factor failed
+			uint8_t encryptedTransactionSecretNonce[MIMBLEWIMBLE_COIN_ENCRYPTED_TRANSACTION_SECRET_NONCE_SIZE];
+			if(!mimbleWimbleCoinAesEncrypt(encryptedTransactionSecretNonce, workingTransactionContext.blindingFactor, workingTransactionContext.secretNonce, sizeof(workingTransactionContext.secretNonce))) {
+			
+				// Clear working transaction context
+				memzero(&workingTransactionContext, sizeof(workingTransactionContext));
+				
+				// Raise error
+				mp_raise_ValueError(NULL);
+			}
+			
+			// Check if the encrypted transaction secret nonce is invalid
+			if(mimbleWimbleCoinIsZero(encryptedTransactionSecretNonce, sizeof(encryptedTransactionSecretNonce))) {
+			
+				// Clear working transaction context
+				memzero(&workingTransactionContext, sizeof(workingTransactionContext));
+				
+				// Raise error
+				mp_raise_ValueError(NULL);
+			}
+			
+			
+			// Check if getting current transaction secret nonce index from storage failed
+			const mp_obj_t currentTransactionSecretNonceIndexObject = mp_call_function_0(mp_load_attr(storageModule, MP_QSTR_getCurrentTransactionSecretNonceIndex));
+			if(currentTransactionSecretNonceIndexObject == mp_const_false) {
+			
+				// Clear working transaction context
+				memzero(&workingTransactionContext, sizeof(workingTransactionContext));
+				
+				// Raise error
+				mp_raise_ValueError(NULL);
+			}
+			
+			// Check if saving the encrypted transaction secret nonce at the current transaction secret nonce index in storage failed
+			const mp_obj_str_t encryptedTransactionSecretNonceObject = {{&mp_type_bytes}, 0, sizeof(encryptedTransactionSecretNonce), encryptedTransactionSecretNonce};
+			if(mp_call_function_2(mp_load_attr(storageModule, MP_QSTR_setTransactionSecretNonce), MP_OBJ_FROM_PTR(&encryptedTransactionSecretNonceObject), currentTransactionSecretNonceIndexObject) == mp_const_false) {
+			
+				// Clear working transaction context
+				memzero(&workingTransactionContext, sizeof(workingTransactionContext));
+				
+				// Raise error
+				mp_raise_ValueError(NULL);
+			}
+			
+			// Set working transaction context's secret nonce index
+			workingTransactionContext.secretNonceIndex = mp_obj_get_int(currentTransactionSecretNonceIndexObject) + 1;
+			
+			// Check if incrementing current transaction secret nonce index in storage failed
+			if(mp_call_function_0(mp_load_attr(storageModule, MP_QSTR_incrementCurrentTransactionSecretNonceIndex)) == mp_const_false) {
+			
+				// Clear working transaction context
+				memzero(&workingTransactionContext, sizeof(workingTransactionContext));
+				
+				// Raise error
+				mp_raise_ValueError(NULL);
+			}
+			
+			// Set secret nonce index to the working transaction context's secret nonce index
+			secretNonceIndex = MP_OBJ_NEW_SMALL_INT(workingTransactionContext.secretNonceIndex);
+		}
+		
+		// Otherwise
+		else {
+		
+			// Check if getting the encrypted transaction secret nonce at the working transaction context's secret nonce index from storage failed
+			const mp_obj_t encryptedTransactionSecretNonceObject = mp_call_function_1(mp_load_attr(storageModule, MP_QSTR_getTransactionSecretNonce), MP_OBJ_NEW_SMALL_INT(workingTransactionContext.secretNonceIndex - 1));
+			if(encryptedTransactionSecretNonceObject == mp_const_false) {
+			
+				// Clear working transaction context
+				memzero(&workingTransactionContext, sizeof(workingTransactionContext));
+				
+				// Raise error
+				mp_raise_ValueError(NULL);
+			}
+			
+			// Get encrypted transaction secret nonce
+			mp_buffer_info_t encryptedTransactionSecretNonce;
+			mp_get_buffer(encryptedTransactionSecretNonceObject, &encryptedTransactionSecretNonce, MP_BUFFER_READ);
+			
+			// Check if encrypted transaction secret nonce is invalid
+			if(mimbleWimbleCoinIsZero(encryptedTransactionSecretNonce.buf, encryptedTransactionSecretNonce.len)) {
+			
+				// Clear working transaction context
+				memzero(&workingTransactionContext, sizeof(workingTransactionContext));
+				
+				// Raise error
+				mp_raise_ValueError(NULL);
+			}
+			
+			// Check if AES decrypting the encrypted transaction secret nonce with the working transaction context's blinding factor failed
+			uint8_t transactionSecretNonce[encryptedTransactionSecretNonce.len];
+			const size_t transactionSecretNonceLength = mimbleWimbleCoinAesDecrypt(transactionSecretNonce, workingTransactionContext.blindingFactor, encryptedTransactionSecretNonce.buf, encryptedTransactionSecretNonce.len);
+			if(!transactionSecretNonceLength) {
+			
+				// Clear working transaction context
+				memzero(&workingTransactionContext, sizeof(workingTransactionContext));
+				
+				// Raise error
+				mp_raise_ValueError(NULL);
+			}
+			
+			// Check if transaction secret nonce length is invalid
+			if(transactionSecretNonceLength != sizeof(workingTransactionContext.secretNonce)) {
+			
+				// Clear transaction secret nonce
+				memzero(transactionSecretNonce, sizeof(transactionSecretNonce));
+				
+				// Clear working transaction context
+				memzero(&workingTransactionContext, sizeof(workingTransactionContext));
+				
+				// Raise error
+				mp_raise_ValueError(NULL);
+			}
+			
+			// Set working transaction context's secret nonce to the transaction secret nonce
+			memcpy(workingTransactionContext.secretNonce, transactionSecretNonce, transactionSecretNonceLength);
+			
+			// Clear transaction secret nonce
+			memzero(transactionSecretNonce, sizeof(transactionSecretNonce));
+		}
+	}
+	
+	// Update transaction context
+	memcpy(transactionContext.buf, &workingTransactionContext, sizeof(workingTransactionContext));
+	
+	// Clear working transaction context
+	memzero(&workingTransactionContext, sizeof(workingTransactionContext));
+	
+	// Return secret nonce index
+	return secretNonceIndex;
+}
+
+// Get transaction public key
+mp_obj_t mod_trezorcrypto_mimblewimble_coin_getTransactionPublicKey(const mp_obj_t transactionContextObject) {
+
+	// Get transaction context
+	mp_buffer_info_t transactionContext;
+	mp_get_buffer(transactionContextObject, &transactionContext, MP_BUFFER_READ);
+	
+	// Initialize public key
+	vstr_t publicKey;
+	vstr_init(&publicKey, MIMBLEWIMBLE_COIN_SECP256K1_COMPRESSED_PUBLIC_KEY_SIZE);
+	publicKey.len = MIMBLEWIMBLE_COIN_SECP256K1_COMPRESSED_PUBLIC_KEY_SIZE;
+	
+	// Check if getting the pubic key of the transaction context's blinding factor failed
+	if(!mimbleWimbleCoinGetPublicKeyFromSecp256k1PrivateKey((uint8_t *)publicKey.buf, ((const MimbleWimbleCoinTransactionContext *)transactionContext.buf)->blindingFactor)) {
+	
+		// Free public key
+		vstr_clear(&publicKey);
+		
+		// Raise error
+		mp_raise_ValueError(NULL);
+	}
+	
+	// Return public key
+	return mp_obj_new_str_from_vstr(&mp_type_bytes, &publicKey);
+}
+
+// Get transaction public nonce
+mp_obj_t mod_trezorcrypto_mimblewimble_coin_getTransactionPublicNonce(const mp_obj_t transactionContextObject) {
+
+	// Get transaction context
+	mp_buffer_info_t transactionContext;
+	mp_get_buffer(transactionContextObject, &transactionContext, MP_BUFFER_READ);
+	
+	// Initialize public nonce
+	vstr_t publicNonce;
+	vstr_init(&publicNonce, MIMBLEWIMBLE_COIN_SECP256K1_COMPRESSED_PUBLIC_KEY_SIZE);
+	publicNonce.len = MIMBLEWIMBLE_COIN_SECP256K1_COMPRESSED_PUBLIC_KEY_SIZE;
+	
+	// Check if getting the pubic key of the transaction context's secret nonce failed
+	if(!mimbleWimbleCoinGetPublicKeyFromSecp256k1PrivateKey((uint8_t *)publicNonce.buf, ((const MimbleWimbleCoinTransactionContext *)transactionContext.buf)->secretNonce)) {
+	
+		// Free public nonce
+		vstr_clear(&publicNonce);
+		
+		// Raise error
+		mp_raise_ValueError(NULL);
+	}
+	
+	// Return public nonce
+	return mp_obj_new_str_from_vstr(&mp_type_bytes, &publicNonce);
+}
+
+// Get transaction message signature
+mp_obj_t mod_trezorcrypto_mimblewimble_coin_getTransactionMessageSignature(mp_obj_t transactionContextObject, const mp_obj_t messageObject) {
+
+	// Get transaction context
+	mp_buffer_info_t transactionContext;
+	mp_get_buffer(transactionContextObject, &transactionContext, MP_BUFFER_RW);
+	
+	// Copy transaction context
+	MimbleWimbleCoinTransactionContext workingTransactionContext;
+	memcpy(&workingTransactionContext, transactionContext.buf, transactionContext.len);
+	
+	// Get message
+	mp_buffer_info_t message;
+	mp_get_buffer(messageObject, &message, MP_BUFFER_READ);
+	
+	// Initialize message signature
+	vstr_t messageSignature;
+	vstr_init(&messageSignature, MIMBLEWIMBLE_COIN_SECP256K1_COMPACT_SIGNATURE_SIZE);
+	messageSignature.len = MIMBLEWIMBLE_COIN_SECP256K1_COMPACT_SIGNATURE_SIZE;
+	
+	// Check if getting message hash failed
+	uint8_t messageHash[MIMBLEWIMBLE_COIN_SINGLE_SIGNER_MESSAGE_SIZE];
+	if(blake2b((const uint8_t *)message.buf, message.len, messageHash, sizeof(messageHash))) {
+			
+		// Free message signature
+		vstr_clear(&messageSignature);
+		
+		// Clear working transaction context
+		memzero(&workingTransactionContext, sizeof(workingTransactionContext));
+		
+		// Raise error
+		mp_raise_ValueError(NULL);
+	}
+	
+	// Check if getting the public key of the working transaction context's blinding factor failed
+	uint8_t publicKey[MIMBLEWIMBLE_COIN_SECP256K1_COMPRESSED_PUBLIC_KEY_SIZE];
+	if(!mimbleWimbleCoinGetPublicKeyFromSecp256k1PrivateKey(publicKey, workingTransactionContext.blindingFactor)) {
+	
+		// Free message signature
+		vstr_clear(&messageSignature);
+		
+		// Clear working transaction context
+		memzero(&workingTransactionContext, sizeof(workingTransactionContext));
+		
+		// Raise error
+		mp_raise_ValueError(NULL);
+	}
+	
+	// Loop while secret nonce is the same as the working transaction context's secret nonce
+	uint8_t secretNonce[MIMBLEWIMBLE_COIN_TRANSACTION_SECRET_NONCE_SIZE];
+	uint8_t publicNonce[MIMBLEWIMBLE_COIN_SECP256K1_COMPRESSED_PUBLIC_KEY_SIZE];
+	do {
+	
+		// Check if creating secret nonce and public nonce failed
+		if(!mimbleWimbleCoinCreateSingleSignerNonces(secretNonce, publicNonce)) {
+		
+			// Free message signature
+			vstr_clear(&messageSignature);
+			
+			// Clear working transaction context
+			memzero(&workingTransactionContext, sizeof(workingTransactionContext));
+			
+			// Raise error
+			mp_raise_ValueError(NULL);
+		}
+		
+	} while(mimbleWimbleCoinIsEqual(secretNonce, workingTransactionContext.secretNonce, sizeof(workingTransactionContext.secretNonce)));
+	
+	// Check if creating single-signer signature failed
+	if(!mimbleWimbleCoinCreateSingleSignerSignature((uint8_t *)messageSignature.buf, messageHash, workingTransactionContext.blindingFactor, secretNonce, publicNonce, publicKey)) {
+	
+		// Clear secret nonce
+		memzero(secretNonce, sizeof(secretNonce));
+		
+		// Free message signature
+		vstr_clear(&messageSignature);
+		
+		// Clear working transaction context
+		memzero(&workingTransactionContext, sizeof(workingTransactionContext));
+		
+		// Raise error
+		mp_raise_ValueError(NULL);
+	}
+	
+	// Clear secret nonce
+	memzero(secretNonce, sizeof(secretNonce));
+	
+	// Set that working transaction context has signed a message
+	workingTransactionContext.messageSigned = true;
+	
+	// Update transaction context
+	memcpy(transactionContext.buf, &workingTransactionContext, sizeof(workingTransactionContext));
+	
+	// Clear working transaction context
+	memzero(&workingTransactionContext, sizeof(workingTransactionContext));
+	
+	// Return message signature
+	return mp_obj_new_str_from_vstr(&mp_type_bytes, &messageSignature);
+}
+
+// Is valid secp256k1 public key
+mp_obj_t mod_trezorcrypto_mimblewimble_coin_isValidSecp256k1PublicKey(const mp_obj_t publicKeyObject) {
+
+	// Get public key
+	mp_buffer_info_t publicKey;
+	mp_get_buffer(publicKeyObject, &publicKey, MP_BUFFER_READ);
+	
+	// Return if public key is a valid secp256k1 public key
+	return mimbleWimbleCoinIsValidSecp256k1PublicKey(publicKey.buf, publicKey.len) ? mp_const_true : mp_const_false;
+}
+
+// Is valid commitment
+mp_obj_t mod_trezorcrypto_mimblewimble_coin_isValidCommitment(const mp_obj_t commitmentObject) {
+
+	// Get commitment
+	mp_buffer_info_t commitment;
+	mp_get_buffer(commitmentObject, &commitment, MP_BUFFER_READ);
+	
+	// Check if commitment length isn't correct
+	if(commitment.len!= MIMBLEWIMBLE_COIN_COMPRESSED_COMMITMENT_SIZE) {
+	
+		// Return false
+		return mp_const_false;
+	}
+	
+	// Copy commitment
+	uint8_t copy[commitment.len];
+	memcpy(copy, commitment.buf, commitment.len);
+	
+	// Change copy's prefix to its corresponding secp256k1 public key prefix
+	copy[0] -= MIMBLEWIMBLE_COIN_COMMITMENT_EVEN_PREFIX - MIMBLEWIMBLE_COIN_SECP256k1_EVEN_COMPRESSED_PUBLIC_KEY_PREFIX;
+	
+	// Return if copy is a valid secp256k1 public key
+	return mimbleWimbleCoinIsValidSecp256k1PublicKey(copy, sizeof(copy)) ? mp_const_true : mp_const_false;
+}
+
+// Verify transaction payment proof
+mp_obj_t mod_trezorcrypto_mimblewimble_coin_verifyTransactionPaymentProof(__attribute__((unused)) const size_t argumentsLength, const mp_obj_t *const arguments) {
+
+	// Import address type module
+	const mp_obj_t addressTypeModule = mp_import_name(qstr_from_str("trezor.enums.MimbleWimbleCoinAddressType"), mp_const_empty_tuple, MP_OBJ_NEW_SMALL_INT(0));
+	
+	// Get arguments
+	const mp_obj_t transactionContextObject = arguments[0];
+	const mp_obj_t extendedPrivateKeyObject = arguments[1];
+	const mp_obj_t coinInfoObject = arguments[2];
+	const mp_obj_t addressTypeObject = arguments[3];
+	const mp_obj_t kernelCommitmentObject = arguments[4];
+	const mp_obj_t paymentProofObject = arguments[5];
+	
+	// Get transaction context
+	mp_buffer_info_t transactionContext;
+	mp_get_buffer(transactionContextObject, &transactionContext, MP_BUFFER_READ);
+	
+	// Copy transaction context
+	MimbleWimbleCoinTransactionContext workingTransactionContext;
+	memcpy(&workingTransactionContext, transactionContext.buf, transactionContext.len);
+	
+	// Get extended private key
+	const HDNode *extendedPrivateKey = &((const mp_obj_HDNode_t *)MP_OBJ_TO_PTR(extendedPrivateKeyObject))->hdnode;
+	
+	// Get currency's Slatepack address human-readable part
+	mp_buffer_info_t slatepackAddressHumanReadablePart;
+	mp_get_buffer(mp_load_attr(coinInfoObject, MP_QSTR_slatepackAddressHumanReadablePart), &slatepackAddressHumanReadablePart, MP_BUFFER_READ);
+	
+	// Get kernel commitment
+	mp_buffer_info_t kernelCommitment;
+	mp_get_buffer(kernelCommitmentObject, &kernelCommitment, MP_BUFFER_READ);
+	
+	// Get payment proof
+	mp_buffer_info_t paymentProof;
+	mp_get_buffer(paymentProofObject, &paymentProof, MP_BUFFER_READ);
+	
+	// Check if address type is MQS
+	if(mp_obj_equal(addressTypeObject, mp_load_attr(addressTypeModule, MP_QSTR_MQS))) {
+	
+		// Check if getting MQS address failed
+		char mqsAddress[MIMBLEWIMBLE_COIN_MQS_ADDRESS_SIZE + sizeof((char)'\0')];
+		if(!mimbleWimbleCoinGetMqsAddress(mqsAddress, extendedPrivateKey, coinInfoObject, workingTransactionContext.index)) {
+		
+			// Clear working transaction context
+			memzero(&workingTransactionContext, sizeof(workingTransactionContext));
+			
+			// Return false
+			return mp_const_false;
+		}
+		
+		// Check if getting payment proof message length failed
+		const size_t paymentProofMessageLength = mimbleWimbleCoinGetPaymentProofMessageLength(coinInfoObject, workingTransactionContext.send, mqsAddress);
+		if(!paymentProofMessageLength) {
+		
+			// Clear working transaction context
+			memzero(&workingTransactionContext, sizeof(workingTransactionContext));
+			
+			// Return false
+			return mp_const_false;
+		}
+
+		// Check if getting payment proof message failed
+		uint8_t paymentProofMessage[paymentProofMessageLength];
+		if(!mimbleWimbleCoinGetPaymentProofMessage(paymentProofMessage, coinInfoObject, workingTransactionContext.send, kernelCommitment.buf, mqsAddress)) {
+		
+			// Clear working transaction context
+			memzero(&workingTransactionContext, sizeof(workingTransactionContext));
+			
+			// Return false
+			return mp_const_false;
+		}
+		
+		// Check if verifying payment proof message failed
+		if(!mimbleWimbleCoinVerifyPaymentProofMessage(paymentProofMessage, sizeof(paymentProofMessage), coinInfoObject, workingTransactionContext.address, paymentProof.buf, paymentProof.len)) {
+		
+			// Clear working transaction context
+			memzero(&workingTransactionContext, sizeof(workingTransactionContext));
+			
+			// Return false
+			return mp_const_false;
+		}
+		
+		// Clear working transaction context
+		memzero(&workingTransactionContext, sizeof(workingTransactionContext));
+		
+		// Return true
+		return mp_const_true;
+	}
+	
+	// Otherwise check if address type is Tor
+	else if(mp_obj_equal(addressTypeObject, mp_load_attr(addressTypeModule, MP_QSTR_TOR))) {
+		
+		// Check if getting Tor address failed
+		char torAddress[MIMBLEWIMBLE_COIN_TOR_ADDRESS_SIZE + sizeof((char)'\0')];
+		if(!mimbleWimbleCoinGetTorAddress(torAddress, extendedPrivateKey, coinInfoObject, workingTransactionContext.index)) {
+		
+			// Clear working transaction context
+			memzero(&workingTransactionContext, sizeof(workingTransactionContext));
+			
+			// Return false
+			return mp_const_false;
+		}
+		
+		// Check if getting payment proof message length failed
+		const size_t paymentProofMessageLength = mimbleWimbleCoinGetPaymentProofMessageLength(coinInfoObject, workingTransactionContext.send, torAddress);
+		if(!paymentProofMessageLength) {
+		
+			// Clear working transaction context
+			memzero(&workingTransactionContext, sizeof(workingTransactionContext));
+			
+			// Return false
+			return mp_const_false;
+		}
+
+		// Check if getting payment proof message failed
+		uint8_t paymentProofMessage[paymentProofMessageLength];
+		if(!mimbleWimbleCoinGetPaymentProofMessage(paymentProofMessage, coinInfoObject, workingTransactionContext.send, kernelCommitment.buf, torAddress)) {
+		
+			// Clear working transaction context
+			memzero(&workingTransactionContext, sizeof(workingTransactionContext));
+			
+			// Return false
+			return mp_const_false;
+		}
+		
+		// Check if verifying payment proof message failed
+		if(!mimbleWimbleCoinVerifyPaymentProofMessage(paymentProofMessage, sizeof(paymentProofMessage), coinInfoObject, workingTransactionContext.address, paymentProof.buf, paymentProof.len)) {
+		
+			// Clear working transaction context
+			memzero(&workingTransactionContext, sizeof(workingTransactionContext));
+			
+			// Return false
+			return mp_const_false;
+		}
+		
+		// Clear working transaction context
+		memzero(&workingTransactionContext, sizeof(workingTransactionContext));
+		
+		// Return true
+		return mp_const_true;
+	}
+	
+	// Otherwise check if address type is Slatepack
+	else if(mp_obj_equal(addressTypeObject, mp_load_attr(addressTypeModule, MP_QSTR_SLATEPACK))) {
+		
+		// Check if getting Slatepack address failed
+		char slatepackAddress[MIMBLEWIMBLE_COIN_SLATEPACK_ADDRESS_SIZE_WITHOUT_HUMAN_READABLE_PART + slatepackAddressHumanReadablePart.len + sizeof((char)'\0')];
+		if(!mimbleWimbleCoinGetSlatepackAddress(slatepackAddress, extendedPrivateKey, coinInfoObject, workingTransactionContext.index)) {
+		
+			// Clear working transaction context
+			memzero(&workingTransactionContext, sizeof(workingTransactionContext));
+			
+			// Return false
+			return mp_const_false;
+		}
+		
+		// Check if getting payment proof message length failed
+		const size_t paymentProofMessageLength = mimbleWimbleCoinGetPaymentProofMessageLength(coinInfoObject, workingTransactionContext.send, slatepackAddress);
+		if(!paymentProofMessageLength) {
+		
+			// Clear working transaction context
+			memzero(&workingTransactionContext, sizeof(workingTransactionContext));
+			
+			// Return false
+			return mp_const_false;
+		}
+
+		// Check if getting payment proof message failed
+		uint8_t paymentProofMessage[paymentProofMessageLength];
+		if(!mimbleWimbleCoinGetPaymentProofMessage(paymentProofMessage, coinInfoObject, workingTransactionContext.send, kernelCommitment.buf, slatepackAddress)) {
+		
+			// Clear working transaction context
+			memzero(&workingTransactionContext, sizeof(workingTransactionContext));
+			
+			// Return false
+			return mp_const_false;
+		}
+		
+		// Check if verifying payment proof message failed
+		if(!mimbleWimbleCoinVerifyPaymentProofMessage(paymentProofMessage, sizeof(paymentProofMessage), coinInfoObject, workingTransactionContext.address, paymentProof.buf, paymentProof.len)) {
+		
+			// Clear working transaction context
+			memzero(&workingTransactionContext, sizeof(workingTransactionContext));
+			
+			// Return false
+			return mp_const_false;
+		}
+		
+		// Clear working transaction context
+		memzero(&workingTransactionContext, sizeof(workingTransactionContext));
+		
+		// Return true
+		return mp_const_true;
+	}
+	
+	// Clear working transaction context
+	memzero(&workingTransactionContext, sizeof(workingTransactionContext));
+	
+	// Return false
+	return mp_const_false;
+}
+
+// Finish transaction
+mp_obj_t mod_trezorcrypto_mimblewimble_coin_finishTransaction(__attribute__((unused)) const size_t argumentsLength, const mp_obj_t *const arguments) {
+
+	// Import address type module
+	const mp_obj_t addressTypeModule = mp_import_name(qstr_from_str("trezor.enums.MimbleWimbleCoinAddressType"), mp_const_empty_tuple, MP_OBJ_NEW_SMALL_INT(0));
+	
+	// Import storage module
+	const mp_obj_t storageModule = mp_import_name(qstr_from_str("apps.mimblewimble_coin.storage"), mp_const_empty_tuple, MP_OBJ_NEW_SMALL_INT(0));
+	
+	// Get arguments
+	const mp_obj_t transactionContextObject = arguments[0];
+	const mp_obj_t extendedPrivateKeyObject = arguments[1];
+	const mp_obj_t coinInfoObject = arguments[2];
+	const mp_obj_t addressTypeObject = arguments[3];
+	const mp_obj_t publicNonceObject = arguments[4];
+	const mp_obj_t publicKeyObject = arguments[5];
+	const mp_obj_t kernelInformationObject = arguments[6];
+	const mp_obj_t kernelCommitmentObject = arguments[7];
+	
+	// Get transaction context
+	mp_buffer_info_t transactionContext;
+	mp_get_buffer(transactionContextObject, &transactionContext, MP_BUFFER_READ);
+	
+	// Copy transaction context
+	MimbleWimbleCoinTransactionContext workingTransactionContext;
+	memcpy(&workingTransactionContext, transactionContext.buf, transactionContext.len);
+	
+	// Get extended private key
+	const HDNode *extendedPrivateKey = &((const mp_obj_HDNode_t *)MP_OBJ_TO_PTR(extendedPrivateKeyObject))->hdnode;
+	
+	// Get public nonce
+	mp_buffer_info_t publicNonce;
+	mp_get_buffer(publicNonceObject, &publicNonce, MP_BUFFER_READ);
+	
+	// Get public key
+	mp_buffer_info_t publicKey;
+	mp_get_buffer(publicKeyObject, &publicKey, MP_BUFFER_READ);
+	
+	// Get kernel information
+	mp_buffer_info_t kernelInformation;
+	mp_get_buffer(kernelInformationObject, &kernelInformation, MP_BUFFER_READ);
+	
+	// Get kernel commitment
+	mp_buffer_info_t kernelCommitment;
+	if(kernelCommitmentObject != mp_const_none) {
+		mp_get_buffer(kernelCommitmentObject, &kernelCommitment, MP_BUFFER_READ);
+	}
+	
+	// Initialize signature
+	vstr_t signature;
+	vstr_init(&signature, MIMBLEWIMBLE_COIN_SECP256K1_COMPACT_SIGNATURE_SIZE);
+	signature.len = MIMBLEWIMBLE_COIN_SECP256K1_COMPACT_SIGNATURE_SIZE;
+	
+	// Initialize payment proof
+	vstr_t paymentProof;
+	if(workingTransactionContext.receive && kernelCommitmentObject != mp_const_none) {
+		vstr_init(&paymentProof, MIMBLEWIMBLE_COIN_MAXIMUM_DER_SIGNATURE_SIZE);
+	}
+	
+	// Initialize result
+	mp_obj_tuple_t *result = MP_OBJ_TO_PTR(mp_obj_new_tuple(2, NULL));
+	
+	// Check if working transaction context is sending
+	if(workingTransactionContext.send) {
+	
+		// Check if getting the encrypted transaction secret nonce at the working transaction context's secret nonce index from storage failed
+		const mp_obj_t encryptedTransactionSecretNonceObject = mp_call_function_1(mp_load_attr(storageModule, MP_QSTR_getTransactionSecretNonce), MP_OBJ_NEW_SMALL_INT(workingTransactionContext.secretNonceIndex - 1));
+		if(encryptedTransactionSecretNonceObject == mp_const_false) {
+		
+			// Free signature
+			vstr_clear(&signature);
+			
+			// Free result
+			mp_obj_tuple_del(MP_OBJ_FROM_PTR(result));
+			
+			// Clear working transaction context
+			memzero(&workingTransactionContext, sizeof(workingTransactionContext));
+			
+			// Raise error
+			mp_raise_ValueError(NULL);
+		}
+		
+		// Get encrypted transaction secret nonce
+		mp_buffer_info_t encryptedTransactionSecretNonce;
+		mp_get_buffer(encryptedTransactionSecretNonceObject, &encryptedTransactionSecretNonce, MP_BUFFER_READ);
+		
+		// Check if encrypted transaction secret nonce is invalid
+		if(mimbleWimbleCoinIsZero(encryptedTransactionSecretNonce.buf, encryptedTransactionSecretNonce.len)) {
+		
+			// Free signature
+			vstr_clear(&signature);
+			
+			// Free result
+			mp_obj_tuple_del(MP_OBJ_FROM_PTR(result));
+			
+			// Clear working transaction context
+			memzero(&workingTransactionContext, sizeof(workingTransactionContext));
+			
+			// Raise error
+			mp_raise_ValueError(NULL);
+		}
+		
+		// Check if AES decrypting the encrypted transaction secret nonce with the working transaction context's blinding factor failed
+		uint8_t transactionSecretNonce[encryptedTransactionSecretNonce.len];
+		const size_t transactionSecretNonceLength = mimbleWimbleCoinAesDecrypt(transactionSecretNonce, workingTransactionContext.blindingFactor, encryptedTransactionSecretNonce.buf, encryptedTransactionSecretNonce.len);
+		if(!transactionSecretNonceLength) {
+		
+			// Free signature
+			vstr_clear(&signature);
+			
+			// Free result
+			mp_obj_tuple_del(MP_OBJ_FROM_PTR(result));
+			
+			// Clear working transaction context
+			memzero(&workingTransactionContext, sizeof(workingTransactionContext));
+			
+			// Raise error
+			mp_raise_ValueError(NULL);
+		}
+		
+		// Check if transaction secret nonce length is invalid
+		if(transactionSecretNonceLength != sizeof(workingTransactionContext.secretNonce)) {
+		
+			// Clear transaction secret nonce
+			memzero(transactionSecretNonce, sizeof(transactionSecretNonce));
+			
+			// Free signature
+			vstr_clear(&signature);
+			
+			// Free result
+			mp_obj_tuple_del(MP_OBJ_FROM_PTR(result));
+			
+			// Clear working transaction context
+			memzero(&workingTransactionContext, sizeof(workingTransactionContext));
+			
+			// Raise error
+			mp_raise_ValueError(NULL);
+		}
+		
+		// Check if the working transaction context's secret nonce isn't the transaction secret nonce
+		if(!mimbleWimbleCoinIsEqual(workingTransactionContext.secretNonce, transactionSecretNonce, transactionSecretNonceLength)) {
+		
+			// Clear transaction secret nonce
+			memzero(transactionSecretNonce, sizeof(transactionSecretNonce));
+			
+			// Free signature
+			vstr_clear(&signature);
+			
+			// Free result
+			mp_obj_tuple_del(MP_OBJ_FROM_PTR(result));
+			
+			// Clear working transaction context
+			memzero(&workingTransactionContext, sizeof(workingTransactionContext));
+			
+			// Raise error
+			mp_raise_ValueError(NULL);
+		}
+		
+		// Clear transaction secret nonce
+		memzero(transactionSecretNonce, sizeof(transactionSecretNonce));
+		
+		// Check if erasing the encrypted transaction secret nonce at the working transaction context's secret nonce index in storage failed
+		if(mp_call_function_1(mp_load_attr(storageModule, MP_QSTR_clearTransactionSecretNonce), MP_OBJ_NEW_SMALL_INT(workingTransactionContext.secretNonceIndex - 1)) == mp_const_false) {
+	
+			// Free signature
+			vstr_clear(&signature);
+			
+			// Free result
+			mp_obj_tuple_del(MP_OBJ_FROM_PTR(result));
+			
+			// Clear working transaction context
+			memzero(&workingTransactionContext, sizeof(workingTransactionContext));
+			
+			// Raise error
+			mp_raise_ValueError(NULL);
+		}
+	}
+	
+	// Check if initializing hash context failed
+	BLAKE2B_CTX hashContext;
+	if(blake2b_Init(&hashContext, MIMBLEWIMBLE_COIN_SINGLE_SIGNER_MESSAGE_SIZE)) {
+	
+		// Free signature
+		vstr_clear(&signature);
+		
+		// Free payment proof
+		if(workingTransactionContext.receive && kernelCommitmentObject != mp_const_none) {
+			vstr_clear(&paymentProof);
+		}
+		
+		// Free result
+		mp_obj_tuple_del(MP_OBJ_FROM_PTR(result));
+		
+		// Clear working transaction context
+		memzero(&workingTransactionContext, sizeof(workingTransactionContext));
+		
+		// Raise error
+		mp_raise_ValueError(NULL);
+	}
+	// Check if adding kernel information's features to the hash context failed
+	if(blake2b_Update(&hashContext, &((const uint8_t *)kernelInformation.buf)[0], sizeof(((const uint8_t *)kernelInformation.buf)[0]))) {
+	
+		// Free signature
+		vstr_clear(&signature);
+		
+		// Free payment proof
+		if(workingTransactionContext.receive && kernelCommitmentObject != mp_const_none) {
+			vstr_clear(&paymentProof);
+		}
+		
+		// Free result
+		mp_obj_tuple_del(MP_OBJ_FROM_PTR(result));
+		
+		// Clear working transaction context
+		memzero(&workingTransactionContext, sizeof(workingTransactionContext));
+		
+		// Raise error
+		mp_raise_ValueError(NULL);
+	}
+	
+	// Check kernel information's features
+	switch(((const uint8_t *)kernelInformation.buf)[0]) {
+	
+		// Plain features
+		case MimbleWimbleCoinKernelFeatures_PLAIN_FEATURES: {
+		
+			// Get working transaction context's fee
+			uint64_t fee = workingTransactionContext.fee;
+			
+			// Check if little endian
+			#if BYTE_ORDER == LITTLE_ENDIAN
+			
+				// Make fee big endian
+				REVERSE64(fee, fee);
+			#endif
+			
+			// Check if adding fee to the hash context failed
+			if(blake2b_Update(&hashContext, &fee, sizeof(fee))) {
+			
+				// Free signature
+				vstr_clear(&signature);
+				
+				// Free payment proof
+				if(workingTransactionContext.receive && kernelCommitmentObject != mp_const_none) {
+					vstr_clear(&paymentProof);
+				}
+				
+				// Free result
+				mp_obj_tuple_del(MP_OBJ_FROM_PTR(result));
+				
+				// Clear working transaction context
+				memzero(&workingTransactionContext, sizeof(workingTransactionContext));
+				
+				// Raise error
+				mp_raise_ValueError(NULL);
+			}
+		
+			// Break
+			break;
+		}
+		
+		// Height locked features
+		case MimbleWimbleCoinKernelFeatures_HEIGHT_LOCKED_FEATURES: {
+		
+			// Get working transaction context's fee
+			uint64_t fee = workingTransactionContext.fee;
+			
+			// Check if little endian
+			#if BYTE_ORDER == LITTLE_ENDIAN
+			
+				// Make fee big endian
+				REVERSE64(fee, fee);
+			#endif
+			
+			// Check if adding fee to the hash context failed
+			if(blake2b_Update(&hashContext, &fee, sizeof(fee))) {
+			
+				// Free signature
+				vstr_clear(&signature);
+				
+				// Free payment proof
+				if(workingTransactionContext.receive && kernelCommitmentObject != mp_const_none) {
+					vstr_clear(&paymentProof);
+				}
+				
+				// Free result
+				mp_obj_tuple_del(MP_OBJ_FROM_PTR(result));
+				
+				// Clear working transaction context
+				memzero(&workingTransactionContext, sizeof(workingTransactionContext));
+				
+				// Raise error
+				mp_raise_ValueError(NULL);
+			}
+			
+			// Get lock height from kernel information
+			uint64_t lockHeight;
+			memcpy(&lockHeight, &((const uint8_t *)kernelInformation.buf)[sizeof(((const uint8_t *)kernelInformation.buf)[0])], sizeof(lockHeight));
+			
+			// Make lock height big endian
+			REVERSE64(lockHeight, lockHeight);
+			
+			// Check if adding lock height to the hash context failed
+			if(blake2b_Update(&hashContext, &lockHeight, sizeof(lockHeight))) {
+			
+				// Free signature
+				vstr_clear(&signature);
+				
+				// Free payment proof
+				if(workingTransactionContext.receive && kernelCommitmentObject != mp_const_none) {
+					vstr_clear(&paymentProof);
+				}
+				
+				// Free result
+				mp_obj_tuple_del(MP_OBJ_FROM_PTR(result));
+				
+				// Clear working transaction context
+				memzero(&workingTransactionContext, sizeof(workingTransactionContext));
+				
+				// Raise error
+				mp_raise_ValueError(NULL);
+			}
+			
+			// Break
+			break;
+		}
+		
+		// No recent duplicate features
+		case MimbleWimbleCoinKernelFeatures_NO_RECENT_DUPLICATE_FEATURES: {
+		
+			// Get working transaction context's fee
+			uint64_t fee = workingTransactionContext.fee;
+			
+			// Check if little endian
+			#if BYTE_ORDER == LITTLE_ENDIAN
+			
+				// Make fee big endian
+				REVERSE64(fee, fee);
+			#endif
+			
+			// Check if adding fee to the hash context failed
+			if(blake2b_Update(&hashContext, &fee, sizeof(fee))) {
+			
+				// Free signature
+				vstr_clear(&signature);
+				
+				// Free payment proof
+				if(workingTransactionContext.receive && kernelCommitmentObject != mp_const_none) {
+					vstr_clear(&paymentProof);
+				}
+				
+				// Free result
+				mp_obj_tuple_del(MP_OBJ_FROM_PTR(result));
+				
+				// Clear working transaction context
+				memzero(&workingTransactionContext, sizeof(workingTransactionContext));
+				
+				// Raise error
+				mp_raise_ValueError(NULL);
+			}
+			
+			// Get relative height from kernel information
+			uint16_t relativeHeight;
+			memcpy(&relativeHeight, &((const uint8_t *)kernelInformation.buf)[sizeof(((const uint8_t *)kernelInformation.buf)[0])], sizeof(relativeHeight));
+			
+			// Make relative height big endian
+			REVERSE16(relativeHeight, relativeHeight);
+			
+			// Check if adding relative height to the hash context failed
+			if(blake2b_Update(&hashContext, &relativeHeight, sizeof(relativeHeight))) {
+			
+				// Free signature
+				vstr_clear(&signature);
+				
+				// Free payment proof
+				if(workingTransactionContext.receive && kernelCommitmentObject != mp_const_none) {
+					vstr_clear(&paymentProof);
+				}
+				
+				// Free result
+				mp_obj_tuple_del(MP_OBJ_FROM_PTR(result));
+				
+				// Clear working transaction context
+				memzero(&workingTransactionContext, sizeof(workingTransactionContext));
+				
+				// Raise error
+				mp_raise_ValueError(NULL);
+			}
+			
+			// Break
+			break;
+		}
+	}
+	
+	// Check if getting message hash from the hash context failed
+	uint8_t messageHash[MIMBLEWIMBLE_COIN_SINGLE_SIGNER_MESSAGE_SIZE];
+	if(blake2b_Final(&hashContext, messageHash, sizeof(messageHash))) {
+	
+		// Free signature
+		vstr_clear(&signature);
+		
+		// Free payment proof
+		if(workingTransactionContext.receive && kernelCommitmentObject != mp_const_none) {
+			vstr_clear(&paymentProof);
+		}
+		
+		// Free result
+		mp_obj_tuple_del(MP_OBJ_FROM_PTR(result));
+		
+		// Clear working transaction context
+		memzero(&workingTransactionContext, sizeof(workingTransactionContext));
+		
+		// Raise error
+		mp_raise_ValueError(NULL);
+	}
+	
+	// Check if creating single-signer signature failed
+	if(!mimbleWimbleCoinCreateSingleSignerSignature((uint8_t *)signature.buf, messageHash, workingTransactionContext.blindingFactor, workingTransactionContext.secretNonce, publicNonce.buf, publicKey.buf)) {
+	
+		// Free signature
+		vstr_clear(&signature);
+		
+		// Free payment proof
+		if(workingTransactionContext.receive && kernelCommitmentObject != mp_const_none) {
+			vstr_clear(&paymentProof);
+		}
+		
+		// Free result
+		mp_obj_tuple_del(MP_OBJ_FROM_PTR(result));
+		
+		// Clear working transaction context
+		memzero(&workingTransactionContext, sizeof(workingTransactionContext));
+		
+		// Raise error
+		mp_raise_ValueError(NULL);
+	}
+	
+	// Check if working transaction context is receiving and kernel commitment exists
+	if(workingTransactionContext.receive && kernelCommitmentObject != mp_const_none) {
+	
+		// Check if getting payment proof message length failed
+		const size_t paymentProofMessageLength = mimbleWimbleCoinGetPaymentProofMessageLength(coinInfoObject, workingTransactionContext.receive, workingTransactionContext.address);
+		if(!paymentProofMessageLength) {
+		
+			// Free signature
+			vstr_clear(&signature);
+			
+			// Free payment proof
+			vstr_clear(&paymentProof);
+			
+			// Free result
+			mp_obj_tuple_del(MP_OBJ_FROM_PTR(result));
+			
+			// Clear working transaction context
+			memzero(&workingTransactionContext, sizeof(workingTransactionContext));
+			
+			// Raise error
+			mp_raise_ValueError(NULL);
+		}
+	
+		// Check if getting payment proof message failed
+		uint8_t paymentProofMessage[paymentProofMessageLength];
+		if(!mimbleWimbleCoinGetPaymentProofMessage(paymentProofMessage, coinInfoObject, workingTransactionContext.receive, kernelCommitment.buf, workingTransactionContext.address)) {
+		
+			// Free signature
+			vstr_clear(&signature);
+			
+			// Free payment proof
+			vstr_clear(&paymentProof);
+			
+			// Free result
+			mp_obj_tuple_del(MP_OBJ_FROM_PTR(result));
+			
+			// Clear working transaction context
+			memzero(&workingTransactionContext, sizeof(workingTransactionContext));
+			
+			// Raise error
+			mp_raise_ValueError(NULL);
+		}
+		
+		// Check if address type is MQS
+		if(mp_obj_equal(addressTypeObject, mp_load_attr(addressTypeModule, MP_QSTR_MQS))) {
+			
+			// Check if getting address private key failed
+			uint8_t addressPrivateKey[MIMBLEWIMBLE_COIN_SECP256K1_PRIVATE_KEY_SIZE];
+			if(!mimbleWimbleCoinGetAddressPrivateKey(addressPrivateKey, extendedPrivateKey, coinInfoObject, workingTransactionContext.index, SECP256K1_NAME)) {
+			
+				// Free signature
+				vstr_clear(&signature);
+				
+				// Free payment proof
+				vstr_clear(&paymentProof);
+				
+				// Free result
+				mp_obj_tuple_del(MP_OBJ_FROM_PTR(result));
+				
+				// Clear working transaction context
+				memzero(&workingTransactionContext, sizeof(workingTransactionContext));
+				
+				// Raise error
+				mp_raise_ValueError(NULL);
+			}
+			
+			// Check if getting address private key's public key failed
+			uint8_t addressPublicKey[MIMBLEWIMBLE_COIN_SECP256K1_UNCOMPRESSED_PUBLIC_KEY_SIZE];
+			if(ecdsa_get_public_key65(&secp256k1, addressPrivateKey, addressPublicKey)) {
+			
+				// Clear address private key
+				memzero(addressPrivateKey, sizeof(addressPrivateKey));
+				
+				// Free signature
+				vstr_clear(&signature);
+				
+				// Free payment proof
+				vstr_clear(&paymentProof);
+				
+				// Free result
+				mp_obj_tuple_del(MP_OBJ_FROM_PTR(result));
+				
+				// Clear working transaction context
+				memzero(&workingTransactionContext, sizeof(workingTransactionContext));
+				
+				// Raise error
+				mp_raise_ValueError(NULL);
+			}
+			
+			// Check if address public key isn't a valid secp256k1 public key
+			curve_point temp;
+			if(!ecdsa_read_pubkey(&secp256k1, addressPublicKey, &temp)) {
+			
+				// Clear address private key
+				memzero(addressPrivateKey, sizeof(addressPrivateKey));
+				
+				// Free signature
+				vstr_clear(&signature);
+				
+				// Free payment proof
+				vstr_clear(&paymentProof);
+				
+				// Free result
+				mp_obj_tuple_del(MP_OBJ_FROM_PTR(result));
+				
+				// Clear working transaction context
+				memzero(&workingTransactionContext, sizeof(workingTransactionContext));
+				
+				// Raise error
+				mp_raise_ValueError(NULL);
+			}
+			
+			// Check if the address public key is in the payment proof message
+			if(memmem(paymentProofMessage, sizeof(paymentProofMessage), addressPublicKey, sizeof(addressPublicKey))) {
+			
+				// Clear address private key
+				memzero(addressPrivateKey, sizeof(addressPrivateKey));
+				
+				// Free signature
+				vstr_clear(&signature);
+				
+				// Free payment proof
+				vstr_clear(&paymentProof);
+				
+				// Free result
+				mp_obj_tuple_del(MP_OBJ_FROM_PTR(result));
+				
+				// Clear working transaction context
+				memzero(&workingTransactionContext, sizeof(workingTransactionContext));
+				
+				// Raise error
+				mp_raise_ValueError(NULL);
+			}
+			
+			// Compress the address public key
+			addressPublicKey[0] = (addressPublicKey[sizeof(addressPublicKey) - 1] & 1) ? MIMBLEWIMBLE_COIN_SECP256k1_ODD_COMPRESSED_PUBLIC_KEY_PREFIX : MIMBLEWIMBLE_COIN_SECP256k1_EVEN_COMPRESSED_PUBLIC_KEY_PREFIX;
+			
+			// Check if the compressed address public key is in the payment proof message
+			if(memmem(paymentProofMessage, sizeof(paymentProofMessage), addressPublicKey, MIMBLEWIMBLE_COIN_SECP256K1_COMPRESSED_PUBLIC_KEY_SIZE)) {
+			
+				// Clear address private key
+				memzero(addressPrivateKey, sizeof(addressPrivateKey));
+				
+				// Free signature
+				vstr_clear(&signature);
+				
+				// Free payment proof
+				vstr_clear(&paymentProof);
+				
+				// Free result
+				mp_obj_tuple_del(MP_OBJ_FROM_PTR(result));
+				
+				// Clear working transaction context
+				memzero(&workingTransactionContext, sizeof(workingTransactionContext));
+				
+				// Raise error
+				mp_raise_ValueError(NULL);
+			}			
+			
+			// Check if getting signature of the payment proof message failed
+			uint8_t paymentProofSignature[MIMBLEWIMBLE_COIN_SECP256K1_COMPACT_SIGNATURE_SIZE];
+			if(ecdsa_sign(&secp256k1, HASHER_SHA2, addressPrivateKey, paymentProofMessage, sizeof(paymentProofMessage), paymentProofSignature, NULL, NULL)) {
+			
+				// Clear address private key
+				memzero(addressPrivateKey, sizeof(addressPrivateKey));
+				
+				// Free signature
+				vstr_clear(&signature);
+				
+				// Free payment proof
+				vstr_clear(&paymentProof);
+				
+				// Free result
+				mp_obj_tuple_del(MP_OBJ_FROM_PTR(result));
+				
+				// Clear working transaction context
+				memzero(&workingTransactionContext, sizeof(workingTransactionContext));
+				
+				// Raise error
+				mp_raise_ValueError(NULL);
+			}
+			
+			// Clear address private key
+			memzero(addressPrivateKey, sizeof(addressPrivateKey));
+			
+			// Get payment proof signature in DER format
+			paymentProof.len = ecdsa_sig_to_der(paymentProofSignature, (uint8_t *)paymentProof.buf);
+		}
+		
+		// Otherwise check if address type is Tor or Slatepack
+		else if(mp_obj_equal(addressTypeObject, mp_load_attr(addressTypeModule, MP_QSTR_TOR)) || mp_obj_equal(addressTypeObject, mp_load_attr(addressTypeModule, MP_QSTR_SLATEPACK))) {
+			
+			// Check if getting address private key failed
+			uint8_t addressPrivateKey[MIMBLEWIMBLE_COIN_ED25519_PRIVATE_KEY_SIZE];
+			if(!mimbleWimbleCoinGetAddressPrivateKey(addressPrivateKey, extendedPrivateKey, coinInfoObject, workingTransactionContext.index, ED25519_NAME)) {
+			
+				// Free signature
+				vstr_clear(&signature);
+				
+				// Free payment proof
+				vstr_clear(&paymentProof);
+				
+				// Free result
+				mp_obj_tuple_del(MP_OBJ_FROM_PTR(result));
+				
+				// Clear working transaction context
+				memzero(&workingTransactionContext, sizeof(workingTransactionContext));
+				
+				// Raise error
+				mp_raise_ValueError(NULL);
+			}
+			
+			// Get address private key's public key
+			uint8_t addressPublicKey[MIMBLEWIMBLE_COIN_ED25519_PUBLIC_KEY_SIZE];
+			ed25519_publickey(addressPrivateKey, addressPublicKey);
+			
+			// Check if the address public key is in the payment proof message
+			if(memmem(paymentProofMessage, sizeof(paymentProofMessage), addressPublicKey, sizeof(addressPublicKey))) {
+			
+				// Clear address private key
+				memzero(addressPrivateKey, sizeof(addressPrivateKey));
+				
+				// Free signature
+				vstr_clear(&signature);
+				
+				// Free payment proof
+				vstr_clear(&paymentProof);
+				
+				// Free result
+				mp_obj_tuple_del(MP_OBJ_FROM_PTR(result));
+				
+				// Clear working transaction context
+				memzero(&workingTransactionContext, sizeof(workingTransactionContext));
+				
+				// Raise error
+				mp_raise_ValueError(NULL);
+			}
+			
+			// Get signature of the payment proof message
+			ed25519_sign(paymentProofMessage, sizeof(paymentProofMessage), addressPrivateKey, (uint8_t *)paymentProof.buf);
+			
+			// Clear address private key
+			memzero(addressPrivateKey, sizeof(addressPrivateKey));
+			
+			// Set payment proof signature size
+			paymentProof.len = MIMBLEWIMBLE_COIN_ED25519_SIGNATURE_SIZE;
+		}
+		
+		// Clear working transaction context
+		memzero(&workingTransactionContext, sizeof(workingTransactionContext));
+		
+		// Return signature and payment proof
+		result->items[0] = mp_obj_new_str_from_vstr(&mp_type_bytes, &signature);
+		result->items[1] = mp_obj_new_str_from_vstr(&mp_type_bytes, &paymentProof);
+		return MP_OBJ_FROM_PTR(result);
+	}
+	
+	// Clear working transaction context
+	memzero(&workingTransactionContext, sizeof(workingTransactionContext));
+	
+	// Return signature
+	result->items[0] = mp_obj_new_str_from_vstr(&mp_type_bytes, &signature);
+	result->items[1] = mp_const_none;
+	return MP_OBJ_FROM_PTR(result);
+}
+
+// Get timestamp components
+mp_obj_t mod_trezorcrypto_mimblewimble_coin_getTimestampComponents(const mp_obj_t timestampObject) {
+
+	// Get timestamp
+	const time_t timestamp = trezor_obj_get_uint64(timestampObject);
+	
+	// Initialize result
+	mp_obj_tuple_t *result = MP_OBJ_TO_PTR(mp_obj_new_tuple(6, NULL));
+	
+	// Get time from timestamp
+	const struct tm *time = gmtime(&timestamp);
+	
+	// Return timestamp components
+	result->items[0] = MP_OBJ_NEW_SMALL_INT(time->tm_year + 1900);
+	result->items[1] = MP_OBJ_NEW_SMALL_INT(time->tm_mon + 1);
+	result->items[2] = MP_OBJ_NEW_SMALL_INT(time->tm_mday);
+	result->items[3] = MP_OBJ_NEW_SMALL_INT(time->tm_hour);
+	result->items[4] = MP_OBJ_NEW_SMALL_INT(time->tm_min);
+	result->items[5] = MP_OBJ_NEW_SMALL_INT(time->tm_sec);
+	return MP_OBJ_FROM_PTR(result);
+}
+
 // Get MQS challenge signature
 mp_obj_t mod_trezorcrypto_mimblewimble_coin_getMqsChallengeSignature(__attribute__((unused)) const size_t argumentsLength, const mp_obj_t *const arguments) {
 
@@ -2562,7 +4424,7 @@ mp_obj_t mod_trezorcrypto_mimblewimble_coin_getMqsChallengeSignature(__attribute
 	const mp_obj_t challengeObject = arguments[3];
 	
 	// Get extended private key
-	const HDNode *extendedPrivateKey = &((mp_obj_HDNode_t *)MP_OBJ_TO_PTR(extendedPrivateKeyObject))->hdnode;
+	const HDNode *extendedPrivateKey = &((const mp_obj_HDNode_t *)MP_OBJ_TO_PTR(extendedPrivateKeyObject))->hdnode;
 	
 	// Get index
 	const uint32_t index = mp_obj_get_int(indexObject);
@@ -3634,7 +5496,7 @@ void mimbleWimbleCoinUseLrGenerator(bignum256 *t0, bignum256 *t1, bignum256 *t2,
 			if(updateProgressObject != mp_const_none) {
 			
 				// Update shown progress
-				mp_call_function_1(updateProgressObject, mp_obj_new_int(1000 * (i + 64 * 2) / (64 * 3)));
+				mp_call_function_1(updateProgressObject, MP_OBJ_NEW_SMALL_INT(1000 * (i + 64 * 2) / (64 * 3)));
 			}
 		}
 	}
@@ -3650,7 +5512,7 @@ void mimbleWimbleCoinUseLrGenerator(bignum256 *t0, bignum256 *t1, bignum256 *t2,
 	if(updateProgressObject != mp_const_none) {
 	
 		// Update shown progress
-		mp_call_function_1(updateProgressObject, mp_obj_new_int(1000));
+		mp_call_function_1(updateProgressObject, MP_OBJ_NEW_SMALL_INT(1000));
 	}
 }
 
@@ -3743,7 +5605,7 @@ bool mimbleWimbleCoinCalculateBulletproofComponents(uint8_t *tauX, uint8_t *tOne
 			if(updateProgressObject != mp_const_none) {
 		
 				// Update shown progress
-				mp_call_function_1(updateProgressObject, mp_obj_new_int(1000 * i / (64 * 3)));
+				mp_call_function_1(updateProgressObject, MP_OBJ_NEW_SMALL_INT(1000 * i / (64 * 3)));
 			}
 		}
 	}
@@ -3752,7 +5614,7 @@ bool mimbleWimbleCoinCalculateBulletproofComponents(uint8_t *tauX, uint8_t *tOne
 	if(updateProgressObject != mp_const_none) {
 	
 		// Update shown progress
-		mp_call_function_1(updateProgressObject, mp_obj_new_int(1000 * 64 / (64 * 3)));
+		mp_call_function_1(updateProgressObject, MP_OBJ_NEW_SMALL_INT(1000 * 64 / (64 * 3)));
 	}
 	
 	// Check if getting the product of rho and generator G failed
@@ -3823,7 +5685,7 @@ bool mimbleWimbleCoinCalculateBulletproofComponents(uint8_t *tauX, uint8_t *tOne
 		if(updateProgressObject != mp_const_none) {
 		
 			// Update shown progress
-			mp_call_function_1(updateProgressObject, mp_obj_new_int(1000 * (i * (MIMBLEWIMBLE_COIN_BITS_TO_PROVE / MIMBLEWIMBLE_COIN_MULTIEXPONENTIATION_STEPS) + MIMBLEWIMBLE_COIN_BITS_TO_PROVE / MIMBLEWIMBLE_COIN_MULTIEXPONENTIATION_STEPS + 64) / (64 * 3)));
+			mp_call_function_1(updateProgressObject, MP_OBJ_NEW_SMALL_INT(1000 * (i * (MIMBLEWIMBLE_COIN_BITS_TO_PROVE / MIMBLEWIMBLE_COIN_MULTIEXPONENTIATION_STEPS) + MIMBLEWIMBLE_COIN_BITS_TO_PROVE / MIMBLEWIMBLE_COIN_MULTIEXPONENTIATION_STEPS + 64) / (64 * 3)));
 		}
 	}
 	
@@ -5136,4 +6998,77 @@ bool mimbleWimbleCoinIsValidSecp256k1PrivateKey(const uint8_t *privateKey, const
 	
 	// Return result
 	return result;
+}
+
+// Get MQS address
+bool mimbleWimbleCoinGetMqsAddress(char *mqsAddress, const HDNode *extendedPrivateKey, const mp_obj_t coinInfoObject, const uint32_t index) {
+
+	// Check if getting address private key failed
+	uint8_t addressPrivateKey[MIMBLEWIMBLE_COIN_SECP256K1_PRIVATE_KEY_SIZE];
+	if(!mimbleWimbleCoinGetAddressPrivateKey(addressPrivateKey, extendedPrivateKey, coinInfoObject, index, SECP256K1_NAME)) {
+	
+		// Return false
+		return false;
+	}
+	
+	// Check if getting address private key's public key failed
+	uint8_t addressPublicKey[MIMBLEWIMBLE_COIN_SECP256K1_COMPRESSED_PUBLIC_KEY_SIZE];
+	if(!mimbleWimbleCoinGetPublicKeyFromSecp256k1PrivateKey(addressPublicKey, addressPrivateKey)) {
+	
+		// Clear address private key
+		memzero(addressPrivateKey, sizeof(addressPrivateKey));
+		
+		// Return false
+		return false;
+	}
+	
+	// Clear address private key
+	memzero(addressPrivateKey, sizeof(addressPrivateKey));
+	
+	// Return if getting the MQS address from the public key was successful
+	return mimbleWimbleCoinGetMqsAddressFromPublicKey(mqsAddress, coinInfoObject, addressPublicKey);
+}
+
+// Get Tor address
+bool mimbleWimbleCoinGetTorAddress(char *torAddress, const HDNode *extendedPrivateKey, const mp_obj_t coinInfoObject, const uint32_t index) {
+
+	// Check if getting address private key failed
+	uint8_t addressPrivateKey[MIMBLEWIMBLE_COIN_ED25519_PRIVATE_KEY_SIZE];
+	if(!mimbleWimbleCoinGetAddressPrivateKey(addressPrivateKey, extendedPrivateKey, coinInfoObject, index, ED25519_NAME)) {
+	
+		// Return false
+		return false;
+	}
+	
+	// Get address private key's public key
+	uint8_t addressPublicKey[MIMBLEWIMBLE_COIN_ED25519_PUBLIC_KEY_SIZE];
+	ed25519_publickey(addressPrivateKey, addressPublicKey);
+	
+	// Clear address private key
+	memzero(addressPrivateKey, sizeof(addressPrivateKey));
+	
+	// Return if getting the Tor address from the public key was successful
+	return mimbleWimbleCoinGetTorAddressFromPublicKey(torAddress, addressPublicKey);
+}
+
+// Get Slatepack address
+bool mimbleWimbleCoinGetSlatepackAddress(char *slatepackAddress, const HDNode *extendedPrivateKey, const mp_obj_t coinInfoObject, const uint32_t index) {
+
+	// Check if getting address private key failed
+	uint8_t addressPrivateKey[MIMBLEWIMBLE_COIN_ED25519_PRIVATE_KEY_SIZE];
+	if(!mimbleWimbleCoinGetAddressPrivateKey(addressPrivateKey, extendedPrivateKey, coinInfoObject, index, ED25519_NAME)) {
+	
+		// Return false
+		return false;
+	}
+	
+	// Get address private key's public key
+	uint8_t addressPublicKey[MIMBLEWIMBLE_COIN_ED25519_PUBLIC_KEY_SIZE];
+	ed25519_publickey(addressPrivateKey, addressPublicKey);
+	
+	// Clear address private key
+	memzero(addressPrivateKey, sizeof(addressPrivateKey));
+	
+	// Return if getting the Slatepack address from the public key was successful
+	return mimbleWimbleCoinGetSlatepackAddressFromPublicKey(slatepackAddress, coinInfoObject, addressPublicKey);
 }

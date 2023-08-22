@@ -25,6 +25,7 @@ async def finish_encrypting_slate(context: Context, message: MimbleWimbleCoinFin
 	from uctypes import struct, addressof, UINT8, UINT32
 	from .coins import getCoinInfo
 	from .common import getExtendedPrivateKey
+	from .storage import initializeStorage
 	
 	# Check if not initialized
 	if not is_initialized():
@@ -38,7 +39,8 @@ async def finish_encrypting_slate(context: Context, message: MimbleWimbleCoinFin
 	# Cache seed
 	await derive_and_store_roots(context, False)
 	
-	# TODO Initialize storage
+	# Initialize storage
+	initializeStorage()
 	
 	# Clear unrelated session
 	delete(APP_MIMBLEWIMBLE_COIN_TRANSACTION_CONTEXT)

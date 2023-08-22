@@ -17,9 +17,13 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#define __USE_GNU
+#define _GNU_SOURCE
+#include <string.h>
+#undef _GNU_SOURCE
+#undef __USE_GNU
 #include <stdint.h>
 #include <stdio.h>
-#include <string.h>
 
 #include "common.h"
 

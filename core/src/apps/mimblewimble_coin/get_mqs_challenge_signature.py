@@ -43,15 +43,13 @@ async def get_mqs_challenge_signature(context: Context, message: MimbleWimbleCoi
 	from apps.common.seed import derive_and_store_roots
 	from storage.cache import delete, APP_MIMBLEWIMBLE_COIN_ENCRYPTION_AND_DECRYPTION_CONTEXT, APP_MIMBLEWIMBLE_COIN_TRANSACTION_CONTEXT
 	from trezor.wire import NotInitialized, ProcessError, DataError
-	from trezor.workflow import close_others
 	from trezor.ui.layouts import confirm_action, confirm_value, show_warning
 	from trezor.enums import ButtonRequestType
 	from trezor.crypto import mimblewimble_coin
 	from apps.common.paths import HARDENED
-	from utime import gmtime2000
-	from trezor.strings import SECONDS_1970_TO_2000
 	from .coins import getCoinInfo
 	from .common import getExtendedPrivateKey, UINT32_MAX
+	from .storage import initializeStorage
 	
 	# Check if not initialized
 	if not is_initialized():
@@ -65,7 +63,8 @@ async def get_mqs_challenge_signature(context: Context, message: MimbleWimbleCoi
 	# Cache seed
 	await derive_and_store_roots(context, False)
 	
-	# TODO Initialize storage
+	# Initialize storage
+	initializeStorage()
 	
 	# Clear session
 	delete(APP_MIMBLEWIMBLE_COIN_ENCRYPTION_AND_DECRYPTION_CONTEXT)
@@ -93,7 +92,7 @@ async def get_mqs_challenge_signature(context: Context, message: MimbleWimbleCoi
 		raise DataError("")
 	
 	# Check if timestamp is provided and it is invalid
-	if message.timestamp is not None and (message.time_zone_offset is None or message.timestamp // MILLISECONDS_IN_A_SECOND < SECONDS_1970_TO_2000 or message.timestamp > MAXIMUM_TIMESTAMP):
+	if message.timestamp is not None and (message.time_zone_offset is None or message.timestamp > MAXIMUM_TIMESTAMP):
 	
 		# Raise data error
 		raise DataError("")
@@ -114,7 +113,7 @@ async def get_mqs_challenge_signature(context: Context, message: MimbleWimbleCoi
 	if message.timestamp is not None:
 	
 		# Get timestamp from timestamp
-		timestamp = message.timestamp // MILLISECONDS_IN_A_SECOND - SECONDS_1970_TO_2000
+		timestamp = message.timestamp // MILLISECONDS_IN_A_SECOND
 		
 		# Get time zone offset
 		timeZoneOffset = 0 if message.time_zone_offset * SECONDS_IN_A_MINUTE > timestamp else message.time_zone_offset
@@ -123,7 +122,7 @@ async def get_mqs_challenge_signature(context: Context, message: MimbleWimbleCoi
 		timestamp -= timeZoneOffset * SECONDS_IN_A_MINUTE
 		
 		# Show prompt
-		time = gmtime2000(timestamp)
+		time = mimblewimble_coin.getTimestampComponents(timestamp)
 		await confirm_value(context, "Time And Date", f"{time[3]:02d}:{time[4]:02d}:{time[5]:02d} on {time[0]}-{time[1]:02d}-{time[2]:02d} UTC{'-' if timeZoneOffset > 0 else '+'}{abs(timeZoneOffset) // MINUTES_IN_AN_HOUR:02d}:{abs(timeZoneOffset) % MINUTES_IN_AN_HOUR:02d}", "", "", verb = "Next")
 		
 	# Otherwise
@@ -134,9 +133,6 @@ async def get_mqs_challenge_signature(context: Context, message: MimbleWimbleCoi
 	
 	# Show prompt
 	await show_warning(context, "", f"The host will be able to listen for the account's {coinInfo.mqsName} transactions.", button = "Approve", br_code = ButtonRequestType.Other)
-	
-	# Close running layout
-	close_others()
 	
 	# Get extended private key
 	extendedPrivateKey = await getExtendedPrivateKey(context, coinInfo, message.account)

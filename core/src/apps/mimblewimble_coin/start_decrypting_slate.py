@@ -25,6 +25,7 @@ async def start_decrypting_slate(context: Context, message: MimbleWimbleCoinStar
 	from apps.common.paths import HARDENED
 	from .coins import getCoinInfo, SlateEncryptionType
 	from .common import getExtendedPrivateKey, UINT32_MAX
+	from .storage import initializeStorage
 	
 	# Check if not initialized
 	if not is_initialized():
@@ -38,7 +39,8 @@ async def start_decrypting_slate(context: Context, message: MimbleWimbleCoinStar
 	# Cache seed
 	await derive_and_store_roots(context, False)
 	
-	# TODO Initialize storage
+	# Initialize storage
+	initializeStorage()
 	
 	# Clear session
 	delete(APP_MIMBLEWIMBLE_COIN_ENCRYPTION_AND_DECRYPTION_CONTEXT)
