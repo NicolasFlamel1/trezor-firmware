@@ -4004,6 +4004,9 @@ void fsm_msgMimbleWimbleCoinFinishTransaction(const MimbleWimbleCoinFinishTransa
 	// Check if user denied prompt
 	if(!protectButton(ButtonRequestType_ButtonRequest_Other, false)) {
 	
+		// Clear session
+		memzero(session, sizeof(*session));
+		
 		// Send action canceled response
 		fsm_sendFailure(FailureType_Failure_ActionCancelled, NULL);
 		
@@ -4024,6 +4027,9 @@ void fsm_msgMimbleWimbleCoinFinishTransaction(const MimbleWimbleCoinFinishTransa
 	// Check if user denied prompt
 	if(!protectButton(ButtonRequestType_ButtonRequest_Other, false)) {
 	
+		// Clear session
+		memzero(session, sizeof(*session));
+		
 		// Send action canceled response
 		fsm_sendFailure(FailureType_Failure_ActionCancelled, NULL);
 		
@@ -4045,6 +4051,9 @@ void fsm_msgMimbleWimbleCoinFinishTransaction(const MimbleWimbleCoinFinishTransa
 	// Check if user denied prompt
 	if(!protectButton(ButtonRequestType_ButtonRequest_Other, false)) {
 	
+		// Clear session
+		memzero(session, sizeof(*session));
+		
 		// Send action canceled response
 		fsm_sendFailure(FailureType_Failure_ActionCancelled, NULL);
 		
@@ -4066,6 +4075,9 @@ void fsm_msgMimbleWimbleCoinFinishTransaction(const MimbleWimbleCoinFinishTransa
 	// Check if user denied prompt
 	if(!protectButton(ButtonRequestType_ButtonRequest_Other, false)) {
 	
+		// Clear session
+		memzero(session, sizeof(*session));
+		
 		// Send action canceled response
 		fsm_sendFailure(FailureType_Failure_ActionCancelled, NULL);
 		
@@ -4119,6 +4131,9 @@ void fsm_msgMimbleWimbleCoinFinishTransaction(const MimbleWimbleCoinFinishTransa
 	// Check if user denied prompt
 	if(!protectButton(ButtonRequestType_ButtonRequest_Other, false)) {
 	
+		// Clear session
+		memzero(session, sizeof(*session));
+		
 		// Send action canceled response
 		fsm_sendFailure(FailureType_Failure_ActionCancelled, NULL);
 		
@@ -4157,6 +4172,9 @@ void fsm_msgMimbleWimbleCoinFinishTransaction(const MimbleWimbleCoinFinishTransa
 			// Check if user denied prompt
 			if(!protectButton(ButtonRequestType_ButtonRequest_Other, false)) {
 			
+				// Clear session
+				memzero(session, sizeof(*session));
+				
 				// Send action canceled response
 				fsm_sendFailure(FailureType_Failure_ActionCancelled, NULL);
 				
@@ -4195,6 +4213,9 @@ void fsm_msgMimbleWimbleCoinFinishTransaction(const MimbleWimbleCoinFinishTransa
 			// Check if user denied prompt
 			if(!protectButton(ButtonRequestType_ButtonRequest_Other, false)) {
 			
+				// Clear session
+				memzero(session, sizeof(*session));
+				
 				// Send action canceled response
 				fsm_sendFailure(FailureType_Failure_ActionCancelled, NULL);
 				
@@ -4228,6 +4249,9 @@ void fsm_msgMimbleWimbleCoinFinishTransaction(const MimbleWimbleCoinFinishTransa
 	// Check if user denied prompt
 	if(!protectButton(ButtonRequestType_ButtonRequest_Other, false)) {
 
+		// Clear session
+		memzero(session, sizeof(*session));
+		
 		// Send action canceled response
 		fsm_sendFailure(FailureType_Failure_ActionCancelled, NULL);
 		

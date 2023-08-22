@@ -930,6 +930,7 @@ fn new_show_modal(
     let button: StrBuffer = kwargs.get_or(Qstr::MP_QSTR_button, "CONTINUE".into())?;
     let allow_cancel: bool = kwargs.get_or(Qstr::MP_QSTR_allow_cancel, true)?;
     let time_ms: u32 = kwargs.get_or(Qstr::MP_QSTR_time_ms, 0)?;
+    let left_is_small: bool = kwargs.get_or(Qstr::MP_QSTR_left_is_small, false)?;
 
     let no_buttons = button.as_ref().is_empty();
     let obj = if no_buttons && time_ms == 0 {
@@ -956,7 +957,7 @@ fn new_show_modal(
                 Button::cancel_confirm(
                     Button::with_icon(theme::ICON_CANCEL),
                     Button::with_text(button).styled(button_style),
-                    false,
+                    left_is_small,
                 ),
             )
             .with_description(description),

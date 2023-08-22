@@ -1,6 +1,6 @@
 # Imports
 from typing import TYPE_CHECKING
-from micropython import const
+from .common import UINT8_MAX
 
 # Check if type checking
 if TYPE_CHECKING:
@@ -13,7 +13,7 @@ if TYPE_CHECKING:
 # Constants
 
 # Maximum recipient address size
-MAXIMUM_RECIPIENT_ADDRESS_SIZE = const(0xFF - 8)
+MAXIMUM_RECIPIENT_ADDRESS_SIZE = UINT8_MAX - 8
 
 
 # Supporting function implementation

@@ -76,6 +76,7 @@ static void _librust_qstrs(void) {
   MP_QSTR_jpeg_info;
   MP_QSTR_jpeg_test;
   MP_QSTR_label;
+  MP_QSTR_left_is_small;
   MP_QSTR_lines;
   MP_QSTR_max_count;
   MP_QSTR_max_feerate;

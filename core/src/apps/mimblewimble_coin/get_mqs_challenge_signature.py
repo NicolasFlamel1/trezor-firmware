@@ -1,6 +1,6 @@
 # Imports
 from typing import TYPE_CHECKING
-from micropython import const
+from .common import UINT32_MAX, MILLISECONDS_IN_A_SECOND, SECONDS_IN_A_MINUTE, MINUTES_IN_AN_HOUR
 
 # Check if type checking
 if TYPE_CHECKING:
@@ -12,23 +12,14 @@ if TYPE_CHECKING:
 
 # Constants
 
-# Milliseconds in a second
-MILLISECONDS_IN_A_SECOND = const(1000)
-
-# Seconds in a minute
-SECONDS_IN_A_MINUTE = const(60)
-
-# Minutes in an hour
-MINUTES_IN_AN_HOUR = const(60)
-
 # Maximum timestamp
-MAXIMUM_TIMESTAMP = const(0xFFFFFFFF * MINUTES_IN_AN_HOUR * SECONDS_IN_A_MINUTE * MILLISECONDS_IN_A_SECOND + MILLISECONDS_IN_A_SECOND - 1)
+MAXIMUM_TIMESTAMP = UINT32_MAX * MINUTES_IN_AN_HOUR * SECONDS_IN_A_MINUTE * MILLISECONDS_IN_A_SECOND + MILLISECONDS_IN_A_SECOND - 1
 
 # Minimum time zone offset
-MINIMUM_TIME_ZONE_OFFSET = const(-13 * MINUTES_IN_AN_HOUR)
+MINIMUM_TIME_ZONE_OFFSET = -13 * MINUTES_IN_AN_HOUR
 
 # Maximum time zone offset
-MAXIMUM_TIME_ZONE_OFFSET = const(15 * MINUTES_IN_AN_HOUR)
+MAXIMUM_TIME_ZONE_OFFSET = 15 * MINUTES_IN_AN_HOUR
 
 
 # Supporting function implementation
@@ -43,7 +34,7 @@ async def get_mqs_challenge_signature(context: Context, message: MimbleWimbleCoi
 	from apps.common.seed import derive_and_store_roots
 	from storage.cache import delete, APP_MIMBLEWIMBLE_COIN_ENCRYPTION_AND_DECRYPTION_CONTEXT, APP_MIMBLEWIMBLE_COIN_TRANSACTION_CONTEXT
 	from trezor.wire import NotInitialized, ProcessError, DataError
-	from trezor.ui.layouts import confirm_action, confirm_value, show_warning
+	from trezor.ui.layouts import confirm_action, confirm_value, confirm_blob, show_warning
 	from trezor.enums import ButtonRequestType
 	from trezor.crypto import mimblewimble_coin
 	from apps.common.paths import HARDENED
@@ -123,16 +114,16 @@ async def get_mqs_challenge_signature(context: Context, message: MimbleWimbleCoi
 		
 		# Show prompt
 		time = mimblewimble_coin.getTimestampComponents(timestamp)
-		await confirm_value(context, "Time And Date", f"{time[3]:02d}:{time[4]:02d}:{time[5]:02d} on {time[0]}-{time[1]:02d}-{time[2]:02d} UTC{'-' if timeZoneOffset > 0 else '+'}{abs(timeZoneOffset) // MINUTES_IN_AN_HOUR:02d}:{abs(timeZoneOffset) % MINUTES_IN_AN_HOUR:02d}", "", "", verb = "Next")
-		
+		await confirm_action(context, "", "Time And Date", action = f"{time[3]:02d}:{time[4]:02d}:{time[5]:02d} on {time[0]}-{time[1]:02d}-{time[2]:02d} UTC{'-' if timeZoneOffset > 0 else '+'}{abs(timeZoneOffset) // MINUTES_IN_AN_HOUR:02d}:{abs(timeZoneOffset) % MINUTES_IN_AN_HOUR:02d}", verb = "Next")
+	
 	# Otherwise
 	else:
 	
 		# Show prompt
-		await confirm_value(context, "Default Challenge", mimblewimble_coin.DEFAULT_MQS_CHALLENGE, "", "", verb = "Next")
+		await confirm_blob(context, "", "Default Challenge", mimblewimble_coin.DEFAULT_MQS_CHALLENGE, verb = "Next".upper())
 	
 	# Show prompt
-	await show_warning(context, "", f"The host will be able to listen for the account's {coinInfo.mqsName} transactions.", button = "Approve", br_code = ButtonRequestType.Other)
+	await show_warning(context, "", f"The host will be able to listen for the account's {coinInfo.mqsName} transactions.", button = "Approve", br_code = ButtonRequestType.Other, left_is_small = True)
 	
 	# Get extended private key
 	extendedPrivateKey = await getExtendedPrivateKey(context, coinInfo, message.account)

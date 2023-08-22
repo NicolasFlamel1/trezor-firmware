@@ -631,6 +631,7 @@ def show_warning(
     subheader: str | None = None,
     button: str = "Try again",
     br_code: ButtonRequestType = ButtonRequestType.Warning,
+    left_is_small: bool = False,
 ) -> Awaitable[None]:
     return _show_modal(
         ctx,

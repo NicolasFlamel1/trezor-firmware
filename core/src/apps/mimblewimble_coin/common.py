@@ -19,6 +19,9 @@ MIMBLEWIMBLE_COIN_CURVE_NAME = const("secp256k1-mimblewimble-coin")
 # BIP44 purpose
 BIP44_PURPOSE = const(44)
 
+# Uint8 max
+UINT8_MAX = const(0xFF)
+
 # Uint32 max
 UINT32_MAX = const(0xFFFFFFFF)
 
@@ -27,6 +30,21 @@ UINT64_MAX = const(0xFFFFFFFFFFFFFFFF)
 
 # Native uint64 pack format
 NATIVE_UINT64_PACK_FORMAT = const("@Q")
+
+# Milliseconds in a second
+MILLISECONDS_IN_A_SECOND = const(1000)
+
+# Seconds in a minute
+SECONDS_IN_A_MINUTE = const(60)
+
+# Minutes in an hour
+MINUTES_IN_AN_HOUR = const(60)
+
+# Hours in a day
+HOURS_IN_A_DAY = const(24)
+
+# Days on a week
+DAYS_IN_A_WEEK = const(7)
 
 
 # Supporting function implementation

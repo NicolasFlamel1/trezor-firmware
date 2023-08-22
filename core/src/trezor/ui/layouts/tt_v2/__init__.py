@@ -534,6 +534,7 @@ async def show_warning(
     subheader: str | None = None,
     button: str = "CONTINUE",
     br_code: ButtonRequestType = ButtonRequestType.Warning,
+    left_is_small: bool = False,
 ) -> None:
     await raise_if_not_confirmed(
         interact(
@@ -543,6 +544,7 @@ async def show_warning(
                     title=content,
                     description=subheader or "",
                     button=button.upper(),
+                    left_is_small=left_is_small,
                 )
             ),
             br_type,
