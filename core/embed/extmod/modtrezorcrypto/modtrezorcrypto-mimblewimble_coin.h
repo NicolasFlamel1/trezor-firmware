@@ -1,6 +1,5 @@
 // Header files
 #include <ctype.h>
-#include <time.h>
 #include "base58.h"
 #include "base32.h"
 #include "mimblewimble_coin_generators.h"
@@ -179,6 +178,54 @@
 
 // Slatepack encryption file key size
 #define MIMBLEWIMBLE_COIN_SLATEPACK_ENCRYPTION_ENCRYPTED_FILE_KEY_SIZE (MIMBLEWIMBLE_COIN_AGE_FILE_KEY_SIZE + MIMBLEWIMBLE_COIN_AGE_PAYLOAD_NONCE_SIZE)
+
+// Seconds in a minute
+#define MIMBLEWIMBLE_COIN_SECONDS_IN_A_MINUTE 60
+
+// Months in a year
+#define MIMBLEWIMBLE_COIN_MONTHS_IN_A_YEAR 12
+
+// Rebase year
+#define MIMBLEWIMBLE_COIN_REBASE_YEAR 1601
+
+// Seconds from 1601 to 1970
+#define MIMBLEWIMBLE_COIN_SECONDS_FROM_1601_TO_1970 11644473600
+
+// Seconds in a quadricentennial
+#define MIMBLEWIMBLE_COIN_SECONDS_IN_A_QUADRICENTENNIAL 12622780800
+
+// Seconds in a centennial
+#define MIMBLEWIMBLE_COIN_SECONDS_IN_A_CENTENNIAL 3155673600
+
+// Seconds in a quadrennial
+#define MIMBLEWIMBLE_COIN_SECONDS_IN_A_QUADRENNIAL 126230400
+
+// Seconds in an annual
+#define MIMBLEWIMBLE_COIN_SECONDS_IN_AN_ANNUAL 31536000
+
+// Seconds in a day
+#define MIMBLEWIMBLE_COIN_SECONDS_IN_A_DAY 86400
+
+// Seconds in an hour
+#define MIMBLEWIMBLE_COIN_SECONDS_IN_AN_HOUR 3600
+
+// Maximum centennials
+#define MIMBLEWIMBLE_COIN_MAXIMUM_CENTENNIALS 3
+
+// Maximum quadrennials
+#define MIMBLEWIMBLE_COIN_MAXIMUM_QUADRENNIALS 24
+
+// Maximum annuals
+#define MIMBLEWIMBLE_COIN_MAXIMUM_ANNUALS 3
+
+// Years in a quadricentennial
+#define MIMBLEWIMBLE_COIN_YEARS_IN_A_QUADRICENTENNIAL 400
+
+// Years in a centennial
+#define MIMBLEWIMBLE_COIN_YEARS_IN_A_CENTENNIAL 100
+
+// Years in a quadrennial
+#define MIMBLEWIMBLE_COIN_YEARS_IN_A_QUADRENNIAL 4
 
 // Address derivation type
 /// class AddressDerivationType(IntEnum):
@@ -396,6 +443,29 @@ typedef struct _MimbleWimbleCoinTransactionContext {
 	char address[MIMBLEWIMBLE_COIN_SLATEPACK_ADDRESS_SIZE_WITHOUT_HUMAN_READABLE_PART + sizeof("tgrin")];
 	
 } MimbleWimbleCoinTransactionContext;
+
+// Time
+typedef struct _MimbleWimbleCoinTime {
+
+	// Second
+	uint8_t second;
+
+	// Minute
+	uint8_t minute;
+
+	// Hour
+	uint8_t hour;
+
+	// Day
+	uint16_t day;
+
+	// Month
+	uint8_t month;
+
+	// Year
+	uint32_t year;
+
+} MimbleWimbleCoinTime;
 
 
 // Function prototypes
@@ -783,6 +853,12 @@ STATIC bool mimbleWimbleCoinGetTorAddress(char *torAddress, const HDNode *extend
 // Get Slatepack address
 STATIC bool mimbleWimbleCoinGetSlatepackAddress(char *slatepackAddress, const HDNode *extendedPrivateKey, const mp_obj_t coinInfoObject, const uint32_t index);
 
+// Is leap year
+STATIC bool mimbleWimbleCoinIsLeapYear(const uint32_t year);
+
+// Epoch to time
+STATIC void mimbleWimbleCoinEpochToTime(MimbleWimbleCoinTime *time, const uint64_t epoch);
+
 
 // Constants
 
@@ -850,6 +926,16 @@ STATIC const char MIMBLEWIMBLE_COIN_AGE_WRAP_KEY_INFO_AND_COUNTER[] = {'a', 'g',
 
 // Age payload key info
 STATIC const char MIMBLEWIMBLE_COIN_AGE_PAYLOAD_KEY_INFO_AND_COUNTER[] = {'p', 'a', 'y', 'l', 'o', 'a', 'd', '\x01'};
+
+// Days since January first
+STATIC const uint16_t MIMBLEWIMBLE_COIN_DAYS_SINCE_JANUARY_FIRST[2][MIMBLEWIMBLE_COIN_MONTHS_IN_A_YEAR + 1] = {
+
+	// 365 days non-leap
+	{0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334, 365},
+
+	// 366 days leap
+	{0, 31, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335, 366},
+};
 
 // Address derivation type table
 STATIC const mp_rom_map_elem_t mod_trezorcrypto_mimblewimble_coin_AddressDerivationType_table[] = {
@@ -4396,21 +4482,22 @@ mp_obj_t mod_trezorcrypto_mimblewimble_coin_finishTransaction(__attribute__((unu
 mp_obj_t mod_trezorcrypto_mimblewimble_coin_getTimestampComponents(const mp_obj_t timestampObject) {
 
 	// Get timestamp
-	const time_t timestamp = trezor_obj_get_uint64(timestampObject);
+	const uint64_t timestamp = trezor_obj_get_uint64(timestampObject);
 	
 	// Initialize result
 	mp_obj_tuple_t *result = MP_OBJ_TO_PTR(mp_obj_new_tuple(6, NULL));
 	
 	// Get time from timestamp
-	const struct tm *time = gmtime(&timestamp);
+	MimbleWimbleCoinTime time;
+	mimbleWimbleCoinEpochToTime(&time, timestamp);
 	
 	// Return timestamp components
-	result->items[0] = MP_OBJ_NEW_SMALL_INT(time->tm_year + 1900);
-	result->items[1] = MP_OBJ_NEW_SMALL_INT(time->tm_mon + 1);
-	result->items[2] = MP_OBJ_NEW_SMALL_INT(time->tm_mday);
-	result->items[3] = MP_OBJ_NEW_SMALL_INT(time->tm_hour);
-	result->items[4] = MP_OBJ_NEW_SMALL_INT(time->tm_min);
-	result->items[5] = MP_OBJ_NEW_SMALL_INT(time->tm_sec);
+	result->items[0] = MP_OBJ_NEW_SMALL_INT(time.year);
+	result->items[1] = MP_OBJ_NEW_SMALL_INT(time.month);
+	result->items[2] = MP_OBJ_NEW_SMALL_INT(time.day);
+	result->items[3] = MP_OBJ_NEW_SMALL_INT(time.hour);
+	result->items[4] = MP_OBJ_NEW_SMALL_INT(time.minute);
+	result->items[5] = MP_OBJ_NEW_SMALL_INT(time.second);
 	return MP_OBJ_FROM_PTR(result);
 }
 
@@ -7071,4 +7158,75 @@ bool mimbleWimbleCoinGetSlatepackAddress(char *slatepackAddress, const HDNode *e
 	
 	// Return if getting the Slatepack address from the public key was successful
 	return mimbleWimbleCoinGetSlatepackAddressFromPublicKey(slatepackAddress, coinInfoObject, addressPublicKey);
+}
+
+// Is leap year
+bool mimbleWimbleCoinIsLeapYear(const uint32_t year) {
+
+	// Return if year is a leap year
+	return !(year % 4) && (year % 100 || !(year % 400));
+}
+
+// Epoch to time
+void mimbleWimbleCoinEpochToTime(MimbleWimbleCoinTime *time, const uint64_t epoch) {
+
+	// Based on code by Alexey Frunze and Andre Kampling (https://stackoverflow.com/a/11197532)
+
+	// Get seconds from 1601 to epoch
+	uint64_t seconds = epoch + MIMBLEWIMBLE_COIN_SECONDS_FROM_1601_TO_1970;
+
+	// Remove quadricentennials from seconds
+	const uint16_t quadricentennials = seconds / MIMBLEWIMBLE_COIN_SECONDS_IN_A_QUADRICENTENNIAL;
+	seconds %= MIMBLEWIMBLE_COIN_SECONDS_IN_A_QUADRICENTENNIAL;
+
+	// Remove centennials from seconds
+	const uint8_t centennials = MIN(seconds / MIMBLEWIMBLE_COIN_SECONDS_IN_A_CENTENNIAL, MIMBLEWIMBLE_COIN_MAXIMUM_CENTENNIALS);
+	seconds -= (uint64_t)centennials * MIMBLEWIMBLE_COIN_SECONDS_IN_A_CENTENNIAL;
+
+	// Remove quadrennials from seconds
+	const uint8_t quadrennials = MIN(seconds / MIMBLEWIMBLE_COIN_SECONDS_IN_A_QUADRENNIAL, MIMBLEWIMBLE_COIN_MAXIMUM_QUADRENNIALS);
+	seconds -= (uint64_t)quadrennials * MIMBLEWIMBLE_COIN_SECONDS_IN_A_QUADRENNIAL;
+
+	// Remove annuals from seconds
+	const uint8_t annuals = MIN(seconds / MIMBLEWIMBLE_COIN_SECONDS_IN_AN_ANNUAL, MIMBLEWIMBLE_COIN_MAXIMUM_ANNUALS);
+	seconds -= (uint64_t)annuals * MIMBLEWIMBLE_COIN_SECONDS_IN_AN_ANNUAL;
+
+	// Remove year day from seconds
+	const uint16_t yearDay = seconds / MIMBLEWIMBLE_COIN_SECONDS_IN_A_DAY;
+	seconds %= MIMBLEWIMBLE_COIN_SECONDS_IN_A_DAY;
+
+	// Set time's hour
+	time->hour = seconds / MIMBLEWIMBLE_COIN_SECONDS_IN_AN_HOUR;
+
+	// Remove hour from seconds
+	seconds %= MIMBLEWIMBLE_COIN_SECONDS_IN_AN_HOUR;
+
+	// Set time's minute
+	time->minute = seconds / MIMBLEWIMBLE_COIN_SECONDS_IN_A_MINUTE;
+
+	// Remove minute from seconds
+	seconds %= MIMBLEWIMBLE_COIN_SECONDS_IN_A_MINUTE;
+
+	// Set time's second
+	time->second = seconds;
+
+	// Set time's year
+	time->year = MIMBLEWIMBLE_COIN_REBASE_YEAR + quadricentennials * MIMBLEWIMBLE_COIN_YEARS_IN_A_QUADRICENTENNIAL + centennials * MIMBLEWIMBLE_COIN_YEARS_IN_A_CENTENNIAL + quadrennials * MIMBLEWIMBLE_COIN_YEARS_IN_A_QUADRENNIAL + annuals;
+
+	// Get if year is a leap year
+	const bool leapYear = mimbleWimbleCoinIsLeapYear(time->year);
+
+	// Go through all months
+	for(time->day = time->month = 1; time->month <= MIMBLEWIMBLE_COIN_MONTHS_IN_A_YEAR; ++time->month) {
+
+		// Check if year day is in the month
+		if(yearDay < MIMBLEWIMBLE_COIN_DAYS_SINCE_JANUARY_FIRST[leapYear ? 1 : 0][time->month]) {
+
+			// Update time's day
+			time->day += yearDay - MIMBLEWIMBLE_COIN_DAYS_SINCE_JANUARY_FIRST[leapYear ? 1 : 0][time->month - 1];
+
+			// Break
+			break;
+		}
+	}
 }
