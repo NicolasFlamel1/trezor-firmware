@@ -1472,8 +1472,19 @@ async function getApplicationInformationTest(hardwareWallet) {
 		await hardwareWallet.send(HardwareWalletDefinitions.TREZOR_INITIALIZE_MESSAGE_TYPE, {}, HardwareWalletDefinitions.TREZOR_FEATURES_MESSAGE_TYPE);
 	}
 	
+	/*// Apply settings to the hardware wallet
+	await hardwareWallet.send(HardwareWalletDefinitions.TREZOR_APPLY_SETTINGS_MESSAGE_TYPE, {
+	
+		// Use passphrase
+		"Use Passphrase": true,
+		
+		// Passphrase always on device
+		"Passphrase Always On Device": true
+		
+	}, HardwareWalletDefinitions.TREZOR_SUCCESS_MESSAGE_TYPE);
+	
 	// Lock hardware wallet
-	//await hardwareWallet.send(HardwareWalletDefinitions.TREZOR_LOCK_DEVICE_MESSAGE_TYPE, {}, HardwareWalletDefinitions.TREZOR_SUCCESS_MESSAGE_TYPE);
+	await hardwareWallet.send(HardwareWalletDefinitions.TREZOR_LOCK_DEVICE_MESSAGE_TYPE, {}, HardwareWalletDefinitions.TREZOR_SUCCESS_MESSAGE_TYPE);*/
 	
 	// Log message
 	console.log("Passed getting application information test");

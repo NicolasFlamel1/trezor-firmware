@@ -83,7 +83,7 @@ Response to a `GET_ROOT_PUBLIC_KEY` message.
 
 | Type    | Name              | Description |
 |---------|-------------------|-------------|
-| `bytes` | `root_public_key` | The compressed root public key for the provided account |
+| `bytes` | `root_public_key` | The compressed root public key for the provided account (size 33 bytes) |
 
 ### GET_ADDRESS
 
@@ -182,7 +182,7 @@ Requests the account's commitment for the provided identifier, value, and switch
 | `enum`   | `coin_type`    | 0x00 for MimbleWimble Coin, 0x01 for Grin, or 0x02 for Epic Cash |
 | `enum`   | `network_type` | 0x00 for mainnet, 0x01 for testnet/floonet |
 | `uint32` | `account`      | Account number (max 0x7FFFFFFF) |
-| `bytes`  | `identifier`   | Identifier |
+| `bytes`  | `identifier`   | Identifier  (size 17 bytes) |
 | `uint64` | `value`        | Value to commit |
 | `enum`   | `switch_type`  | 0x01 for regular |
 
@@ -224,7 +224,7 @@ Requests the account's bulletproof components tau x, t one, and t two for the pr
 | `enum`   | `network_type` | 0x00 for mainnet, 0x01 for testnet/floonet |
 | `enum`   | `message_type` | 0x00 for sending transaction, 0x01 for receiving transaction, or 0x02 for creating coinbase |
 | `uint32` | `account`      | Account number (max 0x7FFFFFFF) |
-| `bytes`  | `identifier`   | Identifier |
+| `bytes`  | `identifier`   | Identifier  (size 17 bytes) |
 | `uint64` | `value`        | Value to commit |
 | `enum`   | `switch_type`  | 0x01 for regular |
 
@@ -310,7 +310,7 @@ Requests to prepare the session's slate state to be able to encrypt data that wi
 | `enum`   | `network_type`      | 0x00 for mainnet, 0x01 for testnet/floonet |
 | `uint32` | `account`           | Account number (max 0x7FFFFFFF) |
 | `uint32` | `index`             | Index number |
-| `bytes`  | `recipient_address` | Address that will be able to decrypt the data |
+| `bytes`  | `recipient_address` | Address that will be able to decrypt the data  (max size 247 bytes) |
 
 ### ENCRYPTED_SLATE_NONCE_AND_SALT
 
@@ -347,7 +347,7 @@ Requests to encrypt the provided data using the session's slate state and return
 
 | Type    | Name   | Description |
 |---------|--------|-------------|
-| `bytes` | `data` | Data chunk to encrypt |
+| `bytes` | `data` | Data chunk to encrypt  (max size 64 bytes) |
 
 ### ENCRYPTED_SLATE_DATA
 
@@ -424,10 +424,10 @@ Requests to prepare the session's slate state to be able to decrypt data that wi
 | `enum`   | `network_type`                                  | 0x00 for mainnet, 0x01 for testnet/floonet |
 | `uint32` | `account`                                       | Account number (max 0x7FFFFFFF) |
 | `uint32` | `index`                                         | Index number |
-| `bytes`  | `nonce`                                         | Nonce that was used to encrypt the data |
-| `bytes`  | `sender_address_or_ephemeral_x25519_public_key` | Address or ephemeral X25519 public key that will be able to decrypt the data |
-| `bytes`  | `salt_or_encrypted_file_key`                    | Optional salt that was used to encrypt the data if the `sender_address_or_ephemeral_x25519_public_key` is an MQS address or encrypted file key that was used to encrypt the data if the `sender_address_or_ephemeral_x25519_public_key` is an ephemeral X25519 public key |
-| `bytes`  | `payload_nonce`                                 | Optional payload nonce that was used to encrypt the data if the `sender_address_or_ephemeral_x25519_public_key` is an ephemeral X25519 public key |
+| `bytes`  | `nonce`                                         | Nonce that was used to encrypt the data  (size 12 bytes) |
+| `bytes`  | `sender_address_or_ephemeral_x25519_public_key` | Address or ephemeral X25519 public key that will be able to decrypt the data  (max size 56 bytes) |
+| `bytes`  | `salt_or_encrypted_file_key`                    | Optional salt that was used to encrypt the data if the `sender_address_or_ephemeral_x25519_public_key` is an MQS address or encrypted file key that was used to encrypt the data if the `sender_address_or_ephemeral_x25519_public_key` is an ephemeral X25519 public key  (max size 32 bytes) |
+| `bytes`  | `payload_nonce`                                 | Optional payload nonce that was used to encrypt the data if the `sender_address_or_ephemeral_x25519_public_key` is an ephemeral X25519 public key  (size 16 bytes) |
 
 ### CONTINUE_DECRYPTING_SLATE
 
@@ -445,7 +445,7 @@ Requests to decrypt the provided data using the session's slate state and return
 
 | Type    | Name             | Description |
 |---------|------------------|-------------|
-| `bytes` | `encrypted_data` | Data chunk to decrypt |
+| `bytes` | `encrypted_data` | Data chunk to decrypt (max size 64 bytes) |
 
 ### DECRYPTED_SLATE_DATA
 
@@ -481,7 +481,7 @@ Requests the AES key used to encrypt the decrypted data chunks if a valid tag is
 
 | Type    | Name  | Description |
 |---------|-------|-------------|
-| `bytes` | `tag` | Tag for the encrypted data |
+| `bytes` | `tag` | Tag for the encrypted data (size 16 bytes) |
 
 ### DECRYPTED_SLATE_AES_KEY
 
@@ -525,7 +525,7 @@ Requests to prepare the session's transaction state to be able to process a tran
 | `uint64` | `input`              | Input value |
 | `uint64` | `fee`                | Fee value|
 | `uint32` | `secret_nonce_index` | Index of the secret nonce to use or 0 to create secret nonce (max 30) |
-| `bytes`  | `address`            | Optional sender or recipient address of the transaction |
+| `bytes`  | `address`            | Optional sender or recipient address of the transaction  (max size 64 bytes) |
 
 ### CONTINUE_TRANSACTION_INCLUDE_OUTPUT
 
@@ -543,7 +543,7 @@ Requests to include the output for a provided identifier, value, and switch type
 
 | Type     | Name          | Description |
 |----------|---------------|-------------|
-| `bytes`  | `identifier`  | Identifier |
+| `bytes`  | `identifier`  | Identifier (size 17 bytes) |
 | `uint64` | `value`       | Value to commit |
 | `enum`   | `switch_type` | 0x01 for regular |
 
@@ -561,9 +561,9 @@ Requests to include the input for a provided identifier, value, and switch type 
 
 #### Fields
 
-| Type     | Name           | Description |
-|----------|----------------|-------------|
-| `bytes`  | `identifier`  | Identifier |
+| Type     | Name          | Description |
+|----------|---------------|-------------|
+| `bytes`  | `identifier`  | Identifier (size 17 bytes) |
 | `uint64` | `value`       | Value to commit |
 | `enum`   | `switch_type` | 0x01 for regular |
 
@@ -583,7 +583,7 @@ Requests to apply an offset to the transaction's blinding factor in the session'
 
 | Type    | Name     | Description |
 |---------|----------|-------------|
-| `bytes` | `offset` | Offset |
+| `bytes` | `offset` | Offset (size 32 bytes) |
 
 ### TRANSACTION_SECRET_NONCE_INDEX
 
@@ -691,7 +691,7 @@ Requests the signature for a provided UTF-8 message signed with the session's tr
 
 | Type    | Name      | Description |
 |---------|-----------|-------------|
-| `bytes` | `message` | UTF-8 message |
+| `bytes` | `message` | UTF-8 message (max size 255 bytes) |
 
 ### TRANSACTION_MESSAGE_SIGNATURE
 
@@ -733,11 +733,11 @@ If a sent transaction needs to be finalized at a later time, then the session's 
 | Type    | Name                 | Description |
 |---------|----------------------|-------------|
 | `enum`  | `address_type`       | 0x00 for MQS, 0x01 for Tor, or 0x02 for Slatepack address that will be used if verifying or creating a payment proof |
-| `bytes` | `public_nonce`       | Public nonce |
-| `bytes` | `public_key`         | Public key |
+| `bytes` | `public_nonce`       | Public nonce (size 33 bytes) |
+| `bytes` | `public_key`         | Public key (size 33 bytes) |
 | `bytes` | `kernel_information` | 0x00 for plain, 0x01 for coinbase, 0x02 and lock height (8 bytes, little endian) for height locked, or 0x03 and relative height (2 bytes, little endian, max 10080) |
-| `bytes` | `kernel_commitment`  | Optional kernel commitment that will be used for creating or verifying a payment proof |
-| `bytes` | `payment_proof`      | Optional receiver's payment proof signature that will be used when verifying a payment proof |
+| `bytes` | `kernel_commitment`  | Optional kernel commitment that will be used for creating or verifying a payment proof (size 33 bytes) |
+| `bytes` | `payment_proof`      | Optional receiver's payment proof signature that will be used when verifying a payment proof (max size 72 bytes) |
 
 ### TRANSACTION_SIGNATURE_AND_PAYMENT_PROOF
 
