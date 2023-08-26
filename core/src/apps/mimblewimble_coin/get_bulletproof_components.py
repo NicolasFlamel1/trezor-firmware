@@ -18,9 +18,9 @@ async def get_bulletproof_components(message: MimbleWimbleCoinGetBulletproofComp
 	from storage.device import is_initialized
 	from apps.base import unlock_device
 	from apps.common.seed import derive_and_store_roots
+	from trezor.workflow import idle_timer, close_others
 	from storage.cache import delete, APP_MIMBLEWIMBLE_COIN_ENCRYPTION_AND_DECRYPTION_CONTEXT, APP_MIMBLEWIMBLE_COIN_TRANSACTION_CONTEXT
 	from trezor.wire import NotInitialized, ProcessError, DataError
-	from trezor.workflow import close_others
 	from trezor.crypto import mimblewimble_coin
 	from trezor.enums import MimbleWimbleCoinSwitchType, MimbleWimbleCoinMessageType
 	from trezor.ui.layouts.progress import progress
@@ -29,6 +29,9 @@ async def get_bulletproof_components(message: MimbleWimbleCoinGetBulletproofComp
 	from .coins import getCoinInfo
 	from .common import getExtendedPrivateKey, UINT64_MAX
 	from .storage import initializeStorage
+	
+	# Refresh idle timer
+	idle_timer.touch()
 	
 	# Check if not initialized
 	if not is_initialized():

@@ -18,6 +18,7 @@ async def finish_encrypting_slate(message: MimbleWimbleCoinFinishEncryptingSlate
 	from storage.device import is_initialized
 	from apps.base import unlock_device
 	from apps.common.seed import derive_and_store_roots
+	from trezor.workflow import idle_timer
 	from storage.cache import delete, get_memory_view, APP_MIMBLEWIMBLE_COIN_ENCRYPTION_AND_DECRYPTION_CONTEXT, APP_MIMBLEWIMBLE_COIN_TRANSACTION_CONTEXT
 	from trezor.wire import NotInitialized, ProcessError, InvalidSession
 	from trezor.crypto import mimblewimble_coin
@@ -25,6 +26,9 @@ async def finish_encrypting_slate(message: MimbleWimbleCoinFinishEncryptingSlate
 	from .coins import getCoinInfo
 	from .common import getExtendedPrivateKey
 	from .storage import initializeStorage
+	
+	# Refresh idle timer
+	idle_timer.touch()
 	
 	# Check if not initialized
 	if not is_initialized():

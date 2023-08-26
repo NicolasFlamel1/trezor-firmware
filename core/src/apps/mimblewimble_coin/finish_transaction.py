@@ -25,6 +25,7 @@ async def finish_transaction(message: MimbleWimbleCoinFinishTransaction) -> Mimb
 	from storage.device import is_initialized
 	from apps.base import unlock_device
 	from apps.common.seed import derive_and_store_roots
+	from trezor.workflow import idle_timer
 	from storage.cache import delete, get_memory_view, APP_MIMBLEWIMBLE_COIN_ENCRYPTION_AND_DECRYPTION_CONTEXT, APP_MIMBLEWIMBLE_COIN_TRANSACTION_CONTEXT
 	from trezor.wire import NotInitialized, ProcessError, DataError, InvalidSession, ActionCancelled
 	from trezor.ui.layouts import confirm_action, confirm_value, confirm_blob, show_warning
@@ -37,6 +38,9 @@ async def finish_transaction(message: MimbleWimbleCoinFinishTransaction) -> Mimb
 	from .coins import getCoinInfo, PaymentProofAddressType
 	from .common import getExtendedPrivateKey, NATIVE_UINT64_PACK_FORMAT
 	from .storage import initializeStorage
+	
+	# Refresh idle timer
+	idle_timer.touch()
 	
 	# Check if not initialized
 	if not is_initialized():

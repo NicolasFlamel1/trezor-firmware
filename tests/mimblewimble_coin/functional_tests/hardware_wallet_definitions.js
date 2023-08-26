@@ -611,10 +611,7 @@ class HardwareWalletDefinitions {
 						"Name": "Passphrase Always On Device",
 						
 						// Type
-						"Type": ProtocolBuffers.BOOL_SCHEMA_DATA_TYPE,
-						
-						// Optional
-						"Optional": true
+						"Type": ProtocolBuffers.BOOL_SCHEMA_DATA_TYPE
 					}
 				},
 				

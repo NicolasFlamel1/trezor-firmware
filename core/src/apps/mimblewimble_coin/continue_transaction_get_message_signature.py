@@ -25,6 +25,7 @@ async def continue_transaction_get_message_signature(message: MimbleWimbleCoinCo
 	from storage.device import is_initialized
 	from apps.base import unlock_device
 	from apps.common.seed import derive_and_store_roots
+	from trezor.workflow import idle_timer
 	from storage.cache import delete, get_memory_view, APP_MIMBLEWIMBLE_COIN_ENCRYPTION_AND_DECRYPTION_CONTEXT, APP_MIMBLEWIMBLE_COIN_TRANSACTION_CONTEXT
 	from trezor.wire import NotInitialized, ProcessError, DataError, InvalidSession
 	from trezor.crypto import mimblewimble_coin
@@ -32,6 +33,9 @@ async def continue_transaction_get_message_signature(message: MimbleWimbleCoinCo
 	from struct import unpack, calcsize
 	from .common import NATIVE_UINT64_PACK_FORMAT
 	from .storage import initializeStorage
+	
+	# Refresh idle timer
+	idle_timer.touch()
 	
 	# Check if not initialized
 	if not is_initialized():

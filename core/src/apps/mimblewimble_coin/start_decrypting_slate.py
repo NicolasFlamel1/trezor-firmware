@@ -18,6 +18,7 @@ async def start_decrypting_slate(message: MimbleWimbleCoinStartDecryptingSlate) 
 	from storage.device import is_initialized
 	from apps.base import unlock_device
 	from apps.common.seed import derive_and_store_roots
+	from trezor.workflow import idle_timer
 	from storage.cache import delete, get_memory_view, APP_MIMBLEWIMBLE_COIN_ENCRYPTION_AND_DECRYPTION_CONTEXT, APP_MIMBLEWIMBLE_COIN_TRANSACTION_CONTEXT
 	from trezor.wire import NotInitialized, ProcessError, DataError
 	from trezor.crypto import mimblewimble_coin
@@ -25,6 +26,9 @@ async def start_decrypting_slate(message: MimbleWimbleCoinStartDecryptingSlate) 
 	from .coins import getCoinInfo, SlateEncryptionType
 	from .common import getExtendedPrivateKey, UINT32_MAX
 	from .storage import initializeStorage
+	
+	# Refresh idle timer
+	idle_timer.touch()
 	
 	# Check if not initialized
 	if not is_initialized():

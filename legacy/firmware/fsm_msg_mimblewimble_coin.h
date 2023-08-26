@@ -62,6 +62,9 @@ void fsm_msgMimbleWimbleCoinGetRootPublicKey(const MimbleWimbleCoinGetRootPublic
 	// Initialize response
 	RESP_INIT(MimbleWimbleCoinRootPublicKey);
 	
+	// Refresh idle timer
+	system_millis_lock_start = timer_ms();
+	
 	// Require initialized
 	CHECK_INITIALIZED
 	
@@ -227,6 +230,9 @@ void fsm_msgMimbleWimbleCoinGetAddress(const MimbleWimbleCoinGetAddress *message
 
 	// Initialize response
 	RESP_INIT(MimbleWimbleCoinAddress);
+	
+	// Refresh idle timer
+	system_millis_lock_start = timer_ms();
 	
 	// Require initialized
 	CHECK_INITIALIZED
@@ -429,6 +435,9 @@ void fsm_msgMimbleWimbleCoinGetSeedCookie(const MimbleWimbleCoinGetSeedCookie *m
 	// Initialize response
 	RESP_INIT(MimbleWimbleCoinSeedCookie);
 	
+	// Refresh idle timer
+	system_millis_lock_start = timer_ms();
+	
 	// Require initialized
 	CHECK_INITIALIZED
 	
@@ -539,6 +548,9 @@ void fsm_msgMimbleWimbleCoinGetCommitment(const MimbleWimbleCoinGetCommitment *m
 
 	// Initialize response
 	RESP_INIT(MimbleWimbleCoinCommitment);
+	
+	// Refresh idle timer
+	system_millis_lock_start = timer_ms();
 	
 	// Require initialized
 	CHECK_INITIALIZED
@@ -693,6 +705,9 @@ void fsm_msgMimbleWimbleCoinGetBulletproofComponents(const MimbleWimbleCoinGetBu
 
 	// Initialize response
 	RESP_INIT(MimbleWimbleCoinBulletproofComponents);
+	
+	// Refresh idle timer
+	system_millis_lock_start = timer_ms();
 	
 	// Require initialized
 	CHECK_INITIALIZED
@@ -917,6 +932,9 @@ void fsm_msgMimbleWimbleCoinGetBulletproofComponents(const MimbleWimbleCoinGetBu
 // Verify root public key
 void fsm_msgMimbleWimbleCoinVerifyRootPublicKey(const MimbleWimbleCoinVerifyRootPublicKey *message) {
 
+	// Refresh idle timer
+	system_millis_lock_start = timer_ms();
+	
 	// Require initialized
 	CHECK_INITIALIZED
 	
@@ -1071,6 +1089,9 @@ void fsm_msgMimbleWimbleCoinVerifyRootPublicKey(const MimbleWimbleCoinVerifyRoot
 // Verify address
 void fsm_msgMimbleWimbleCoinVerifyAddress(const MimbleWimbleCoinVerifyAddress *message) {
 
+	// Refresh idle timer
+	system_millis_lock_start = timer_ms();
+	
 	// Require initialized
 	CHECK_INITIALIZED
 	
@@ -1386,6 +1407,9 @@ void fsm_msgMimbleWimbleCoinStartEncryptingSlate(const MimbleWimbleCoinStartEncr
 	// Initialize response
 	RESP_INIT(MimbleWimbleCoinEncryptedSlateNonceAndSalt);
 	
+	// Refresh idle timer
+	system_millis_lock_start = timer_ms();
+	
 	// Require initialized
 	CHECK_INITIALIZED
 	
@@ -1628,6 +1652,9 @@ void fsm_msgMimbleWimbleCoinContinueEncryptingSlate(const MimbleWimbleCoinContin
 	// Initialize response
 	RESP_INIT(MimbleWimbleCoinEncryptedSlateData);
 	
+	// Refresh idle timer
+	system_millis_lock_start = timer_ms();
+	
 	// Require initialized
 	CHECK_INITIALIZED
 	
@@ -1723,6 +1750,9 @@ void fsm_msgMimbleWimbleCoinFinishEncryptingSlate(__attribute__((unused)) const 
 
 	// Initialize response
 	RESP_INIT(MimbleWimbleCoinEncryptedSlateTagAndSignature);
+	
+	// Refresh idle timer
+	system_millis_lock_start = timer_ms();
 	
 	// Require initialized
 	CHECK_INITIALIZED
@@ -1831,6 +1861,9 @@ void fsm_msgMimbleWimbleCoinFinishEncryptingSlate(__attribute__((unused)) const 
 // Start decrypting slate
 void fsm_msgMimbleWimbleCoinStartDecryptingSlate(const MimbleWimbleCoinStartDecryptingSlate *message) {
 
+	// Refresh idle timer
+	system_millis_lock_start = timer_ms();
+	
 	// Require initialized
 	CHECK_INITIALIZED
 	
@@ -2161,6 +2194,9 @@ void fsm_msgMimbleWimbleCoinContinueDecryptingSlate(const MimbleWimbleCoinContin
 	// Initialize response
 	RESP_INIT(MimbleWimbleCoinDecryptedSlateData);
 	
+	// Refresh idle timer
+	system_millis_lock_start = timer_ms();
+	
 	// Require initialized
 	CHECK_INITIALIZED
 	
@@ -2256,6 +2292,9 @@ void fsm_msgMimbleWimbleCoinFinishDecryptingSlate(const MimbleWimbleCoinFinishDe
 
 	// Initialize response
 	RESP_INIT(MimbleWimbleCoinDecryptedSlateAesKey);
+	
+	// Refresh idle timer
+	system_millis_lock_start = timer_ms();
 	
 	// Require initialized
 	CHECK_INITIALIZED
@@ -2353,6 +2392,9 @@ void fsm_msgMimbleWimbleCoinFinishDecryptingSlate(const MimbleWimbleCoinFinishDe
 // Start transaction
 void fsm_msgMimbleWimbleCoinStartTransaction(const MimbleWimbleCoinStartTransaction *message) {
 
+	// Refresh idle timer
+	system_millis_lock_start = timer_ms();
+	
 	// Require initialized
 	CHECK_INITIALIZED
 	
@@ -2677,6 +2719,9 @@ void fsm_msgMimbleWimbleCoinStartTransaction(const MimbleWimbleCoinStartTransact
 // Continue transaction include output
 void fsm_msgMimbleWimbleCoinContinueTransactionIncludeOutput(const MimbleWimbleCoinContinueTransactionIncludeOutput *message) {
 
+	// Refresh idle timer
+	system_millis_lock_start = timer_ms();
+	
 	// Require initialized
 	CHECK_INITIALIZED
 	
@@ -2856,6 +2901,9 @@ void fsm_msgMimbleWimbleCoinContinueTransactionIncludeOutput(const MimbleWimbleC
 // Continue transaction include input
 void fsm_msgMimbleWimbleCoinContinueTransactionIncludeInput(const MimbleWimbleCoinContinueTransactionIncludeInput *message) {
 
+	// Refresh idle timer
+	system_millis_lock_start = timer_ms();
+	
 	// Require initialized
 	CHECK_INITIALIZED
 	
@@ -3038,6 +3086,9 @@ void fsm_msgMimbleWimbleCoinContinueTransactionApplyOffset(const MimbleWimbleCoi
 	// Initialize response
 	RESP_INIT(MimbleWimbleCoinTransactionSecretNonceIndex);
 	
+	// Refresh idle timer
+	system_millis_lock_start = timer_ms();
+	
 	// Require initialized
 	CHECK_INITIALIZED
 	
@@ -3174,6 +3225,9 @@ void fsm_msgMimbleWimbleCoinContinueTransactionGetPublicKey(__attribute__((unuse
 	// Initialize response
 	RESP_INIT(MimbleWimbleCoinTransactionPublicKey);
 	
+	// Refresh idle timer
+	system_millis_lock_start = timer_ms();
+	
 	// Require initialized
 	CHECK_INITIALIZED
 	
@@ -3283,6 +3337,9 @@ void fsm_msgMimbleWimbleCoinContinueTransactionGetPublicNonce(__attribute__((unu
 	// Initialize response
 	RESP_INIT(MimbleWimbleCoinTransactionPublicNonce);
 	
+	// Refresh idle timer
+	system_millis_lock_start = timer_ms();
+	
 	// Require initialized
 	CHECK_INITIALIZED
 	
@@ -3391,6 +3448,9 @@ void fsm_msgMimbleWimbleCoinContinueTransactionGetMessageSignature(const MimbleW
 
 	// Initialize response
 	RESP_INIT(MimbleWimbleCoinTransactionMessageSignature);
+	
+	// Refresh idle timer
+	system_millis_lock_start = timer_ms();
 	
 	// Require initialized
 	CHECK_INITIALIZED
@@ -3526,6 +3586,9 @@ void fsm_msgMimbleWimbleCoinFinishTransaction(const MimbleWimbleCoinFinishTransa
 
 	// Initialize response
 	RESP_INIT(MimbleWimbleCoinTransactionSignatureAndPaymentProof);
+	
+	// Refresh idle timer
+	system_millis_lock_start = timer_ms();
 	
 	// Require initialized
 	CHECK_INITIALIZED
@@ -4299,6 +4362,9 @@ void fsm_msgMimbleWimbleCoinGetMqsChallengeSignature(const MimbleWimbleCoinGetMq
 
 	// Initialize response
 	RESP_INIT(MimbleWimbleCoinMqsChallengeSignature);
+	
+	// Refresh idle timer
+	system_millis_lock_start = timer_ms();
 	
 	// Require initialized
 	CHECK_INITIALIZED
