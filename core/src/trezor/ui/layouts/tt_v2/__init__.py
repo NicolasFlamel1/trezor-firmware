@@ -491,7 +491,7 @@ async def show_error_and_raise(
     br_type: str,
     content: str,
     subheader: str | None = None,
-    button: str = "CLOSE",
+    button: str = "TRY AGAIN",
     exc: ExceptionType = ActionCancelled,
 ) -> NoReturn:
     await interact(
@@ -727,6 +727,7 @@ async def confirm_blob(
     data: bytes | str,
     description: str | None = None,
     verb: str = "CONFIRM",
+    verb_cancel: str | None = None,
     hold: bool = False,
     br_code: ButtonRequestType = BR_TYPE_OTHER,
     ask_pagination: bool = False,
@@ -741,6 +742,7 @@ async def confirm_blob(
             extra=None,
             hold=hold,
             verb=verb,
+            verb_cancel=verb_cancel,
         )
     )
 

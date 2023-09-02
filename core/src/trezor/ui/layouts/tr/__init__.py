@@ -580,21 +580,16 @@ async def _show_modal(
 async def show_error_and_raise(
     br_type: str,
     content: str,
-    header: str = "Error",
     subheader: str | None = None,
-    button: str = "Close",
-    red: bool = False,  # unused on TR
+    button: str = "TRY AGAIN",
     exc: ExceptionType = ActionCancelled,
 ) -> NoReturn:
-    await _show_modal(
+    await show_warning(
         br_type,
-        header,
-        subheader,
+        subheader or "",
         content,
-        button_confirm=None,
-        button_cancel=button,
+        button=button,
         br_code=BR_TYPE_OTHER,
-        exc=exc,
     )
     raise exc
 
@@ -717,6 +712,7 @@ async def should_show_more(
     br_type: str = "should_show_more",
     br_code: ButtonRequestType = BR_TYPE_OTHER,
     confirm: str | bytes | None = None,
+    verb_cancel: str | None = None,
 ) -> bool:
     """Return True if the user wants to show more (they click a special button)
     and False when the user wants to continue without showing details.
@@ -732,7 +728,8 @@ async def should_show_more(
                 title=title.upper(),
                 items=para,
                 button=confirm.upper(),
-                info_button=button_text.upper(),
+                verb_cancel=verb_cancel,  # type: ignore [No parameter named "verb_cancel"]
+                info_button=button_text.upper(),  # unused on TR
             )
         ),
         br_type,
@@ -753,6 +750,8 @@ async def confirm_blob(
     title: str,
     data: bytes | str,
     description: str | None = None,
+    verb: str = "CONFIRM",
+    verb_cancel: str | None = "",  # icon
     hold: bool = False,
     br_code: ButtonRequestType = BR_TYPE_OTHER,
     ask_pagination: bool = False,
@@ -765,18 +764,67 @@ async def confirm_blob(
             description=description,
             data=data,
             extra=None,
-            verb_cancel="",  # to show the cancel icon
+            verb=verb,
+            verb_cancel=verb_cancel,
             hold=hold,
         )
     )
 
-    await raise_if_not_confirmed(
-        interact(
-            layout,
-            br_type,
-            br_code,
+    if ask_pagination and layout.page_count() > 1:
+        assert not hold
+        await _confirm_ask_pagination(
+            br_type, title, data, description, verb_cancel, br_code
         )
-    )
+
+    else:
+        await raise_if_not_confirmed(
+            interact(
+                layout,
+                br_type,
+                br_code,
+            )
+        )
+
+
+async def _confirm_ask_pagination(
+    br_type: str,
+    title: str,
+    data: bytes | str,
+    description: str,
+    verb_cancel: str | None,
+    br_code: ButtonRequestType,
+) -> None:
+    paginated: ui.Layout | None = None
+    # TODO: make should_show_more/confirm_more accept bytes directly
+    if isinstance(data, bytes):
+        from ubinascii import hexlify
+
+        data = hexlify(data).decode()
+    while True:
+        if not await should_show_more(
+            title,
+            para=[(ui.NORMAL, description), (ui.MONO, data)],
+            verb_cancel=verb_cancel,
+            br_type=br_type,
+            br_code=br_code,
+        ):
+            return
+
+        if paginated is None:
+            paginated = RustLayout(
+                trezorui2.confirm_more(
+                    title=title,
+                    button="GO BACK",
+                    items=[(ui.BOLD, f"Size: {len(data)} bytes"), (ui.MONO, data)],
+                )
+            )
+        else:
+            paginated.request_complete_repaint()
+
+        result = await interact(paginated, br_type, br_code)
+        assert result in (CONFIRMED, CANCELLED)
+
+    assert False
 
 
 async def confirm_address(
@@ -1052,29 +1100,31 @@ async def confirm_sign_identity(
 async def confirm_signverify(
     coin: str, message: str, address: str, verify: bool
 ) -> None:
-    if verify:
-        header = f"Verify {coin} message"
-        br_type = "verify_message"
-    else:
-        header = f"Sign {coin} message"
-        br_type = "sign_message"
+    br_type = "verify_message" if verify else "sign_message"
 
-    await confirm_blob(
-        br_type,
-        header.upper(),
-        address,
-        "Confirm address:",
-        br_code=BR_TYPE_OTHER,
-    )
+    # Allowing to go back from the second screen
+    while True:
+        await confirm_blob(
+            br_type,
+            "SIGNING ADDRESS",
+            address,
+            verb="CONTINUE",
+            br_code=BR_TYPE_OTHER,
+        )
 
-    await confirm_value(
-        header.upper(),
-        message,
-        "Confirm message:",
-        br_type,
-        BR_TYPE_OTHER,
-        verb="CONFIRM",
-    )
+        try:
+            await confirm_blob(
+                br_type,
+                "CONFIRM MESSAGE",
+                message,
+                verb_cancel="up_arrow_icon",
+                br_code=BR_TYPE_OTHER,
+                ask_pagination=True,
+            )
+        except ActionCancelled:
+            continue
+        else:
+            break
 
 
 async def show_error_popup(

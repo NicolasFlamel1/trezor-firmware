@@ -224,12 +224,24 @@ def show_mismatch() -> object:
 def confirm_with_info(
     *,
     title: str,
-    button: str,  # unused on TR
+    button: str,
     info_button: str,  # unused on TR
     items: Iterable[Tuple[int, str]],
+    verb_cancel: str | None = None,
 ) -> object:
     """Confirm given items but with third button. Always single page
     without scrolling."""
+
+
+# rust/src/ui/model_tr/layout.rs
+def confirm_more(
+    *,
+    title: str,
+    button: str,
+    items: Iterable[tuple[int, str]],
+) -> object:
+    """Confirm long content with the possibility to go back from any page.
+    Meant to be used with confirm_with_info."""
 
 
 # rust/src/ui/model_tr/layout.rs
