@@ -74,6 +74,9 @@ void fsm_msgMimbleWimbleCoinGetRootPublicKey(const MimbleWimbleCoinGetRootPublic
 	// Check if caching seed failed
 	if(!config_getSeed(false)) {
 	
+		// Show home
+		layoutHome();
+	
 		// Return
 		return;
 	}
@@ -242,6 +245,9 @@ void fsm_msgMimbleWimbleCoinGetAddress(const MimbleWimbleCoinGetAddress *message
 	
 	// Check if caching seed failed
 	if(!config_getSeed(false)) {
+	
+		// Show home
+		layoutHome();
 	
 		// Return
 		return;
@@ -447,6 +453,9 @@ void fsm_msgMimbleWimbleCoinGetSeedCookie(const MimbleWimbleCoinGetSeedCookie *m
 	// Check if caching seed failed
 	if(!config_getSeed(false)) {
 	
+		// Show home
+		layoutHome();
+	
 		// Return
 		return;
 	}
@@ -560,6 +569,9 @@ void fsm_msgMimbleWimbleCoinGetCommitment(const MimbleWimbleCoinGetCommitment *m
 	
 	// Check if caching seed failed
 	if(!config_getSeed(false)) {
+	
+		// Show home
+		layoutHome();
 	
 		// Return
 		return;
@@ -717,6 +729,9 @@ void fsm_msgMimbleWimbleCoinGetBulletproofComponents(const MimbleWimbleCoinGetBu
 	
 	// Check if caching seed failed
 	if(!config_getSeed(false)) {
+	
+		// Show home
+		layoutHome();
 	
 		// Return
 		return;
@@ -944,6 +959,9 @@ void fsm_msgMimbleWimbleCoinVerifyRootPublicKey(const MimbleWimbleCoinVerifyRoot
 	// Check if caching seed failed
 	if(!config_getSeed(false)) {
 	
+		// Show home
+		layoutHome();
+	
 		// Return
 		return;
 	}
@@ -1100,6 +1118,9 @@ void fsm_msgMimbleWimbleCoinVerifyAddress(const MimbleWimbleCoinVerifyAddress *m
 	
 	// Check if caching seed failed
 	if(!config_getSeed(false)) {
+	
+		// Show home
+		layoutHome();
 	
 		// Return
 		return;
@@ -1419,6 +1440,9 @@ void fsm_msgMimbleWimbleCoinStartEncryptingSlate(const MimbleWimbleCoinStartEncr
 	// Check if caching seed failed
 	if(!config_getSeed(false)) {
 	
+		// Show home
+		layoutHome();
+	
 		// Return
 		return;
 	}
@@ -1664,6 +1688,9 @@ void fsm_msgMimbleWimbleCoinContinueEncryptingSlate(const MimbleWimbleCoinContin
 	// Check if caching seed failed
 	if(!config_getSeed(false)) {
 	
+		// Show home
+		layoutHome();
+	
 		// Return
 		return;
 	}
@@ -1762,6 +1789,9 @@ void fsm_msgMimbleWimbleCoinFinishEncryptingSlate(__attribute__((unused)) const 
 	
 	// Check if caching seed failed
 	if(!config_getSeed(false)) {
+	
+		// Show home
+		layoutHome();
 	
 		// Return
 		return;
@@ -1872,6 +1902,9 @@ void fsm_msgMimbleWimbleCoinStartDecryptingSlate(const MimbleWimbleCoinStartDecr
 	
 	// Check if caching seed failed
 	if(!config_getSeed(false)) {
+	
+		// Show home
+		layoutHome();
 	
 		// Return
 		return;
@@ -2206,6 +2239,9 @@ void fsm_msgMimbleWimbleCoinContinueDecryptingSlate(const MimbleWimbleCoinContin
 	// Check if caching seed failed
 	if(!config_getSeed(false)) {
 	
+		// Show home
+		layoutHome();
+	
 		// Return
 		return;
 	}
@@ -2305,6 +2341,9 @@ void fsm_msgMimbleWimbleCoinFinishDecryptingSlate(const MimbleWimbleCoinFinishDe
 	// Check if caching seed failed
 	if(!config_getSeed(false)) {
 	
+		// Show home
+		layoutHome();
+	
 		// Return
 		return;
 	}
@@ -2403,6 +2442,9 @@ void fsm_msgMimbleWimbleCoinStartTransaction(const MimbleWimbleCoinStartTransact
 	
 	// Check if caching seed failed
 	if(!config_getSeed(false)) {
+	
+		// Show home
+		layoutHome();
 	
 		// Return
 		return;
@@ -2731,6 +2773,9 @@ void fsm_msgMimbleWimbleCoinContinueTransactionIncludeOutput(const MimbleWimbleC
 	// Check if caching seed failed
 	if(!config_getSeed(false)) {
 	
+		// Show home
+		layoutHome();
+	
 		// Return
 		return;
 	}
@@ -2912,6 +2957,9 @@ void fsm_msgMimbleWimbleCoinContinueTransactionIncludeInput(const MimbleWimbleCo
 	
 	// Check if caching seed failed
 	if(!config_getSeed(false)) {
+	
+		// Show home
+		layoutHome();
 	
 		// Return
 		return;
@@ -3098,6 +3146,9 @@ void fsm_msgMimbleWimbleCoinContinueTransactionApplyOffset(const MimbleWimbleCoi
 	// Check if caching seed failed
 	if(!config_getSeed(false)) {
 	
+		// Show home
+		layoutHome();
+	
 		// Return
 		return;
 	}
@@ -3237,6 +3288,9 @@ void fsm_msgMimbleWimbleCoinContinueTransactionGetPublicKey(__attribute__((unuse
 	// Check if caching seed failed
 	if(!config_getSeed(false)) {
 	
+		// Show home
+		layoutHome();
+	
 		// Return
 		return;
 	}
@@ -3349,6 +3403,9 @@ void fsm_msgMimbleWimbleCoinContinueTransactionGetPublicNonce(__attribute__((unu
 	// Check if caching seed failed
 	if(!config_getSeed(false)) {
 	
+		// Show home
+		layoutHome();
+	
 		// Return
 		return;
 	}
@@ -3460,6 +3517,9 @@ void fsm_msgMimbleWimbleCoinContinueTransactionGetMessageSignature(const MimbleW
 	
 	// Check if caching seed failed
 	if(!config_getSeed(false)) {
+	
+		// Show home
+		layoutHome();
 	
 		// Return
 		return;
@@ -3598,6 +3658,9 @@ void fsm_msgMimbleWimbleCoinFinishTransaction(const MimbleWimbleCoinFinishTransa
 	
 	// Check if caching seed failed
 	if(!config_getSeed(false)) {
+	
+		// Show home
+		layoutHome();
 	
 		// Return
 		return;
@@ -4374,6 +4437,9 @@ void fsm_msgMimbleWimbleCoinGetMqsChallengeSignature(const MimbleWimbleCoinGetMq
 	
 	// Check if caching seed failed
 	if(!config_getSeed(false)) {
+	
+		// Show home
+		layoutHome();
 	
 		// Return
 		return;
