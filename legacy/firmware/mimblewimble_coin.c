@@ -404,7 +404,7 @@ bool mimbleWimbleCoinisValidUtf8String(const char *string, const size_t length) 
 		}
 		
 		// Otherwise check if UTF-8 code point is a plane sixteen character
-		else if(length >= 3 && i < length - 3 && (uint8_t)string[i] == 0xF4 && (uint8_t)string[i + 1] >= 0x80 && (uint8_t)string[i + 1] <= 0xBF && (uint8_t)string[i + 2] >= 0x80 && (uint8_t)string[i + 2] <= 0xBF && (uint8_t)string[i + 3] >= 0x80 && (uint8_t)string[i + 3] <= 0xBF) {
+		else if(length >= 3 && i < length - 3 && (uint8_t)string[i] == 0xF4 && (uint8_t)string[i + 1] >= 0x80 && (uint8_t)string[i + 1] <= 0x8F && (uint8_t)string[i + 2] >= 0x80 && (uint8_t)string[i + 2] <= 0xBF && (uint8_t)string[i + 3] >= 0x80 && (uint8_t)string[i + 3] <= 0xBF) {
 		
 			// Go to next UTF-8 code point
 			i += 4;
