@@ -11,7 +11,7 @@
 
 // Coins
 const MimbleWimbleCoinCoinInfo mimbleWimbleCoinCoins[MIMBLEWIMBLE_COIN_COINS_COUNT] = {
-% for c in supported_on("trezor1", mimblewimble_coin):
+% for c in supported_on("T1B1", mimblewimble_coin):
 	{
 		.name = ${c_str(c.name)},
 		.coinType = MimbleWimbleCoinCoinType_${c.coin_type.upper()},

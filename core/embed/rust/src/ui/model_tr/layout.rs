@@ -371,10 +371,7 @@ extern "C" fn new_confirm_properties(n_args: usize, args: *const Obj, kwargs: *m
         let title: StrBuffer = kwargs.get(Qstr::MP_QSTR_title)?.try_into()?;
         let hold: bool = kwargs.get_or(Qstr::MP_QSTR_hold, false)?;
         let items: Obj = kwargs.get(Qstr::MP_QSTR_items)?;
-        let verb: Option<StrBuffer> = kwargs
-            .get(Qstr::MP_QSTR_verb)
-            .unwrap_or_else(|_| Obj::const_none())
-            .try_into_option()?;
+        let verb: StrBuffer = kwargs.get(Qstr::MP_QSTR_verb)?.try_into()?;
 
         let mut paragraphs = ParagraphVecLong::new();
 

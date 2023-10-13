@@ -13,7 +13,7 @@
 // Definitions
 
 // Coins count
-<% mimblewimble_coin_coins_list = list(supported_on("trezor1", mimblewimble_coin)) %>\
+<% mimblewimble_coin_coins_list = list(supported_on("T1B1", mimblewimble_coin)) %>\
 #define MIMBLEWIMBLE_COIN_COINS_COUNT ${len(mimblewimble_coin_coins_list)}
 
 
