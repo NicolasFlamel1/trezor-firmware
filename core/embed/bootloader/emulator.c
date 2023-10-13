@@ -1,12 +1,16 @@
 #include <stdio.h>
 #include <unistd.h>
 
+#include TREZOR_BOARD
 #include "bootui.h"
 #include "common.h"
 #include "display.h"
 #include "flash.h"
 #include "model.h"
 #include "rust_ui.h"
+#ifdef USE_OPTIGA
+#include "secret.h"
+#endif
 
 #include "emulator.h"
 
@@ -40,9 +44,17 @@ __attribute__((noreturn)) int main(int argc, char **argv) {
     (void)ret;
   }
 
-  if (argc == 2 && argv[1][0] == 's') {
-    // Run the firmware
-    stay_in_bootloader_flag = STAY_IN_BOOTLOADER_FLAG;
+  if (argc == 2) {
+    if (argv[1][0] == 's') {
+      // Run the firmware
+      stay_in_bootloader_flag = STAY_IN_BOOTLOADER_FLAG;
+    }
+#ifdef USE_OPTIGA
+    else if (argv[1][0] == 'l') {
+      // write bootloader-lock secret
+      secret_write_header();
+    }
+#endif
   } else if (argc == 4) {
     display_init();
     display_backlight(180);
@@ -76,7 +88,8 @@ __attribute__((noreturn)) void jump_to(void *addr) {
                             "STORAGE WAS ERASED");
   } else {
     printf("storage was retained\n");
-    screen_install_success("STORAGE WAS RETAINED", true, true);
+    screen_fatal_error_rust("BOOTLOADER EXIT", "Jumped to firmware",
+                            "STORAGE WAS RETAINED");
   }
   display_backlight(180);
   display_refresh();

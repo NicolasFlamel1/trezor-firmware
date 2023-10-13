@@ -43,25 +43,34 @@ const DIGITS_INDEX: usize = 5;
 const SPECIAL_INDEX: usize = 6;
 const SPACE_INDEX: usize = 7;
 
-// Menu text, action, icon data, middle button with CONFIRM
-const MENU: [(&str, PassphraseAction, Option<Icon>, bool); MENU_LENGTH] = [
-    ("SHOW", PassphraseAction::Show, Some(theme::ICON_EYE), true),
+/// Menu text, action, icon data, middle button with CONFIRM, without_release
+const MENU: [(&str, PassphraseAction, Option<Icon>, bool, bool); MENU_LENGTH] = [
+    (
+        "SHOW",
+        PassphraseAction::Show,
+        Some(theme::ICON_EYE),
+        true,
+        false,
+    ),
     (
         "CANCEL_OR_DELETE", // will be chosen dynamically
         PassphraseAction::CancelOrDelete,
         None,
         true,
+        true, // without_release
     ),
     (
         "ENTER",
         PassphraseAction::Enter,
         Some(theme::ICON_TICK),
         true,
+        false,
     ),
     (
         "abc",
         PassphraseAction::Category(ChoiceCategory::LowercaseLetter),
         None,
+        false,
         false,
     ),
     (
@@ -69,11 +78,13 @@ const MENU: [(&str, PassphraseAction, Option<Icon>, bool); MENU_LENGTH] = [
         PassphraseAction::Category(ChoiceCategory::UppercaseLetter),
         None,
         false,
+        false,
     ),
     (
         "123",
         PassphraseAction::Category(ChoiceCategory::Digit),
         None,
+        false,
         false,
     ),
     (
@@ -81,11 +92,13 @@ const MENU: [(&str, PassphraseAction, Option<Icon>, bool); MENU_LENGTH] = [
         PassphraseAction::Category(ChoiceCategory::SpecialSymbol),
         None,
         false,
+        false,
     ),
     (
         "SPACE",
         PassphraseAction::Character(' '),
         Some(theme::ICON_SPACE),
+        false,
         false,
     ),
 ];
@@ -164,7 +177,7 @@ impl ChoiceFactoryPassphrase {
         choice_index: usize,
     ) -> (ChoiceItem<T>, PassphraseAction) {
         // More options for CANCEL/DELETE button
-        let (mut text, action, mut icon, show_confirm) = MENU[choice_index];
+        let (mut text, action, mut icon, show_confirm, without_release) = MENU[choice_index];
         if matches!(action, PassphraseAction::CancelOrDelete) {
             if self.is_empty {
                 text = "CANCEL";
@@ -181,6 +194,11 @@ impl ChoiceFactoryPassphrase {
         if show_confirm {
             let confirm_btn = ButtonDetails::armed_text("CONFIRM".into());
             menu_item.set_middle_btn(Some(confirm_btn));
+        }
+
+        // Making middle button create LongPress events
+        if without_release {
+            menu_item = menu_item.with_middle_action_without_release();
         }
 
         if let Some(icon) = icon {
@@ -236,6 +254,7 @@ pub struct PassphraseEntry<T: StringType + Clone> {
     choice_page: ChoicePage<ChoiceFactoryPassphrase, T, PassphraseAction>,
     passphrase_dots: Child<ChangingTextLine<String<MAX_PASSPHRASE_LENGTH>>>,
     show_plain_passphrase: bool,
+    show_last_digit: bool,
     textbox: TextBox<MAX_PASSPHRASE_LENGTH>,
     current_category: ChoiceCategory,
 }
@@ -251,6 +270,7 @@ where
                 .with_initial_page_counter(random_menu_position()),
             passphrase_dots: Child::new(ChangingTextLine::center_mono(String::new())),
             show_plain_passphrase: false,
+            show_last_digit: false,
             textbox: TextBox::empty(),
             current_category: ChoiceCategory::Menu,
         }
@@ -259,11 +279,20 @@ where
     fn update_passphrase_dots(&mut self, ctx: &mut EventCtx) {
         let text_to_show = if self.show_plain_passphrase {
             String::from(self.passphrase())
+        } else if self.is_empty() {
+            String::from("")
         } else {
+            // Showing asterisks and possibly the last digit.
             let mut dots: String<MAX_PASSPHRASE_LENGTH> = String::new();
-            for _ in 0..self.textbox.len() {
-                unwrap!(dots.push_str("*"));
+            for _ in 0..self.textbox.len() - 1 {
+                unwrap!(dots.push('*'));
             }
+            let last_char = if self.show_last_digit {
+                unwrap!(self.textbox.content().chars().last())
+            } else {
+                '*'
+            };
+            unwrap!(dots.push(last_char));
             dots
         };
         self.passphrase_dots.mutate(ctx, |ctx, passphrase_dots| {
@@ -278,6 +307,10 @@ where
 
     fn delete_last_digit(&mut self, ctx: &mut EventCtx) {
         self.textbox.delete_last(ctx);
+    }
+
+    fn delete_all_digits(&mut self, ctx: &mut EventCtx) {
+        self.textbox.clear(ctx);
     }
 
     /// Displaying the MENU
@@ -312,8 +345,11 @@ where
 
     /// Randomly choose an index in the current category
     fn randomize_category_position(&mut self, ctx: &mut EventCtx) {
-        self.choice_page
-            .set_page_counter(ctx, random_category_position(&self.current_category));
+        self.choice_page.set_page_counter(
+            ctx,
+            random_category_position(&self.current_category),
+            true,
+        );
     }
 }
 
@@ -332,19 +368,31 @@ where
     }
 
     fn event(&mut self, ctx: &mut EventCtx, event: Event) -> Option<Self::Msg> {
-        // Any event when showing real passphrase should hide it
-        if self.show_plain_passphrase {
-            self.show_plain_passphrase = false;
-            self.update_passphrase_dots(ctx);
+        // Any non-timer event when showing real passphrase should hide it
+        // Same with showing last digit
+        if !matches!(event, Event::Timer(_)) {
+            if self.show_plain_passphrase {
+                self.show_plain_passphrase = false;
+                self.update_passphrase_dots(ctx);
+            }
+            if self.show_last_digit {
+                self.show_last_digit = false;
+                self.update_passphrase_dots(ctx);
+            }
         }
 
-        if let Some(action) = self.choice_page.event(ctx, event) {
+        if let Some((action, long_press)) = self.choice_page.event(ctx, event) {
             match action {
                 PassphraseAction::CancelOrDelete => {
                     if self.is_empty() {
                         return Some(CancelConfirmMsg::Cancelled);
                     } else {
-                        self.delete_last_digit(ctx);
+                        // Deleting all when long-pressed
+                        if long_press {
+                            self.delete_all_digits(ctx);
+                        } else {
+                            self.delete_last_digit(ctx);
+                        }
                         self.update_passphrase_dots(ctx);
                         if self.is_empty() {
                             // Allowing for DELETE/CANCEL change
@@ -373,6 +421,7 @@ where
                 }
                 PassphraseAction::Character(ch) if !self.is_full() => {
                     self.append_char(ctx, ch);
+                    self.show_last_digit = true;
                     self.update_passphrase_dots(ctx);
                     self.randomize_category_position(ctx);
                     ctx.request_paint();

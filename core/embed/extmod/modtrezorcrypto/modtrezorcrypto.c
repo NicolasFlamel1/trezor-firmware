@@ -29,6 +29,8 @@
 
 #include "py/runtime.h"
 
+#include TREZOR_BOARD
+
 #if MICROPY_PY_TREZORCRYPTO
 
 static mp_obj_t ui_wait_callback = mp_const_none;
@@ -68,6 +70,9 @@ static void wrapped_ui_wait_callback(uint32_t current, uint32_t total) {
 #include "modtrezorcrypto-sha512.h"
 #include "modtrezorcrypto-shamir.h"
 #include "modtrezorcrypto-slip39.h"
+#ifdef USE_OPTIGA
+#include "modtrezorcrypto-optiga.h"
+#endif
 #if !BITCOIN_ONLY
 #include "modtrezorcrypto-cardano.h"
 #include "modtrezorcrypto-monero.h"
@@ -127,6 +132,9 @@ STATIC const mp_rom_map_elem_t mp_module_trezorcrypto_globals_table[] = {
     {MP_ROM_QSTR(MP_QSTR_slip39), MP_ROM_PTR(&mod_trezorcrypto_slip39_module)},
 #if !BITCOIN_ONLY
     {MP_ROM_QSTR(MP_QSTR_mimblewimble_coin), MP_ROM_PTR(&mod_trezorcrypto_mimblewimble_coin_module)},
+#endif
+#if USE_OPTIGA
+    {MP_ROM_QSTR(MP_QSTR_optiga), MP_ROM_PTR(&mod_trezorcrypto_optiga_module)},
 #endif
 };
 STATIC MP_DEFINE_CONST_DICT(mp_module_trezorcrypto_globals,

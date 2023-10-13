@@ -30,6 +30,15 @@ def confirm_action(
 
 
 # rust/src/ui/model_tr/layout.rs
+def confirm_homescreen(
+    *,
+    title: str,
+    image: bytes,
+) -> object:
+    """Confirm homescreen."""
+
+
+# rust/src/ui/model_tr/layout.rs
 def confirm_blob(
     *,
     title: str,
@@ -50,6 +59,7 @@ def confirm_address(
     data: str,
     description: str | None,  # unused on TR
     extra: str | None,  # unused on TR
+    chunkify: bool = False,
 ) -> object:
     """Confirm address."""
 
@@ -126,15 +136,23 @@ def confirm_modify_output(
 
 
 # rust/src/ui/model_tr/layout.rs
-def confirm_output(
+def confirm_output_address(
     *,
     address: str,
     address_label: str,
-    amount: str,
     address_title: str,
+    chunkify: bool = False,
+) -> object:
+    """Confirm output address."""
+
+
+# rust/src/ui/model_tr/layout.rs
+def confirm_output_amount(
+    *,
+    amount: str,
     amount_title: str,
 ) -> object:
-    """Confirm output."""
+    """Confirm output amount."""
 
 
 # rust/src/ui/model_tr/layout.rs
@@ -148,6 +166,17 @@ def confirm_total(
     fee_label: str,
 ) -> object:
     """Confirm summary of a transaction."""
+
+
+# rust/src/ui/model_tr/layout.rs
+def confirm_ethereum_tx(
+    *,
+    recipient: str,
+    total_amount: str,
+    maximum_fee: str,
+    items: Iterable[Tuple[str, str]],
+) -> object:
+    """Confirm details about Ethereum transaction."""
 
 
 # rust/src/ui/model_tr/layout.rs
@@ -216,7 +245,7 @@ def show_passphrase() -> object:
 
 
 # rust/src/ui/model_tr/layout.rs
-def show_mismatch() -> object:
+def show_mismatch(*, title: str) -> object:
     """Warning modal, receiving address mismatch."""
 
 
@@ -486,6 +515,7 @@ def confirm_address(
     data: str | bytes,
     description: str | None,
     extra: str | None,
+    chunkify: bool = False,
 ) -> object:
     """Confirm address. Similar to `confirm_blob` but has corner info button
     and allows left swipe which does the same thing as the button."""
@@ -515,8 +545,10 @@ def confirm_reset_device(
 # rust/src/ui/model_tt/layout.rs
 def show_address_details(
     *,
+    qr_title: str,
     address: str,
     case_sensitive: bool,
+    details_title: str,
     account: str | None,
     path: str | None,
     xpubs: list[tuple[str, str]],
@@ -525,12 +557,10 @@ def show_address_details(
 
 
 # rust/src/ui/model_tt/layout.rs
-def show_spending_details(
+def show_info_with_cancel(
     *,
-    title: str = "INFORMATION",
-    account: str | None,
-    fee_rate: str | None,
-    fee_rate_title: str = "Fee rate:",
+    title: str,
+    items: Iterable[Tuple[str, str]],
 ) -> object:
     """Show metadata when for outgoing transaction."""
 
@@ -546,6 +576,7 @@ def confirm_value(
     verb_cancel: str | None = None,
     info_button: bool = False,
     hold: bool = False,
+    chunkify: bool = False,
 ) -> object:
     """Confirm value. Merge of confirm_total and confirm_output."""
 
@@ -556,6 +587,7 @@ def confirm_total(
     title: str,
     items: list[tuple[str, str]],
     info_button: bool = False,
+    cancel_arrow: bool = False,
 ) -> object:
     """Transaction summary. Always hold to confirm."""
 
@@ -613,6 +645,7 @@ def show_warning(
     *,
     title: str,
     button: str = "CONTINUE",
+    value: str = "",
     description: str = "",
     allow_cancel: bool = False,
     time_ms: int = 0,
@@ -645,7 +678,7 @@ def show_info(
 
 
 # rust/src/ui/model_tt/layout.rs
-def show_mismatch() -> object:
+def show_mismatch(*, title: str) -> object:
     """Warning modal, receiving address mismatch."""
 
 

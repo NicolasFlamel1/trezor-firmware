@@ -123,7 +123,7 @@ void ui_screen_boot(const vendor_header *const vhdr,
 
 #endif
 
-  PIXELDATA_DIRTY();
+  display_pixeldata_dirty();
   display_refresh();
 }
 
@@ -134,7 +134,7 @@ void ui_screen_boot_wait(int wait_seconds) {
               boot_background);
   display_text_center(DISPLAY_RESX / 2, DISPLAY_RESY - 5, wait_str, -1,
                       FONT_NORMAL, COLOR_BL_BG, boot_background);
-  PIXELDATA_DIRTY();
+  display_pixeldata_dirty();
   display_refresh();
 }
 
@@ -182,7 +182,7 @@ void ui_screen_boot_click(void) {
   display_bar(0, BOOT_WAIT_Y_TOP, DISPLAY_RESX, BOOT_WAIT_HEIGHT,
               boot_background);
   bld_continue_label(boot_background);
-  PIXELDATA_DIRTY();
+  display_pixeldata_dirty();
   display_refresh();
   ui_click();
 }
@@ -192,16 +192,18 @@ void ui_screen_boot_click(void) {
 void ui_screen_welcome(void) { screen_welcome(); }
 
 uint32_t ui_screen_intro(const vendor_header *const vhdr,
-                         const image_header *const hdr) {
+                         const image_header *const hdr, bool fw_ok) {
   char bld_ver[32];
   char ver_str[64];
   format_ver("%d.%d.%d", VERSION_UINT32, bld_ver, sizeof(bld_ver));
   format_ver("%d.%d.%d", hdr->version, ver_str, sizeof(ver_str));
 
-  return screen_intro(bld_ver, vhdr->vstr, vhdr->vstr_len, ver_str);
+  return screen_intro(bld_ver, vhdr->vstr, vhdr->vstr_len, ver_str, fw_ok);
 }
 
-uint32_t ui_screen_menu(void) { return screen_menu(); }
+uint32_t ui_screen_menu(secbool firmware_present) {
+  return screen_menu(firmware_present);
+}
 
 // install UI
 
@@ -242,17 +244,7 @@ void ui_screen_wipe_progress(int pos, int len) {
 
 // done UI
 void ui_screen_done(uint8_t restart_seconds, secbool full_redraw) {
-  const char *str;
-  char count_str[24];
-  if (restart_seconds >= 1) {
-    mini_snprintf(count_str, sizeof(count_str), "RESTARTING IN %d",
-                  restart_seconds);
-    str = count_str;
-  } else {
-    str = "RECONNECT THE DEVICE";
-  }
-
-  screen_install_success(str, initial_setup, full_redraw);
+  screen_install_success(restart_seconds, initial_setup, full_redraw);
 }
 
 void ui_screen_boot_empty(bool fading) { screen_boot_empty(fading); }

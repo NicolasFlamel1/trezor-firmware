@@ -13,7 +13,7 @@ pub use button::{
     Button, ButtonAction, ButtonActions, ButtonContent, ButtonDetails, ButtonLayout, ButtonPos,
     ButtonStyle, ButtonStyleSheet,
 };
-pub use button_controller::{ButtonController, ButtonControllerMsg};
+pub use button_controller::{AutomaticMover, ButtonController, ButtonControllerMsg};
 pub use common_messages::CancelConfirmMsg;
 pub use error::ErrorScreen;
 pub use hold_to_confirm::{HoldToConfirm, HoldToConfirmMsg};
@@ -50,7 +50,7 @@ pub use flow::Flow;
 pub use flow_pages::{FlowPages, Page};
 pub use frame::{Frame, ScrollableContent, ScrollableFrame};
 #[cfg(feature = "micropython")]
-pub use homescreen::{Homescreen, Lockscreen};
+pub use homescreen::{ConfirmHomescreen, Homescreen, Lockscreen};
 pub use input_methods::{
     number_input::NumberInput,
     passphrase::PassphraseEntry,

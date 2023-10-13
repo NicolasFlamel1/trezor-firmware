@@ -443,33 +443,16 @@ async def confirm_path_warning(
 async def confirm_homescreen(
     image: bytes,
 ) -> None:
-    # TODO: show homescreen preview?
-    await confirm_action(
-        "set_homescreen",
-        "Set homescreen",
-        description="Do you really want to set new homescreen image?",
-        br_code=ButtonRequestType.ProtectCall,
-    )
-
-
-def _show_xpub(xpub: str, title: str, cancel: str | None) -> ui.Layout:
-    return RustLayout(
-        trezorui2.confirm_blob(
-            title=title.upper(),
-            data=xpub,
-            verb_cancel=cancel,
-            description=None,
-            extra=None,
-        )
-    )
-
-
-async def show_xpub(xpub: str, title: str) -> None:
     await raise_if_not_confirmed(
         interact(
-            _show_xpub(xpub, title, None),
-            "show_xpub",
-            ButtonRequestType.PublicKey,
+            RustLayout(
+                trezorui2.confirm_homescreen(
+                    title="CHANGE HOMESCREEN?",
+                    image=image,
+                )
+            ),
+            "set_homesreen",
+            ButtonRequestType.ProtectCall,
         )
     )
 
@@ -477,6 +460,7 @@ async def show_xpub(xpub: str, title: str) -> None:
 async def show_address(
     address: str,
     *,
+    title: str | None = None,
     address_qr: str | None = None,
     case_sensitive: bool = True,
     path: str | None = None,
@@ -484,14 +468,19 @@ async def show_address(
     network: str | None = None,
     multisig_index: int | None = None,
     xpubs: Sequence[str] = (),
+    mismatch_title: str = "ADDRESS MISMATCH?",
+    br_type: str = "show_address",
+    br_code: ButtonRequestType = ButtonRequestType.Address,
+    chunkify: bool = False,
 ) -> None:
     send_button_request = True
-    # Will be a marquee in case of multisig
-    title = (
-        "RECEIVE ADDRESS (MULTISIG)"
-        if multisig_index is not None
-        else "RECEIVE ADDRESS"
-    )
+    if title is None:
+        # Will be a marquee in case of multisig
+        title = (
+            "RECEIVE ADDRESS (MULTISIG)"
+            if multisig_index is not None
+            else "RECEIVE ADDRESS"
+        )
     while True:
         layout = RustLayout(
             trezorui2.confirm_address(
@@ -499,13 +488,14 @@ async def show_address(
                 data=address,
                 description="",  # unused on TR
                 extra=None,  # unused on TR
+                chunkify=chunkify,
             )
         )
         if send_button_request:
             send_button_request = False
             await button_request(
-                "show_address",
-                ButtonRequestType.Address,
+                br_type,
+                br_code,
                 pages=layout.page_count(),
             )
         result = await ctx_wait(layout)
@@ -526,8 +516,10 @@ async def show_address(
             result = await ctx_wait(
                 RustLayout(
                     trezorui2.show_address_details(
+                        qr_title="",  # unused on this model
                         address=address if address_qr is None else address_qr,
                         case_sensitive=case_sensitive,
+                        details_title="",  # unused on this model
                         account=account,
                         path=path,
                         xpubs=[(xpub_title(i), xpub) for i, xpub in enumerate(xpubs)],
@@ -539,19 +531,33 @@ async def show_address(
 
         # User pressed left cancel button, show mismatch dialogue.
         else:
-            result = await ctx_wait(RustLayout(trezorui2.show_mismatch()))
+            result = await ctx_wait(
+                RustLayout(trezorui2.show_mismatch(title=mismatch_title.upper()))
+            )
             assert result in (CONFIRMED, CANCELLED)
             # Right button aborts action, left goes back to showing address.
             if result is CONFIRMED:
                 raise ActionCancelled
 
 
-def show_pubkey(pubkey: str, title: str = "Confirm public key") -> Awaitable[None]:
-    return confirm_blob(
-        "show_pubkey",
-        title.upper(),
-        pubkey,
+def show_pubkey(
+    pubkey: str,
+    title: str = "Public key",
+    *,
+    account: str | None = None,
+    path: str | None = None,
+    mismatch_title: str = "KEY MISMATCH?",
+    br_type="show_pubkey",
+) -> Awaitable[None]:
+    return show_address(
+        address=pubkey,
+        title=title.upper(),
+        account=account,
+        path=path,
+        br_type=br_type,
         br_code=ButtonRequestType.PublicKey,
+        mismatch_title=mismatch_title,
+        chunkify=False,
     )
 
 
@@ -655,19 +661,32 @@ async def confirm_output(
     br_code: ButtonRequestType = ButtonRequestType.ConfirmOutput,
     address_label: str | None = None,
     output_index: int | None = None,
+    chunkify: bool = False,
 ) -> None:
     address_title = (
         "RECIPIENT" if output_index is None else f"RECIPIENT #{output_index + 1}"
     )
     amount_title = "AMOUNT" if output_index is None else f"AMOUNT #{output_index + 1}"
 
-    await raise_if_not_confirmed(
-        interact(
+    while True:
+        result = await interact(
             RustLayout(
-                trezorui2.confirm_output(
+                trezorui2.confirm_output_address(
                     address=address,
                     address_label=address_label or "",
                     address_title=address_title,
+                    chunkify=chunkify,
+                )
+            ),
+            "confirm_output",
+            br_code,
+        )
+        if result is not CONFIRMED:
+            raise ActionCancelled
+
+        result = await interact(
+            RustLayout(
+                trezorui2.confirm_output_amount(
                     amount_title=amount_title,
                     amount=amount,
                 )
@@ -675,7 +694,8 @@ async def confirm_output(
             "confirm_output",
             br_code,
         )
-    )
+        if result is CONFIRMED:
+            return
 
 
 async def tutorial(
@@ -975,8 +995,31 @@ async def confirm_total(
     )
 
 
-async def confirm_joint_total(spending_amount: str, total_amount: str) -> None:
+async def confirm_ethereum_tx(
+    recipient: str,
+    total_amount: str,
+    maximum_fee: str,
+    items: Iterable[tuple[str, str]],
+    br_type: str = "confirm_ethereum_tx",
+    br_code: ButtonRequestType = ButtonRequestType.SignTx,
+) -> None:
+    await raise_if_not_confirmed(
+        interact(
+            RustLayout(
+                trezorui2.confirm_ethereum_tx(
+                    recipient=recipient,
+                    total_amount=total_amount,
+                    maximum_fee=maximum_fee,
+                    items=items,
+                )
+            ),
+            br_type,
+            br_code,
+        )
+    )
 
+
+async def confirm_joint_total(spending_amount: str, total_amount: str) -> None:
     await raise_if_not_confirmed(
         interact(
             RustLayout(
@@ -1117,7 +1160,7 @@ async def confirm_signverify(
                 br_type,
                 "CONFIRM MESSAGE",
                 message,
-                verb_cancel="up_arrow_icon",
+                verb_cancel="^",
                 br_code=BR_TYPE_OTHER,
                 ask_pagination=True,
             )

@@ -84,6 +84,7 @@ fn prepare_bindings() -> bindgen::Builder {
         "-I../../vendor/micropython/lib/uzlib",
         "-I../lib",
         "-I../trezorhal",
+        "-I../models",
         format!("-D{}", mcu_type()).as_str(),
         format!("-DTREZOR_MODEL_{}", model()).as_str(),
         format!("-DTREZOR_BOARD=\"{}\"", board()).as_str(),
@@ -94,7 +95,7 @@ fn prepare_bindings() -> bindgen::Builder {
         let mut clang_args: Vec<&str> = Vec::new();
 
         let includes = env::var("RUST_INCLUDES").unwrap();
-        let args = includes.split(";");
+        let args = includes.split(';');
 
         for arg in args {
             clang_args.push(arg);
@@ -259,6 +260,9 @@ fn generate_trezorhal_bindings() {
 
     let bindings = prepare_bindings()
         .header("trezorhal.h")
+        // model
+        .allowlist_var("MODEL_INTERNAL_NAME")
+        .allowlist_var("MODEL_FULL_NAME")
         // common
         .allowlist_var("HW_ENTROPY_DATA")
         // secbool
@@ -292,14 +296,17 @@ fn generate_trezorhal_bindings() {
         .allowlist_function("display_text")
         .allowlist_function("display_text_render_buffer")
         .allowlist_function("display_text_width")
-        .allowlist_function("display_bar")
-        .allowlist_function("display_bar_radius")
-        .allowlist_function("display_bar_radius_buffer")
         .allowlist_function("display_pixeldata")
         .allowlist_function("display_pixeldata_dirty")
         .allowlist_function("display_set_window")
         .allowlist_function("display_sync")
+        .allowlist_function("display_get_fb_addr")
+        .allowlist_function("display_get_wr_addr")
         .allowlist_var("DISPLAY_DATA_ADDRESS")
+        .allowlist_var("DISPLAY_FRAMEBUFFER_WIDTH")
+        .allowlist_var("DISPLAY_FRAMEBUFFER_HEIGHT")
+        .allowlist_var("DISPLAY_FRAMEBUFFER_OFFSET_X")
+        .allowlist_var("DISPLAY_FRAMEBUFFER_OFFSET_Y")
         .allowlist_var("DISPLAY_RESX")
         .allowlist_var("DISPLAY_RESY")
         .allowlist_type("toif_format_t")
@@ -328,12 +335,15 @@ fn generate_trezorhal_bindings() {
         .allowlist_function("hal_delay")
         .allowlist_function("hal_ticks_ms")
         // dma2d
+        .allowlist_function("dma2d_setup_const")
         .allowlist_function("dma2d_setup_4bpp")
         .allowlist_function("dma2d_setup_16bpp")
         .allowlist_function("dma2d_setup_4bpp_over_4bpp")
         .allowlist_function("dma2d_setup_4bpp_over_16bpp")
         .allowlist_function("dma2d_start")
         .allowlist_function("dma2d_start_blend")
+        .allowlist_function("dma2d_start_const")
+        .allowlist_function("dma2d_start_const_multiline")
         .allowlist_function("dma2d_wait_for_transfer")
         //buffers
         .allowlist_function("buffers_get_line_16bpp")
@@ -348,6 +358,7 @@ fn generate_trezorhal_bindings() {
         .allowlist_function("buffers_free_jpeg_work")
         .allowlist_function("buffers_get_blurring")
         .allowlist_function("buffers_free_blurring")
+        .allowlist_var("TEXT_BUFFER_HEIGHT")
         .no_copy("buffer_line_16bpp_t")
         .no_copy("buffer_line_4bpp_t")
         .no_copy("buffer_text_t")

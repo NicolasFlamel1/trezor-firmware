@@ -13,7 +13,7 @@ use super::{loader::DEFAULT_DURATION_MS, theme};
 
 const HALF_SCREEN_BUTTON_WIDTH: i16 = constant::WIDTH / 2 - 1;
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Eq, PartialEq)]
 pub enum ButtonPos {
     Left,
     Middle,
@@ -349,6 +349,7 @@ pub struct ButtonDetails<T> {
     with_arms: bool,
     fixed_width: Option<i16>,
     offset: Offset,
+    pub send_long_press: bool,
 }
 
 impl<T> ButtonDetails<T>
@@ -364,6 +365,7 @@ where
             with_arms: false,
             fixed_width: None,
             offset: Offset::zero(),
+            send_long_press: false,
         }
     }
 
@@ -376,19 +378,17 @@ where
             with_arms: false,
             fixed_width: None,
             offset: Offset::zero(),
+            send_long_press: false,
         }
     }
 
     /// Resolves text and finds possible icon names.
     pub fn from_text_possible_icon(text: T) -> Self {
-        if text.as_ref() == "" {
-            Self::cancel_icon()
-        } else if text.as_ref() == "left_arrow_icon" {
-            Self::left_arrow_icon()
-        } else if text.as_ref() == "up_arrow_icon" {
-            Self::up_arrow_icon()
-        } else {
-            Self::text(text)
+        match text.as_ref() {
+            "" => Self::cancel_icon(),
+            "<" => Self::left_arrow_icon(),
+            "^" => Self::up_arrow_icon(),
+            _ => Self::text(text),
         }
     }
 
@@ -415,7 +415,7 @@ where
     /// Up arrow to signal paginating back. No outline. Offsetted little right
     /// to not be on the boundary.
     pub fn up_arrow_icon() -> Self {
-        Self::icon(theme::ICON_ARROW_UP).with_offset(Offset::new(2, -3))
+        Self::icon(theme::ICON_ARROW_UP).with_offset(Offset::new(3, -4))
     }
 
     /// Down arrow to signal paginating forward. Takes half the screen's width
@@ -662,12 +662,21 @@ where
         )
     }
 
-    /// Cancel cross on left and right arrow facing down.
+    /// Up arrow on left and right arrow facing down.
     pub fn up_arrow_none_arrow_wide() -> Self {
         Self::new(
             Some(ButtonDetails::up_arrow_icon()),
             None,
             Some(ButtonDetails::down_arrow_icon_wide()),
+        )
+    }
+
+    /// Up arrow on left, middle text and info on the right.
+    pub fn up_arrow_armed_info(text: T) -> Self {
+        Self::new(
+            Some(ButtonDetails::up_arrow_icon()),
+            Some(ButtonDetails::armed_text(text)),
+            Some(ButtonDetails::text("i".into()).with_fixed_width(theme::BUTTON_ICON_WIDTH)),
         )
     }
 

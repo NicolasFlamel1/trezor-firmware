@@ -53,6 +53,11 @@
 
 #define STAY_IN_BOOTLOADER_FLAG 0x0FC35A96
 
+// from linker script
+extern uint8_t firmware_header_start;
+extern uint8_t ccmram_start;
+extern uint8_t ccmram_end;
+
 void __attribute__((noreturn)) trezor_shutdown(void);
 
 void __attribute__((noreturn))
@@ -71,6 +76,7 @@ void show_pin_too_many_screen(void);
 
 void hal_delay(uint32_t ms);
 uint32_t hal_ticks_ms();
+void hal_delay_us(uint16_t delay_us);
 
 void collect_hw_entropy(void);
 #define HW_ENTROPY_LEN (12 + 32)

@@ -5,12 +5,16 @@ from trezorutils import (  # noqa: F401
     EMULATOR,
     INTERNAL_MODEL,
     MODEL,
+    MODEL_FULL_NAME,
     SCM_REVISION,
+    UI_LAYOUT,
     USE_BACKLIGHT,
+    USE_OPTIGA,
     USE_SD_CARD,
     VERSION_MAJOR,
     VERSION_MINOR,
     VERSION_PATCH,
+    bootloader_locked,
     consteq,
     firmware_hash,
     firmware_vendor,
@@ -21,6 +25,10 @@ from trezorutils import (  # noqa: F401
     unit_color,
 )
 from typing import TYPE_CHECKING
+
+# Will get replaced by "True" / "False" in the build process
+# However, needs to stay as an exported symbol for the unit tests
+MODEL_IS_T2B1: bool = INTERNAL_MODEL == "T2B1"
 
 DISABLE_ANIMATION = 0
 

@@ -43,6 +43,10 @@
 #include "image.h"
 #endif
 
+#if USE_OPTIGA && !defined(TREZOR_EMULATOR)
+#include "secret.h"
+#endif
+
 static void ui_progress(mp_obj_t ui_wait_callback, uint32_t current,
                         uint32_t total) {
   if (mp_obj_is_callable(ui_wait_callback)) {
@@ -254,19 +258,61 @@ STATIC mp_obj_t mod_trezorutils_reboot_to_bootloader() {
 STATIC MP_DEFINE_CONST_FUN_OBJ_0(mod_trezorutils_reboot_to_bootloader_obj,
                                  mod_trezorutils_reboot_to_bootloader);
 
+/// def bootloader_locked() -> bool | None:
+///     """
+///     Returns True/False if the the bootloader is locked/unlocked and None if
+///     the feature is not supported.
+///     """
+STATIC mp_obj_t mod_trezorutils_bootloader_locked() {
+#if USE_OPTIGA
+#ifdef TREZOR_EMULATOR
+  return mp_const_true;
+#else
+  return (secret_bootloader_locked() == sectrue) ? mp_const_true
+                                                 : mp_const_false;
+#endif
+#else
+  return mp_const_none;
+#endif
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_0(mod_trezorutils_bootloader_locked_obj,
+                                 mod_trezorutils_bootloader_locked);
+
 STATIC mp_obj_str_t mod_trezorutils_revision_obj = {
     {&mp_type_bytes}, 0, sizeof(SCM_REVISION) - 1, (const byte *)SCM_REVISION};
 
+STATIC mp_obj_str_t mod_trezorutils_full_name_obj = {
+    {&mp_type_str},
+    0,
+    sizeof(MODEL_FULL_NAME) - 1,
+    (const byte *)MODEL_FULL_NAME};
+
 /// SCM_REVISION: bytes
+/// """Git commit hash of the firmware."""
 /// VERSION_MAJOR: int
+/// """Major version."""
 /// VERSION_MINOR: int
+/// """Minor version."""
 /// VERSION_PATCH: int
+/// """Patch version."""
 /// USE_SD_CARD: bool
+/// """Whether the hardware supports SD card."""
 /// USE_BACKLIGHT: bool
+/// """Whether the hardware supports backlight brightness control."""
+/// USE_OPTIGA: bool
+/// """Whether the hardware supports Optiga secure element."""
 /// MODEL: str
+/// """Model name."""
+/// MODEL_FULL_NAME: str
+/// """Full name including Trezor prefix."""
 /// INTERNAL_MODEL: str
+/// """Internal model code."""
 /// EMULATOR: bool
+/// """Whether the firmware is running in the emulator."""
 /// BITCOIN_ONLY: bool
+/// """Whether the firmware is Bitcoin-only."""
+/// UI_LAYOUT: str
+/// """UI layout identifier ("tt" for model T, "tr" for models One and R)."""
 
 STATIC const mp_rom_map_elem_t mp_module_trezorutils_globals_table[] = {
     {MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR_trezorutils)},
@@ -279,6 +325,8 @@ STATIC const mp_rom_map_elem_t mp_module_trezorutils_globals_table[] = {
      MP_ROM_PTR(&mod_trezorutils_firmware_vendor_obj)},
     {MP_ROM_QSTR(MP_QSTR_reboot_to_bootloader),
      MP_ROM_PTR(&mod_trezorutils_reboot_to_bootloader_obj)},
+    {MP_ROM_QSTR(MP_QSTR_bootloader_locked),
+     MP_ROM_PTR(&mod_trezorutils_bootloader_locked_obj)},
     {MP_ROM_QSTR(MP_QSTR_unit_color),
      MP_ROM_PTR(&mod_trezorutils_unit_color_obj)},
     {MP_ROM_QSTR(MP_QSTR_unit_btconly),
@@ -299,7 +347,14 @@ STATIC const mp_rom_map_elem_t mp_module_trezorutils_globals_table[] = {
 #else
     {MP_ROM_QSTR(MP_QSTR_USE_BACKLIGHT), mp_const_false},
 #endif
+#ifdef USE_OPTIGA
+    {MP_ROM_QSTR(MP_QSTR_USE_OPTIGA), mp_const_true},
+#else
+    {MP_ROM_QSTR(MP_QSTR_USE_OPTIGA), mp_const_false},
+#endif
     {MP_ROM_QSTR(MP_QSTR_MODEL), MP_ROM_QSTR(MODEL_NAME_QSTR)},
+    {MP_ROM_QSTR(MP_QSTR_MODEL_FULL_NAME),
+     MP_ROM_PTR(&mod_trezorutils_full_name_obj)},
     {MP_ROM_QSTR(MP_QSTR_INTERNAL_MODEL),
      MP_ROM_QSTR(MODEL_INTERNAL_NAME_QSTR)},
 #ifdef TREZOR_EMULATOR
@@ -312,6 +367,13 @@ STATIC const mp_rom_map_elem_t mp_module_trezorutils_globals_table[] = {
     {MP_ROM_QSTR(MP_QSTR_BITCOIN_ONLY), mp_const_true},
 #else
     {MP_ROM_QSTR(MP_QSTR_BITCOIN_ONLY), mp_const_false},
+#endif
+#ifdef UI_LAYOUT_TT
+    {MP_ROM_QSTR(MP_QSTR_UI_LAYOUT), MP_ROM_QSTR(MP_QSTR_TT)},
+#elif UI_LAYOUT_TR
+    {MP_ROM_QSTR(MP_QSTR_UI_LAYOUT), MP_ROM_QSTR(MP_QSTR_TR)},
+#else
+#error Unknown layout
 #endif
 };
 

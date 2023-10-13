@@ -11,12 +11,18 @@ void optiga_hal_init(void) {
   GPIO_InitStructure.Alternate = 0;
   GPIO_InitStructure.Pin = GPIO_PIN_9;
   HAL_GPIO_Init(GPIOD, &GPIO_InitStructure);
+  // perform reset on every initialization
+  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_9, GPIO_PIN_RESET);
+  hal_delay(10);
   HAL_GPIO_WritePin(GPIOD, GPIO_PIN_9, GPIO_PIN_SET);
-  hal_delay(1);
+  // warm reset startup time min 15ms
+  hal_delay(20);
 }
 
 void optiga_reset(void) {
   HAL_GPIO_WritePin(GPIOD, GPIO_PIN_9, GPIO_PIN_RESET);
   hal_delay(10);
   HAL_GPIO_WritePin(GPIOD, GPIO_PIN_9, GPIO_PIN_SET);
+  // warm reset startup time min 15ms
+  hal_delay(20);
 }

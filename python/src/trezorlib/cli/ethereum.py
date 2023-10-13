@@ -20,21 +20,11 @@ import sys
 import tarfile
 from decimal import Decimal
 from pathlib import Path
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    Dict,
-    List,
-    NoReturn,
-    Optional,
-    Sequence,
-    TextIO,
-    Tuple,
-)
+from typing import TYPE_CHECKING, Any, Dict, List, NoReturn, Optional, TextIO
 
 import click
 
-from .. import definitions, ethereum, tools
+from .. import _rlp, definitions, ethereum, tools
 from ..messages import EthereumDefinitions
 from . import with_client
 
@@ -162,7 +152,7 @@ def _erc20_contract(token_address: str, to_address: str, amount: int) -> str:
 
 def _format_access_list(
     access_list: List[ethereum.messages.EthereumAccessList],
-) -> List[Tuple[bytes, Sequence[bytes]]]:
+) -> "_rlp.RLPItem":
     return [
         (ethereum.decode_hex(item.address), item.storage_keys) for item in access_list
     ]
@@ -273,12 +263,15 @@ def cli(
 @cli.command()
 @click.option("-n", "--address", required=True, help=PATH_HELP)
 @click.option("-d", "--show-display", is_flag=True)
+@click.option("-C", "--chunkify", is_flag=True)
 @with_client
-def get_address(client: "TrezorClient", address: str, show_display: bool) -> str:
+def get_address(
+    client: "TrezorClient", address: str, show_display: bool, chunkify: bool
+) -> str:
     """Get Ethereum address in hex encoding."""
     address_n = tools.parse_path(address)
     network = ethereum.network_from_address_n(address_n, DEFINITIONS_SOURCE)
-    return ethereum.get_address(client, address_n, show_display, network)
+    return ethereum.get_address(client, address_n, show_display, network, chunkify)
 
 
 @cli.command()
@@ -344,6 +337,7 @@ def get_public_node(client: "TrezorClient", address: str, show_display: bool) ->
     callback=_list_units,
     expose_value=False,
 )
+@click.option("-C", "--chunkify", is_flag=True)
 @click.argument("to_address")
 @click.argument("amount", callback=_amount_to_int)
 @with_client
@@ -364,6 +358,7 @@ def sign_tx(
     max_priority_fee: Optional[int],
     access_list: List[ethereum.messages.EthereumAccessList],
     eip2718_type: Optional[int],
+    chunkify: bool,
 ) -> str:
     """Sign (and optionally publish) Ethereum transaction.
 
@@ -381,11 +376,6 @@ def sign_tx(
     try to connect to an ethereum node and auto-fill these values. You can configure
     the connection with WEB3_PROVIDER_URI environment variable.
     """
-    try:
-        import rlp
-    except ImportError:
-        _print_eth_dependencies_and_die()
-
     is_eip1559 = eip2718_type == 2
     if (
         (not is_eip1559 and gas_price is None)
@@ -462,6 +452,7 @@ def sign_tx(
             max_priority_fee=max_priority_fee,
             access_list=access_list,
             definitions=defs,
+            chunkify=chunkify,
         )
     else:
         if gas_price is None:
@@ -479,12 +470,11 @@ def sign_tx(
             data=data_bytes,
             chain_id=chain_id,
             definitions=defs,
+            chunkify=chunkify,
         )
 
     to = ethereum.decode_hex(to_address)
 
-    # NOTE: rlp.encode needs a list input to iterate through all its items,
-    # it does not work with a tuple
     if is_eip1559:
         transaction_items = [
             chain_id,
@@ -511,7 +501,7 @@ def sign_tx(
             data_bytes,
             *sig,
         ]
-    transaction = rlp.encode(transaction_items)
+    transaction = _rlp.encode(transaction_items)
 
     if eip2718_type is not None:
         eip2718_prefix = f"{eip2718_type:02x}"

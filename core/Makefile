@@ -141,7 +141,7 @@ test_emu_ui_record: ## record and hash screens for ui integration tests
 
 test_emu_ui_record_multicore: ## quickly record all screens
 	make test_emu_ui_multicore || echo "All errors are recorded in fixtures.json"
-	../tests/update_fixtures.py -r
+	../tests/update_fixtures.py local -r
 
 pylint: ## run pylint on application sources and tests
 	pylint -E $(shell find src tests -name *.py)
@@ -349,10 +349,10 @@ combine: ## combine boardloader + bootloader + prodtest into one combined image
 		$(PRODTEST_BUILD_DIR)/combined.bin
 
 upload: ## upload firmware using trezorctl
-	trezorctl firmware_update -f $(FIRMWARE_BUILD_DIR)/firmware.bin
+	trezorctl firmware_update -s -f $(FIRMWARE_BUILD_DIR)/firmware.bin
 
 upload_prodtest: ## upload prodtest using trezorctl
-	trezorctl firmware_update -f $(PRODTEST_BUILD_DIR)/prodtest.bin
+	trezorctl firmware_update -s -f $(PRODTEST_BUILD_DIR)/prodtest.bin
 
 coverage:  ## generate coverage report
 	./tools/coverage-report
