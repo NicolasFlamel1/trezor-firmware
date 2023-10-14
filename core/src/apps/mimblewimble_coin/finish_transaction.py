@@ -28,11 +28,12 @@ async def finish_transaction(message: MimbleWimbleCoinFinishTransaction) -> Mimb
 	from trezor.workflow import idle_timer
 	from storage.cache import delete, get_memory_view, APP_MIMBLEWIMBLE_COIN_ENCRYPTION_AND_DECRYPTION_CONTEXT, APP_MIMBLEWIMBLE_COIN_TRANSACTION_CONTEXT
 	from trezor.wire import NotInitialized, ProcessError, DataError, InvalidSession, ActionCancelled
-	from trezor.ui.layouts import confirm_action, confirm_value, confirm_blob, show_warning
+	from trezor.ui.layouts import confirm_action, confirm_value, confirm_blob, show_warning, confirm_text
 	from trezor.enums import ButtonRequestType
 	from trezor.crypto import mimblewimble_coin
 	from trezor.enums import MimbleWimbleCoinAddressType
 	from trezor.strings import format_amount
+	from trezor.utils import MODEL_IS_T2B1
 	from uctypes import struct, addressof, UINT8, UINT32, ARRAY
 	from struct import unpack, calcsize
 	from .coins import getCoinInfo, PaymentProofAddressType
@@ -360,8 +361,17 @@ async def finish_transaction(message: MimbleWimbleCoinFinishTransaction) -> Mimb
 		# Otherwise
 		else:
 		
-			# Show prompt
-			await show_warning("", "No payment proof.", button = "Approve", br_code = ButtonRequestType.Other, left_is_small = True)
+			# Check if model is Trezor Model R
+			if MODEL_IS_T2B1:
+			
+				# Show prompt
+				await confirm_text("", "", "No payment proof.", verb = "Approve")
+			
+			# Otherwise
+			else:
+			
+				# Show prompt
+				await show_warning("", "No payment proof.", button = "Approve", br_code = ButtonRequestType.Other, left_is_small = True)
 	
 	# Catch action cancelled errors
 	except ActionCancelled:

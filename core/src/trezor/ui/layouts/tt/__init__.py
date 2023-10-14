@@ -804,6 +804,7 @@ async def confirm_text(
     data: str,
     description: str | None = None,
     br_code: ButtonRequestType = BR_TYPE_OTHER,
+    verb: str = "CONFIRM",
 ) -> None:
     return await confirm_value(
         title,
@@ -811,7 +812,7 @@ async def confirm_text(
         description or "",
         br_type,
         br_code,
-        verb="CONFIRM",
+        verb=verb,
     )
 
 
