@@ -38,7 +38,7 @@ async def get_mqs_challenge_signature(message: MimbleWimbleCoinGetMqsChallengeSi
 	from trezor.enums import ButtonRequestType
 	from trezor.crypto import mimblewimble_coin
 	from apps.common.paths import HARDENED
-	from trezor.utils import MODEL_IS_T2B1
+	from trezor.utils import UI_LAYOUT
 	from .coins import getCoinInfo
 	from .common import getExtendedPrivateKey, UINT32_MAX
 	from .storage import initializeStorage
@@ -126,8 +126,8 @@ async def get_mqs_challenge_signature(message: MimbleWimbleCoinGetMqsChallengeSi
 		# Show prompt
 		await confirm_blob("", "Default Challenge", mimblewimble_coin.DEFAULT_MQS_CHALLENGE, verb = "Next".upper())
 	
-	# Check if model is Trezor Model R
-	if MODEL_IS_T2B1:
+	# Check if UI layout is TR
+	if UI_LAYOUT == "TR":
 	
 		# Show prompt
 		await confirm_text("", "", f"The host will be able to listen for the account's {coinInfo.mqsName} transactions.", verb = "Approve")

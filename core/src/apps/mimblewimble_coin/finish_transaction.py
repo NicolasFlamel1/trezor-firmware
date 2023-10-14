@@ -33,7 +33,7 @@ async def finish_transaction(message: MimbleWimbleCoinFinishTransaction) -> Mimb
 	from trezor.crypto import mimblewimble_coin
 	from trezor.enums import MimbleWimbleCoinAddressType
 	from trezor.strings import format_amount
-	from trezor.utils import MODEL_IS_T2B1
+	from trezor.utils import UI_LAYOUT
 	from uctypes import struct, addressof, UINT8, UINT32, ARRAY
 	from struct import unpack, calcsize
 	from .coins import getCoinInfo, PaymentProofAddressType
@@ -361,8 +361,8 @@ async def finish_transaction(message: MimbleWimbleCoinFinishTransaction) -> Mimb
 		# Otherwise
 		else:
 		
-			# Check if model is Trezor Model R
-			if MODEL_IS_T2B1:
+			# Check if UI layout is TR
+			if UI_LAYOUT == "TR":
 			
 				# Show prompt
 				await confirm_text("", "", "No payment proof.", verb = "Approve")

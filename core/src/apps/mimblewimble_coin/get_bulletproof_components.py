@@ -24,9 +24,8 @@ async def get_bulletproof_components(message: MimbleWimbleCoinGetBulletproofComp
 	from trezor.crypto import mimblewimble_coin
 	from trezor.enums import MimbleWimbleCoinSwitchType, MimbleWimbleCoinMessageType
 	from trezor.ui.layouts.progress import progress
-	from trezor.utils import DISABLE_ANIMATION
+	from trezor.utils import DISABLE_ANIMATION, UI_LAYOUT
 	from apps.common.paths import HARDENED
-	from trezor.utils import MODEL_IS_T2B1
 	from .coins import getCoinInfo
 	from .common import getExtendedPrivateKey, UINT64_MAX
 	from .storage import initializeStorage
@@ -98,8 +97,8 @@ async def get_bulletproof_components(message: MimbleWimbleCoinGetBulletproofComp
 		# Check if message type is sending transaction
 		if message.message_type == MimbleWimbleCoinMessageType.SENDING_TRANSACTION:
 		
-			# Check if model is Trezor Model R
-			if MODEL_IS_T2B1:
+			# Check if UI layout is TR
+			if UI_LAYOUT == "TR":
 			
 				# Display progress
 				displayProgress = progress("", "Sending Transaction".upper())
@@ -113,8 +112,8 @@ async def get_bulletproof_components(message: MimbleWimbleCoinGetBulletproofComp
 		# Otherwise check if message type is receiving transaction
 		elif message.message_type == MimbleWimbleCoinMessageType.RECEIVING_TRANSACTION:
 		
-			# Check if model is Trezor Model R
-			if MODEL_IS_T2B1:
+			# Check if UI layout is TR
+			if UI_LAYOUT == "TR":
 			
 				# Display progress
 				displayProgress = progress("", "Receiving Transaction".upper())
@@ -128,8 +127,8 @@ async def get_bulletproof_components(message: MimbleWimbleCoinGetBulletproofComp
 		# Otherwise check if message type is creating coinbase
 		elif message.message_type == MimbleWimbleCoinMessageType.CREATING_COINBASE:
 		
-			# Check if model is Trezor Model R
-			if MODEL_IS_T2B1:
+			# Check if UI layout is TR
+			if UI_LAYOUT == "TR":
 			
 				# Display progress
 				displayProgress = progress("", "Creating Coinbase".upper())

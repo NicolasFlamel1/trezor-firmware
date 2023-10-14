@@ -25,7 +25,7 @@ async def get_root_public_key(message: MimbleWimbleCoinGetRootPublicKey) -> Mimb
 	from trezor.enums import ButtonRequestType
 	from trezor.crypto import mimblewimble_coin
 	from apps.common.paths import HARDENED
-	from trezor.utils import MODEL_IS_T2B1
+	from trezor.utils import UI_LAYOUT
 	from .coins import getCoinInfo
 	from .common import getExtendedPrivateKey
 	from .storage import initializeStorage
@@ -67,8 +67,8 @@ async def get_root_public_key(message: MimbleWimbleCoinGetRootPublicKey) -> Mimb
 	# Show prompt
 	await confirm_value("Account Index", str(message.account), "", "", verb = "Next")
 	
-	# Check if model is Trezor Model R
-	if MODEL_IS_T2B1:
+	# Check if UI layout is TR
+	if UI_LAYOUT == "TR":
 	
 		# Show prompt
 		await confirm_text("", "", "The host will be able to view the account's transactions.", verb = "Approve")
