@@ -30,7 +30,7 @@ use crate::{
                 },
                 TextStyle,
             },
-            ComponentExt, FormattedText, Timeout,
+            ComponentExt, FormattedText, Label, LineBreaking, Timeout,
         },
         display, geometry,
         layout::{
@@ -93,10 +93,9 @@ where
 {
     fn msg_try_into_obj(&self, msg: Self::Msg) -> Result<Obj, Error> {
         match msg {
-            PageMsg::Content(_) => Err(Error::TypeError),
-            PageMsg::Controls(true) => Ok(CONFIRMED.as_obj()),
-            PageMsg::Controls(false) => Ok(CANCELLED.as_obj()),
-            PageMsg::Aux(_) => Err(Error::TypeError),
+            PageMsg::Confirmed => Ok(CONFIRMED.as_obj()),
+            PageMsg::Cancelled => Ok(CANCELLED.as_obj()),
+            _ => Err(Error::TypeError),
         }
     }
 }
@@ -264,6 +263,19 @@ where
     }
 }
 
+impl<T, U> ComponentMsgObj for super::component::bl_confirm::Confirm<T, U>
+where
+    T: StringType + Clone,
+    U: AsRef<str>,
+{
+    fn msg_try_into_obj(&self, msg: Self::Msg) -> Result<Obj, Error> {
+        match msg {
+            super::component::bl_confirm::ConfirmMsg::Cancel => Ok(CANCELLED.as_obj()),
+            super::component::bl_confirm::ConfirmMsg::Confirm => Ok(CONFIRMED.as_obj()),
+        }
+    }
+}
+
 /// Function to create and call a `ButtonPage` dialog based on paginable content
 /// (e.g. `Paragraphs` or `FormattedText`).
 /// Has optional title (supply empty `StrBuffer` for that) and hold-to-confirm
@@ -350,6 +362,14 @@ extern "C" fn new_confirm_blob(n_args: usize, args: *const Obj, kwargs: *mut Map
             .unwrap_or_else(|_| Obj::const_none())
             .try_into_option()?;
         let hold: bool = kwargs.get_or(Qstr::MP_QSTR_hold, false)?;
+        let chunkify: bool = kwargs.get_or(Qstr::MP_QSTR_chunkify, false)?;
+
+        let style = if chunkify {
+            // Chunkifying the address into smaller pieces when requested
+            &theme::TEXT_MONO_ADDRESS_CHUNKS
+        } else {
+            &theme::TEXT_MONO_DATA
+        };
 
         let paragraphs = ConfirmBlob {
             description: description.unwrap_or_else(StrBuffer::empty),
@@ -357,7 +377,7 @@ extern "C" fn new_confirm_blob(n_args: usize, args: *const Obj, kwargs: *mut Map
             data: data.try_into()?,
             description_font: &theme::TEXT_BOLD,
             extra_font: &theme::TEXT_NORMAL,
-            data_font: &theme::TEXT_MONO_DATA,
+            data_font: style,
         }
         .into_paragraphs();
 
@@ -742,6 +762,7 @@ extern "C" fn new_confirm_ethereum_tx(n_args: usize, args: *const Obj, kwargs: *
         let total_amount: StrBuffer = kwargs.get(Qstr::MP_QSTR_total_amount)?.try_into()?;
         let maximum_fee: StrBuffer = kwargs.get(Qstr::MP_QSTR_maximum_fee)?.try_into()?;
         let items: Obj = kwargs.get(Qstr::MP_QSTR_items)?;
+        let chunkify: bool = kwargs.get_or(Qstr::MP_QSTR_chunkify, false)?;
 
         let get_page = move |page_index| {
             match page_index {
@@ -750,7 +771,14 @@ extern "C" fn new_confirm_ethereum_tx(n_args: usize, args: *const Obj, kwargs: *
                     let btn_layout = ButtonLayout::cancel_none_text("CONTINUE".into());
                     let btn_actions = ButtonActions::cancel_none_next();
 
-                    let ops = OpTextLayout::new(theme::TEXT_MONO_DATA).text_mono(recipient.clone());
+                    let style = if chunkify {
+                        // Chunkifying the address into smaller pieces when requested
+                        theme::TEXT_MONO_ADDRESS_CHUNKS
+                    } else {
+                        theme::TEXT_MONO_DATA
+                    };
+
+                    let ops = OpTextLayout::new(style).text_mono(recipient.clone());
 
                     let formatted = FormattedText::new(ops).vertically_centered();
                     Page::new(btn_layout, btn_actions, formatted).with_title("RECIPIENT".into())
@@ -810,12 +838,13 @@ extern "C" fn new_confirm_address(n_args: usize, args: *const Obj, kwargs: *mut 
     let block = move |_args: &[Obj], kwargs: &Map| {
         let title: StrBuffer = kwargs.get(Qstr::MP_QSTR_title)?.try_into()?;
         let address: StrBuffer = kwargs.get(Qstr::MP_QSTR_data)?.try_into()?;
+        let verb: StrBuffer = kwargs.get_or(Qstr::MP_QSTR_verb, "CONFIRM".into())?;
         let chunkify: bool = kwargs.get_or(Qstr::MP_QSTR_chunkify, false)?;
 
         let get_page = move |page_index| {
             assert!(page_index == 0);
 
-            let btn_layout = ButtonLayout::cancel_armed_info("CONFIRM".into());
+            let btn_layout = ButtonLayout::cancel_armed_info(verb.clone());
             let btn_actions = ButtonActions::cancel_confirm_info();
             let style = if chunkify {
                 // Chunkifying the address into smaller pieces when requested
@@ -1437,7 +1466,7 @@ extern "C" fn new_confirm_recovery(n_args: usize, args: *const Obj, kwargs: *mut
         let mut paragraphs = ParagraphVecShort::new();
         paragraphs.add(Paragraph::new(&theme::TEXT_NORMAL, description));
         if show_info {
-            let first = "You'll only have to select the first 2-3 letters of each word.";
+            let first = "You'll only have to select the first 2-4 letters of each word.";
             let second =
                 "Position of the cursor will change between entries for enhanced security.";
             paragraphs
@@ -1573,9 +1602,10 @@ extern "C" fn new_show_lockscreen(n_args: usize, args: *const Obj, kwargs: *mut 
             .try_into_option()?
             .unwrap_or_else(|| model::FULL_NAME.into());
         let bootscreen: bool = kwargs.get(Qstr::MP_QSTR_bootscreen)?.try_into()?;
+        let coinjoin_authorized: bool = kwargs.get_or(Qstr::MP_QSTR_coinjoin_authorized, false)?;
         let skip_first_paint: bool = kwargs.get(Qstr::MP_QSTR_skip_first_paint)?.try_into()?;
 
-        let obj = LayoutObj::new(Lockscreen::new(label, bootscreen))?;
+        let obj = LayoutObj::new(Lockscreen::new(label, bootscreen, coinjoin_authorized))?;
         if skip_first_paint {
             obj.skip_first_paint();
         }
@@ -1591,6 +1621,33 @@ extern "C" fn draw_welcome_screen() -> Obj {
     display::sync();
     screen.paint();
     Obj::const_none()
+}
+
+extern "C" fn new_confirm_firmware_update(
+    n_args: usize,
+    args: *const Obj,
+    kwargs: *mut Map,
+) -> Obj {
+    use super::component::bl_confirm::Confirm;
+    let block = move |_args: &[Obj], kwargs: &Map| {
+        let description: StrBuffer = kwargs.get(Qstr::MP_QSTR_description)?.try_into()?;
+        let fingerprint: StrBuffer = kwargs.get(Qstr::MP_QSTR_fingerprint)?.try_into()?;
+
+        let title = "UPDATE FIRMWARE";
+        let message = Label::left_aligned(description, theme::TEXT_NORMAL).vertically_centered();
+        let fingerprint = Label::left_aligned(
+            fingerprint,
+            theme::TEXT_NORMAL.with_line_breaking(LineBreaking::BreakWordsNoHyphen),
+        )
+        .vertically_centered();
+
+        let obj = LayoutObj::new(
+            Confirm::new(theme::BG, title, message, None, "INSTALL".into(), false)
+                .with_info_screen(StrBuffer::from("FW FINGERPRINT"), fingerprint),
+        )?;
+        Ok(obj.into())
+    };
+    unsafe { util::try_with_args_and_kwargs(n_args, args, kwargs, block) }
 }
 
 #[no_mangle]
@@ -1645,6 +1702,7 @@ pub static mp_module_trezorui2: Module = obj_module! {
     ///     verb: str = "CONFIRM",
     ///     verb_cancel: str | None = None,
     ///     hold: bool = False,
+    ///     chunkify: bool = False,
     /// ) -> object:
     ///     """Confirm byte sequence data."""
     Qstr::MP_QSTR_confirm_blob => obj_fn_kw!(0, new_confirm_blob).as_obj(),
@@ -1655,6 +1713,7 @@ pub static mp_module_trezorui2: Module = obj_module! {
     ///     data: str,
     ///     description: str | None,  # unused on TR
     ///     extra: str | None,  # unused on TR
+    ///     verb: str = "CONFIRM",
     ///     chunkify: bool = False,
     /// ) -> object:
     ///     """Confirm address."""
@@ -1761,6 +1820,7 @@ pub static mp_module_trezorui2: Module = obj_module! {
     ///     total_amount: str,
     ///     maximum_fee: str,
     ///     items: Iterable[Tuple[str, str]],
+    ///     chunkify: bool = False,
     /// ) -> object:
     ///     """Confirm details about Ethereum transaction."""
     Qstr::MP_QSTR_confirm_ethereum_tx => obj_fn_kw!(0, new_confirm_ethereum_tx).as_obj(),
@@ -1993,6 +2053,7 @@ pub static mp_module_trezorui2: Module = obj_module! {
     ///     label: str | None,
     ///     bootscreen: bool,
     ///     skip_first_paint: bool,
+    ///     coinjoin_authorized: bool = False,
     /// ) -> CANCELLED:
     ///     """Homescreen for locked device."""
     Qstr::MP_QSTR_show_lockscreen => obj_fn_kw!(0, new_show_lockscreen).as_obj(),
@@ -2000,4 +2061,12 @@ pub static mp_module_trezorui2: Module = obj_module! {
     /// def draw_welcome_screen() -> None:
     ///     """Show logo icon with the model name at the bottom and return."""
     Qstr::MP_QSTR_draw_welcome_screen => obj_fn_0!(draw_welcome_screen).as_obj(),
+
+    /// def confirm_firmware_update(
+    ///     *,
+    ///     description: str,
+    ///     fingerprint: str,
+    /// ) -> None:
+    ///     """Ask whether to update firmware, optionally show fingerprint. Shared with bootloader."""
+    Qstr::MP_QSTR_confirm_firmware_update => obj_fn_kw!(0, new_confirm_firmware_update).as_obj(),
 };

@@ -24,6 +24,7 @@
 #include <pb_encode.h>
 #include "messages.pb.h"
 
+#include "boot_internal.h"
 #include "common.h"
 #include "flash.h"
 #include "image.h"
@@ -348,13 +349,17 @@ void process_msg_Ping(uint8_t iface_num, uint32_t msg_size, uint8_t *buf) {
   MSG_SEND(Success);
 }
 
-static uint32_t firmware_remaining, firmware_block, chunk_requested;
+static uint32_t firmware_remaining;
+static uint32_t firmware_block;
+static uint32_t chunk_requested;
+static uint32_t erase_offset;
 
 void process_msg_FirmwareErase(uint8_t iface_num, uint32_t msg_size,
                                uint8_t *buf) {
   firmware_remaining = 0;
   firmware_block = 0;
   chunk_requested = 0;
+  erase_offset = 0;
 
   MSG_RECV_INIT(FirmwareErase);
   MSG_RECV(FirmwareErase);
@@ -410,8 +415,8 @@ static bool _read_payload(pb_istream_t *stream, const pb_field_t *field,
     // update loader but skip first block
     if (firmware_block > 0) {
       ui_screen_install_progress_upload(
-          250 + 750 * (firmware_block * IMAGE_CHUNK_SIZE + chunk_written) /
-                    (firmware_block * IMAGE_CHUNK_SIZE + firmware_remaining));
+          1000 * (firmware_block * IMAGE_CHUNK_SIZE + chunk_written) /
+          (firmware_block * IMAGE_CHUNK_SIZE + firmware_remaining));
     }
     // read data
     if (!pb_read(
@@ -426,21 +431,24 @@ static bool _read_payload(pb_istream_t *stream, const pb_field_t *field,
   return true;
 }
 
-secbool check_vendor_header_keys(const vendor_header *const vhdr);
-
 static int version_compare(uint32_t vera, uint32_t verb) {
+  /* Explicit casts so that we control how compiler does the unsigned shift
+   * and correctly then promote uint8_t to int without possibility of
+   * having implementation-defined right shift on negative int
+   * in case compiler promoted the wrong unsinged int
+   */
   int a, b;
-  a = vera & 0xFF;
-  b = verb & 0xFF;
+  a = (uint8_t)vera & 0xFF;
+  b = (uint8_t)verb & 0xFF;
   if (a != b) return a - b;
-  a = (vera >> 8) & 0xFF;
-  b = (verb >> 8) & 0xFF;
+  a = (uint8_t)(vera >> 8) & 0xFF;
+  b = (uint8_t)(verb >> 8) & 0xFF;
   if (a != b) return a - b;
-  a = (vera >> 16) & 0xFF;
-  b = (verb >> 16) & 0xFF;
+  a = (uint8_t)(vera >> 16) & 0xFF;
+  b = (uint8_t)(verb >> 16) & 0xFF;
   if (a != b) return a - b;
-  a = (vera >> 24) & 0xFF;
-  b = (verb >> 24) & 0xFF;
+  a = (uint8_t)(vera >> 24) & 0xFF;
+  b = (uint8_t)(verb >> 24) & 0xFF;
   return a - b;
 }
 
@@ -448,11 +456,12 @@ static void detect_installation(const vendor_header *current_vhdr,
                                 const image_header *current_hdr,
                                 const vendor_header *const new_vhdr,
                                 const image_header *const new_hdr,
-                                secbool *is_new, secbool *is_upgrade,
-                                secbool *is_newvendor) {
+                                secbool *is_new, secbool *keep_seed,
+                                secbool *is_newvendor, secbool *is_upgrade) {
   *is_new = secfalse;
-  *is_upgrade = secfalse;
+  *keep_seed = secfalse;
   *is_newvendor = secfalse;
+  *is_upgrade = secfalse;
   if (sectrue != check_vendor_header_keys(current_vhdr)) {
     *is_new = sectrue;
     return;
@@ -477,7 +486,11 @@ static void detect_installation(const vendor_header *current_vhdr,
   if (version_compare(new_hdr->version, current_hdr->fix_version) < 0) {
     return;
   }
-  *is_upgrade = sectrue;
+  if (version_compare(new_hdr->version, current_hdr->version) > 0) {
+    *is_upgrade = sectrue;
+  }
+
+  *keep_seed = sectrue;
 }
 
 static int firmware_upload_chunk_retry = FIRMWARE_UPLOAD_CHUNK_RETRY_COUNT;
@@ -577,9 +590,51 @@ int process_msg_FirmwareUpload(uint8_t iface_num, uint32_t msg_size,
 
       secbool should_keep_seed = secfalse;
       secbool is_newvendor = secfalse;
+      secbool is_upgrade = secfalse;
       if (is_new == secfalse) {
         detect_installation(&current_vhdr, current_hdr, &vhdr, &hdr, &is_new,
-                            &should_keep_seed, &is_newvendor);
+                            &should_keep_seed, &is_newvendor, &is_upgrade);
+      }
+
+      secbool is_ilu = secfalse;  // interaction-less update
+
+      if (g_boot_command == BOOT_COMMAND_INSTALL_UPGRADE) {
+        BLAKE2S_CTX ctx;
+        uint8_t hash[BLAKE2S_DIGEST_LENGTH];
+        blake2s_Init(&ctx, BLAKE2S_DIGEST_LENGTH);
+        blake2s_Update(&ctx, CHUNK_BUFFER_PTR,
+                       vhdr.hdrlen + received_hdr->hdrlen);
+        blake2s_Final(&ctx, hash, BLAKE2S_DIGEST_LENGTH);
+
+        // the firmware must be the same as confirmed by the user
+        if (memcmp(&g_boot_args[0], hash, sizeof(hash)) != 0) {
+          MSG_SEND_INIT(Failure);
+          MSG_SEND_ASSIGN_VALUE(code, FailureType_Failure_ProcessError);
+          MSG_SEND_ASSIGN_STRING(message, "Firmware mismatch");
+          MSG_SEND(Failure);
+          return UPLOAD_ERR_FIRMWARE_MISMATCH;
+        }
+
+        // the firmware must be from the same vendor
+        // the firmware must be newer
+        if (is_upgrade != sectrue || is_newvendor != secfalse) {
+          MSG_SEND_INIT(Failure);
+          MSG_SEND_ASSIGN_VALUE(code, FailureType_Failure_ProcessError);
+          MSG_SEND_ASSIGN_STRING(message, "Not a firmware upgrade");
+          MSG_SEND(Failure);
+          return UPLOAD_ERR_NOT_FIRMWARE_UPGRADE;
+        }
+
+        if ((vhdr.vtrust & VTRUST_ALL) != VTRUST_ALL) {
+          MSG_SEND_INIT(Failure);
+          MSG_SEND_ASSIGN_VALUE(code, FailureType_Failure_ProcessError);
+          MSG_SEND_ASSIGN_STRING(message, "Not a full-trust image");
+          MSG_SEND(Failure);
+          return UPLOAD_ERR_NOT_FULLTRUST_IMAGE;
+        }
+
+        // upload the firmware without confirmation
+        is_ilu = sectrue;
       }
 
 #ifdef USE_OPTIGA
@@ -593,8 +648,8 @@ int process_msg_FirmwareUpload(uint8_t iface_num, uint32_t msg_size,
 #endif
 
       uint32_t response = INPUT_CANCEL;
-      if (sectrue == is_new) {
-        // new installation - auto confirm
+      if (sectrue == is_new || sectrue == is_ilu) {
+        // new installation or interaction less updated - auto confirm
         response = INPUT_CONFIRM;
       } else {
         int version_cmp = version_compare(hdr.version, current_hdr->version);
@@ -614,8 +669,6 @@ int process_msg_FirmwareUpload(uint8_t iface_num, uint32_t msg_size,
         ensure(flash_area_erase_bulk(STORAGE_AREAS, STORAGE_AREAS_COUNT, NULL),
                NULL);
       }
-      ensure(flash_area_erase(&FIRMWARE_AREA, ui_screen_install_progress_erase),
-             NULL);
 
       headers_offset = IMAGE_HEADER_SIZE + vhdr.hdrlen;
       read_offset = IMAGE_INIT_CHUNK_SIZE;
@@ -667,22 +720,60 @@ int process_msg_FirmwareUpload(uint8_t iface_num, uint32_t msg_size,
     return UPLOAD_ERR_INVALID_CHUNK_HASH;
   }
 
-  ensure(flash_unlock_write(), NULL);
+  // buffer with the received data
+  const uint32_t *quadword_ptr = (const uint32_t *)CHUNK_BUFFER_PTR;
+  // number of received bytes
+  uint32_t bytes_remaining = chunk_size;
+  // offset into the FIRMWARE_AREA part of the flash
+  uint32_t write_offset = firmware_block * IMAGE_CHUNK_SIZE;
 
-  const uint32_t *const src = (const uint32_t *const)CHUNK_BUFFER_PTR;
+  while (bytes_remaining > 0) {
+    // erase flash before writing
+    uint32_t bytes_erased = 0;
 
-  for (int i = 0; i < chunk_size / (sizeof(uint32_t) * 4); i++) {
-    ensure(flash_area_write_quadword(
-               &FIRMWARE_AREA,
-               firmware_block * IMAGE_CHUNK_SIZE + i * 4 * sizeof(uint32_t),
-               &src[4 * i]),
-           NULL);
+    if (write_offset >= erase_offset) {
+      // erase the next flash section
+      ensure(
+          flash_area_erase_partial(&FIRMWARE_AREA, erase_offset, &bytes_erased),
+          NULL);
+      erase_offset += bytes_erased;
+    } else {
+      // some erased space left from the previous round => use it
+      bytes_erased = erase_offset - write_offset;
+    }
+
+    // write the received data
+    uint32_t bytes_to_write = MIN(bytes_erased, bytes_remaining);
+    uint32_t write_end = write_offset + bytes_to_write;
+
+    ensure(flash_unlock_write(), NULL);
+    while (write_offset < write_end) {
+      // write a quad word (16 bytes) to the flash
+      ensure(
+          flash_area_write_quadword(&FIRMWARE_AREA, write_offset, quadword_ptr),
+          NULL);
+      write_offset += 4 * sizeof(uint32_t);
+      quadword_ptr += 4;
+    }
+    ensure(flash_lock_write(), NULL);
+
+    bytes_remaining -= bytes_to_write;
   }
 
-  ensure(flash_lock_write(), NULL);
+  firmware_remaining -= chunk_requested;
+
+  if (firmware_remaining == 0) {
+    // erase the rest (unused part) of the FIRMWARE_AREA
+    uint32_t bytes_erased = 0;
+    do {
+      ensure(
+          flash_area_erase_partial(&FIRMWARE_AREA, erase_offset, &bytes_erased),
+          NULL);
+      erase_offset += bytes_erased;
+    } while (bytes_erased > 0);
+  }
 
   headers_offset = 0;
-  firmware_remaining -= chunk_requested;
   firmware_block++;
   firmware_upload_chunk_retry = FIRMWARE_UPLOAD_CHUNK_RETRY_COUNT;
 

@@ -24,6 +24,7 @@ from construct_classes import Struct, subcon
 
 from . import consts, models, util
 from .core import FirmwareImage
+from .models import Model
 
 __all__ = [
     "LegacyFirmware",
@@ -98,34 +99,31 @@ def check_sig_signmessage(
 class LegacyV2Firmware(FirmwareImage):
     """Firmware image in the format used by Trezor One 1.8.0 and newer."""
 
-    HASH_PARAMS = util.FirmwareHashParameters(
-        hash_function=hashlib.sha256,
-        chunk_size=consts.ONEV2_CHUNK_SIZE,
-        padding_byte=b"\xff",
-    )
-
     V3_FIRST_VERSION = (1, 12, 0)
+
+    def get_hash_params(self) -> "util.FirmwareHashParameters":
+        return Model.ONE.hash_params()
 
     def verify_v2(self, dev_keys: bool) -> None:
         if not dev_keys:
-            public_keys = models.TREZOR_ONE_V1V2.firmware_keys
+            public_keys = models.LEGACY_V1V2.firmware_keys
         else:
-            public_keys = models.TREZOR_ONE_V1V2_DEV.firmware_keys
+            public_keys = models.LEGACY_V1V2_DEV.firmware_keys
 
         self.validate_code_hashes()
         check_sig_v1(
             self.digest(),
             self.header.v1_key_indexes,
             self.header.v1_signatures,
-            models.TREZOR_ONE_V1V2.firmware_sigs_needed,
+            models.LEGACY_V1V2.firmware_sigs_needed,
             public_keys,
         )
 
     def verify_v3(self, dev_keys: bool) -> None:
         if not dev_keys:
-            model_keys = models.TREZOR_ONE_V3
+            model_keys = models.LEGACY_V3
         else:
-            model_keys = models.TREZOR_ONE_V3_DEV
+            model_keys = models.LEGACY_V3_DEV
 
         self.validate_code_hashes()
         check_sig_signmessage(
@@ -191,9 +189,9 @@ class LegacyFirmware(Struct):
 
     def verify(self, dev_keys: bool = False) -> None:
         if not dev_keys:
-            model_keys = models.TREZOR_ONE_V1V2
+            model_keys = models.LEGACY_V1V2
         else:
-            model_keys = models.TREZOR_ONE_V1V2_DEV
+            model_keys = models.LEGACY_V1V2_DEV
         check_sig_v1(
             self.digest(),
             self.key_indexes,

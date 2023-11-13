@@ -35,6 +35,7 @@
 #include "sbu.h"
 #include "sdcard.h"
 #include "secbool.h"
+#include "supervise.h"
 #include "touch.h"
 #include "usb.h"
 

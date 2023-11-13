@@ -48,6 +48,7 @@ def confirm_blob(
     verb: str = "CONFIRM",
     verb_cancel: str | None = None,
     hold: bool = False,
+    chunkify: bool = False,
 ) -> object:
     """Confirm byte sequence data."""
 
@@ -59,6 +60,7 @@ def confirm_address(
     data: str,
     description: str | None,  # unused on TR
     extra: str | None,  # unused on TR
+    verb: str = "CONFIRM",
     chunkify: bool = False,
 ) -> object:
     """Confirm address."""
@@ -175,6 +177,7 @@ def confirm_ethereum_tx(
     total_amount: str,
     maximum_fee: str,
     items: Iterable[Tuple[str, str]],
+    chunkify: bool = False,
 ) -> object:
     """Confirm details about Ethereum transaction."""
 
@@ -432,6 +435,7 @@ def show_lockscreen(
     label: str | None,
     bootscreen: bool,
     skip_first_paint: bool,
+    coinjoin_authorized: bool = False,
 ) -> CANCELLED:
     """Homescreen for locked device."""
 
@@ -439,6 +443,15 @@ def show_lockscreen(
 # rust/src/ui/model_tr/layout.rs
 def draw_welcome_screen() -> None:
     """Show logo icon with the model name at the bottom and return."""
+
+
+# rust/src/ui/model_tr/layout.rs
+def confirm_firmware_update(
+    *,
+    description: str,
+    fingerprint: str,
+) -> None:
+    """Ask whether to update firmware, optionally show fingerprint. Shared with bootloader."""
 CONFIRMED: object
 CANCELLED: object
 INFO: object
@@ -504,6 +517,7 @@ def confirm_blob(
     verb: str | None = None,
     verb_cancel: str | None = None,
     hold: bool = False,
+    chunkify: bool = False,
 ) -> object:
     """Confirm byte sequence data."""
 
@@ -514,6 +528,7 @@ def confirm_address(
     title: str,
     data: str | bytes,
     description: str | None,
+    verb: str | None = "CONFIRM",
     extra: str | None,
     chunkify: bool = False,
 ) -> object:
@@ -561,8 +576,9 @@ def show_info_with_cancel(
     *,
     title: str,
     items: Iterable[Tuple[str, str]],
+    horizontal: bool = False,
 ) -> object:
-    """Show metadata when for outgoing transaction."""
+    """Show metadata for outgoing transaction."""
 
 
 # rust/src/ui/model_tt/layout.rs
@@ -882,6 +898,7 @@ def show_lockscreen(
     label: str | None,
     bootscreen: bool,
     skip_first_paint: bool,
+    coinjoin_authorized: bool = False,
 ) -> CANCELLED:
     """Homescreen for locked device."""
 
@@ -889,3 +906,12 @@ def show_lockscreen(
 # rust/src/ui/model_tt/layout.rs
 def draw_welcome_screen() -> None:
     """Show logo icon with the model name at the bottom and return."""
+
+
+# rust/src/ui/model_tt/layout.rs
+def confirm_firmware_update(
+    *,
+    description: str,
+    fingerprint: str,
+) -> None:
+    """Ask whether to update firmware, optionally show fingerprint. Shared with bootloader."""

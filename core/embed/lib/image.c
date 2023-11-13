@@ -25,6 +25,20 @@
 #include "common.h"
 #include "flash.h"
 #include "image.h"
+#include "model.h"
+
+const uint8_t BOOTLOADER_KEY_M = 2;
+const uint8_t BOOTLOADER_KEY_N = 3;
+static const uint8_t * const BOOTLOADER_KEYS[] = {
+#if !PRODUCTION
+    /*** DEVEL/QA KEYS  ***/
+    (const uint8_t *)"\xd7\x59\x79\x3b\xbc\x13\xa2\x81\x9a\x82\x7c\x76\xad\xb6\xfb\xa8\xa4\x9a\xee\x00\x7f\x49\xf2\xd0\x99\x2d\x99\xb8\x25\xad\x2c\x48",
+    (const uint8_t *)"\x63\x55\x69\x1c\x17\x8a\x8f\xf9\x10\x07\xa7\x47\x8a\xfb\x95\x5e\xf7\x35\x2c\x63\xe7\xb2\x57\x03\x98\x4c\xf7\x8b\x26\xe2\x1a\x56",
+    (const uint8_t *)"\xee\x93\xa4\xf6\x6f\x8d\x16\xb8\x19\xbb\x9b\xeb\x9f\xfc\xcd\xfc\xdc\x14\x12\xe8\x7f\xee\x6a\x32\x4c\x2a\x99\xa1\xe0\xe6\x71\x48",
+#else
+    MODEL_BOOTLOADER_KEYS
+#endif
+};
 
 static secbool compute_pubkey(uint8_t sig_m, uint8_t sig_n,
                               const uint8_t *const *pub, uint8_t sigmask,
@@ -203,6 +217,11 @@ secbool check_vendor_header_sig(const vendor_header *const vhdr, uint8_t key_m,
                                  *(const ed25519_signature *)vhdr->sig));
 }
 
+secbool check_vendor_header_keys(const vendor_header *const vhdr) {
+  return check_vendor_header_sig(vhdr, BOOTLOADER_KEY_M, BOOTLOADER_KEY_N,
+                                 BOOTLOADER_KEYS);
+}
+
 void vendor_header_hash(const vendor_header *const vhdr, uint8_t *hash) {
   BLAKE2S_CTX ctx;
   blake2s_Init(&ctx, BLAKE2S_DIGEST_LENGTH);
@@ -224,35 +243,106 @@ secbool check_image_contents(const image_header *const hdr, uint32_t firstskip,
     return secfalse;
   }
 
-  const void *data =
-      flash_area_get_address(area, firstskip, IMAGE_CHUNK_SIZE - firstskip);
-  if (!data) {
-    return secfalse;
-  }
-  int remaining = hdr->codelen;
-  if (sectrue !=
-      check_single_hash(hdr->hashes, data,
-                        MIN(remaining, IMAGE_CHUNK_SIZE - firstskip))) {
-    return secfalse;
-  }
+  // Check the firmware integrity, calculate and compare hashes
+  size_t offset = firstskip;
+  size_t end_offset = offset + hdr->codelen;
 
-  remaining -= IMAGE_CHUNK_SIZE - firstskip;
+  while (offset < end_offset) {
+    size_t bytes_to_check = MIN(IMAGE_CHUNK_SIZE - (offset % IMAGE_CHUNK_SIZE),
+                                end_offset - offset);
 
-  int chunk = 1;
-
-  while (remaining > 0) {
-    data = flash_area_get_address(area, chunk * IMAGE_CHUNK_SIZE,
-                                  IMAGE_CHUNK_SIZE);
+    const void *data = flash_area_get_address(area, offset, bytes_to_check);
     if (!data) {
       return secfalse;
     }
-    if (sectrue != check_single_hash(hdr->hashes + chunk * 32, data,
-                                     MIN(remaining, IMAGE_CHUNK_SIZE))) {
+
+    size_t hash_offset = (offset / IMAGE_CHUNK_SIZE) * 32;
+    if (sectrue !=
+        check_single_hash(hdr->hashes + hash_offset, data, bytes_to_check)) {
       return secfalse;
     }
-    chunk++;
-    remaining -= IMAGE_CHUNK_SIZE;
+
+    offset += bytes_to_check;
   }
+
+  // Check the padding to the end of the area
+  end_offset = flash_area_get_size(area);
+
+  if (offset < end_offset) {
+    // Use the first byte in the checked area as the expected padding byte
+    // Firmware is always padded with 0xFF, while the bootloader might be
+    // padded with 0x00 as well
+    uint8_t expected_byte = *(
+        (const uint8_t *)flash_area_get_address(area, offset, sizeof(uint8_t)));
+
+    if (expected_byte != 0x00 && expected_byte != 0xFF) {
+      return secfalse;
+    }
+
+    while (offset < end_offset) {
+      size_t bytes_to_check = MIN(
+          IMAGE_CHUNK_SIZE - (offset % IMAGE_CHUNK_SIZE), end_offset - offset);
+
+      const uint8_t *data =
+          (const uint8_t *)flash_area_get_address(area, offset, bytes_to_check);
+      if (!data) {
+        return secfalse;
+      }
+
+      for (size_t i = 0; i < bytes_to_check; i++) {
+        if (data[i] != expected_byte) {
+          return secfalse;
+        }
+      }
+
+      offset += bytes_to_check;
+    }
+  }
+
+  return sectrue;
+}
+
+secbool check_firmware_header(const uint8_t *header, size_t header_size,
+                              firmware_header_info_t *info) {
+  // parse and check vendor header
+  vendor_header vhdr;
+  if (sectrue != read_vendor_header(header, &vhdr)) {
+    return secfalse;
+  }
+  if (sectrue != check_vendor_header_keys(&vhdr)) {
+    return secfalse;
+  }
+
+  // parse and check image header
+  const image_header *ihdr;
+  if ((ihdr = read_image_header(header + vhdr.hdrlen, FIRMWARE_IMAGE_MAGIC,
+                                FIRMWARE_IMAGE_MAXSIZE)) == NULL) {
+    return secfalse;
+  }
+  if (sectrue !=
+      check_image_header_sig(ihdr, vhdr.vsig_m, vhdr.vsig_n, vhdr.vpub)) {
+    return secfalse;
+  }
+
+  // copy vendor string
+  info->vstr_len = MIN(sizeof(info->vstr), vhdr.vstr_len);
+  if (info->vstr_len > 0) {
+    memcpy(info->vstr, vhdr.vstr, info->vstr_len);
+  }
+
+  // copy firmware version
+  info->ver_major = ihdr->version & 0xFF;
+  info->ver_minor = (ihdr->version >> 8) & 0xFF;
+  info->ver_patch = (ihdr->version >> 16) & 0xFF;
+
+  // calculate and copy the image fingerprint
+  get_image_fingerprint(ihdr, info->fingerprint);
+
+  // calculate hash of both vendor and image headers
+  BLAKE2S_CTX ctx;
+  blake2s_Init(&ctx, BLAKE2S_DIGEST_LENGTH);
+  blake2s_Update(&ctx, header, vhdr.hdrlen + ihdr->hdrlen);
+  blake2s_Final(&ctx, &info->hash, BLAKE2S_DIGEST_LENGTH);
 
   return sectrue;
 }

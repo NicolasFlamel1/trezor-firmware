@@ -524,6 +524,11 @@ class WordRequestType(IntEnum):
     Matrix6 = 2
 
 
+class BootCommand(IntEnum):
+    STOP_AND_WAIT = 0
+    INSTALL_UPGRADE = 1
+
+
 class DebugSwipeDirection(IntEnum):
     UP = 0
     DOWN = 1
@@ -1205,6 +1210,7 @@ class SignMessage(protobuf.MessageType):
         3: protobuf.Field("coin_name", "string", repeated=False, required=False, default='Bitcoin'),
         4: protobuf.Field("script_type", "InputScriptType", repeated=False, required=False, default=InputScriptType.SPENDADDRESS),
         5: protobuf.Field("no_script_type", "bool", repeated=False, required=False, default=None),
+        6: protobuf.Field("chunkify", "bool", repeated=False, required=False, default=None),
     }
 
     def __init__(
@@ -1215,12 +1221,14 @@ class SignMessage(protobuf.MessageType):
         coin_name: Optional["str"] = 'Bitcoin',
         script_type: Optional["InputScriptType"] = InputScriptType.SPENDADDRESS,
         no_script_type: Optional["bool"] = None,
+        chunkify: Optional["bool"] = None,
     ) -> None:
         self.address_n: Sequence["int"] = address_n if address_n is not None else []
         self.message = message
         self.coin_name = coin_name
         self.script_type = script_type
         self.no_script_type = no_script_type
+        self.chunkify = chunkify
 
 
 class MessageSignature(protobuf.MessageType):
@@ -1247,6 +1255,7 @@ class VerifyMessage(protobuf.MessageType):
         2: protobuf.Field("signature", "bytes", repeated=False, required=True),
         3: protobuf.Field("message", "bytes", repeated=False, required=True),
         4: protobuf.Field("coin_name", "string", repeated=False, required=False, default='Bitcoin'),
+        5: protobuf.Field("chunkify", "bool", repeated=False, required=False, default=None),
     }
 
     def __init__(
@@ -1256,11 +1265,13 @@ class VerifyMessage(protobuf.MessageType):
         signature: "bytes",
         message: "bytes",
         coin_name: Optional["str"] = 'Bitcoin',
+        chunkify: Optional["bool"] = None,
     ) -> None:
         self.address = address
         self.signature = signature
         self.message = message
         self.coin_name = coin_name
+        self.chunkify = chunkify
 
 
 class SignTx(protobuf.MessageType):
@@ -3807,6 +3818,19 @@ class CancelAuthorization(protobuf.MessageType):
 
 class RebootToBootloader(protobuf.MessageType):
     MESSAGE_WIRE_TYPE = 87
+    FIELDS = {
+        1: protobuf.Field("boot_command", "BootCommand", repeated=False, required=False, default=BootCommand.STOP_AND_WAIT),
+        2: protobuf.Field("firmware_header", "bytes", repeated=False, required=False, default=None),
+    }
+
+    def __init__(
+        self,
+        *,
+        boot_command: Optional["BootCommand"] = BootCommand.STOP_AND_WAIT,
+        firmware_header: Optional["bytes"] = None,
+    ) -> None:
+        self.boot_command = boot_command
+        self.firmware_header = firmware_header
 
 
 class GetNonce(protobuf.MessageType):
@@ -5132,6 +5156,7 @@ class EthereumSignMessage(protobuf.MessageType):
         1: protobuf.Field("address_n", "uint32", repeated=True, required=False, default=None),
         2: protobuf.Field("message", "bytes", repeated=False, required=True),
         3: protobuf.Field("encoded_network", "bytes", repeated=False, required=False, default=None),
+        4: protobuf.Field("chunkify", "bool", repeated=False, required=False, default=None),
     }
 
     def __init__(
@@ -5140,10 +5165,12 @@ class EthereumSignMessage(protobuf.MessageType):
         message: "bytes",
         address_n: Optional[Sequence["int"]] = None,
         encoded_network: Optional["bytes"] = None,
+        chunkify: Optional["bool"] = None,
     ) -> None:
         self.address_n: Sequence["int"] = address_n if address_n is not None else []
         self.message = message
         self.encoded_network = encoded_network
+        self.chunkify = chunkify
 
 
 class EthereumMessageSignature(protobuf.MessageType):
@@ -5169,6 +5196,7 @@ class EthereumVerifyMessage(protobuf.MessageType):
         2: protobuf.Field("signature", "bytes", repeated=False, required=True),
         3: protobuf.Field("message", "bytes", repeated=False, required=True),
         4: protobuf.Field("address", "string", repeated=False, required=True),
+        5: protobuf.Field("chunkify", "bool", repeated=False, required=False, default=None),
     }
 
     def __init__(
@@ -5177,10 +5205,12 @@ class EthereumVerifyMessage(protobuf.MessageType):
         signature: "bytes",
         message: "bytes",
         address: "str",
+        chunkify: Optional["bool"] = None,
     ) -> None:
         self.signature = signature
         self.message = message
         self.address = address
+        self.chunkify = chunkify
 
 
 class EthereumSignTypedHash(protobuf.MessageType):

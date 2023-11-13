@@ -30,6 +30,8 @@ if __debug__:
 
 
 class RustLayout(ui.Layout):
+    BACKLIGHT_LEVEL = ui.style.BACKLIGHT_NORMAL
+
     # pylint: disable=super-init-not-called
     def __init__(self, layout: Any):
         self.layout = layout
@@ -160,9 +162,7 @@ class RustLayout(ui.Layout):
             return self.handle_timers(), self.handle_input_and_rendering()
 
     def _first_paint(self) -> None:
-        # Clear the screen of any leftovers.
         ui.backlight_fade(ui.style.BACKLIGHT_NONE)
-        ui.display.clear()
         self._paint()
 
         if __debug__ and self.should_notify_layout_change:
@@ -223,7 +223,6 @@ def draw_simple(layout: Any) -> None:
 
     layout.attach_timer_fn(dummy_set_timer)
     ui.backlight_fade(ui.style.BACKLIGHT_DIM)
-    ui.display.clear()
     layout.paint()
     ui.refresh()
     ui.backlight_fade(ui.style.BACKLIGHT_NORMAL)
@@ -415,6 +414,7 @@ async def show_address(
     multisig_index: int | None = None,
     xpubs: Sequence[str] = (),
     mismatch_title: str = "Address mismatch?",
+    details_title: str | None = None,
     br_type: str = "show_address",
     br_code: ButtonRequestType = ButtonRequestType.Address,
     chunkify: bool = False,
@@ -427,7 +427,7 @@ async def show_address(
             else "RECEIVE ADDRESS"
         )
         details_title = "RECEIVING TO"
-    else:
+    elif details_title is None:
         details_title = title
     while True:
         layout = RustLayout(
@@ -752,6 +752,7 @@ async def confirm_blob(
     hold: bool = False,
     br_code: ButtonRequestType = BR_TYPE_OTHER,
     ask_pagination: bool = False,
+    chunkify: bool = False,
 ) -> None:
     title = title.upper()
     description = description or ""
@@ -764,6 +765,7 @@ async def confirm_blob(
             hold=hold,
             verb=verb,
             verb_cancel=verb_cancel,
+            chunkify=chunkify,
         )
     )
 
@@ -931,7 +933,7 @@ async def confirm_total(
             items=items,
         )
     )
-    await with_info(total_layout, info_layout, br_type, br_code)
+    await raise_if_not_confirmed(with_info(total_layout, info_layout, br_type, br_code))
 
 
 async def confirm_ethereum_tx(
@@ -941,6 +943,7 @@ async def confirm_ethereum_tx(
     items: Iterable[tuple[str, str]],
     br_type: str = "confirm_ethereum_tx",
     br_code: ButtonRequestType = ButtonRequestType.SignTx,
+    chunkify: bool = False,
 ) -> None:
     total_layout = RustLayout(
         trezorui2.confirm_total(
@@ -967,11 +970,14 @@ async def confirm_ethereum_tx(
             "RECIPIENT",
             recipient,
             verb="CONTINUE",
+            chunkify=chunkify,
         )
 
         try:
             total_layout.request_complete_repaint()
-            await with_info(total_layout, info_layout, br_type, br_code)
+            await raise_if_not_confirmed(
+                with_info(total_layout, info_layout, br_type, br_code)
+            )
             break
         except ActionCancelled:
             continue
@@ -1081,22 +1087,20 @@ async def with_info(
     info_layout: RustLayout,
     br_type: str,
     br_code: ButtonRequestType,
-) -> None:
+) -> Any:
     await button_request(br_type, br_code, pages=main_layout.page_count())
 
     while True:
         result = await ctx_wait(main_layout)
 
-        if result is CONFIRMED:
-            return
-        elif result is INFO:
+        if result is INFO:
             info_layout.request_complete_repaint()
             result = await ctx_wait(info_layout)
             assert result is CANCELLED
             main_layout.request_complete_repaint()
             continue
-
-        raise ActionCancelled
+        else:
+            return result
 
 
 async def confirm_modify_fee(
@@ -1124,7 +1128,9 @@ async def confirm_modify_fee(
             items=items,
         )
     )
-    await with_info(fee_layout, info_layout, "modify_fee", ButtonRequestType.SignTx)
+    await raise_if_not_confirmed(
+        with_info(fee_layout, info_layout, "modify_fee", ButtonRequestType.SignTx)
+    )
 
 
 async def confirm_coinjoin(max_rounds: int, max_fee_per_vbyte: str) -> None:
@@ -1156,30 +1162,79 @@ async def confirm_sign_identity(
 
 
 async def confirm_signverify(
-    coin: str, message: str, address: str, verify: bool
+    message: str,
+    address: str,
+    verify: bool,
+    path: str | None = None,
+    account: str | None = None,
+    chunkify: bool = False,
 ) -> None:
     if verify:
-        title = f"VERIFY {coin} MESSAGE"
+        address_title = "VERIFY ADDRESS"
         br_type = "verify_message"
     else:
-        title = f"SIGN {coin} MESSAGE"
+        address_title = "SIGNING ADDRESS"
         br_type = "sign_message"
 
-    await confirm_blob(
-        br_type,
-        title,
-        address,
-        "Confirm address:",
-        br_code=BR_TYPE_OTHER,
+    address_layout = RustLayout(
+        trezorui2.confirm_address(
+            title=address_title,
+            data=address,
+            description="",
+            verb="CONTINUE",
+            extra=None,
+            chunkify=chunkify,
+        )
     )
 
-    await confirm_blob(
-        br_type,
-        title,
-        message,
-        "Confirm message:",
-        br_code=BR_TYPE_OTHER,
+    items: list[tuple[str, str]] = []
+    if account is not None:
+        items.append(("Account:", account))
+    if path is not None:
+        items.append(("Derivation path:", path))
+    items.append(("Message size:", f"{len(message)} Bytes"))
+
+    info_layout = RustLayout(
+        trezorui2.show_info_with_cancel(
+            title="INFORMATION",
+            items=items,
+            horizontal=True,
+        )
     )
+
+    message_layout = RustLayout(
+        trezorui2.confirm_blob(
+            title="CONFIRM MESSAGE",
+            description=None,
+            data=message,
+            extra=None,
+            hold=not verify,
+            verb="CONFIRM" if verify else None,
+        )
+    )
+
+    while True:
+        result = await with_info(
+            address_layout, info_layout, br_type, br_code=BR_TYPE_OTHER
+        )
+        if result is not CONFIRMED:
+            result = await ctx_wait(
+                RustLayout(trezorui2.show_mismatch(title="Address mismatch?"))
+            )
+            assert result in (CONFIRMED, CANCELLED)
+            # Right button aborts action, left goes back to showing address.
+            if result is CONFIRMED:
+                raise ActionCancelled
+            else:
+                address_layout.request_complete_repaint()
+                continue
+
+        message_layout.request_complete_repaint()
+        result = await interact(message_layout, br_type, BR_TYPE_OTHER)
+        if result is CONFIRMED:
+            break
+
+        address_layout.request_complete_repaint()
 
 
 async def show_error_popup(
@@ -1316,5 +1371,19 @@ async def confirm_set_new_pin(
             ),
             br_type,
             br_code,
+        )
+    )
+
+
+async def confirm_firmware_update(description: str, fingerprint: str) -> None:
+    await raise_if_not_confirmed(
+        interact(
+            RustLayout(
+                trezorui2.confirm_firmware_update(
+                    description=description, fingerprint=fingerprint
+                )
+            ),
+            "firmware_update",
+            BR_TYPE_OTHER,
         )
     )

@@ -194,8 +194,6 @@ class RustLayout(ui.Layout):
             return self.handle_timers(), self.handle_input_and_rendering()
 
     def _first_paint(self) -> None:
-        # Clear the screen of any leftovers.
-        ui.display.clear()
         self._paint()
 
         if __debug__ and self.should_notify_layout_change:
@@ -253,7 +251,6 @@ def draw_simple(layout: Any) -> None:
         raise RuntimeError
 
     layout.attach_timer_fn(dummy_set_timer)
-    ui.display.clear()
     layout.paint()
     ui.refresh()
 
@@ -775,6 +772,7 @@ async def confirm_blob(
     hold: bool = False,
     br_code: ButtonRequestType = BR_TYPE_OTHER,
     ask_pagination: bool = False,
+    chunkify: bool = False,
 ) -> None:
     title = title.upper()
     description = description or ""
@@ -787,6 +785,7 @@ async def confirm_blob(
             verb=verb,
             verb_cancel=verb_cancel,
             hold=hold,
+            chunkify=chunkify,
         )
     )
 
@@ -1004,6 +1003,7 @@ async def confirm_ethereum_tx(
     items: Iterable[tuple[str, str]],
     br_type: str = "confirm_ethereum_tx",
     br_code: ButtonRequestType = ButtonRequestType.SignTx,
+    chunkify: bool = False,
 ) -> None:
     await raise_if_not_confirmed(
         interact(
@@ -1013,6 +1013,7 @@ async def confirm_ethereum_tx(
                     total_amount=total_amount,
                     maximum_fee=maximum_fee,
                     items=items,
+                    chunkify=chunkify,
                 )
             ),
             br_type,
@@ -1143,7 +1144,12 @@ async def confirm_sign_identity(
 
 
 async def confirm_signverify(
-    coin: str, message: str, address: str, verify: bool
+    message: str,
+    address: str,
+    verify: bool,
+    path: str | None = None,
+    account: str | None = None,
+    chunkify: bool = False,
 ) -> None:
     br_type = "verify_message" if verify else "sign_message"
 
@@ -1347,4 +1353,18 @@ async def confirm_set_new_pin(
         next_info,
         "CONTINUE",
         br_code,
+    )
+
+
+async def confirm_firmware_update(description: str, fingerprint: str) -> None:
+    await raise_if_not_confirmed(
+        interact(
+            RustLayout(
+                trezorui2.confirm_firmware_update(
+                    description=description, fingerprint=fingerprint
+                )
+            ),
+            "firmware_update",
+            BR_TYPE_OTHER,
+        )
     )

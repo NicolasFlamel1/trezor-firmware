@@ -5,13 +5,15 @@ use crate::ui::{
     display::{Color, Icon},
     geometry::{Alignment2D, Insets, Offset, Point, Rect},
     model_tt::{
-        bootloader::theme::{
-            button_bld_menu, BUTTON_AREA_START, BUTTON_HEIGHT, CONTENT_PADDING, CORNER_BUTTON_AREA,
-            CORNER_BUTTON_TOUCH_EXPANSION, INFO32, TEXT_FINGERPRINT, TEXT_TITLE, TITLE_AREA, X32,
-        },
-        component::{Button, ButtonMsg::Clicked},
+        component::{Button, ButtonMsg::Clicked, ButtonStyleSheet},
         constant::WIDTH,
-        theme::WHITE,
+        theme::{
+            bootloader::{
+                text_fingerprint, text_title, BUTTON_AREA_START, BUTTON_HEIGHT, CONTENT_PADDING,
+                CORNER_BUTTON_AREA, CORNER_BUTTON_TOUCH_EXPANSION, INFO32, TITLE_AREA, X32,
+            },
+            WHITE,
+        },
     },
 };
 
@@ -29,40 +31,41 @@ pub enum ConfirmMsg {
     Confirm = 2,
 }
 
-pub enum ConfirmTitle<'a> {
-    Text(Label<&'a str>),
+pub enum ConfirmTitle<T> {
+    Text(Label<T>),
     Icon(Icon),
 }
 
-pub struct ConfirmInfo<'a> {
-    pub title: Child<Label<&'a str>>,
-    pub text: Child<Label<&'a str>>,
+pub struct ConfirmInfo<T> {
+    pub title: Child<Label<T>>,
+    pub text: Child<Label<T>>,
     pub info_button: Child<Button<&'static str>>,
     pub close_button: Child<Button<&'static str>>,
 }
 
-pub struct Confirm<'a> {
+pub struct Confirm<T> {
     bg: Pad,
     content_pad: Pad,
     bg_color: Color,
-    title: ConfirmTitle<'a>,
-    message: Child<Label<&'a str>>,
-    alert: Option<Child<Label<&'a str>>>,
+    title: ConfirmTitle<T>,
+    message: Child<Label<T>>,
+    alert: Option<Child<Label<T>>>,
     left_button: Child<Button<&'static str>>,
     right_button: Child<Button<&'static str>>,
-    info: Option<ConfirmInfo<'a>>,
+    info: Option<ConfirmInfo<T>>,
     show_info: bool,
 }
 
-impl<'a> Confirm<'a> {
+impl<T> Confirm<T>
+where
+    T: AsRef<str>,
+{
     pub fn new(
         bg_color: Color,
         left_button: Button<&'static str>,
         right_button: Button<&'static str>,
-        title: ConfirmTitle<'a>,
-        message: Label<&'a str>,
-        alert: Option<Label<&'a str>>,
-        info: Option<(&'a str, &'a str)>,
+        title: ConfirmTitle<T>,
+        message: Label<T>,
     ) -> Self {
         Self {
             bg: Pad::with_background(bg_color).with_clear(),
@@ -70,29 +73,46 @@ impl<'a> Confirm<'a> {
             bg_color,
             title,
             message: Child::new(message.vertically_centered()),
-            alert: alert.map(|alert| Child::new(alert.vertically_centered())),
             left_button: Child::new(left_button),
             right_button: Child::new(right_button),
-            info: info.map(|(title, text)| ConfirmInfo {
-                title: Child::new(Label::left_aligned(title, TEXT_TITLE).vertically_centered()),
-                text: Child::new(Label::left_aligned(text, TEXT_FINGERPRINT).vertically_centered()),
-                info_button: Child::new(
-                    Button::with_icon(Icon::new(INFO32))
-                        .styled(button_bld_menu())
-                        .with_expanded_touch_area(Insets::uniform(CORNER_BUTTON_TOUCH_EXPANSION)),
-                ),
-                close_button: Child::new(
-                    Button::with_icon(Icon::new(X32))
-                        .styled(button_bld_menu())
-                        .with_expanded_touch_area(Insets::uniform(CORNER_BUTTON_TOUCH_EXPANSION)),
-                ),
-            }),
+            alert: None,
+            info: None,
             show_info: false,
         }
     }
+
+    pub fn with_alert(mut self, alert: Label<T>) -> Self {
+        self.alert = Some(Child::new(alert.vertically_centered()));
+        self
+    }
+
+    pub fn with_info(mut self, title: T, text: T, menu_button: ButtonStyleSheet) -> Self {
+        self.info = Some(ConfirmInfo {
+            title: Child::new(
+                Label::left_aligned(title, text_title(self.bg_color)).vertically_centered(),
+            ),
+            text: Child::new(
+                Label::left_aligned(text, text_fingerprint(self.bg_color)).vertically_centered(),
+            ),
+            info_button: Child::new(
+                Button::with_icon(Icon::new(INFO32))
+                    .styled(menu_button)
+                    .with_expanded_touch_area(Insets::uniform(CORNER_BUTTON_TOUCH_EXPANSION)),
+            ),
+            close_button: Child::new(
+                Button::with_icon(Icon::new(X32))
+                    .styled(menu_button)
+                    .with_expanded_touch_area(Insets::uniform(CORNER_BUTTON_TOUCH_EXPANSION)),
+            ),
+        });
+        self
+    }
 }
 
-impl<'a> Component for Confirm<'a> {
+impl<T> Component for Confirm<T>
+where
+    T: AsRef<str>,
+{
     type Msg = ConfirmMsg;
 
     fn place(&mut self, bounds: Rect) -> Rect {
@@ -218,5 +238,15 @@ impl<'a> Component for Confirm<'a> {
     fn bounds(&self, sink: &mut dyn FnMut(Rect)) {
         self.left_button.bounds(sink);
         self.right_button.bounds(sink);
+    }
+}
+
+#[cfg(feature = "ui_debug")]
+impl<T> crate::trace::Trace for Confirm<T>
+where
+    T: AsRef<str>,
+{
+    fn trace(&self, t: &mut dyn crate::trace::Tracer) {
+        t.component("BlConfirm");
     }
 }

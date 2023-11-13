@@ -244,7 +244,7 @@ async def confirm_sending_token(policy_id: bytes, token: messages.CardanoToken) 
                     asset_name_bytes=token.asset_name_bytes,
                 ),
             ),
-            ("Amount sent:", format_amount(token.amount, 0)),
+            ("Amount sent (decimals unknown):", format_amount(token.amount, 0)),
         ),
         br_code=BRT_Other,
     )
@@ -707,12 +707,19 @@ async def confirm_withdrawal(
 def _format_stake_credential(
     path: list[int], script_hash: bytes | None, key_hash: bytes | None
 ) -> tuple[str, str]:
-    from .helpers.utils import to_account_path
+    from .helpers.paths import ADDRESS_INDEX_PATH_INDEX, RECOMMENDED_ADDRESS_INDEX
 
     if path:
+        account_number = format_account_number(path)
+        address_index = path[ADDRESS_INDEX_PATH_INDEX]
+        if address_index == RECOMMENDED_ADDRESS_INDEX:
+            return (
+                f"for account {account_number}:",
+                address_n_to_str(path),
+            )
         return (
-            f"for account {format_account_number(path)}:",
-            address_n_to_str(to_account_path(path)),
+            f"for account {account_number} and index {address_index}:",
+            address_n_to_str(path),
         )
     elif key_hash:
         return ("for key hash:", bech32.encode(bech32.HRP_STAKE_KEY_HASH, key_hash))
@@ -817,7 +824,9 @@ async def confirm_token_minting(policy_id: bytes, token: messages.CardanoToken) 
                 ),
             ),
             (
-                "Amount minted:" if token.mint_amount >= 0 else "Amount burned:",
+                "Amount minted (decimals unknown):"
+                if token.mint_amount >= 0
+                else "Amount burned (decimals unknown):",
                 format_amount(token.mint_amount, 0),
             ),
         ),

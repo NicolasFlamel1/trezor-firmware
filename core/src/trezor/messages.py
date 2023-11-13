@@ -21,6 +21,7 @@ if TYPE_CHECKING:
     from trezor.enums import BinanceOrderSide  # noqa: F401
     from trezor.enums import BinanceOrderType  # noqa: F401
     from trezor.enums import BinanceTimeInForce  # noqa: F401
+    from trezor.enums import BootCommand  # noqa: F401
     from trezor.enums import ButtonRequestType  # noqa: F401
     from trezor.enums import Capability  # noqa: F401
     from trezor.enums import CardanoAddressType  # noqa: F401
@@ -547,6 +548,7 @@ if TYPE_CHECKING:
         coin_name: "str"
         script_type: "InputScriptType"
         no_script_type: "bool | None"
+        chunkify: "bool | None"
 
         def __init__(
             self,
@@ -556,6 +558,7 @@ if TYPE_CHECKING:
             coin_name: "str | None" = None,
             script_type: "InputScriptType | None" = None,
             no_script_type: "bool | None" = None,
+            chunkify: "bool | None" = None,
         ) -> None:
             pass
 
@@ -584,6 +587,7 @@ if TYPE_CHECKING:
         signature: "bytes"
         message: "bytes"
         coin_name: "str"
+        chunkify: "bool | None"
 
         def __init__(
             self,
@@ -592,6 +596,7 @@ if TYPE_CHECKING:
             signature: "bytes",
             message: "bytes",
             coin_name: "str | None" = None,
+            chunkify: "bool | None" = None,
         ) -> None:
             pass
 
@@ -2618,6 +2623,16 @@ if TYPE_CHECKING:
             return isinstance(msg, cls)
 
     class RebootToBootloader(protobuf.MessageType):
+        boot_command: "BootCommand"
+        firmware_header: "bytes | None"
+
+        def __init__(
+            self,
+            *,
+            boot_command: "BootCommand | None" = None,
+            firmware_header: "bytes | None" = None,
+        ) -> None:
+            pass
 
         @classmethod
         def is_type_of(cls, msg: Any) -> TypeGuard["RebootToBootloader"]:
@@ -3809,6 +3824,7 @@ if TYPE_CHECKING:
         address_n: "list[int]"
         message: "bytes"
         encoded_network: "bytes | None"
+        chunkify: "bool | None"
 
         def __init__(
             self,
@@ -3816,6 +3832,7 @@ if TYPE_CHECKING:
             message: "bytes",
             address_n: "list[int] | None" = None,
             encoded_network: "bytes | None" = None,
+            chunkify: "bool | None" = None,
         ) -> None:
             pass
 
@@ -3843,6 +3860,7 @@ if TYPE_CHECKING:
         signature: "bytes"
         message: "bytes"
         address: "str"
+        chunkify: "bool | None"
 
         def __init__(
             self,
@@ -3850,6 +3868,7 @@ if TYPE_CHECKING:
             signature: "bytes",
             message: "bytes",
             address: "str",
+            chunkify: "bool | None" = None,
         ) -> None:
             pass
 

@@ -37,6 +37,7 @@ static void _librust_qstrs(void) {
   MP_QSTR_cancel_arrow;
   MP_QSTR_case_sensitive;
   MP_QSTR_chunkify;
+  MP_QSTR_coinjoin_authorized;
   MP_QSTR_confirm_action;
   MP_QSTR_confirm_address;
   MP_QSTR_confirm_backup;
@@ -45,6 +46,7 @@ static void _librust_qstrs(void) {
   MP_QSTR_confirm_emphasized;
   MP_QSTR_confirm_ethereum_tx;
   MP_QSTR_confirm_fido;
+  MP_QSTR_confirm_firmware_update;
   MP_QSTR_confirm_homescreen;
   MP_QSTR_confirm_joint_total;
   MP_QSTR_confirm_modify_fee;
@@ -72,8 +74,10 @@ static void _librust_qstrs(void) {
   MP_QSTR_fee_amount;
   MP_QSTR_fee_label;
   MP_QSTR_fee_rate_amount;
+  MP_QSTR_fingerprint;
   MP_QSTR_hold;
   MP_QSTR_hold_danger;
+  MP_QSTR_horizontal;
   MP_QSTR_icon_name;
   MP_QSTR_image;
   MP_QSTR_indeterminate;
