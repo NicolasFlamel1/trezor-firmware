@@ -8631,6 +8631,534 @@ impl ::protobuf::reflect::ProtobufValue for MimbleWimbleCoinMqsChallengeSignatur
     type RuntimeType = ::protobuf::reflect::rt::RuntimeTypeMessage<Self>;
 }
 
+#[derive(PartialEq,Clone,Default,Debug)]
+// @@protoc_insertion_point(message:hw.trezor.messages.mimblewimble_coin.MimbleWimbleCoinGetLoginChallengeSignature)
+pub struct MimbleWimbleCoinGetLoginChallengeSignature {
+    // message fields
+    // @@protoc_insertion_point(field:hw.trezor.messages.mimblewimble_coin.MimbleWimbleCoinGetLoginChallengeSignature.coin_type)
+    pub coin_type: ::std::option::Option<::protobuf::EnumOrUnknown<MimbleWimbleCoinCoinType>>,
+    // @@protoc_insertion_point(field:hw.trezor.messages.mimblewimble_coin.MimbleWimbleCoinGetLoginChallengeSignature.network_type)
+    pub network_type: ::std::option::Option<::protobuf::EnumOrUnknown<MimbleWimbleCoinNetworkType>>,
+    // @@protoc_insertion_point(field:hw.trezor.messages.mimblewimble_coin.MimbleWimbleCoinGetLoginChallengeSignature.account)
+    pub account: ::std::option::Option<u32>,
+    // @@protoc_insertion_point(field:hw.trezor.messages.mimblewimble_coin.MimbleWimbleCoinGetLoginChallengeSignature.timestamp)
+    pub timestamp: ::std::option::Option<u64>,
+    // @@protoc_insertion_point(field:hw.trezor.messages.mimblewimble_coin.MimbleWimbleCoinGetLoginChallengeSignature.time_zone_offset)
+    pub time_zone_offset: ::std::option::Option<i32>,
+    // special fields
+    // @@protoc_insertion_point(special_field:hw.trezor.messages.mimblewimble_coin.MimbleWimbleCoinGetLoginChallengeSignature.special_fields)
+    pub special_fields: ::protobuf::SpecialFields,
+}
+
+impl<'a> ::std::default::Default for &'a MimbleWimbleCoinGetLoginChallengeSignature {
+    fn default() -> &'a MimbleWimbleCoinGetLoginChallengeSignature {
+        <MimbleWimbleCoinGetLoginChallengeSignature as ::protobuf::Message>::default_instance()
+    }
+}
+
+impl MimbleWimbleCoinGetLoginChallengeSignature {
+    pub fn new() -> MimbleWimbleCoinGetLoginChallengeSignature {
+        ::std::default::Default::default()
+    }
+
+    // required .hw.trezor.messages.mimblewimble_coin.MimbleWimbleCoinCoinType coin_type = 1;
+
+    pub fn coin_type(&self) -> MimbleWimbleCoinCoinType {
+        match self.coin_type {
+            Some(e) => e.enum_value_or(MimbleWimbleCoinCoinType::MIMBLEWIMBLE_COIN),
+            None => MimbleWimbleCoinCoinType::MIMBLEWIMBLE_COIN,
+        }
+    }
+
+    pub fn clear_coin_type(&mut self) {
+        self.coin_type = ::std::option::Option::None;
+    }
+
+    pub fn has_coin_type(&self) -> bool {
+        self.coin_type.is_some()
+    }
+
+    // Param is passed by value, moved
+    pub fn set_coin_type(&mut self, v: MimbleWimbleCoinCoinType) {
+        self.coin_type = ::std::option::Option::Some(::protobuf::EnumOrUnknown::new(v));
+    }
+
+    // required .hw.trezor.messages.mimblewimble_coin.MimbleWimbleCoinNetworkType network_type = 2;
+
+    pub fn network_type(&self) -> MimbleWimbleCoinNetworkType {
+        match self.network_type {
+            Some(e) => e.enum_value_or(MimbleWimbleCoinNetworkType::MAINNET),
+            None => MimbleWimbleCoinNetworkType::MAINNET,
+        }
+    }
+
+    pub fn clear_network_type(&mut self) {
+        self.network_type = ::std::option::Option::None;
+    }
+
+    pub fn has_network_type(&self) -> bool {
+        self.network_type.is_some()
+    }
+
+    // Param is passed by value, moved
+    pub fn set_network_type(&mut self, v: MimbleWimbleCoinNetworkType) {
+        self.network_type = ::std::option::Option::Some(::protobuf::EnumOrUnknown::new(v));
+    }
+
+    // required uint32 account = 3;
+
+    pub fn account(&self) -> u32 {
+        self.account.unwrap_or(0)
+    }
+
+    pub fn clear_account(&mut self) {
+        self.account = ::std::option::Option::None;
+    }
+
+    pub fn has_account(&self) -> bool {
+        self.account.is_some()
+    }
+
+    // Param is passed by value, moved
+    pub fn set_account(&mut self, v: u32) {
+        self.account = ::std::option::Option::Some(v);
+    }
+
+    // required uint64 timestamp = 4;
+
+    pub fn timestamp(&self) -> u64 {
+        self.timestamp.unwrap_or(0)
+    }
+
+    pub fn clear_timestamp(&mut self) {
+        self.timestamp = ::std::option::Option::None;
+    }
+
+    pub fn has_timestamp(&self) -> bool {
+        self.timestamp.is_some()
+    }
+
+    // Param is passed by value, moved
+    pub fn set_timestamp(&mut self, v: u64) {
+        self.timestamp = ::std::option::Option::Some(v);
+    }
+
+    // required sint32 time_zone_offset = 5;
+
+    pub fn time_zone_offset(&self) -> i32 {
+        self.time_zone_offset.unwrap_or(0)
+    }
+
+    pub fn clear_time_zone_offset(&mut self) {
+        self.time_zone_offset = ::std::option::Option::None;
+    }
+
+    pub fn has_time_zone_offset(&self) -> bool {
+        self.time_zone_offset.is_some()
+    }
+
+    // Param is passed by value, moved
+    pub fn set_time_zone_offset(&mut self, v: i32) {
+        self.time_zone_offset = ::std::option::Option::Some(v);
+    }
+
+    fn generated_message_descriptor_data() -> ::protobuf::reflect::GeneratedMessageDescriptorData {
+        let mut fields = ::std::vec::Vec::with_capacity(5);
+        let mut oneofs = ::std::vec::Vec::with_capacity(0);
+        fields.push(::protobuf::reflect::rt::v2::make_option_accessor::<_, _>(
+            "coin_type",
+            |m: &MimbleWimbleCoinGetLoginChallengeSignature| { &m.coin_type },
+            |m: &mut MimbleWimbleCoinGetLoginChallengeSignature| { &mut m.coin_type },
+        ));
+        fields.push(::protobuf::reflect::rt::v2::make_option_accessor::<_, _>(
+            "network_type",
+            |m: &MimbleWimbleCoinGetLoginChallengeSignature| { &m.network_type },
+            |m: &mut MimbleWimbleCoinGetLoginChallengeSignature| { &mut m.network_type },
+        ));
+        fields.push(::protobuf::reflect::rt::v2::make_option_accessor::<_, _>(
+            "account",
+            |m: &MimbleWimbleCoinGetLoginChallengeSignature| { &m.account },
+            |m: &mut MimbleWimbleCoinGetLoginChallengeSignature| { &mut m.account },
+        ));
+        fields.push(::protobuf::reflect::rt::v2::make_option_accessor::<_, _>(
+            "timestamp",
+            |m: &MimbleWimbleCoinGetLoginChallengeSignature| { &m.timestamp },
+            |m: &mut MimbleWimbleCoinGetLoginChallengeSignature| { &mut m.timestamp },
+        ));
+        fields.push(::protobuf::reflect::rt::v2::make_option_accessor::<_, _>(
+            "time_zone_offset",
+            |m: &MimbleWimbleCoinGetLoginChallengeSignature| { &m.time_zone_offset },
+            |m: &mut MimbleWimbleCoinGetLoginChallengeSignature| { &mut m.time_zone_offset },
+        ));
+        ::protobuf::reflect::GeneratedMessageDescriptorData::new_2::<MimbleWimbleCoinGetLoginChallengeSignature>(
+            "MimbleWimbleCoinGetLoginChallengeSignature",
+            fields,
+            oneofs,
+        )
+    }
+}
+
+impl ::protobuf::Message for MimbleWimbleCoinGetLoginChallengeSignature {
+    const NAME: &'static str = "MimbleWimbleCoinGetLoginChallengeSignature";
+
+    fn is_initialized(&self) -> bool {
+        if self.coin_type.is_none() {
+            return false;
+        }
+        if self.network_type.is_none() {
+            return false;
+        }
+        if self.account.is_none() {
+            return false;
+        }
+        if self.timestamp.is_none() {
+            return false;
+        }
+        if self.time_zone_offset.is_none() {
+            return false;
+        }
+        true
+    }
+
+    fn merge_from(&mut self, is: &mut ::protobuf::CodedInputStream<'_>) -> ::protobuf::Result<()> {
+        while let Some(tag) = is.read_raw_tag_or_eof()? {
+            match tag {
+                8 => {
+                    self.coin_type = ::std::option::Option::Some(is.read_enum_or_unknown()?);
+                },
+                16 => {
+                    self.network_type = ::std::option::Option::Some(is.read_enum_or_unknown()?);
+                },
+                24 => {
+                    self.account = ::std::option::Option::Some(is.read_uint32()?);
+                },
+                32 => {
+                    self.timestamp = ::std::option::Option::Some(is.read_uint64()?);
+                },
+                40 => {
+                    self.time_zone_offset = ::std::option::Option::Some(is.read_sint32()?);
+                },
+                tag => {
+                    ::protobuf::rt::read_unknown_or_skip_group(tag, is, self.special_fields.mut_unknown_fields())?;
+                },
+            };
+        }
+        ::std::result::Result::Ok(())
+    }
+
+    // Compute sizes of nested messages
+    #[allow(unused_variables)]
+    fn compute_size(&self) -> u64 {
+        let mut my_size = 0;
+        if let Some(v) = self.coin_type {
+            my_size += ::protobuf::rt::int32_size(1, v.value());
+        }
+        if let Some(v) = self.network_type {
+            my_size += ::protobuf::rt::int32_size(2, v.value());
+        }
+        if let Some(v) = self.account {
+            my_size += ::protobuf::rt::uint32_size(3, v);
+        }
+        if let Some(v) = self.timestamp {
+            my_size += ::protobuf::rt::uint64_size(4, v);
+        }
+        if let Some(v) = self.time_zone_offset {
+            my_size += ::protobuf::rt::sint32_size(5, v);
+        }
+        my_size += ::protobuf::rt::unknown_fields_size(self.special_fields.unknown_fields());
+        self.special_fields.cached_size().set(my_size as u32);
+        my_size
+    }
+
+    fn write_to_with_cached_sizes(&self, os: &mut ::protobuf::CodedOutputStream<'_>) -> ::protobuf::Result<()> {
+        if let Some(v) = self.coin_type {
+            os.write_enum(1, ::protobuf::EnumOrUnknown::value(&v))?;
+        }
+        if let Some(v) = self.network_type {
+            os.write_enum(2, ::protobuf::EnumOrUnknown::value(&v))?;
+        }
+        if let Some(v) = self.account {
+            os.write_uint32(3, v)?;
+        }
+        if let Some(v) = self.timestamp {
+            os.write_uint64(4, v)?;
+        }
+        if let Some(v) = self.time_zone_offset {
+            os.write_sint32(5, v)?;
+        }
+        os.write_unknown_fields(self.special_fields.unknown_fields())?;
+        ::std::result::Result::Ok(())
+    }
+
+    fn special_fields(&self) -> &::protobuf::SpecialFields {
+        &self.special_fields
+    }
+
+    fn mut_special_fields(&mut self) -> &mut ::protobuf::SpecialFields {
+        &mut self.special_fields
+    }
+
+    fn new() -> MimbleWimbleCoinGetLoginChallengeSignature {
+        MimbleWimbleCoinGetLoginChallengeSignature::new()
+    }
+
+    fn clear(&mut self) {
+        self.coin_type = ::std::option::Option::None;
+        self.network_type = ::std::option::Option::None;
+        self.account = ::std::option::Option::None;
+        self.timestamp = ::std::option::Option::None;
+        self.time_zone_offset = ::std::option::Option::None;
+        self.special_fields.clear();
+    }
+
+    fn default_instance() -> &'static MimbleWimbleCoinGetLoginChallengeSignature {
+        static instance: MimbleWimbleCoinGetLoginChallengeSignature = MimbleWimbleCoinGetLoginChallengeSignature {
+            coin_type: ::std::option::Option::None,
+            network_type: ::std::option::Option::None,
+            account: ::std::option::Option::None,
+            timestamp: ::std::option::Option::None,
+            time_zone_offset: ::std::option::Option::None,
+            special_fields: ::protobuf::SpecialFields::new(),
+        };
+        &instance
+    }
+}
+
+impl ::protobuf::MessageFull for MimbleWimbleCoinGetLoginChallengeSignature {
+    fn descriptor() -> ::protobuf::reflect::MessageDescriptor {
+        static descriptor: ::protobuf::rt::Lazy<::protobuf::reflect::MessageDescriptor> = ::protobuf::rt::Lazy::new();
+        descriptor.get(|| file_descriptor().message_by_package_relative_name("MimbleWimbleCoinGetLoginChallengeSignature").unwrap()).clone()
+    }
+}
+
+impl ::std::fmt::Display for MimbleWimbleCoinGetLoginChallengeSignature {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        ::protobuf::text_format::fmt(self, f)
+    }
+}
+
+impl ::protobuf::reflect::ProtobufValue for MimbleWimbleCoinGetLoginChallengeSignature {
+    type RuntimeType = ::protobuf::reflect::rt::RuntimeTypeMessage<Self>;
+}
+
+#[derive(PartialEq,Clone,Default,Debug)]
+// @@protoc_insertion_point(message:hw.trezor.messages.mimblewimble_coin.MimbleWimbleCoinLoginChallengeSignature)
+pub struct MimbleWimbleCoinLoginChallengeSignature {
+    // message fields
+    // @@protoc_insertion_point(field:hw.trezor.messages.mimblewimble_coin.MimbleWimbleCoinLoginChallengeSignature.login_public_key)
+    pub login_public_key: ::std::option::Option<::std::vec::Vec<u8>>,
+    // @@protoc_insertion_point(field:hw.trezor.messages.mimblewimble_coin.MimbleWimbleCoinLoginChallengeSignature.login_challenge_signature)
+    pub login_challenge_signature: ::std::option::Option<::std::vec::Vec<u8>>,
+    // special fields
+    // @@protoc_insertion_point(special_field:hw.trezor.messages.mimblewimble_coin.MimbleWimbleCoinLoginChallengeSignature.special_fields)
+    pub special_fields: ::protobuf::SpecialFields,
+}
+
+impl<'a> ::std::default::Default for &'a MimbleWimbleCoinLoginChallengeSignature {
+    fn default() -> &'a MimbleWimbleCoinLoginChallengeSignature {
+        <MimbleWimbleCoinLoginChallengeSignature as ::protobuf::Message>::default_instance()
+    }
+}
+
+impl MimbleWimbleCoinLoginChallengeSignature {
+    pub fn new() -> MimbleWimbleCoinLoginChallengeSignature {
+        ::std::default::Default::default()
+    }
+
+    // required bytes login_public_key = 1;
+
+    pub fn login_public_key(&self) -> &[u8] {
+        match self.login_public_key.as_ref() {
+            Some(v) => v,
+            None => &[],
+        }
+    }
+
+    pub fn clear_login_public_key(&mut self) {
+        self.login_public_key = ::std::option::Option::None;
+    }
+
+    pub fn has_login_public_key(&self) -> bool {
+        self.login_public_key.is_some()
+    }
+
+    // Param is passed by value, moved
+    pub fn set_login_public_key(&mut self, v: ::std::vec::Vec<u8>) {
+        self.login_public_key = ::std::option::Option::Some(v);
+    }
+
+    // Mutable pointer to the field.
+    // If field is not initialized, it is initialized with default value first.
+    pub fn mut_login_public_key(&mut self) -> &mut ::std::vec::Vec<u8> {
+        if self.login_public_key.is_none() {
+            self.login_public_key = ::std::option::Option::Some(::std::vec::Vec::new());
+        }
+        self.login_public_key.as_mut().unwrap()
+    }
+
+    // Take field
+    pub fn take_login_public_key(&mut self) -> ::std::vec::Vec<u8> {
+        self.login_public_key.take().unwrap_or_else(|| ::std::vec::Vec::new())
+    }
+
+    // required bytes login_challenge_signature = 2;
+
+    pub fn login_challenge_signature(&self) -> &[u8] {
+        match self.login_challenge_signature.as_ref() {
+            Some(v) => v,
+            None => &[],
+        }
+    }
+
+    pub fn clear_login_challenge_signature(&mut self) {
+        self.login_challenge_signature = ::std::option::Option::None;
+    }
+
+    pub fn has_login_challenge_signature(&self) -> bool {
+        self.login_challenge_signature.is_some()
+    }
+
+    // Param is passed by value, moved
+    pub fn set_login_challenge_signature(&mut self, v: ::std::vec::Vec<u8>) {
+        self.login_challenge_signature = ::std::option::Option::Some(v);
+    }
+
+    // Mutable pointer to the field.
+    // If field is not initialized, it is initialized with default value first.
+    pub fn mut_login_challenge_signature(&mut self) -> &mut ::std::vec::Vec<u8> {
+        if self.login_challenge_signature.is_none() {
+            self.login_challenge_signature = ::std::option::Option::Some(::std::vec::Vec::new());
+        }
+        self.login_challenge_signature.as_mut().unwrap()
+    }
+
+    // Take field
+    pub fn take_login_challenge_signature(&mut self) -> ::std::vec::Vec<u8> {
+        self.login_challenge_signature.take().unwrap_or_else(|| ::std::vec::Vec::new())
+    }
+
+    fn generated_message_descriptor_data() -> ::protobuf::reflect::GeneratedMessageDescriptorData {
+        let mut fields = ::std::vec::Vec::with_capacity(2);
+        let mut oneofs = ::std::vec::Vec::with_capacity(0);
+        fields.push(::protobuf::reflect::rt::v2::make_option_accessor::<_, _>(
+            "login_public_key",
+            |m: &MimbleWimbleCoinLoginChallengeSignature| { &m.login_public_key },
+            |m: &mut MimbleWimbleCoinLoginChallengeSignature| { &mut m.login_public_key },
+        ));
+        fields.push(::protobuf::reflect::rt::v2::make_option_accessor::<_, _>(
+            "login_challenge_signature",
+            |m: &MimbleWimbleCoinLoginChallengeSignature| { &m.login_challenge_signature },
+            |m: &mut MimbleWimbleCoinLoginChallengeSignature| { &mut m.login_challenge_signature },
+        ));
+        ::protobuf::reflect::GeneratedMessageDescriptorData::new_2::<MimbleWimbleCoinLoginChallengeSignature>(
+            "MimbleWimbleCoinLoginChallengeSignature",
+            fields,
+            oneofs,
+        )
+    }
+}
+
+impl ::protobuf::Message for MimbleWimbleCoinLoginChallengeSignature {
+    const NAME: &'static str = "MimbleWimbleCoinLoginChallengeSignature";
+
+    fn is_initialized(&self) -> bool {
+        if self.login_public_key.is_none() {
+            return false;
+        }
+        if self.login_challenge_signature.is_none() {
+            return false;
+        }
+        true
+    }
+
+    fn merge_from(&mut self, is: &mut ::protobuf::CodedInputStream<'_>) -> ::protobuf::Result<()> {
+        while let Some(tag) = is.read_raw_tag_or_eof()? {
+            match tag {
+                10 => {
+                    self.login_public_key = ::std::option::Option::Some(is.read_bytes()?);
+                },
+                18 => {
+                    self.login_challenge_signature = ::std::option::Option::Some(is.read_bytes()?);
+                },
+                tag => {
+                    ::protobuf::rt::read_unknown_or_skip_group(tag, is, self.special_fields.mut_unknown_fields())?;
+                },
+            };
+        }
+        ::std::result::Result::Ok(())
+    }
+
+    // Compute sizes of nested messages
+    #[allow(unused_variables)]
+    fn compute_size(&self) -> u64 {
+        let mut my_size = 0;
+        if let Some(v) = self.login_public_key.as_ref() {
+            my_size += ::protobuf::rt::bytes_size(1, &v);
+        }
+        if let Some(v) = self.login_challenge_signature.as_ref() {
+            my_size += ::protobuf::rt::bytes_size(2, &v);
+        }
+        my_size += ::protobuf::rt::unknown_fields_size(self.special_fields.unknown_fields());
+        self.special_fields.cached_size().set(my_size as u32);
+        my_size
+    }
+
+    fn write_to_with_cached_sizes(&self, os: &mut ::protobuf::CodedOutputStream<'_>) -> ::protobuf::Result<()> {
+        if let Some(v) = self.login_public_key.as_ref() {
+            os.write_bytes(1, v)?;
+        }
+        if let Some(v) = self.login_challenge_signature.as_ref() {
+            os.write_bytes(2, v)?;
+        }
+        os.write_unknown_fields(self.special_fields.unknown_fields())?;
+        ::std::result::Result::Ok(())
+    }
+
+    fn special_fields(&self) -> &::protobuf::SpecialFields {
+        &self.special_fields
+    }
+
+    fn mut_special_fields(&mut self) -> &mut ::protobuf::SpecialFields {
+        &mut self.special_fields
+    }
+
+    fn new() -> MimbleWimbleCoinLoginChallengeSignature {
+        MimbleWimbleCoinLoginChallengeSignature::new()
+    }
+
+    fn clear(&mut self) {
+        self.login_public_key = ::std::option::Option::None;
+        self.login_challenge_signature = ::std::option::Option::None;
+        self.special_fields.clear();
+    }
+
+    fn default_instance() -> &'static MimbleWimbleCoinLoginChallengeSignature {
+        static instance: MimbleWimbleCoinLoginChallengeSignature = MimbleWimbleCoinLoginChallengeSignature {
+            login_public_key: ::std::option::Option::None,
+            login_challenge_signature: ::std::option::Option::None,
+            special_fields: ::protobuf::SpecialFields::new(),
+        };
+        &instance
+    }
+}
+
+impl ::protobuf::MessageFull for MimbleWimbleCoinLoginChallengeSignature {
+    fn descriptor() -> ::protobuf::reflect::MessageDescriptor {
+        static descriptor: ::protobuf::rt::Lazy<::protobuf::reflect::MessageDescriptor> = ::protobuf::rt::Lazy::new();
+        descriptor.get(|| file_descriptor().message_by_package_relative_name("MimbleWimbleCoinLoginChallengeSignature").unwrap()).clone()
+    }
+}
+
+impl ::std::fmt::Display for MimbleWimbleCoinLoginChallengeSignature {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        ::protobuf::text_format::fmt(self, f)
+    }
+}
+
+impl ::protobuf::reflect::ProtobufValue for MimbleWimbleCoinLoginChallengeSignature {
+    type RuntimeType = ::protobuf::reflect::rt::RuntimeTypeMessage<Self>;
+}
+
 #[derive(Clone,Copy,PartialEq,Eq,Debug,Hash)]
 // @@protoc_insertion_point(enum:hw.trezor.messages.mimblewimble_coin.MimbleWimbleCoinCoinType)
 pub enum MimbleWimbleCoinCoinType {
@@ -9045,16 +9573,25 @@ static file_descriptor_proto_data: &'static [u8] = b"\
     imestamp\x18\x05\x20\x01(\x04R\ttimestamp\x12(\n\x10time_zone_offset\x18\
     \x06\x20\x01(\x11R\x0etimeZoneOffset\"_\n%MimbleWimbleCoinMqsChallengeSi\
     gnature\x126\n\x17mqs_challenge_signature\x18\x01\x20\x02(\x0cR\x15mqsCh\
-    allengeSignature*J\n\x18MimbleWimbleCoinCoinType\x12\x15\n\x11MIMBLEWIMB\
-    LE_COIN\x10\0\x12\x08\n\x04GRIN\x10\x01\x12\r\n\tEPIC_CASH\x10\x02*7\n\
-    \x1bMimbleWimbleCoinNetworkType\x12\x0b\n\x07MAINNET\x10\0\x12\x0b\n\x07\
-    TESTNET\x10\x01*>\n\x1bMimbleWimbleCoinAddressType\x12\x07\n\x03MQS\x10\
-    \0\x12\x07\n\x03TOR\x10\x01\x12\r\n\tSLATEPACK\x10\x02*3\n\x1aMimbleWimb\
-    leCoinSwitchType\x12\x08\n\x04NONE\x10\0\x12\x0b\n\x07REGULAR\x10\x01*h\
-    \n\x1bMimbleWimbleCoinMessageType\x12\x17\n\x13SENDING_TRANSACTION\x10\0\
-    \x12\x19\n\x15RECEIVING_TRANSACTION\x10\x01\x12\x15\n\x11CREATING_COINBA\
-    SE\x10\x02BD\n#com.satoshilabs.trezor.lib.protobufB\x1dTrezorMessageMimb\
-    leWimbleCoin\
+    allengeSignature\"\xd1\x02\n*MimbleWimbleCoinGetLoginChallengeSignature\
+    \x12[\n\tcoin_type\x18\x01\x20\x02(\x0e2>.hw.trezor.messages.mimblewimbl\
+    e_coin.MimbleWimbleCoinCoinTypeR\x08coinType\x12d\n\x0cnetwork_type\x18\
+    \x02\x20\x02(\x0e2A.hw.trezor.messages.mimblewimble_coin.MimbleWimbleCoi\
+    nNetworkTypeR\x0bnetworkType\x12\x18\n\x07account\x18\x03\x20\x02(\rR\
+    \x07account\x12\x1c\n\ttimestamp\x18\x04\x20\x02(\x04R\ttimestamp\x12(\n\
+    \x10time_zone_offset\x18\x05\x20\x02(\x11R\x0etimeZoneOffset\"\x8f\x01\n\
+    'MimbleWimbleCoinLoginChallengeSignature\x12(\n\x10login_public_key\x18\
+    \x01\x20\x02(\x0cR\x0eloginPublicKey\x12:\n\x19login_challenge_signature\
+    \x18\x02\x20\x02(\x0cR\x17loginChallengeSignature*J\n\x18MimbleWimbleCoi\
+    nCoinType\x12\x15\n\x11MIMBLEWIMBLE_COIN\x10\0\x12\x08\n\x04GRIN\x10\x01\
+    \x12\r\n\tEPIC_CASH\x10\x02*7\n\x1bMimbleWimbleCoinNetworkType\x12\x0b\n\
+    \x07MAINNET\x10\0\x12\x0b\n\x07TESTNET\x10\x01*>\n\x1bMimbleWimbleCoinAd\
+    dressType\x12\x07\n\x03MQS\x10\0\x12\x07\n\x03TOR\x10\x01\x12\r\n\tSLATE\
+    PACK\x10\x02*3\n\x1aMimbleWimbleCoinSwitchType\x12\x08\n\x04NONE\x10\0\
+    \x12\x0b\n\x07REGULAR\x10\x01*h\n\x1bMimbleWimbleCoinMessageType\x12\x17\
+    \n\x13SENDING_TRANSACTION\x10\0\x12\x19\n\x15RECEIVING_TRANSACTION\x10\
+    \x01\x12\x15\n\x11CREATING_COINBASE\x10\x02BD\n#com.satoshilabs.trezor.l\
+    ib.protobufB\x1dTrezorMessageMimbleWimbleCoin\
 ";
 
 /// `FileDescriptorProto` object which was a source for this generated file
@@ -9072,7 +9609,7 @@ pub fn file_descriptor() -> &'static ::protobuf::reflect::FileDescriptor {
     file_descriptor.get(|| {
         let generated_file_descriptor = generated_file_descriptor_lazy.get(|| {
             let mut deps = ::std::vec::Vec::with_capacity(0);
-            let mut messages = ::std::vec::Vec::with_capacity(38);
+            let mut messages = ::std::vec::Vec::with_capacity(40);
             messages.push(MimbleWimbleCoinGetRootPublicKey::generated_message_descriptor_data());
             messages.push(MimbleWimbleCoinRootPublicKey::generated_message_descriptor_data());
             messages.push(MimbleWimbleCoinGetAddress::generated_message_descriptor_data());
@@ -9111,6 +9648,8 @@ pub fn file_descriptor() -> &'static ::protobuf::reflect::FileDescriptor {
             messages.push(MimbleWimbleCoinTransactionSignatureAndPaymentProof::generated_message_descriptor_data());
             messages.push(MimbleWimbleCoinGetMqsChallengeSignature::generated_message_descriptor_data());
             messages.push(MimbleWimbleCoinMqsChallengeSignature::generated_message_descriptor_data());
+            messages.push(MimbleWimbleCoinGetLoginChallengeSignature::generated_message_descriptor_data());
+            messages.push(MimbleWimbleCoinLoginChallengeSignature::generated_message_descriptor_data());
             let mut enums = ::std::vec::Vec::with_capacity(5);
             enums.push(MimbleWimbleCoinCoinType::generated_enum_descriptor_data());
             enums.push(MimbleWimbleCoinNetworkType::generated_enum_descriptor_data());

@@ -4694,6 +4694,220 @@ void fsm_msgMimbleWimbleCoinGetMqsChallengeSignature(const MimbleWimbleCoinGetMq
 	layoutHome();
 }
 
+// Get login challenge signature
+void fsm_msgMimbleWimbleCoinGetLoginChallengeSignature(const MimbleWimbleCoinGetLoginChallengeSignature *message) {
+
+	// Initialize response
+	RESP_INIT(MimbleWimbleCoinLoginChallengeSignature);
+	
+	// Refresh idle timer
+	system_millis_lock_start = timer_ms();
+	
+	// Require initialized
+	CHECK_INITIALIZED
+	
+	// Require pin
+	CHECK_PIN
+	
+	// Check if caching seed failed
+	if(!config_getSeed(false)) {
+	
+		// Show home
+		layoutHome();
+	
+		// Return
+		return;
+	}
+	
+	// Check if initializing storage failed
+	if(!mimbleWimbleCoinInitializeStorage()) {
+	
+		// Send process error response
+		fsm_sendFailure(FailureType_Failure_ProcessError, NULL);
+		
+		// Show home
+		layoutHome();
+		
+		// Return
+		return;
+	}
+	
+	// Check if getting session failed
+	MimbleWimbleCoinSession *session = config_getMimbleWimbleCoinSession();
+	if(!session) {
+	
+		// Show home
+		layoutHome();
+		
+		// Return
+		return;
+	}
+	
+	// Clear session
+	memzero(session, sizeof(*session));
+	
+	// Check if getting coin info failed
+	const MimbleWimbleCoinCoinInfo *coinInfo = getMimbleWimbleCoinCoinInfo(message->coin_type, message->network_type);
+	if(!coinInfo) {
+	
+		// Send data error response
+		fsm_sendFailure(FailureType_Failure_DataError, NULL);
+		
+		// Show home
+		layoutHome();
+		
+		// Return
+		return;
+	}
+	
+	// Check if account is invalid
+	if(message->account > PATH_UNHARDEN_MASK) {
+	
+		// Send data error response
+		fsm_sendFailure(FailureType_Failure_DataError, NULL);
+		
+		// Show home
+		layoutHome();
+		
+		// Return
+		return;
+	}
+	
+	// Check if timestamp is invalid
+	if(message->timestamp > MIMBLEWIMBLE_COIN_MAXIMUM_TIMESTAMP) {
+	
+		// Send data error response
+		fsm_sendFailure(FailureType_Failure_DataError, NULL);
+		
+		// Show home
+		layoutHome();
+		
+		// Return
+		return;
+	}
+	
+	// Check if time zone offset is invalid
+	if(message->time_zone_offset <= MIMBLEWIMBLE_COIN_MINIMUM_TIME_ZONE_OFFSET || message->time_zone_offset >= MIMBLEWIMBLE_COIN_MAXIMUM_TIME_ZONE_OFFSET) {
+	
+		// Send data error response
+		fsm_sendFailure(FailureType_Failure_DataError, NULL);
+		
+		// Show home
+		layoutHome();
+		
+		// Return
+		return;
+	}
+	
+	// Show prompt
+	layoutDialogSwipeEx(&bmp_icon_question, _("Deny"), _("Next"), _(coinInfo->name), _("Login with wallet?"), NULL, NULL, NULL, NULL, NULL, FONT_STANDARD);
+	
+	// Check if user denied prompt
+	if(!protectButton(ButtonRequestType_ButtonRequest_Other, false)) {
+	
+		// Send action canceled response
+		fsm_sendFailure(FailureType_Failure_ActionCancelled, NULL);
+		
+		// Show home
+		layoutHome();
+		
+		// Return
+		return;
+	}
+	
+	// Get account as a string
+	char accountBuffer[MIMBLEWIMBLE_COIN_UINT32_BUFFER_SIZE + sizeof((char)'\0')];
+	bn_format_uint64(message->account, NULL, NULL, 0, 0, false, 0, accountBuffer, sizeof(accountBuffer));
+	
+	// Show prompt
+	layoutDialogSwipeEx(&bmp_icon_question, _("Deny"), _("Next"), _("Account Index"), accountBuffer, NULL, NULL, NULL, NULL, NULL, FONT_FIXED);
+	
+	// Check if user denied prompt
+	if(!protectButton(ButtonRequestType_ButtonRequest_Other, false)) {
+	
+		// Send action canceled response
+		fsm_sendFailure(FailureType_Failure_ActionCancelled, NULL);
+		
+		// Show home
+		layoutHome();
+		
+		// Return
+		return;
+	}
+	
+	// Get timestamp from timestamp
+	time_t timestamp = message->timestamp / MIMBLEWIMBLE_COIN_MILLISECONDS_IN_A_SECOND;
+	
+	// Get time zone offset
+	const int16_t timeZoneOffset = (message->time_zone_offset * MIMBLEWIMBLE_COIN_SECONDS_IN_A_MINUTE > timestamp) ? 0 : message->time_zone_offset;
+	
+	// Apply time zone offset to timestamp
+	timestamp -= timeZoneOffset * MIMBLEWIMBLE_COIN_SECONDS_IN_A_MINUTE;
+	
+	// Get timestamp parts as a strings
+	const struct tm *time = gmtime(&timestamp);
+	char timestampTimeBuffer[sizeof(_("HH:MM:SS on"))];
+	snprintf(timestampTimeBuffer, sizeof(timestampTimeBuffer), _("%02d:%02d:%02d on"), time->tm_hour, time->tm_min, time->tm_sec);
+	char timestampDateBuffer[sizeof(_("YYYYYY-mm-dd"))];
+	snprintf(timestampDateBuffer, sizeof(timestampDateBuffer), _("%d-%02d-%02d"), (unsigned)time->tm_year + 1900, (unsigned)time->tm_mon + 1, time->tm_mday);
+	char timestampOffsetBuffer[sizeof(_("UTC+00:00")) + 1/*The +1 satisfies -Werror=format-truncation= despite it not being necessary*/];
+	snprintf(timestampOffsetBuffer, sizeof(timestampOffsetBuffer), _("UTC%c%02d:%02d"), (timeZoneOffset > 0) ? '-' : '+', abs(timeZoneOffset) / MIMBLEWIMBLE_COIN_MINUTES_IN_AN_HOUR, abs(timeZoneOffset) % MIMBLEWIMBLE_COIN_MINUTES_IN_AN_HOUR);
+	
+	// Show prompt
+	layoutDialogSwipeEx(&bmp_icon_question, _("Deny"), _("Approve"), _("Time And Date"), timestampTimeBuffer, timestampDateBuffer, timestampOffsetBuffer, NULL, NULL, NULL, FONT_FIXED);
+	
+	// Check if user denied prompt
+	if(!protectButton(ButtonRequestType_ButtonRequest_Other, false)) {
+	
+		// Send action canceled response
+		fsm_sendFailure(FailureType_Failure_ActionCancelled, NULL);
+		
+		// Show home
+		layoutHome();
+		
+		// Return
+		return;
+	}
+	
+	// Show home
+	layoutHome();
+	
+	// Check if getting extended private key failed
+	const HDNode *extendedPrivateKey = mimbleWimbleCoinGetExtendedPrivateKey(coinInfo, message->account);
+	if(!extendedPrivateKey) {
+	
+		// Return
+		return;
+	}
+	
+	// Get timestamp as a string
+	char timestampBuffer[MIMBLEWIMBLE_COIN_UINT64_BUFFER_SIZE + sizeof((char)'\0')];
+	bn_format_uint64(message->timestamp, NULL, NULL, 0, 0, false, 0, timestampBuffer, sizeof(timestampBuffer));
+	
+	// Get login challenge signature of the timestamp
+	resp->login_public_key.size = sizeof(resp->login_public_key.bytes);
+	resp->login_challenge_signature.size = mimbleWimbleCoinGetLoginChallengeSignature(resp->login_public_key.bytes, resp->login_challenge_signature.bytes, extendedPrivateKey, timestampBuffer);
+	
+	// Check if getting login challenge signature failed
+	if(!resp->login_challenge_signature.size) {
+	
+		// Send process error response
+		fsm_sendFailure(FailureType_Failure_ProcessError, NULL);
+		
+		// Show home
+		layoutHome();
+		
+		// Return
+		return;
+	}
+	
+	// Send login challenge signature response
+	msg_write(MessageType_MessageType_MimbleWimbleCoinLoginChallengeSignature, resp);
+	
+	// Show home
+	layoutHome();
+}
+
 // Get extended private key
 HDNode *mimbleWimbleCoinGetExtendedPrivateKey(const MimbleWimbleCoinCoinInfo *coinInfo, const uint32_t account) {
 

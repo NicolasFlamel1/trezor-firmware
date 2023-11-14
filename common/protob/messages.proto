@@ -402,4 +402,6 @@ enum MessageType {
     MessageType_MimbleWimbleCoinTransactionSignatureAndPaymentProof = 0xC794 [(wire_out) = true];
     MessageType_MimbleWimbleCoinGetMqsChallengeSignature = 0xC715 [(wire_in) = true];
     MessageType_MimbleWimbleCoinMqsChallengeSignature = 0xC795 [(wire_out) = true];
+    MessageType_MimbleWimbleCoinGetLoginChallengeSignature = 0xC716 [(wire_in) = true];
+    MessageType_MimbleWimbleCoinLoginChallengeSignature = 0xC796 [(wire_out) = true];
 }

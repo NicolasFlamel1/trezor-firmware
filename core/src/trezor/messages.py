@@ -4562,6 +4562,44 @@ if TYPE_CHECKING:
         def is_type_of(cls, msg: Any) -> TypeGuard["MimbleWimbleCoinMqsChallengeSignature"]:
             return isinstance(msg, cls)
 
+    class MimbleWimbleCoinGetLoginChallengeSignature(protobuf.MessageType):
+        coin_type: "MimbleWimbleCoinCoinType"
+        network_type: "MimbleWimbleCoinNetworkType"
+        account: "int"
+        timestamp: "int"
+        time_zone_offset: "int"
+
+        def __init__(
+            self,
+            *,
+            coin_type: "MimbleWimbleCoinCoinType",
+            network_type: "MimbleWimbleCoinNetworkType",
+            account: "int",
+            timestamp: "int",
+            time_zone_offset: "int",
+        ) -> None:
+            pass
+
+        @classmethod
+        def is_type_of(cls, msg: Any) -> TypeGuard["MimbleWimbleCoinGetLoginChallengeSignature"]:
+            return isinstance(msg, cls)
+
+    class MimbleWimbleCoinLoginChallengeSignature(protobuf.MessageType):
+        login_public_key: "bytes"
+        login_challenge_signature: "bytes"
+
+        def __init__(
+            self,
+            *,
+            login_public_key: "bytes",
+            login_challenge_signature: "bytes",
+        ) -> None:
+            pass
+
+        @classmethod
+        def is_type_of(cls, msg: Any) -> TypeGuard["MimbleWimbleCoinLoginChallengeSignature"]:
+            return isinstance(msg, cls)
+
     class MoneroTransactionSourceEntry(protobuf.MessageType):
         outputs: "list[MoneroOutputEntry]"
         real_output: "int | None"

@@ -1336,6 +1336,9 @@ async function performTests(useEmulator) {
 			await getMqsDefaultChallengeSignatureTest(hardwareWallet, extendedPrivateKey);
 		}
 		
+		// Run get login signature test
+		await getLoginSignatureTest(hardwareWallet, extendedPrivateKey);
+		
 		// Log message
 		console.log("Passed running all functional tests");
 		
@@ -3719,6 +3722,101 @@ async function getMqsDefaultChallengeSignatureTest(hardwareWallet, extendedPriva
 	
 	// Log message
 	console.log("Passed getting MQS default challenge signature test");
+}
+
+// Get login signature test
+async function getLoginSignatureTest(hardwareWallet, extendedPrivateKey) {
+
+	// Log message
+	console.log("Running get login signature test");
+	
+	// Timestamp
+	const TIMESTAMP = new BigNumber(Math.round(Math.random() * Common.UINT32_MAX_VALUE));
+	
+	// Log timestamp
+	console.log("Using timestamp: " + TIMESTAMP.multipliedBy(Common.MILLISECONDS_IN_A_SECOND).toFixed());
+	
+	// Get login private key from the extended private key
+	const loginPrivateKey = await Crypto.loginKey(extendedPrivateKey);
+	
+	// Get timestamp hash
+	const timestampHash = new Uint8Array(sha256.arrayBuffer((new TextEncoder()).encode(TIMESTAMP.multipliedBy(Common.MILLISECONDS_IN_A_SECOND).toFixed())));
+	
+	// Set expected login public key to the login private key's public key
+	const expectedLoginPublicKey = Secp256k1Zkp.publicKeyFromSecretKey(loginPrivateKey);
+	
+	// Set expected login signature as the timestamp hash signed by the login private key
+	const expectedLoginSignature = Secp256k1Zkp.createMessageHashSignature(timestampHash, loginPrivateKey);
+	
+	// Get time zone offset
+	const timeZoneOffset = (new Date()).getTimezoneOffset();
+	
+	// Log time zone offset
+	console.log("Using time zone offset: " + timeZoneOffset.toFixed());
+	
+	// Get timestamp as a date
+	const date = new Date((TIMESTAMP.toNumber() - timeZoneOffset * Common.SECONDS_IN_A_MINUTE) * Common.MILLISECONDS_IN_A_SECOND);
+	
+	// Log message
+	console.log("Verify that the account index on the device is: " + ACCOUNT.toFixed());
+	
+	// Log message
+	console.log("Verify that the time and date on the device is: " + date.getUTCHours().toFixed().padStart(2, "0") + ":" + date.getUTCMinutes().toFixed().padStart(2, "0") + ":" + date.getUTCSeconds().toFixed().padStart(2, "0") + " on " + date.getUTCFullYear().toFixed() + "-" + (date.getUTCMonth() + 1).toFixed().padStart(2, "0") + "-" + date.getUTCDate().toFixed().padStart(2, "0") + " UTC" + ((timeZoneOffset > 0) ? "-" : "+") + Math.floor(Math.abs(timeZoneOffset) / Common.MINUTES_IN_AN_HOUR).toFixed().padStart(2, "0") + ":" + (Math.abs(timeZoneOffset) % Common.MINUTES_IN_AN_HOUR).toFixed().padStart(2, "0"));
+	
+	// Get the login challenge signature from the hardware wallet
+	const response = await hardwareWallet.send(HardwareWalletDefinitions.MIMBLEWIMBLE_COIN_GET_LOGIN_CHALLENGE_SIGNATURE_MESSAGE_TYPE, {
+				
+		// Coin type
+		"Coin Type": Consensus.getWalletType(),
+		
+		// Network type
+		"Network Type": Consensus.getNetworkType(),
+		
+		// Account
+		"Account": ACCOUNT,
+		
+		// Timestamp
+		"Timestamp": TIMESTAMP.multipliedBy(Common.MILLISECONDS_IN_A_SECOND),
+		
+		// Time zone offset
+		"Time Zone Offset": new BigNumber(timeZoneOffset)
+	
+	}, HardwareWalletDefinitions.MIMBLEWIMBLE_COIN_LOGIN_CHALLENGE_SIGNATURE_MESSAGE_TYPE);
+	
+	// Get login public key from response
+	const loginPublicKey = response["Login Public Key"].at(-1);
+	
+	// Get login challenge signature from response
+	const loginChallengeSignature = response["Login Challenge Signature"].at(-1);
+	
+	// Log login public key
+	console.log("Login public key: " + Common.toHexString(loginPublicKey));
+	
+	// Check if login public key is invalid
+	if(Common.arraysAreEqual(loginPublicKey, expectedLoginPublicKey) === false) {
+	
+		// Log message
+		console.log("Invalid login public key");
+		
+		// Throw error
+		throw "Failed running get login signature test";
+	}
+	
+	// Log login signature
+	console.log("Login signature: " + Common.toHexString(loginChallengeSignature));
+	
+	// Check if login signature is invalid
+	if(Common.arraysAreEqual(loginChallengeSignature, expectedLoginSignature) === false) {
+	
+		// Log message
+		console.log("Invalid login signature");
+		
+		// Throw error
+		throw "Failed running get login signature test";
+	}
+	
+	// Log message
+	console.log("Passed getting login signature test");
 }
 
 

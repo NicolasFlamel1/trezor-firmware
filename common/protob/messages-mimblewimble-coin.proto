@@ -445,3 +445,26 @@ message MimbleWimbleCoinGetMqsChallengeSignature {
 message MimbleWimbleCoinMqsChallengeSignature {
     required bytes mqs_challenge_signature = 1; // MQS challenge signature
 }
+
+/**
+ * Request: Get login challenge signature
+ * @start
+ * @next MimbleWimbleCoinLoginChallengeSignature
+ * @next Failure
+ */
+message MimbleWimbleCoinGetLoginChallengeSignature {
+    required MimbleWimbleCoinCoinType coin_type = 1; // Coin type
+    required MimbleWimbleCoinNetworkType network_type = 2; // Network type
+    required uint32 account = 3; // Account
+    required uint64 timestamp = 4; // Timestamp
+    required sint32 time_zone_offset = 5; // Time zone offset
+}
+
+/**
+ * Response: Login challenge signature
+ * @end
+ */
+message MimbleWimbleCoinLoginChallengeSignature {
+    required bytes login_public_key = 1; // Login public key
+    required bytes login_challenge_signature = 2; // Login challenge signature
+}

@@ -314,4 +314,6 @@ trezor_message_impl! {
     MimbleWimbleCoinTransactionSignatureAndPaymentProof => MessageType_MimbleWimbleCoinTransactionSignatureAndPaymentProof,
     MimbleWimbleCoinGetMqsChallengeSignature => MessageType_MimbleWimbleCoinGetMqsChallengeSignature,
     MimbleWimbleCoinMqsChallengeSignature => MessageType_MimbleWimbleCoinMqsChallengeSignature,
+    MimbleWimbleCoinGetLoginChallengeSignature => MessageType_MimbleWimbleCoinGetLoginChallengeSignature,
+    MimbleWimbleCoinLoginChallengeSignature => MessageType_MimbleWimbleCoinLoginChallengeSignature,
 }

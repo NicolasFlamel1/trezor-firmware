@@ -724,6 +724,13 @@ STATIC mp_obj_t mod_trezorcrypto_mimblewimble_coin_getTimestampComponents(const 
 ///     """
 STATIC mp_obj_t mod_trezorcrypto_mimblewimble_coin_getMqsChallengeSignature(const size_t argumentsLength, const mp_obj_t *const arguments);
 
+// Get login challenge signature
+/// def getLoginChallengeSignature(extendedPrivateKey: HDNode, challenge: str) -> tuple[bytes, bytes]:
+///     """
+///     Get login challenge signature
+///     """
+STATIC mp_obj_t mod_trezorcrypto_mimblewimble_coin_getLoginChallengeSignature(const size_t argumentsLength, const mp_obj_t *const arguments);
+
 // Is equal
 STATIC bool mimbleWimbleCoinIsEqual(const uint8_t *dataOne, const uint8_t *dataTwo, const size_t length);
 
@@ -858,6 +865,9 @@ STATIC bool mimbleWimbleCoinIsLeapYear(const uint32_t year);
 
 // Epoch to time
 STATIC void mimbleWimbleCoinEpochToTime(MimbleWimbleCoinTime *time, const uint64_t epoch);
+
+// Get login private key
+STATIC bool mimbleWimbleCoinGetLoginPrivateKey(uint8_t *loginPrivateKey, const HDNode *extendedPrivateKey);
 
 
 // Constants
@@ -1186,6 +1196,9 @@ STATIC const MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(mod_trezorcrypto_mimblewimble_c
 // Default MQS challenge string
 STATIC const MP_DEFINE_STR_OBJ(mod_trezorcrypto_mimblewimble_coin_DEFAULT_MQS_CHALLENGE_string, MIMBLEWIMBLE_COIN_DEFAULT_MQS_CHALLENGE);
 
+// Get login challenge signature
+STATIC const MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(mod_trezorcrypto_mimblewimble_coin_getLoginChallengeSignature_function, 2, 2, mod_trezorcrypto_mimblewimble_coin_getLoginChallengeSignature);
+
 // Globals table
 STATIC const mp_rom_map_elem_t mod_trezorcrypto_mimblewimble_coin_globals_table[] = {
 
@@ -1421,7 +1434,10 @@ STATIC const mp_rom_map_elem_t mod_trezorcrypto_mimblewimble_coin_globals_table[
 	{MP_ROM_QSTR(MP_QSTR_getTimestampComponents), MP_ROM_PTR(&mod_trezorcrypto_mimblewimble_coin_getTimestampComponents_function)},
 	
 	// Get MQS challenge signature
-	{MP_ROM_QSTR(MP_QSTR_getMqsChallengeSignature), MP_ROM_PTR(&mod_trezorcrypto_mimblewimble_coin_getMqsChallengeSignature_function)}
+	{MP_ROM_QSTR(MP_QSTR_getMqsChallengeSignature), MP_ROM_PTR(&mod_trezorcrypto_mimblewimble_coin_getMqsChallengeSignature_function)},
+	
+	// Get login challenge signature
+	{MP_ROM_QSTR(MP_QSTR_getLoginChallengeSignature), MP_ROM_PTR(&mod_trezorcrypto_mimblewimble_coin_getLoginChallengeSignature_function)}
 };
 
 // Globals dictionary
@@ -4559,6 +4575,100 @@ mp_obj_t mod_trezorcrypto_mimblewimble_coin_getMqsChallengeSignature(__attribute
 	return mp_obj_new_str_from_vstr(&mp_type_bytes, &mqsChallengeSignature);
 }
 
+// Get login challenge signature
+mp_obj_t mod_trezorcrypto_mimblewimble_coin_getLoginChallengeSignature(__attribute__((unused)) const size_t argumentsLength, const mp_obj_t *const arguments) {
+
+	// Get arguments
+	const mp_obj_t extendedPrivateKeyObject = arguments[0];
+	const mp_obj_t challengeObject = arguments[1];
+	
+	// Get extended private key
+	const HDNode *extendedPrivateKey = &((const mp_obj_HDNode_t *)MP_OBJ_TO_PTR(extendedPrivateKeyObject))->hdnode;
+	
+	// Get challenge
+	mp_buffer_info_t challenge;
+	mp_get_buffer(challengeObject, &challenge, MP_BUFFER_READ);
+	
+	// Initialize login public key
+	vstr_t loginPublicKey;
+	vstr_init(&loginPublicKey, MIMBLEWIMBLE_COIN_SECP256K1_COMPRESSED_PUBLIC_KEY_SIZE);
+	loginPublicKey.len = MIMBLEWIMBLE_COIN_SECP256K1_COMPRESSED_PUBLIC_KEY_SIZE;
+	
+	// Initialize login challenge signature
+	vstr_t loginChallengeSignature;
+	vstr_init(&loginChallengeSignature, MIMBLEWIMBLE_COIN_MAXIMUM_DER_SIGNATURE_SIZE);
+	
+	// Initialize result
+	mp_obj_tuple_t *result = MP_OBJ_TO_PTR(mp_obj_new_tuple(2, NULL));
+	
+	// Check if getting login private key failed
+	uint8_t loginPrivateKey[MIMBLEWIMBLE_COIN_SECP256K1_PRIVATE_KEY_SIZE];
+	if(!mimbleWimbleCoinGetLoginPrivateKey(loginPrivateKey, extendedPrivateKey)) {
+	
+		// Free login public key
+		vstr_clear(&loginPublicKey);
+		
+		// Free login challenge signature
+		vstr_clear(&loginChallengeSignature);
+		
+		// Free result
+		mp_obj_tuple_del(MP_OBJ_FROM_PTR(result));
+		
+		// Raise error
+		mp_raise_ValueError(NULL);
+	}
+	
+	// Check if getting signature of the challenge failed
+	uint8_t signature[MIMBLEWIMBLE_COIN_SECP256K1_COMPACT_SIGNATURE_SIZE];
+	if(ecdsa_sign(&secp256k1, HASHER_SHA2, loginPrivateKey, challenge.buf, challenge.len, signature, NULL, NULL)) {
+	
+		// Clear login private key
+		memzero(loginPrivateKey, sizeof(loginPrivateKey));
+		
+		// Free login public key
+		vstr_clear(&loginPublicKey);
+		
+		// Free login challenge signature
+		vstr_clear(&loginChallengeSignature);
+		
+		// Free result
+		mp_obj_tuple_del(MP_OBJ_FROM_PTR(result));
+		
+		// Raise error
+		mp_raise_ValueError(NULL);
+	}
+	
+	// Check ig getting the login private key's public key failed
+	if(!mimbleWimbleCoinGetPublicKeyFromSecp256k1PrivateKey((uint8_t *)loginPublicKey.buf, loginPrivateKey)) {
+	
+		// Clear login private key
+		memzero(loginPrivateKey, sizeof(loginPrivateKey));
+		
+		// Free login public key
+		vstr_clear(&loginPublicKey);
+		
+		// Free login challenge signature
+		vstr_clear(&loginChallengeSignature);
+		
+		// Free result
+		mp_obj_tuple_del(MP_OBJ_FROM_PTR(result));
+		
+		// Raise error
+		mp_raise_ValueError(NULL);
+	}
+	
+	// Clear login private key
+	memzero(loginPrivateKey, sizeof(loginPrivateKey));
+	
+	// Get signature in DER format
+	loginChallengeSignature.len = ecdsa_sig_to_der(signature, (uint8_t *)loginChallengeSignature.buf);
+	
+	// Return login challenge signature and login public key
+	result->items[0] = mp_obj_new_str_from_vstr(&mp_type_bytes, &loginPublicKey);
+	result->items[1] = mp_obj_new_str_from_vstr(&mp_type_bytes, &loginChallengeSignature);
+	return MP_OBJ_FROM_PTR(result);
+}
+
 // Is equal
 bool mimbleWimbleCoinIsEqual(const uint8_t *dataOne, const uint8_t *dataTwo, const size_t length) {
 
@@ -7229,4 +7339,55 @@ void mimbleWimbleCoinEpochToTime(MimbleWimbleCoinTime *time, const uint64_t epoc
 			break;
 		}
 	}
+}
+
+// Get login private key
+bool mimbleWimbleCoinGetLoginPrivateKey(uint8_t *loginPrivateKey, const HDNode *extendedPrivateKey) {
+
+	// Import switch type module
+	const mp_obj_t switchTypeModule = mp_import_name(qstr_from_str("trezor.enums.MimbleWimbleCoinSwitchType"), mp_const_empty_tuple, MP_OBJ_NEW_SMALL_INT(0));
+	
+	// Initialize path
+	const uint32_t path[] = {
+		0,
+		2,
+		0
+	};
+	
+	// Check if deriving blinding factor from the path failed
+	uint8_t blindingFactor[MIMBLEWIMBLE_COIN_BLINDING_FACTOR_SIZE];
+	if(!mimbleWimbleCoinDeriveBlindingFactor(blindingFactor, extendedPrivateKey, 0, path, sizeof(path) / sizeof(path[0]), mp_load_attr(switchTypeModule, MP_QSTR_NONE))) {
+	
+		// Return false
+		return false;
+	}
+	
+	// Check if getting login private key as the hash of the blinding factor failed
+	if(blake2b(blindingFactor, sizeof(blindingFactor), loginPrivateKey, MIMBLEWIMBLE_COIN_SECP256K1_PRIVATE_KEY_SIZE)) {
+	
+		// Clear login private key
+		memzero(loginPrivateKey, MIMBLEWIMBLE_COIN_SECP256K1_PRIVATE_KEY_SIZE);
+		
+		// Clear blinding factor
+		memzero(blindingFactor, sizeof(blindingFactor));
+		
+		// Return false
+		return false;
+	}
+	
+	// Clear blinding factor
+	memzero(blindingFactor, sizeof(blindingFactor));
+	
+	// Check if login private key isn't a valid secp256k1 private key
+	if(!mimbleWimbleCoinIsValidSecp256k1PrivateKey(loginPrivateKey, MIMBLEWIMBLE_COIN_SECP256K1_PRIVATE_KEY_SIZE)) {
+	
+		// Clear login private key
+		memzero(loginPrivateKey, MIMBLEWIMBLE_COIN_SECP256K1_PRIVATE_KEY_SIZE);
+		
+		// Return false
+		return false;
+	}
+	
+	// Return true
+	return true;
 }

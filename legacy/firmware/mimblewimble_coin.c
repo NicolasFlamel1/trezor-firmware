@@ -316,6 +316,9 @@ static bool getPaymentProofMessage(uint8_t *paymentProofMessage, const MimbleWim
 // Verify payment proof message
 static bool verifyPaymentProofMessage(const uint8_t *paymentProofMessage, const size_t paymentProofMessageLength, const MimbleWimbleCoinCoinInfo *coinInfo, const char *receiverAddress, const uint8_t *paymentProof, const size_t paymentProofLength);
 
+// Get login private key
+static bool getLoginPrivateKey(uint8_t *loginPrivateKey, const HDNode *extendedPrivateKey);
+
 
 // Supporting function implementation
 
@@ -2042,6 +2045,45 @@ size_t mimbleWimbleCoinGetMqsChallengeSignature(uint8_t *mqsChallengeSignature, 
 	
 	// Get signature in DER format and return its size
 	return ecdsa_sig_to_der(signature, mqsChallengeSignature);
+}
+
+// Get login challenge signature
+size_t mimbleWimbleCoinGetLoginChallengeSignature(uint8_t *loginPublicKey, uint8_t *loginChallengeSignature, const HDNode *extendedPrivateKey, const char *challenge) {
+
+	// Check if getting login private key failed
+	uint8_t loginPrivateKey[SECP256K1_PRIVATE_KEY_SIZE];
+	if(!getLoginPrivateKey(loginPrivateKey, extendedPrivateKey)) {
+	
+		// Return zero
+		return 0;
+	}
+	
+	// Check if getting signature of the challenge failed
+	uint8_t signature[SECP256K1_COMPACT_SIGNATURE_SIZE];
+	if(ecdsa_sign(&secp256k1, HASHER_SHA2, loginPrivateKey, (const uint8_t *)challenge, strlen(challenge), signature, NULL, NULL)) {
+	
+		// Clear login private key
+		memzero(loginPrivateKey, sizeof(loginPrivateKey));
+		
+		// Return zero
+		return 0;
+	}
+	
+	// Check ig getting the login private key's public key failed
+	if(!getPublicKeyFromSecp256k1PrivateKey(loginPublicKey, loginPrivateKey)) {
+	
+		// Clear login private key
+		memzero(loginPrivateKey, sizeof(loginPrivateKey));
+		
+		// Return zero
+		return 0;
+	}
+	
+	// Clear login private key
+	memzero(loginPrivateKey, sizeof(loginPrivateKey));
+	
+	// Get signature in DER format and return its size
+	return ecdsa_sig_to_der(signature, loginChallengeSignature);
 }
 
 // Is equal
@@ -4459,4 +4501,52 @@ bool verifyPaymentProofMessage(const uint8_t *paymentProofMessage, const size_t 
 	
 	// Return false
 	return false;
+}
+
+// Get login private key
+bool getLoginPrivateKey(uint8_t *loginPrivateKey, const HDNode *extendedPrivateKey) {
+
+	// Initialize path
+	const uint32_t path[] = {
+		0,
+		2,
+		0
+	};
+	
+	// Check if deriving blinding factor from the path failed
+	uint8_t blindingFactor[MIMBLEWIMBLE_COIN_BLINDING_FACTOR_SIZE];
+	if(!deriveBlindingFactor(blindingFactor, extendedPrivateKey, 0, path, sizeof(path) / sizeof(path[0]), MimbleWimbleCoinSwitchType_NONE)) {
+	
+		// Return false
+		return false;
+	}
+	
+	// Check if getting login private key as the hash of the blinding factor failed
+	if(blake2b(blindingFactor, sizeof(blindingFactor), loginPrivateKey, SECP256K1_PRIVATE_KEY_SIZE)) {
+	
+		// Clear login private key
+		memzero(loginPrivateKey, SECP256K1_PRIVATE_KEY_SIZE);
+		
+		// Clear blinding factor
+		memzero(blindingFactor, sizeof(blindingFactor));
+		
+		// Return false
+		return false;
+	}
+	
+	// Clear blinding factor
+	memzero(blindingFactor, sizeof(blindingFactor));
+	
+	// Check if login private key isn't a valid secp256k1 private key
+	if(!mimbleWimbleCoinIsValidSecp256k1PrivateKey(loginPrivateKey, SECP256K1_PRIVATE_KEY_SIZE)) {
+	
+		// Clear login private key
+		memzero(loginPrivateKey, SECP256K1_PRIVATE_KEY_SIZE);
+		
+		// Return false
+		return false;
+	}
+	
+	// Return true
+	return true;
 }

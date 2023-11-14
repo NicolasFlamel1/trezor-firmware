@@ -235,6 +235,8 @@ def _find_message_handler_module(msg_type: int) -> str:
             return "apps.mimblewimble_coin.finish_transaction"
         if msg_type == MessageType.MimbleWimbleCoinGetMqsChallengeSignature:
             return "apps.mimblewimble_coin.get_mqs_challenge_signature"
+        if msg_type == MessageType.MimbleWimbleCoinGetLoginChallengeSignature:
+            return "apps.mimblewimble_coin.get_login_challenge_signature"
 
     raise ValueError
 

@@ -274,3 +274,5 @@ if not utils.BITCOIN_ONLY:
     MimbleWimbleCoinTransactionSignatureAndPaymentProof = 51092
     MimbleWimbleCoinGetMqsChallengeSignature = 50965
     MimbleWimbleCoinMqsChallengeSignature = 51093
+    MimbleWimbleCoinGetLoginChallengeSignature = 50966
+    MimbleWimbleCoinLoginChallengeSignature = 51094

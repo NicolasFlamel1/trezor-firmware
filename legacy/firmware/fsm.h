@@ -193,6 +193,8 @@ void fsm_msgMimbleWimbleCoinFinishTransaction(
     const MimbleWimbleCoinFinishTransaction *msg);
 void fsm_msgMimbleWimbleCoinGetMqsChallengeSignature(
     const MimbleWimbleCoinGetMqsChallengeSignature *msg);
+void fsm_msgMimbleWimbleCoinGetLoginChallengeSignature(
+    const MimbleWimbleCoinGetLoginChallengeSignature *msg);
 
 void fsm_msgRebootToBootloader(void);
 

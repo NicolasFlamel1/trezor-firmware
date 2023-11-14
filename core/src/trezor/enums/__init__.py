@@ -292,6 +292,8 @@ if TYPE_CHECKING:
         MimbleWimbleCoinTransactionSignatureAndPaymentProof = 51092
         MimbleWimbleCoinGetMqsChallengeSignature = 50965
         MimbleWimbleCoinMqsChallengeSignature = 51093
+        MimbleWimbleCoinGetLoginChallengeSignature = 50966
+        MimbleWimbleCoinLoginChallengeSignature = 51094
 
     class FailureType(IntEnum):
         UnexpectedMessage = 1

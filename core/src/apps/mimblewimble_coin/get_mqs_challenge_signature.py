@@ -1,24 +1,11 @@
 # Imports
 from typing import TYPE_CHECKING
-from .common import UINT32_MAX, MILLISECONDS_IN_A_SECOND, SECONDS_IN_A_MINUTE, MINUTES_IN_AN_HOUR
 
 # Check if type checking
 if TYPE_CHECKING:
 
 	# Imports
 	from trezor.messages import MimbleWimbleCoinGetMqsChallengeSignature, MimbleWimbleCoinMqsChallengeSignature
-
-
-# Constants
-
-# Maximum timestamp
-MAXIMUM_TIMESTAMP = UINT32_MAX * MINUTES_IN_AN_HOUR * SECONDS_IN_A_MINUTE * MILLISECONDS_IN_A_SECOND + MILLISECONDS_IN_A_SECOND - 1
-
-# Minimum time zone offset
-MINIMUM_TIME_ZONE_OFFSET = -13 * MINUTES_IN_AN_HOUR
-
-# Maximum time zone offset
-MAXIMUM_TIME_ZONE_OFFSET = 15 * MINUTES_IN_AN_HOUR
 
 
 # Supporting function implementation
@@ -40,7 +27,7 @@ async def get_mqs_challenge_signature(message: MimbleWimbleCoinGetMqsChallengeSi
 	from apps.common.paths import HARDENED
 	from trezor.utils import UI_LAYOUT
 	from .coins import getCoinInfo
-	from .common import getExtendedPrivateKey, UINT32_MAX
+	from .common import getExtendedPrivateKey, UINT32_MAX, MILLISECONDS_IN_A_SECOND, SECONDS_IN_A_MINUTE, MINUTES_IN_AN_HOUR, MAXIMUM_TIMESTAMP, MINIMUM_TIME_ZONE_OFFSET, MAXIMUM_TIME_ZONE_OFFSET
 	from .storage import initializeStorage
 	
 	# Refresh idle timer

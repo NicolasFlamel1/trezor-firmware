@@ -581,6 +581,8 @@ if not utils.BITCOIN_ONLY:
     import apps.mimblewimble_coin.get_bulletproof_components
     apps.mimblewimble_coin.get_commitment
     import apps.mimblewimble_coin.get_commitment
+    apps.mimblewimble_coin.get_login_challenge_signature
+    import apps.mimblewimble_coin.get_login_challenge_signature
     apps.mimblewimble_coin.get_mqs_challenge_signature
     import apps.mimblewimble_coin.get_mqs_challenge_signature
     apps.mimblewimble_coin.get_root_public_key

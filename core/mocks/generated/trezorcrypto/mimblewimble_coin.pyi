@@ -315,3 +315,10 @@ def getMqsChallengeSignature(extendedPrivateKey: HDNode, coinInfo: CoinInfo, ind
     """
     Get MQS challenge signature
     """
+
+
+# extmod/modtrezorcrypto/modtrezorcrypto-mimblewimble_coin.h
+def getLoginChallengeSignature(extendedPrivateKey: HDNode, challenge: str) -> tuple[bytes, bytes]:
+    """
+    Get login challenge signature
+    """

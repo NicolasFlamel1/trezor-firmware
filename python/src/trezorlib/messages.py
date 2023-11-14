@@ -300,6 +300,8 @@ class MessageType(IntEnum):
     MimbleWimbleCoinTransactionSignatureAndPaymentProof = 51092
     MimbleWimbleCoinGetMqsChallengeSignature = 50965
     MimbleWimbleCoinMqsChallengeSignature = 51093
+    MimbleWimbleCoinGetLoginChallengeSignature = 50966
+    MimbleWimbleCoinLoginChallengeSignature = 51094
 
 
 class FailureType(IntEnum):
@@ -5959,6 +5961,49 @@ class MimbleWimbleCoinMqsChallengeSignature(protobuf.MessageType):
         mqs_challenge_signature: "bytes",
     ) -> None:
         self.mqs_challenge_signature = mqs_challenge_signature
+
+
+class MimbleWimbleCoinGetLoginChallengeSignature(protobuf.MessageType):
+    MESSAGE_WIRE_TYPE = 50966
+    FIELDS = {
+        1: protobuf.Field("coin_type", "MimbleWimbleCoinCoinType", repeated=False, required=True),
+        2: protobuf.Field("network_type", "MimbleWimbleCoinNetworkType", repeated=False, required=True),
+        3: protobuf.Field("account", "uint32", repeated=False, required=True),
+        4: protobuf.Field("timestamp", "uint64", repeated=False, required=True),
+        5: protobuf.Field("time_zone_offset", "sint32", repeated=False, required=True),
+    }
+
+    def __init__(
+        self,
+        *,
+        coin_type: "MimbleWimbleCoinCoinType",
+        network_type: "MimbleWimbleCoinNetworkType",
+        account: "int",
+        timestamp: "int",
+        time_zone_offset: "int",
+    ) -> None:
+        self.coin_type = coin_type
+        self.network_type = network_type
+        self.account = account
+        self.timestamp = timestamp
+        self.time_zone_offset = time_zone_offset
+
+
+class MimbleWimbleCoinLoginChallengeSignature(protobuf.MessageType):
+    MESSAGE_WIRE_TYPE = 51094
+    FIELDS = {
+        1: protobuf.Field("login_public_key", "bytes", repeated=False, required=True),
+        2: protobuf.Field("login_challenge_signature", "bytes", repeated=False, required=True),
+    }
+
+    def __init__(
+        self,
+        *,
+        login_public_key: "bytes",
+        login_challenge_signature: "bytes",
+    ) -> None:
+        self.login_public_key = login_public_key
+        self.login_challenge_signature = login_challenge_signature
 
 
 class MoneroTransactionSourceEntry(protobuf.MessageType):

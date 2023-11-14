@@ -42,6 +42,8 @@ This firmware supports the following additional messages.
 | 0xC794          | `TRANSACTION_SIGNATURE_AND_PAYMENT_PROOF`    | Response to a `FINISH_TRANSACTION` request |
 | 0xC715          | `GET_MQS_CHALLENGE_SIGNATURE`                | Requests the signature for a provided challenge signed with an account's MQS private key at a provided index |
 | 0xC795          | `MQS_CHALLENGE_SIGNATURE`                    | Response to a `GET_MQS_CHALLENGE_SIGNATURE` request |
+| 0xC716          | `GET_LOGIN_CHALLENGE_SIGNATURE`              | Requests the signature for a provided challenge signed with an account's login private key |
+| 0xC796          | `LOGIN_CHALLENGE_SIGNATURE`                  | Response to a `GET_LOGIN_CHALLENGE_SIGNATURE` request |
 
 \* Response messages have a wire identifier that is the request's wire identifier with the 0x0080 bit set.
 
@@ -798,6 +800,47 @@ Response to a `GET_MQS_CHALLENGE_SIGNATURE` message.
 | Type    | Name                      | Description |
 |---------|---------------------------|-------------|
 | `bytes` | `mqs_challenge_signature` | DER signature of the challenge |
+
+### GET_LOGIN_CHALLENGE_SIGNATURE
+
+#### Description
+
+Requests the signature for a provided timestamp signed with an account's login private key after obtaining user's approval. Returns an `LOGIN_CHALLENGE_SIGNATURE` message response on success.
+
+#### Identifier
+
+| Wire Identifier |
+|-----------------|
+| 0xC716          |
+
+#### Fields
+
+| Type     | Name               | Description |
+|----------|--------------------|-------------|
+| `enum`   | `coin_type`        | 0x00 for MimbleWimble Coin, 0x01 for Grin, or 0x02 for Epic Cash |
+| `enum`   | `network_type`     | 0x00 for mainnet, 0x01 for testnet/floonet |
+| `uint32` | `account`          | Account number (max 0x7FFFFFFF) |
+| `uint64` | `timestamp`        | Timestamp epoch in milliseconds to sign (max 0x36EE7FFFC91567) |
+| `sint32` | `time_zone_offset` | Time zone offset in minutes used when displaying the timestamp (min -779, max 899) |
+
+### LOGIN_CHALLENGE_SIGNATURE
+
+#### Description
+
+Response to a `GET_LOGIN_CHALLENGE_SIGNATURE` message.
+
+#### Identifier
+
+| Wire Identifier |
+|-----------------|
+| 0xC796          |
+
+#### Fields
+
+| Type    | Name                        | Description |
+|---------|-----------------------------|-------------|
+| `bytes` | `login_public_key`          | Public key of the private key that signed the challenge |
+| `bytes` | `login_challenge_signature` | DER signature of the challenge |
 
 ## Notes
 * The firmware will reset its session's slate and/or transaction state when unrelated messages are requested. For example, requesting a `START_TRANSACTION` message followed by a `GET_COMMITMENT` message will reset the session's transaction state thus requiring another `START_TRANSACTION` message to be requested before a `CONTINUE_TRANSACTION_INCLUDE_OUTPUT` request can be successfully performed.

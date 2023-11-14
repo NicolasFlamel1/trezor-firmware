@@ -45,6 +45,15 @@ HOURS_IN_A_DAY = const(24)
 # Days on a week
 DAYS_IN_A_WEEK = const(7)
 
+# Maximum timestamp
+MAXIMUM_TIMESTAMP = const(UINT32_MAX * MINUTES_IN_AN_HOUR * SECONDS_IN_A_MINUTE * MILLISECONDS_IN_A_SECOND + MILLISECONDS_IN_A_SECOND - 1)
+
+# Minimum time zone offset
+MINIMUM_TIME_ZONE_OFFSET = const(-13 * MINUTES_IN_AN_HOUR)
+
+# Maximum time zone offset
+MAXIMUM_TIME_ZONE_OFFSET = const(15 * MINUTES_IN_AN_HOUR)
+
 
 # Supporting function implementation
 
