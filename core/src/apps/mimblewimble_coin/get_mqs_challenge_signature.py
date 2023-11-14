@@ -103,9 +103,20 @@ async def get_mqs_challenge_signature(message: MimbleWimbleCoinGetMqsChallengeSi
 		# Apply time zone offset to timestamp
 		timestamp -= timeZoneOffset * SECONDS_IN_A_MINUTE
 		
-		# Show prompt
+		# Get timestamp components
 		time = mimblewimble_coin.getTimestampComponents(timestamp)
-		await confirm_action("", "Time And Date", action = f"{time[3]:02d}:{time[4]:02d}:{time[5]:02d} on {time[0]}-{time[1]:02d}-{time[2]:02d} UTC{'-' if timeZoneOffset > 0 else '+'}{abs(timeZoneOffset) // MINUTES_IN_AN_HOUR:02d}:{abs(timeZoneOffset) % MINUTES_IN_AN_HOUR:02d}", verb = "Next")
+		
+		# Check if UI layout is TR
+		if UI_LAYOUT == "TR":
+		
+			# Show prompt
+			await confirm_value("Time And Date", f"{time[3]:02d}:{time[4]:02d}:{time[5]:02d} on {time[0]}-{time[1]:02d}-{time[2]:02d} UTC{'-' if timeZoneOffset > 0 else '+'}{abs(timeZoneOffset) // MINUTES_IN_AN_HOUR:02d}:{abs(timeZoneOffset) % MINUTES_IN_AN_HOUR:02d}", "", "", verb = "Next")
+			
+		# Otherwise
+		else:
+		
+			# Show prompt
+			await confirm_action("", "Time And Date", action = f"{time[3]:02d}:{time[4]:02d}:{time[5]:02d} on {time[0]}-{time[1]:02d}-{time[2]:02d} UTC{'-' if timeZoneOffset > 0 else '+'}{abs(timeZoneOffset) // MINUTES_IN_AN_HOUR:02d}:{abs(timeZoneOffset) % MINUTES_IN_AN_HOUR:02d}", verb = "Next")
 	
 	# Otherwise
 	else:

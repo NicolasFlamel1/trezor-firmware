@@ -24,6 +24,7 @@ async def get_login_challenge_signature(message: MimbleWimbleCoinGetLoginChallen
 	from trezor.ui.layouts import confirm_action, confirm_value
 	from trezor.crypto import mimblewimble_coin
 	from apps.common.paths import HARDENED
+	from trezor.utils import UI_LAYOUT
 	from .coins import getCoinInfo
 	from .common import getExtendedPrivateKey, UINT32_MAX, MILLISECONDS_IN_A_SECOND, SECONDS_IN_A_MINUTE, MINUTES_IN_AN_HOUR, MAXIMUM_TIMESTAMP, MINIMUM_TIME_ZONE_OFFSET, MAXIMUM_TIME_ZONE_OFFSET
 	from .storage import initializeStorage
@@ -86,9 +87,20 @@ async def get_login_challenge_signature(message: MimbleWimbleCoinGetLoginChallen
 	# Apply time zone offset to timestamp
 	timestamp -= timeZoneOffset * SECONDS_IN_A_MINUTE
 	
-	# Show prompt
+	# Get timestamp components
 	time = mimblewimble_coin.getTimestampComponents(timestamp)
-	await confirm_action("", "Time And Date", action = f"{time[3]:02d}:{time[4]:02d}:{time[5]:02d} on {time[0]}-{time[1]:02d}-{time[2]:02d} UTC{'-' if timeZoneOffset > 0 else '+'}{abs(timeZoneOffset) // MINUTES_IN_AN_HOUR:02d}:{abs(timeZoneOffset) % MINUTES_IN_AN_HOUR:02d}", verb = "Approve")
+	
+	# Check if UI layout is TR
+	if UI_LAYOUT == "TR":
+	
+		# Show prompt
+		await confirm_value("Time And Date", f"{time[3]:02d}:{time[4]:02d}:{time[5]:02d} on {time[0]}-{time[1]:02d}-{time[2]:02d} UTC{'-' if timeZoneOffset > 0 else '+'}{abs(timeZoneOffset) // MINUTES_IN_AN_HOUR:02d}:{abs(timeZoneOffset) % MINUTES_IN_AN_HOUR:02d}", "", "", verb = "Approve")
+		
+	# Otherwise
+	else:
+	
+		# Show prompt
+		await confirm_action("", "Time And Date", action = f"{time[3]:02d}:{time[4]:02d}:{time[5]:02d} on {time[0]}-{time[1]:02d}-{time[2]:02d} UTC{'-' if timeZoneOffset > 0 else '+'}{abs(timeZoneOffset) // MINUTES_IN_AN_HOUR:02d}:{abs(timeZoneOffset) % MINUTES_IN_AN_HOUR:02d}", verb = "Approve")
 	
 	# Get extended private key
 	extendedPrivateKey = await getExtendedPrivateKey(coinInfo, message.account)

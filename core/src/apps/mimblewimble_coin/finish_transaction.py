@@ -319,20 +319,47 @@ async def finish_transaction(message: MimbleWimbleCoinFinishTransaction) -> Mimb
 		# Check kernel information's features is plain features
 		if message.kernel_information[0] == mimblewimble_coin.KernelFeatures.PLAIN_FEATURES:
 		
-			# Show prompt
-			await confirm_action("", "Kernel Features", action = "Plain", verb = "Next")
+			# Check if UI layout is TR
+			if UI_LAYOUT == "TR":
+			
+				# Show prompt
+				await confirm_value("Kernel Features", "Plain", "", "", verb = "Next")
+				
+			# Otherwise
+			else:
+			
+				# Show prompt
+				await confirm_action("", "Kernel Features", action = "Plain", verb = "Next")
 		
 		# Otherwise check kernel information's features is coinbase features
 		elif message.kernel_information[0] == mimblewimble_coin.KernelFeatures.COINBASE_FEATURES:
 		
-			# Show prompt
-			await confirm_action("", "Kernel Features", action = "Coinbase", verb = "Next")
+			# Check if UI layout is TR
+			if UI_LAYOUT == "TR":
+			
+				# Show prompt
+				await confirm_value("Kernel Features", "Coinbase", "", "", verb = "Next")
+				
+			# Otherwise
+			else:
+			
+				# Show prompt
+				await confirm_action("", "Kernel Features", action = "Coinbase", verb = "Next")
 		
 		# Otherwise check kernel information's features is height locked features
 		elif message.kernel_information[0] == mimblewimble_coin.KernelFeatures.HEIGHT_LOCKED_FEATURES:
 		
-			# Show prompt
-			await confirm_action("", "Kernel Features", action = "Height locked", verb = "Next")
+			# Check if UI layout is TR
+			if UI_LAYOUT == "TR":
+			
+				# Show prompt
+				await confirm_value("Kernel Features", "Height locked", "", "", verb = "Next")
+				
+			# Otherwise
+			else:
+			
+				# Show prompt
+				await confirm_action("", "Kernel Features", action = "Height locked", verb = "Next")
 			
 			# Get lock height from kernel information
 			lockHeight = unpack("<BQ", message.kernel_information)[1]
@@ -343,8 +370,17 @@ async def finish_transaction(message: MimbleWimbleCoinFinishTransaction) -> Mimb
 		# Otherwise check kernel information's features is no recent duplicate features
 		elif message.kernel_information[0] == mimblewimble_coin.KernelFeatures.NO_RECENT_DUPLICATE_FEATURES:
 		
-			# Show prompt
-			await confirm_action("", "Kernel Features", action = "No recent duplicate", verb = "Next")
+			# Check if UI layout is TR
+			if UI_LAYOUT == "TR":
+			
+				# Show prompt
+				await confirm_value("Kernel Features", "No recent duplicate", "", "", verb = "Next")
+				
+			# Otherwise
+			else:
+			
+				# Show prompt
+				await confirm_action("", "Kernel Features", action = "No recent duplicate", verb = "Next")
 			
 			# Get relative height from kernel information
 			relativeHeight = unpack("<BH", message.kernel_information)[1]
