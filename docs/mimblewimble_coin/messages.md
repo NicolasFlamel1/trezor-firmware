@@ -820,9 +820,9 @@ Requests the signature for a provided timestamp and identifier signed with an ac
 | `enum`   | `coin_type`        | 0x00 for MimbleWimble Coin, 0x01 for Grin, or 0x02 for Epic Cash |
 | `enum`   | `network_type`     | 0x00 for mainnet, 0x01 for testnet/floonet |
 | `uint32` | `account`          | Account number (max 0x7FFFFFFF) |
-| `bytes`  | `identifier`       | Identifier to sign (max size 64 bytes) |
 | `uint64` | `timestamp`        | Timestamp epoch in milliseconds to sign (max 0x36EE7FFFC91567) |
 | `sint32` | `time_zone_offset` | Time zone offset in minutes used when displaying the timestamp (min -779, max 899) |
+| `bytes`  | `identifier`       | Identifier to sign (max size 64 bytes) |
 
 ### LOGIN_CHALLENGE_SIGNATURE
 

@@ -5969,9 +5969,9 @@ class MimbleWimbleCoinGetLoginChallengeSignature(protobuf.MessageType):
         1: protobuf.Field("coin_type", "MimbleWimbleCoinCoinType", repeated=False, required=True),
         2: protobuf.Field("network_type", "MimbleWimbleCoinNetworkType", repeated=False, required=True),
         3: protobuf.Field("account", "uint32", repeated=False, required=True),
-        4: protobuf.Field("identifier", "bytes", repeated=False, required=True),
-        5: protobuf.Field("timestamp", "uint64", repeated=False, required=True),
-        6: protobuf.Field("time_zone_offset", "sint32", repeated=False, required=True),
+        4: protobuf.Field("timestamp", "uint64", repeated=False, required=True),
+        5: protobuf.Field("time_zone_offset", "sint32", repeated=False, required=True),
+        6: protobuf.Field("identifier", "bytes", repeated=False, required=True),
     }
 
     def __init__(
@@ -5980,16 +5980,16 @@ class MimbleWimbleCoinGetLoginChallengeSignature(protobuf.MessageType):
         coin_type: "MimbleWimbleCoinCoinType",
         network_type: "MimbleWimbleCoinNetworkType",
         account: "int",
-        identifier: "bytes",
         timestamp: "int",
         time_zone_offset: "int",
+        identifier: "bytes",
     ) -> None:
         self.coin_type = coin_type
         self.network_type = network_type
         self.account = account
-        self.identifier = identifier
         self.timestamp = timestamp
         self.time_zone_offset = time_zone_offset
+        self.identifier = identifier
 
 
 class MimbleWimbleCoinLoginChallengeSignature(protobuf.MessageType):

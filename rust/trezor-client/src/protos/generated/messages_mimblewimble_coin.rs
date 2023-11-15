@@ -8641,12 +8641,12 @@ pub struct MimbleWimbleCoinGetLoginChallengeSignature {
     pub network_type: ::std::option::Option<::protobuf::EnumOrUnknown<MimbleWimbleCoinNetworkType>>,
     // @@protoc_insertion_point(field:hw.trezor.messages.mimblewimble_coin.MimbleWimbleCoinGetLoginChallengeSignature.account)
     pub account: ::std::option::Option<u32>,
-    // @@protoc_insertion_point(field:hw.trezor.messages.mimblewimble_coin.MimbleWimbleCoinGetLoginChallengeSignature.identifier)
-    pub identifier: ::std::option::Option<::std::vec::Vec<u8>>,
     // @@protoc_insertion_point(field:hw.trezor.messages.mimblewimble_coin.MimbleWimbleCoinGetLoginChallengeSignature.timestamp)
     pub timestamp: ::std::option::Option<u64>,
     // @@protoc_insertion_point(field:hw.trezor.messages.mimblewimble_coin.MimbleWimbleCoinGetLoginChallengeSignature.time_zone_offset)
     pub time_zone_offset: ::std::option::Option<i32>,
+    // @@protoc_insertion_point(field:hw.trezor.messages.mimblewimble_coin.MimbleWimbleCoinGetLoginChallengeSignature.identifier)
+    pub identifier: ::std::option::Option<::std::vec::Vec<u8>>,
     // special fields
     // @@protoc_insertion_point(special_field:hw.trezor.messages.mimblewimble_coin.MimbleWimbleCoinGetLoginChallengeSignature.special_fields)
     pub special_fields: ::protobuf::SpecialFields,
@@ -8726,7 +8726,45 @@ impl MimbleWimbleCoinGetLoginChallengeSignature {
         self.account = ::std::option::Option::Some(v);
     }
 
-    // required bytes identifier = 4;
+    // required uint64 timestamp = 4;
+
+    pub fn timestamp(&self) -> u64 {
+        self.timestamp.unwrap_or(0)
+    }
+
+    pub fn clear_timestamp(&mut self) {
+        self.timestamp = ::std::option::Option::None;
+    }
+
+    pub fn has_timestamp(&self) -> bool {
+        self.timestamp.is_some()
+    }
+
+    // Param is passed by value, moved
+    pub fn set_timestamp(&mut self, v: u64) {
+        self.timestamp = ::std::option::Option::Some(v);
+    }
+
+    // required sint32 time_zone_offset = 5;
+
+    pub fn time_zone_offset(&self) -> i32 {
+        self.time_zone_offset.unwrap_or(0)
+    }
+
+    pub fn clear_time_zone_offset(&mut self) {
+        self.time_zone_offset = ::std::option::Option::None;
+    }
+
+    pub fn has_time_zone_offset(&self) -> bool {
+        self.time_zone_offset.is_some()
+    }
+
+    // Param is passed by value, moved
+    pub fn set_time_zone_offset(&mut self, v: i32) {
+        self.time_zone_offset = ::std::option::Option::Some(v);
+    }
+
+    // required bytes identifier = 6;
 
     pub fn identifier(&self) -> &[u8] {
         match self.identifier.as_ref() {
@@ -8762,44 +8800,6 @@ impl MimbleWimbleCoinGetLoginChallengeSignature {
         self.identifier.take().unwrap_or_else(|| ::std::vec::Vec::new())
     }
 
-    // required uint64 timestamp = 5;
-
-    pub fn timestamp(&self) -> u64 {
-        self.timestamp.unwrap_or(0)
-    }
-
-    pub fn clear_timestamp(&mut self) {
-        self.timestamp = ::std::option::Option::None;
-    }
-
-    pub fn has_timestamp(&self) -> bool {
-        self.timestamp.is_some()
-    }
-
-    // Param is passed by value, moved
-    pub fn set_timestamp(&mut self, v: u64) {
-        self.timestamp = ::std::option::Option::Some(v);
-    }
-
-    // required sint32 time_zone_offset = 6;
-
-    pub fn time_zone_offset(&self) -> i32 {
-        self.time_zone_offset.unwrap_or(0)
-    }
-
-    pub fn clear_time_zone_offset(&mut self) {
-        self.time_zone_offset = ::std::option::Option::None;
-    }
-
-    pub fn has_time_zone_offset(&self) -> bool {
-        self.time_zone_offset.is_some()
-    }
-
-    // Param is passed by value, moved
-    pub fn set_time_zone_offset(&mut self, v: i32) {
-        self.time_zone_offset = ::std::option::Option::Some(v);
-    }
-
     fn generated_message_descriptor_data() -> ::protobuf::reflect::GeneratedMessageDescriptorData {
         let mut fields = ::std::vec::Vec::with_capacity(6);
         let mut oneofs = ::std::vec::Vec::with_capacity(0);
@@ -8819,11 +8819,6 @@ impl MimbleWimbleCoinGetLoginChallengeSignature {
             |m: &mut MimbleWimbleCoinGetLoginChallengeSignature| { &mut m.account },
         ));
         fields.push(::protobuf::reflect::rt::v2::make_option_accessor::<_, _>(
-            "identifier",
-            |m: &MimbleWimbleCoinGetLoginChallengeSignature| { &m.identifier },
-            |m: &mut MimbleWimbleCoinGetLoginChallengeSignature| { &mut m.identifier },
-        ));
-        fields.push(::protobuf::reflect::rt::v2::make_option_accessor::<_, _>(
             "timestamp",
             |m: &MimbleWimbleCoinGetLoginChallengeSignature| { &m.timestamp },
             |m: &mut MimbleWimbleCoinGetLoginChallengeSignature| { &mut m.timestamp },
@@ -8832,6 +8827,11 @@ impl MimbleWimbleCoinGetLoginChallengeSignature {
             "time_zone_offset",
             |m: &MimbleWimbleCoinGetLoginChallengeSignature| { &m.time_zone_offset },
             |m: &mut MimbleWimbleCoinGetLoginChallengeSignature| { &mut m.time_zone_offset },
+        ));
+        fields.push(::protobuf::reflect::rt::v2::make_option_accessor::<_, _>(
+            "identifier",
+            |m: &MimbleWimbleCoinGetLoginChallengeSignature| { &m.identifier },
+            |m: &mut MimbleWimbleCoinGetLoginChallengeSignature| { &mut m.identifier },
         ));
         ::protobuf::reflect::GeneratedMessageDescriptorData::new_2::<MimbleWimbleCoinGetLoginChallengeSignature>(
             "MimbleWimbleCoinGetLoginChallengeSignature",
@@ -8854,13 +8854,13 @@ impl ::protobuf::Message for MimbleWimbleCoinGetLoginChallengeSignature {
         if self.account.is_none() {
             return false;
         }
-        if self.identifier.is_none() {
-            return false;
-        }
         if self.timestamp.is_none() {
             return false;
         }
         if self.time_zone_offset.is_none() {
+            return false;
+        }
+        if self.identifier.is_none() {
             return false;
         }
         true
@@ -8878,14 +8878,14 @@ impl ::protobuf::Message for MimbleWimbleCoinGetLoginChallengeSignature {
                 24 => {
                     self.account = ::std::option::Option::Some(is.read_uint32()?);
                 },
-                34 => {
-                    self.identifier = ::std::option::Option::Some(is.read_bytes()?);
-                },
-                40 => {
+                32 => {
                     self.timestamp = ::std::option::Option::Some(is.read_uint64()?);
                 },
-                48 => {
+                40 => {
                     self.time_zone_offset = ::std::option::Option::Some(is.read_sint32()?);
+                },
+                50 => {
+                    self.identifier = ::std::option::Option::Some(is.read_bytes()?);
                 },
                 tag => {
                     ::protobuf::rt::read_unknown_or_skip_group(tag, is, self.special_fields.mut_unknown_fields())?;
@@ -8908,14 +8908,14 @@ impl ::protobuf::Message for MimbleWimbleCoinGetLoginChallengeSignature {
         if let Some(v) = self.account {
             my_size += ::protobuf::rt::uint32_size(3, v);
         }
-        if let Some(v) = self.identifier.as_ref() {
-            my_size += ::protobuf::rt::bytes_size(4, &v);
-        }
         if let Some(v) = self.timestamp {
-            my_size += ::protobuf::rt::uint64_size(5, v);
+            my_size += ::protobuf::rt::uint64_size(4, v);
         }
         if let Some(v) = self.time_zone_offset {
-            my_size += ::protobuf::rt::sint32_size(6, v);
+            my_size += ::protobuf::rt::sint32_size(5, v);
+        }
+        if let Some(v) = self.identifier.as_ref() {
+            my_size += ::protobuf::rt::bytes_size(6, &v);
         }
         my_size += ::protobuf::rt::unknown_fields_size(self.special_fields.unknown_fields());
         self.special_fields.cached_size().set(my_size as u32);
@@ -8932,14 +8932,14 @@ impl ::protobuf::Message for MimbleWimbleCoinGetLoginChallengeSignature {
         if let Some(v) = self.account {
             os.write_uint32(3, v)?;
         }
-        if let Some(v) = self.identifier.as_ref() {
-            os.write_bytes(4, v)?;
-        }
         if let Some(v) = self.timestamp {
-            os.write_uint64(5, v)?;
+            os.write_uint64(4, v)?;
         }
         if let Some(v) = self.time_zone_offset {
-            os.write_sint32(6, v)?;
+            os.write_sint32(5, v)?;
+        }
+        if let Some(v) = self.identifier.as_ref() {
+            os.write_bytes(6, v)?;
         }
         os.write_unknown_fields(self.special_fields.unknown_fields())?;
         ::std::result::Result::Ok(())
@@ -8961,9 +8961,9 @@ impl ::protobuf::Message for MimbleWimbleCoinGetLoginChallengeSignature {
         self.coin_type = ::std::option::Option::None;
         self.network_type = ::std::option::Option::None;
         self.account = ::std::option::Option::None;
-        self.identifier = ::std::option::Option::None;
         self.timestamp = ::std::option::Option::None;
         self.time_zone_offset = ::std::option::Option::None;
+        self.identifier = ::std::option::Option::None;
         self.special_fields.clear();
     }
 
@@ -8972,9 +8972,9 @@ impl ::protobuf::Message for MimbleWimbleCoinGetLoginChallengeSignature {
             coin_type: ::std::option::Option::None,
             network_type: ::std::option::Option::None,
             account: ::std::option::Option::None,
-            identifier: ::std::option::Option::None,
             timestamp: ::std::option::Option::None,
             time_zone_offset: ::std::option::Option::None,
+            identifier: ::std::option::Option::None,
             special_fields: ::protobuf::SpecialFields::new(),
         };
         &instance
@@ -9635,21 +9635,21 @@ static file_descriptor_proto_data: &'static [u8] = b"\
     e_coin.MimbleWimbleCoinCoinTypeR\x08coinType\x12d\n\x0cnetwork_type\x18\
     \x02\x20\x02(\x0e2A.hw.trezor.messages.mimblewimble_coin.MimbleWimbleCoi\
     nNetworkTypeR\x0bnetworkType\x12\x18\n\x07account\x18\x03\x20\x02(\rR\
-    \x07account\x12\x1e\n\nidentifier\x18\x04\x20\x02(\x0cR\nidentifier\x12\
-    \x1c\n\ttimestamp\x18\x05\x20\x02(\x04R\ttimestamp\x12(\n\x10time_zone_o\
-    ffset\x18\x06\x20\x02(\x11R\x0etimeZoneOffset\"\x8f\x01\n'MimbleWimbleCo\
-    inLoginChallengeSignature\x12(\n\x10login_public_key\x18\x01\x20\x02(\
-    \x0cR\x0eloginPublicKey\x12:\n\x19login_challenge_signature\x18\x02\x20\
-    \x02(\x0cR\x17loginChallengeSignature*J\n\x18MimbleWimbleCoinCoinType\
-    \x12\x15\n\x11MIMBLEWIMBLE_COIN\x10\0\x12\x08\n\x04GRIN\x10\x01\x12\r\n\
-    \tEPIC_CASH\x10\x02*7\n\x1bMimbleWimbleCoinNetworkType\x12\x0b\n\x07MAIN\
-    NET\x10\0\x12\x0b\n\x07TESTNET\x10\x01*>\n\x1bMimbleWimbleCoinAddressTyp\
-    e\x12\x07\n\x03MQS\x10\0\x12\x07\n\x03TOR\x10\x01\x12\r\n\tSLATEPACK\x10\
-    \x02*3\n\x1aMimbleWimbleCoinSwitchType\x12\x08\n\x04NONE\x10\0\x12\x0b\n\
-    \x07REGULAR\x10\x01*h\n\x1bMimbleWimbleCoinMessageType\x12\x17\n\x13SEND\
-    ING_TRANSACTION\x10\0\x12\x19\n\x15RECEIVING_TRANSACTION\x10\x01\x12\x15\
-    \n\x11CREATING_COINBASE\x10\x02BD\n#com.satoshilabs.trezor.lib.protobufB\
-    \x1dTrezorMessageMimbleWimbleCoin\
+    \x07account\x12\x1c\n\ttimestamp\x18\x04\x20\x02(\x04R\ttimestamp\x12(\n\
+    \x10time_zone_offset\x18\x05\x20\x02(\x11R\x0etimeZoneOffset\x12\x1e\n\n\
+    identifier\x18\x06\x20\x02(\x0cR\nidentifier\"\x8f\x01\n'MimbleWimbleCoi\
+    nLoginChallengeSignature\x12(\n\x10login_public_key\x18\x01\x20\x02(\x0c\
+    R\x0eloginPublicKey\x12:\n\x19login_challenge_signature\x18\x02\x20\x02(\
+    \x0cR\x17loginChallengeSignature*J\n\x18MimbleWimbleCoinCoinType\x12\x15\
+    \n\x11MIMBLEWIMBLE_COIN\x10\0\x12\x08\n\x04GRIN\x10\x01\x12\r\n\tEPIC_CA\
+    SH\x10\x02*7\n\x1bMimbleWimbleCoinNetworkType\x12\x0b\n\x07MAINNET\x10\0\
+    \x12\x0b\n\x07TESTNET\x10\x01*>\n\x1bMimbleWimbleCoinAddressType\x12\x07\
+    \n\x03MQS\x10\0\x12\x07\n\x03TOR\x10\x01\x12\r\n\tSLATEPACK\x10\x02*3\n\
+    \x1aMimbleWimbleCoinSwitchType\x12\x08\n\x04NONE\x10\0\x12\x0b\n\x07REGU\
+    LAR\x10\x01*h\n\x1bMimbleWimbleCoinMessageType\x12\x17\n\x13SENDING_TRAN\
+    SACTION\x10\0\x12\x19\n\x15RECEIVING_TRANSACTION\x10\x01\x12\x15\n\x11CR\
+    EATING_COINBASE\x10\x02BD\n#com.satoshilabs.trezor.lib.protobufB\x1dTrez\
+    orMessageMimbleWimbleCoin\
 ";
 
 /// `FileDescriptorProto` object which was a source for this generated file

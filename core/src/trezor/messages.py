@@ -4566,9 +4566,9 @@ if TYPE_CHECKING:
         coin_type: "MimbleWimbleCoinCoinType"
         network_type: "MimbleWimbleCoinNetworkType"
         account: "int"
-        identifier: "bytes"
         timestamp: "int"
         time_zone_offset: "int"
+        identifier: "bytes"
 
         def __init__(
             self,
@@ -4576,9 +4576,9 @@ if TYPE_CHECKING:
             coin_type: "MimbleWimbleCoinCoinType",
             network_type: "MimbleWimbleCoinNetworkType",
             account: "int",
-            identifier: "bytes",
             timestamp: "int",
             time_zone_offset: "int",
+            identifier: "bytes",
         ) -> None:
             pass
 

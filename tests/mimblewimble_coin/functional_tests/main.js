@@ -3784,14 +3784,14 @@ async function getLoginSignatureTest(hardwareWallet, extendedPrivateKey) {
 		// Account
 		"Account": ACCOUNT,
 		
-		// Identifier
-		"Identifier": (new TextEncoder()).encode(IDENTIFIER),
-		
 		// Timestamp
 		"Timestamp": TIMESTAMP.multipliedBy(Common.MILLISECONDS_IN_A_SECOND),
 		
 		// Time zone offset
-		"Time Zone Offset": new BigNumber(timeZoneOffset)
+		"Time Zone Offset": new BigNumber(timeZoneOffset),
+		
+		// Identifier
+		"Identifier": (new TextEncoder()).encode(IDENTIFIER)
 	
 	}, HardwareWalletDefinitions.MIMBLEWIMBLE_COIN_LOGIN_CHALLENGE_SIGNATURE_MESSAGE_TYPE);
 	

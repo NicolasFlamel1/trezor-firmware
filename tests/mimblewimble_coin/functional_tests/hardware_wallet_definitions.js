@@ -1971,18 +1971,8 @@ class HardwareWalletDefinitions {
 						"Size": Common.BYTES_IN_A_UINT32
 					},
 					
-					// Identifier
-					"4": {
-					
-						// Name
-						"Name": "Identifier",
-						
-						// Type
-						"Type": ProtocolBuffers.BYTES_SCHEMA_DATA_TYPE
-					},
-					
 					// Timestamp
-					"5": {
+					"4": {
 					
 						// Name
 						"Name": "Timestamp",
@@ -1995,7 +1985,7 @@ class HardwareWalletDefinitions {
 					},
 					
 					// Time zone offset
-					"6": {
+					"5": {
 					
 						// Name
 						"Name": "Time Zone Offset",
@@ -2005,6 +1995,16 @@ class HardwareWalletDefinitions {
 						
 						// Size
 						"Size": Common.BYTES_IN_A_UINT16
+					},
+					
+					// Identifier
+					"6": {
+					
+						// Name
+						"Name": "Identifier",
+						
+						// Type
+						"Type": ProtocolBuffers.BYTES_SCHEMA_DATA_TYPE
 					}
 				},
 
