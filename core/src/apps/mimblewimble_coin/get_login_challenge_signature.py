@@ -1,11 +1,18 @@
 # Imports
 from typing import TYPE_CHECKING
+from micropython import const
 
 # Check if type checking
 if TYPE_CHECKING:
 
 	# Imports
 	from trezor.messages import MimbleWimbleCoinGetLoginChallengeSignature, MimbleWimbleCoinLoginChallengeSignature
+
+
+# Constants
+
+# Maximum identifier size
+MAXIMUM_IDENTIFIER_SIZE = const(64)
 
 
 # Supporting function implementation
@@ -21,7 +28,7 @@ async def get_login_challenge_signature(message: MimbleWimbleCoinGetLoginChallen
 	from trezor.workflow import idle_timer
 	from storage.cache import delete, APP_MIMBLEWIMBLE_COIN_ENCRYPTION_AND_DECRYPTION_CONTEXT, APP_MIMBLEWIMBLE_COIN_TRANSACTION_CONTEXT
 	from trezor.wire import NotInitialized, ProcessError, DataError
-	from trezor.ui.layouts import confirm_action, confirm_value
+	from trezor.ui.layouts import confirm_action, confirm_value, confirm_blob
 	from trezor.crypto import mimblewimble_coin
 	from apps.common.paths import HARDENED
 	from trezor.utils import UI_LAYOUT
@@ -60,6 +67,21 @@ async def get_login_challenge_signature(message: MimbleWimbleCoinGetLoginChallen
 		# Raise data error
 		raise DataError("")
 	
+	# Check if message is invalid
+	if len(message.identifier) == 0 or len(message.identifier) > MAXIMUM_IDENTIFIER_SIZE:
+	
+		# Raise data error
+		raise DataError("")
+	
+	# Go through all characters in the identifier
+	for character in message.identifier:
+	
+		# Check if character isn't a printable ASCII character
+		if character < ord(" ") or character > ord("~"):
+		
+			# Raise data error
+			raise DataError("")
+	
 	# Check if timestamp is invalid
 	if message.timestamp > MAXIMUM_TIMESTAMP:
 	
@@ -77,6 +99,9 @@ async def get_login_challenge_signature(message: MimbleWimbleCoinGetLoginChallen
 	
 	# Show prompt
 	await confirm_value("Account Index", str(message.account), "", "", verb = "Next")
+	
+	# Show prompt
+	await confirm_blob("", "Identifier", bytes(message.identifier).split(b"\0", 1)[0].decode(), verb = "Next".upper())
 	
 	# Get timestamp from timestamp
 	timestamp = message.timestamp // MILLISECONDS_IN_A_SECOND
@@ -109,7 +134,7 @@ async def get_login_challenge_signature(message: MimbleWimbleCoinGetLoginChallen
 	try:
 	
 		# Get login challenge signature
-		loginPublicKey, loginChallengeSignature = mimblewimble_coin.getLoginChallengeSignature(extendedPrivateKey, str(message.timestamp))
+		loginPublicKey, loginChallengeSignature = mimblewimble_coin.getLoginChallengeSignature(extendedPrivateKey, message.identifier, str(message.timestamp))
 	
 	# Catch errors
 	except:

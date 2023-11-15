@@ -170,7 +170,7 @@ size_t mimbleWimbleCoinFinishTransaction(uint8_t *signature, uint8_t *paymentPro
 size_t mimbleWimbleCoinGetMqsChallengeSignature(uint8_t *mqsChallengeSignature, const HDNode *extendedPrivateKey, const MimbleWimbleCoinCoinInfo *coinInfo, const uint32_t index, const char *challenge);
 
 // Get login challenge signature
-size_t mimbleWimbleCoinGetLoginChallengeSignature(uint8_t *loginPublicKey, uint8_t *loginChallengeSignature, const HDNode *extendedPrivateKey, const char *challenge);
+size_t mimbleWimbleCoinGetLoginChallengeSignature(uint8_t *loginPublicKey, uint8_t *loginChallengeSignature, const HDNode *extendedPrivateKey, const uint8_t *identifier, const size_t identifierLength, const char *challenge);
 
 
 #endif

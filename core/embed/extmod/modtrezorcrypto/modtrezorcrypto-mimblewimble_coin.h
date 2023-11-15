@@ -725,7 +725,7 @@ STATIC mp_obj_t mod_trezorcrypto_mimblewimble_coin_getTimestampComponents(const 
 STATIC mp_obj_t mod_trezorcrypto_mimblewimble_coin_getMqsChallengeSignature(const size_t argumentsLength, const mp_obj_t *const arguments);
 
 // Get login challenge signature
-/// def getLoginChallengeSignature(extendedPrivateKey: HDNode, challenge: str) -> tuple[bytes, bytes]:
+/// def getLoginChallengeSignature(extendedPrivateKey: HDNode, identifier: str, challenge: str) -> tuple[bytes, bytes]:
 ///     """
 ///     Get login challenge signature
 ///     """
@@ -1197,7 +1197,7 @@ STATIC const MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(mod_trezorcrypto_mimblewimble_c
 STATIC const MP_DEFINE_STR_OBJ(mod_trezorcrypto_mimblewimble_coin_DEFAULT_MQS_CHALLENGE_string, MIMBLEWIMBLE_COIN_DEFAULT_MQS_CHALLENGE);
 
 // Get login challenge signature
-STATIC const MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(mod_trezorcrypto_mimblewimble_coin_getLoginChallengeSignature_function, 2, 2, mod_trezorcrypto_mimblewimble_coin_getLoginChallengeSignature);
+STATIC const MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(mod_trezorcrypto_mimblewimble_coin_getLoginChallengeSignature_function, 3, 3, mod_trezorcrypto_mimblewimble_coin_getLoginChallengeSignature);
 
 // Globals table
 STATIC const mp_rom_map_elem_t mod_trezorcrypto_mimblewimble_coin_globals_table[] = {
@@ -4580,10 +4580,15 @@ mp_obj_t mod_trezorcrypto_mimblewimble_coin_getLoginChallengeSignature(__attribu
 
 	// Get arguments
 	const mp_obj_t extendedPrivateKeyObject = arguments[0];
-	const mp_obj_t challengeObject = arguments[1];
+	const mp_obj_t identifierObject = arguments[1];
+	const mp_obj_t challengeObject = arguments[2];
 	
 	// Get extended private key
 	const HDNode *extendedPrivateKey = &((const mp_obj_HDNode_t *)MP_OBJ_TO_PTR(extendedPrivateKeyObject))->hdnode;
+	
+	// Get identifier
+	mp_buffer_info_t identifier;
+	mp_get_buffer(identifierObject, &identifier, MP_BUFFER_READ);
 	
 	// Get challenge
 	mp_buffer_info_t challenge;
@@ -4600,6 +4605,15 @@ mp_obj_t mod_trezorcrypto_mimblewimble_coin_getLoginChallengeSignature(__attribu
 	
 	// Initialize result
 	mp_obj_tuple_t *result = MP_OBJ_TO_PTR(mp_obj_new_tuple(2, NULL));
+	
+	// Get hash of challenge and identifier
+	SHA256_CTX hashContext;
+	sha256_Init(&hashContext);
+	sha256_Update(&hashContext, challenge.buf, challenge.len);
+	sha256_Update(&hashContext, (const uint8_t *)" ", sizeof(" ") - sizeof((char)'\0'));
+	sha256_Update(&hashContext, identifier.buf, identifier.len);
+	uint8_t hash[SHA256_DIGEST_LENGTH];
+	sha256_Final(&hashContext, hash);
 	
 	// Check if getting login private key failed
 	uint8_t loginPrivateKey[MIMBLEWIMBLE_COIN_SECP256K1_PRIVATE_KEY_SIZE];
@@ -4618,9 +4632,9 @@ mp_obj_t mod_trezorcrypto_mimblewimble_coin_getLoginChallengeSignature(__attribu
 		mp_raise_ValueError(NULL);
 	}
 	
-	// Check if getting signature of the challenge failed
+	// Check if getting signature of the hash failed
 	uint8_t signature[MIMBLEWIMBLE_COIN_SECP256K1_COMPACT_SIGNATURE_SIZE];
-	if(ecdsa_sign(&secp256k1, HASHER_SHA2, loginPrivateKey, challenge.buf, challenge.len, signature, NULL, NULL)) {
+	if(ecdsa_sign_digest(&secp256k1, loginPrivateKey, hash, signature, NULL, NULL)) {
 	
 		// Clear login private key
 		memzero(loginPrivateKey, sizeof(loginPrivateKey));

@@ -1971,8 +1971,18 @@ class HardwareWalletDefinitions {
 						"Size": Common.BYTES_IN_A_UINT32
 					},
 					
-					// Timestamp
+					// Identifier
 					"4": {
+					
+						// Name
+						"Name": "Identifier",
+						
+						// Type
+						"Type": ProtocolBuffers.BYTES_SCHEMA_DATA_TYPE
+					},
+					
+					// Timestamp
+					"5": {
 					
 						// Name
 						"Name": "Timestamp",
@@ -1985,7 +1995,7 @@ class HardwareWalletDefinitions {
 					},
 					
 					// Time zone offset
-					"5": {
+					"6": {
 					
 						// Name
 						"Name": "Time Zone Offset",

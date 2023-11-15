@@ -66,5 +66,7 @@ MimbleWimbleCoinTransactionSignatureAndPaymentProof.payment_proof max_size:72
 
 MimbleWimbleCoinMqsChallengeSignature.mqs_challenge_signature max_size:72
 
+MimbleWimbleCoinGetLoginChallengeSignature.identifier max_size:64
+
 MimbleWimbleCoinLoginChallengeSignature.login_public_key max_size:33
 MimbleWimbleCoinLoginChallengeSignature.login_challenge_signature max_size:72

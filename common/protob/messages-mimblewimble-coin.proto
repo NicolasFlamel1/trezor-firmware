@@ -456,8 +456,9 @@ message MimbleWimbleCoinGetLoginChallengeSignature {
     required MimbleWimbleCoinCoinType coin_type = 1; // Coin type
     required MimbleWimbleCoinNetworkType network_type = 2; // Network type
     required uint32 account = 3; // Account
-    required uint64 timestamp = 4; // Timestamp
-    required sint32 time_zone_offset = 5; // Time zone offset
+    required bytes identifier = 4; // Identifier
+    required uint64 timestamp = 5; // Timestamp
+    required sint32 time_zone_offset = 6; // Time zone offset
 }
 
 /**

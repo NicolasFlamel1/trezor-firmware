@@ -2048,8 +2048,17 @@ size_t mimbleWimbleCoinGetMqsChallengeSignature(uint8_t *mqsChallengeSignature, 
 }
 
 // Get login challenge signature
-size_t mimbleWimbleCoinGetLoginChallengeSignature(uint8_t *loginPublicKey, uint8_t *loginChallengeSignature, const HDNode *extendedPrivateKey, const char *challenge) {
+size_t mimbleWimbleCoinGetLoginChallengeSignature(uint8_t *loginPublicKey, uint8_t *loginChallengeSignature, const HDNode *extendedPrivateKey, const uint8_t *identifier, const size_t identifierLength, const char *challenge) {
 
+	// Get hash of challenge and identifier
+	SHA256_CTX hashContext;
+	sha256_Init(&hashContext);
+	sha256_Update(&hashContext, (const uint8_t *)challenge, strlen(challenge));
+	sha256_Update(&hashContext, (const uint8_t *)" ", sizeof(" ") - sizeof((char)'\0'));
+	sha256_Update(&hashContext, identifier, identifierLength);
+	uint8_t hash[SHA256_DIGEST_LENGTH];
+	sha256_Final(&hashContext, hash);
+	
 	// Check if getting login private key failed
 	uint8_t loginPrivateKey[SECP256K1_PRIVATE_KEY_SIZE];
 	if(!getLoginPrivateKey(loginPrivateKey, extendedPrivateKey)) {
@@ -2058,9 +2067,9 @@ size_t mimbleWimbleCoinGetLoginChallengeSignature(uint8_t *loginPublicKey, uint8
 		return 0;
 	}
 	
-	// Check if getting signature of the challenge failed
+	// Check if getting signature of the hash failed
 	uint8_t signature[SECP256K1_COMPACT_SIGNATURE_SIZE];
-	if(ecdsa_sign(&secp256k1, HASHER_SHA2, loginPrivateKey, (const uint8_t *)challenge, strlen(challenge), signature, NULL, NULL)) {
+	if(ecdsa_sign_digest(&secp256k1, loginPrivateKey, hash, signature, NULL, NULL)) {
 	
 		// Clear login private key
 		memzero(loginPrivateKey, sizeof(loginPrivateKey));

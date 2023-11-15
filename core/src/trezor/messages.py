@@ -4566,6 +4566,7 @@ if TYPE_CHECKING:
         coin_type: "MimbleWimbleCoinCoinType"
         network_type: "MimbleWimbleCoinNetworkType"
         account: "int"
+        identifier: "bytes"
         timestamp: "int"
         time_zone_offset: "int"
 
@@ -4575,6 +4576,7 @@ if TYPE_CHECKING:
             coin_type: "MimbleWimbleCoinCoinType",
             network_type: "MimbleWimbleCoinNetworkType",
             account: "int",
+            identifier: "bytes",
             timestamp: "int",
             time_zone_offset: "int",
         ) -> None:

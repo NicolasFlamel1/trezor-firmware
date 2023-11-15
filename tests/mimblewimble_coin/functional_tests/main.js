@@ -3730,6 +3730,12 @@ async function getLoginSignatureTest(hardwareWallet, extendedPrivateKey) {
 	// Log message
 	console.log("Running get login signature test");
 	
+	// Identifier
+	const IDENTIFIER = "hardware wallet test";
+	
+	// Log identifier
+	console.log("Using identifier: " + IDENTIFIER);
+	
 	// Timestamp
 	const TIMESTAMP = new BigNumber(Math.round(Math.random() * Common.UINT32_MAX_VALUE));
 	
@@ -3739,14 +3745,14 @@ async function getLoginSignatureTest(hardwareWallet, extendedPrivateKey) {
 	// Get login private key from the extended private key
 	const loginPrivateKey = await Crypto.loginKey(extendedPrivateKey);
 	
-	// Get timestamp hash
-	const timestampHash = new Uint8Array(sha256.arrayBuffer((new TextEncoder()).encode(TIMESTAMP.multipliedBy(Common.MILLISECONDS_IN_A_SECOND).toFixed())));
+	// Get timestamp and identifier hash
+	const timestampAndIdentifierHash = new Uint8Array(sha256.arrayBuffer(Common.mergeArrays([(new TextEncoder()).encode(TIMESTAMP.multipliedBy(Common.MILLISECONDS_IN_A_SECOND).toFixed()), (new TextEncoder()).encode(" "), (new TextEncoder()).encode(IDENTIFIER)])));
 	
 	// Set expected login public key to the login private key's public key
 	const expectedLoginPublicKey = Secp256k1Zkp.publicKeyFromSecretKey(loginPrivateKey);
 	
-	// Set expected login signature as the timestamp hash signed by the login private key
-	const expectedLoginSignature = Secp256k1Zkp.createMessageHashSignature(timestampHash, loginPrivateKey);
+	// Set expected login signature as the timestamp and identifier hash signed by the login private key
+	const expectedLoginSignature = Secp256k1Zkp.createMessageHashSignature(timestampAndIdentifierHash, loginPrivateKey);
 	
 	// Get time zone offset
 	const timeZoneOffset = (new Date()).getTimezoneOffset();
@@ -3759,6 +3765,9 @@ async function getLoginSignatureTest(hardwareWallet, extendedPrivateKey) {
 	
 	// Log message
 	console.log("Verify that the account index on the device is: " + ACCOUNT.toFixed());
+	
+	// Log message
+	console.log("Verify that the identifier is: " + IDENTIFIER);
 	
 	// Log message
 	console.log("Verify that the time and date on the device is: " + date.getUTCHours().toFixed().padStart(2, "0") + ":" + date.getUTCMinutes().toFixed().padStart(2, "0") + ":" + date.getUTCSeconds().toFixed().padStart(2, "0") + " on " + date.getUTCFullYear().toFixed() + "-" + (date.getUTCMonth() + 1).toFixed().padStart(2, "0") + "-" + date.getUTCDate().toFixed().padStart(2, "0") + " UTC" + ((timeZoneOffset > 0) ? "-" : "+") + Math.floor(Math.abs(timeZoneOffset) / Common.MINUTES_IN_AN_HOUR).toFixed().padStart(2, "0") + ":" + (Math.abs(timeZoneOffset) % Common.MINUTES_IN_AN_HOUR).toFixed().padStart(2, "0"));
@@ -3774,6 +3783,9 @@ async function getLoginSignatureTest(hardwareWallet, extendedPrivateKey) {
 		
 		// Account
 		"Account": ACCOUNT,
+		
+		// Identifier
+		"Identifier": (new TextEncoder()).encode(IDENTIFIER),
 		
 		// Timestamp
 		"Timestamp": TIMESTAMP.multipliedBy(Common.MILLISECONDS_IN_A_SECOND),

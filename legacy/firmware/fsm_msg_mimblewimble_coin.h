@@ -4773,6 +4773,36 @@ void fsm_msgMimbleWimbleCoinGetLoginChallengeSignature(const MimbleWimbleCoinGet
 		return;
 	}
 	
+	// Check if identifier is invalid
+	if(!message->identifier.size) {
+	
+		// Send data error response
+		fsm_sendFailure(FailureType_Failure_DataError, NULL);
+		
+		// Show home
+		layoutHome();
+		
+		// Return
+		return;
+	}
+	
+	// Go through all characters in the identifier
+	for(size_t i = 0; i < message->identifier.size; ++i) {
+	
+		// Check if character isn't a printable ASCII character
+		if(message->identifier.bytes[i] < ' ' || message->identifier.bytes[i] > '~') {
+		
+			// Send data error response
+			fsm_sendFailure(FailureType_Failure_DataError, NULL);
+			
+			// Show home
+			layoutHome();
+			
+			// Return
+			return;
+		}
+	}
+	
 	// Check if timestamp is invalid
 	if(message->timestamp > MIMBLEWIMBLE_COIN_MAXIMUM_TIMESTAMP) {
 	
@@ -4821,6 +4851,23 @@ void fsm_msgMimbleWimbleCoinGetLoginChallengeSignature(const MimbleWimbleCoinGet
 	
 	// Show prompt
 	layoutDialogSwipeEx(&bmp_icon_question, _("Deny"), _("Next"), _("Account Index"), accountBuffer, NULL, NULL, NULL, NULL, NULL, FONT_FIXED);
+	
+	// Check if user denied prompt
+	if(!protectButton(ButtonRequestType_ButtonRequest_Other, false)) {
+	
+		// Send action canceled response
+		fsm_sendFailure(FailureType_Failure_ActionCancelled, NULL);
+		
+		// Show home
+		layoutHome();
+		
+		// Return
+		return;
+	}
+	
+	// Show prompt
+	const char **splitMessage = split_message(message->identifier.bytes, message->identifier.size, MIMBLEWIMBLE_COIN_ROW_LENGTH);
+	layoutDialogSwipeEx(&bmp_icon_question, _("Deny"), _("Next"), _("Identifier"), splitMessage[0], splitMessage[1], splitMessage[2], splitMessage[3], NULL, NULL, FONT_FIXED);
 	
 	// Check if user denied prompt
 	if(!protectButton(ButtonRequestType_ButtonRequest_Other, false)) {
@@ -4886,7 +4933,7 @@ void fsm_msgMimbleWimbleCoinGetLoginChallengeSignature(const MimbleWimbleCoinGet
 	
 	// Get login challenge signature of the timestamp
 	resp->login_public_key.size = sizeof(resp->login_public_key.bytes);
-	resp->login_challenge_signature.size = mimbleWimbleCoinGetLoginChallengeSignature(resp->login_public_key.bytes, resp->login_challenge_signature.bytes, extendedPrivateKey, timestampBuffer);
+	resp->login_challenge_signature.size = mimbleWimbleCoinGetLoginChallengeSignature(resp->login_public_key.bytes, resp->login_challenge_signature.bytes, extendedPrivateKey, message->identifier.bytes, message->identifier.size, timestampBuffer);
 	
 	// Check if getting login challenge signature failed
 	if(!resp->login_challenge_signature.size) {
