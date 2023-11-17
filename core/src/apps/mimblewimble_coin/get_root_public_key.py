@@ -71,7 +71,7 @@ async def get_root_public_key(message: MimbleWimbleCoinGetRootPublicKey) -> Mimb
 	if UI_LAYOUT == "TR":
 	
 		# Show prompt
-		await confirm_text("", "", "The host will be able to view the account's transactions.", verb = "Approve")
+		await confirm_text("", "Warning", "The host will be able to view the account's transactions.", verb = "Approve")
 	
 	# Otherwise
 	else:

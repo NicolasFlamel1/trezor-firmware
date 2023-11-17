@@ -128,7 +128,7 @@ async def get_mqs_challenge_signature(message: MimbleWimbleCoinGetMqsChallengeSi
 	if UI_LAYOUT == "TR":
 	
 		# Show prompt
-		await confirm_text("", "", f"The host will be able to listen for the account's {coinInfo.mqsName} transactions.", verb = "Approve")
+		await confirm_text("", "Warning", f"The host will be able to listen for the account's {coinInfo.mqsName} transactions.", verb = "Approve")
 	
 	# Otherwise
 	else:

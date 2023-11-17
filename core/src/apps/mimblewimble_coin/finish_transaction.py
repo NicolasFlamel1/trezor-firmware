@@ -401,7 +401,7 @@ async def finish_transaction(message: MimbleWimbleCoinFinishTransaction) -> Mimb
 			if UI_LAYOUT == "TR":
 			
 				# Show prompt
-				await confirm_text("", "", "No payment proof.", verb = "Approve")
+				await confirm_text("", "Warning", "No payment proof.", verb = "Approve")
 			
 			# Otherwise
 			else:
