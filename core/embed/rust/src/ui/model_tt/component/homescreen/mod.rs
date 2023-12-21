@@ -17,7 +17,10 @@ use crate::{
     trezorhal::{buffers::BufferJpegWork, display::ToifFormat, uzlib::UZLIB_WINDOW_SIZE},
     ui::{
         constant::HEIGHT,
-        display::{tjpgd::BufferInput, toif::Toif},
+        display::{
+            tjpgd::{jpeg_test, BufferInput},
+            toif::Toif,
+        },
         model_tt::component::homescreen::render::{
             HomescreenJpeg, HomescreenToif, HOMESCREEN_TOIF_SIZE,
         },
@@ -367,6 +370,10 @@ where
     }
 }
 
+pub fn check_homescreen_format(buffer: &[u8]) -> bool {
+    is_image_jpeg(buffer) && jpeg_test(buffer)
+}
+
 fn is_image_jpeg(buffer: &[u8]) -> bool {
     let jpeg = jpeg_info(buffer);
     if let Some((size, mcu_height)) = jpeg {
@@ -380,7 +387,7 @@ fn is_image_jpeg(buffer: &[u8]) -> bool {
 
 fn is_image_toif(buffer: &[u8]) -> bool {
     let toif = Toif::new(buffer);
-    if let Some(toif) = toif {
+    if let Ok(toif) = toif {
         if toif.size().x == HOMESCREEN_TOIF_SIZE
             && toif.size().y == HOMESCREEN_TOIF_SIZE
             && toif.format() == ToifFormat::FullColorBE

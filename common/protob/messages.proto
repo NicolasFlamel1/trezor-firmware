@@ -363,6 +363,14 @@ enum MessageType {
     MessageType_WebAuthnAddResidentCredential = 802 [(wire_in) = true];
     MessageType_WebAuthnRemoveResidentCredential = 803 [(wire_in) = true];
 
+    // Solana
+    MessageType_SolanaGetPublicKey = 900 [(wire_in) = true];
+    MessageType_SolanaPublicKey = 901 [(wire_out) = true];
+    MessageType_SolanaGetAddress = 902 [(wire_in) = true];
+    MessageType_SolanaAddress = 903 [(wire_out) = true];
+    MessageType_SolanaSignTx = 904 [(wire_in) = true];
+    MessageType_SolanaTxSignature = 905 [(wire_out) = true];
+
     // MimbleWimble Coin
     MessageType_MimbleWimbleCoinGetRootPublicKey = 0xC700 [(wire_in) = true];
     MessageType_MimbleWimbleCoinRootPublicKey = 0xC780 [(wire_out) = true];

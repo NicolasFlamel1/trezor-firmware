@@ -101,6 +101,7 @@ def get_features() -> Features:
             Capability.Shamir,
             Capability.ShamirGroups,
             Capability.PassphraseEntry,
+            Capability.Solana,
             Capability.MimbleWimbleCoin,
         ]
 

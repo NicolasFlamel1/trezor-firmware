@@ -3,7 +3,7 @@
 // Note: we do not use the generated `mod.rs` because we want to feature-gate some modules manually.
 // This significantly improves compile times.
 // See https://github.com/joshieDo/rust-trezor-api/pull/9 for more details.
-#[allow(ambiguous_glob_reexports)]
+#[allow(ambiguous_glob_reexports, unreachable_pub)]
 mod generated {
     macro_rules! modules {
         ($($($feature:literal =>)? $module:ident)+) => {$(
@@ -32,6 +32,7 @@ mod generated {
         "monero" => messages_monero
         "nem" => messages_nem
         "ripple" => messages_ripple
+        "solana" => messages_solana
         "stellar" => messages_stellar
         "tezos" => messages_tezos
         "webauthn" => messages_webauthn

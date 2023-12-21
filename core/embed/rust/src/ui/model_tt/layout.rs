@@ -1,5 +1,4 @@
 use core::{cmp::Ordering, convert::TryInto};
-use cstr_core::cstr;
 
 use crate::{
     error::Error,
@@ -38,11 +37,9 @@ use crate::{
         layout::{
             obj::{ComponentMsgObj, LayoutObj},
             result::{CANCELLED, CONFIRMED, INFO},
-            util::{
-                iter_into_array, upy_disable_animation, upy_jpeg_info, upy_jpeg_test, ConfirmBlob,
-                PropsList,
-            },
+            util::{iter_into_array, upy_disable_animation, ConfirmBlob, PropsList},
         },
+        model_tt::component::check_homescreen_format,
     },
 };
 
@@ -522,7 +519,8 @@ impl ConfirmBlobParams {
             description_font: &theme::TEXT_NORMAL,
             extra_font: &theme::TEXT_DEMIBOLD,
             data_font: if self.chunkify {
-                &theme::TEXT_MONO_ADDRESS_CHUNKS
+                let data: StrBuffer = self.data.try_into()?;
+                theme::get_chunkified_text_style(data.len())
             } else {
                 &theme::TEXT_MONO
             },
@@ -585,15 +583,8 @@ extern "C" fn new_confirm_address(n_args: usize, args: *const Obj, kwargs: *mut 
         let chunkify: bool = kwargs.get_or(Qstr::MP_QSTR_chunkify, false)?;
 
         let data_style = if chunkify {
-            // Longer addresses have smaller x_offset so they fit even with scrollbar
-            // (as they will be shown on more than one page)
-            const FITS_ON_ONE_PAGE: usize = 16 * 4;
             let address: StrBuffer = data.try_into()?;
-            if address.len() <= FITS_ON_ONE_PAGE {
-                &theme::TEXT_MONO_ADDRESS_CHUNKS
-            } else {
-                &theme::TEXT_MONO_ADDRESS_CHUNKS_SMALLER_X_OFFSET
-            }
+            theme::get_chunkified_text_style(address.len())
         } else {
             &theme::TEXT_MONO
         };
@@ -762,7 +753,7 @@ extern "C" fn new_show_info_with_cancel(n_args: usize, args: *const Obj, kwargs:
             let [key, value]: [Obj; 2] = iter_into_array(para)?;
             let key: StrBuffer = key.try_into()?;
             let value: StrBuffer = value.try_into()?;
-            paragraphs.add(Paragraph::new(&theme::TEXT_NORMAL, key));
+            paragraphs.add(Paragraph::new(&theme::TEXT_NORMAL, key).no_break());
             paragraphs.add(Paragraph::new(&theme::TEXT_MONO, value));
         }
 
@@ -825,7 +816,7 @@ extern "C" fn new_confirm_total(n_args: usize, args: *const Obj, kwargs: *mut Ma
 
         for pair in IterBuf::new().try_iterate(items)? {
             let [label, value]: [StrBuffer; 2] = iter_into_array(pair)?;
-            paragraphs.add(Paragraph::new(&theme::TEXT_NORMAL, label));
+            paragraphs.add(Paragraph::new(&theme::TEXT_NORMAL, label).no_break());
             paragraphs.add(Paragraph::new(&theme::TEXT_MONO, value));
         }
         let mut page: ButtonPage<_, StrBuffer> =
@@ -1593,14 +1584,14 @@ extern "C" fn new_show_lockscreen(n_args: usize, args: *const Obj, kwargs: *mut 
     unsafe { util::try_with_args_and_kwargs(n_args, args, kwargs, block) }
 }
 
-extern "C" fn draw_welcome_screen() -> Obj {
-    // No need of util::try_or_raise, this does not allocate
-    let mut screen = WelcomeScreen::new(false);
-    screen.place(constant::screen());
-    display::sync();
-    screen.paint();
-    display::set_backlight(theme::BACKLIGHT_NORMAL);
-    Obj::const_none()
+pub extern "C" fn upy_check_homescreen_format(data: Obj) -> Obj {
+    let block = || {
+        let buffer = unsafe { get_buffer(data) }?;
+
+        Ok(check_homescreen_format(buffer).into())
+    };
+
+    unsafe { util::try_or_raise(block) }
 }
 
 #[no_mangle]
@@ -1650,13 +1641,9 @@ pub static mp_module_trezorui2: Module = obj_module! {
     ///     """Disable animations, debug builds only."""
     Qstr::MP_QSTR_disable_animation => obj_fn_1!(upy_disable_animation).as_obj(),
 
-    /// def jpeg_info(data: bytes) -> tuple[int, int, int]:
-    ///     """Get JPEG image dimensions (width: int, height: int, mcu_height: int)."""
-    Qstr::MP_QSTR_jpeg_info => obj_fn_1!(upy_jpeg_info).as_obj(),
-
-    /// def jpeg_test(data: bytes) -> bool:
-    ///     """Test JPEG image."""
-    Qstr::MP_QSTR_jpeg_test => obj_fn_1!(upy_jpeg_test).as_obj(),
+    /// def check_homescreen_format(data: bytes) -> bool:
+    ///     """Check homescreen format and dimensions."""
+    Qstr::MP_QSTR_check_homescreen_format => obj_fn_1!(upy_check_homescreen_format).as_obj(),
 
     /// def confirm_action(
     ///     *,
@@ -1776,7 +1763,7 @@ pub static mp_module_trezorui2: Module = obj_module! {
     /// def confirm_total(
     ///     *,
     ///     title: str,
-    ///     items: list[tuple[str, str]],
+    ///     items: Iterable[tuple[str, str]],
     ///     info_button: bool = False,
     ///     cancel_arrow: bool = False,
     /// ) -> object:
@@ -1785,12 +1772,11 @@ pub static mp_module_trezorui2: Module = obj_module! {
 
     /// def confirm_modify_output(
     ///     *,
-    ///     address: str,  # ignored
     ///     sign: int,
     ///     amount_change: str,
     ///     amount_new: str,
     /// ) -> object:
-    ///     """Decrease or increase amount for given address."""
+    ///     """Decrease or increase output amount."""
     Qstr::MP_QSTR_confirm_modify_output => obj_fn_kw!(0, new_confirm_modify_output).as_obj(),
 
     /// def confirm_modify_fee(
@@ -2050,10 +2036,6 @@ pub static mp_module_trezorui2: Module = obj_module! {
     /// ) -> CANCELLED:
     ///     """Homescreen for locked device."""
     Qstr::MP_QSTR_show_lockscreen => obj_fn_kw!(0, new_show_lockscreen).as_obj(),
-
-    /// def draw_welcome_screen() -> None:
-    ///     """Show logo icon with the model name at the bottom and return."""
-    Qstr::MP_QSTR_draw_welcome_screen => obj_fn_0!(draw_welcome_screen).as_obj(),
 
     /// def confirm_firmware_update(
     ///     *,

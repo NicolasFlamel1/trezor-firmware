@@ -495,6 +495,7 @@ async def show_address(
                 br_code,
                 pages=layout.page_count(),
             )
+        layout.request_complete_repaint()
         result = await ctx_wait(layout)
 
         # User confirmed with middle button.
@@ -766,7 +767,7 @@ async def confirm_blob(
     br_type: str,
     title: str,
     data: bytes | str,
-    description: str | None = None,
+    description: str = "",
     verb: str = "CONFIRM",
     verb_cancel: str | None = "",  # icon
     hold: bool = False,
@@ -775,7 +776,6 @@ async def confirm_blob(
     chunkify: bool = False,
 ) -> None:
     title = title.upper()
-    description = description or ""
     layout = RustLayout(
         trezorui2.confirm_blob(
             title=title,
@@ -846,10 +846,10 @@ async def _confirm_ask_pagination(
     assert False
 
 
-async def confirm_address(
+def confirm_address(
     title: str,
     address: str,
-    description: str | None = "Address:",
+    description: str = "Address:",
     br_type: str = "confirm_address",
     br_code: ButtonRequestType = BR_TYPE_OTHER,
 ) -> Awaitable[None]:
@@ -931,7 +931,7 @@ async def confirm_properties(
     )
 
 
-def confirm_value(
+async def confirm_value(
     title: str,
     value: str,
     description: str,
@@ -940,7 +940,8 @@ def confirm_value(
     *,
     verb: str | None = None,
     hold: bool = False,
-) -> Awaitable[None]:
+    info_items: Iterable[tuple[str, str]] | None = None,
+) -> None:
     """General confirmation dialog, used by many other confirm_* functions."""
 
     if not verb and not hold:
@@ -949,21 +950,68 @@ def confirm_value(
     if verb:
         verb = verb.upper()
 
-    return raise_if_not_confirmed(
-        interact(
-            RustLayout(
-                trezorui2.confirm_value(  # type: ignore [Argument missing for parameter "subtitle"]
-                    title=title.upper(),
-                    description=description,
-                    value=value,
-                    verb=verb or "HOLD TO CONFIRM",
-                    hold=hold,
-                )
-            ),
-            br_type,
-            br_code,
+    if info_items is None:
+        return await raise_if_not_confirmed(
+            interact(
+                RustLayout(
+                    trezorui2.confirm_value(  # type: ignore [Argument missing for parameter "subtitle"]
+                        title=title.upper(),
+                        description=description,
+                        value=value,
+                        verb=verb or "HOLD TO CONFIRM",
+                        hold=hold,
+                    )
+                ),
+                br_type,
+                br_code,
+            )
         )
-    )
+    else:
+        info_items_list = list(info_items)
+        if len(info_items_list) > 1:
+            raise NotImplementedError("Only one info item is supported")
+
+        send_button_request = True
+        while True:
+            should_show_more_layout = RustLayout(
+                trezorui2.confirm_with_info(
+                    title=title.upper(),
+                    items=((ui.NORMAL, value),),
+                    button="CONFIRM",
+                    info_button="INFO",
+                )
+            )
+
+            if send_button_request:
+                send_button_request = False
+                await button_request(
+                    br_type,
+                    br_code,
+                    should_show_more_layout.page_count(),
+                )
+
+            result = await ctx_wait(should_show_more_layout)
+
+            if result is CONFIRMED:
+                break
+            elif result is INFO:
+                info_title, info_value = info_items_list[0]
+                await ctx_wait(
+                    RustLayout(
+                        trezorui2.confirm_action(
+                            title=info_title.upper(),
+                            action=info_value,
+                            description=description,
+                            verb="BACK",
+                            verb_cancel="<",
+                            hold=False,
+                            reverse=False,
+                        )
+                    )
+                )
+            else:
+                assert result is CANCELLED
+                raise ActionCancelled
 
 
 async def confirm_total(
@@ -996,6 +1044,33 @@ async def confirm_total(
     )
 
 
+async def confirm_solana_tx(
+    amount: str,
+    fee: str,
+    items: Iterable[tuple[str, str]],
+    amount_title="Amount:",
+    fee_title="Fee",
+    br_type: str = "confirm_solana_tx",
+    br_code: ButtonRequestType = ButtonRequestType.SignTx,
+):
+    await raise_if_not_confirmed(
+        interact(
+            RustLayout(
+                trezorui2.altcoin_tx_summary(
+                    amount_title=amount_title,
+                    amount_value=amount,
+                    fee_title=fee_title,
+                    fee_value=fee,
+                    items=items,
+                    cancel_cross=True,
+                )
+            ),
+            br_type=br_type,
+            br_code=br_code,
+        )
+    )
+
+
 async def confirm_ethereum_tx(
     recipient: str,
     total_amount: str,
@@ -1005,21 +1080,38 @@ async def confirm_ethereum_tx(
     br_code: ButtonRequestType = ButtonRequestType.SignTx,
     chunkify: bool = False,
 ) -> None:
-    await raise_if_not_confirmed(
-        interact(
-            RustLayout(
-                trezorui2.confirm_ethereum_tx(
-                    recipient=recipient,
-                    total_amount=total_amount,
-                    maximum_fee=maximum_fee,
-                    items=items,
-                    chunkify=chunkify,
-                )
-            ),
-            br_type,
-            br_code,
+    summary_layout = RustLayout(
+        trezorui2.altcoin_tx_summary(
+            amount_title="Amount:",
+            amount_value=total_amount,
+            fee_title="Maximum fee:",
+            fee_value=maximum_fee,
+            items=items,
         )
     )
+
+    while True:
+        # Allowing going back and forth between recipient and summary/details
+        await confirm_blob(
+            br_type,
+            "RECIPIENT",
+            recipient,
+            verb="CONTINUE",
+            chunkify=chunkify,
+        )
+
+        try:
+            summary_layout.request_complete_repaint()
+            await raise_if_not_confirmed(
+                interact(
+                    summary_layout,
+                    br_type,
+                    br_code,
+                )
+            )
+            break
+        except ActionCancelled:
+            continue
 
 
 async def confirm_joint_total(spending_amount: str, total_amount: str) -> None:
@@ -1071,20 +1163,47 @@ async def confirm_modify_output(
     amount_change: str,
     amount_new: str,
 ) -> None:
-    await raise_if_not_confirmed(
-        interact(
-            RustLayout(
-                trezorui2.confirm_modify_output(
-                    address=address,
-                    sign=sign,
-                    amount_change=amount_change,
-                    amount_new=amount_new,
-                )
-            ),
-            "modify_output",
-            ButtonRequestType.ConfirmOutput,
+    address_layout = RustLayout(
+        trezorui2.confirm_blob(
+            title="MODIFY AMOUNT",
+            data=address,
+            verb="CONTINUE",
+            verb_cancel=None,
+            description="Address:",
+            extra=None,
         )
     )
+    modify_layout = RustLayout(
+        trezorui2.confirm_modify_output(
+            sign=sign,
+            amount_change=amount_change,
+            amount_new=amount_new,
+        )
+    )
+
+    send_button_request = True
+    while True:
+        if send_button_request:
+            await button_request(
+                "modify_output",
+                ButtonRequestType.ConfirmOutput,
+                address_layout.page_count(),
+            )
+        address_layout.request_complete_repaint()
+        await raise_if_not_confirmed(ctx_wait(address_layout))
+
+        if send_button_request:
+            send_button_request = False
+            await button_request(
+                "modify_output",
+                ButtonRequestType.ConfirmOutput,
+                modify_layout.page_count(),
+            )
+        modify_layout.request_complete_repaint()
+        result = await ctx_wait(modify_layout)
+
+        if result is CONFIRMED:
+            break
 
 
 async def confirm_modify_fee(

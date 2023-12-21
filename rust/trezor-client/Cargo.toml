@@ -28,8 +28,8 @@ members = ["build", "."]
 
 [workspace.dependencies]
 # important: keep in sync
-protobuf = "=3.2.0"
-protobuf-codegen = "=3.2.0"
+protobuf = "=3.3.0"
+protobuf-codegen = "=3.3.0"
 
 [dependencies]
 protobuf.workspace = true
@@ -41,7 +41,7 @@ thiserror = "1.0"
 tracing = "0.1"
 
 # bitcoin
-bitcoin = { version = "0.30", optional = true }
+bitcoin = { version = "0.31", optional = true }
 unicode-normalization = { version = "0.1.22", optional = true }
 
 # ethereum
@@ -65,6 +65,7 @@ eos = []
 monero = []
 nem = []
 ripple = []
+solana = []
 stellar = []
 tezos = []
 webauthn = []

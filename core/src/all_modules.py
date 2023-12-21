@@ -745,6 +745,34 @@ if not utils.BITCOIN_ONLY:
     import apps.ripple.serialize
     apps.ripple.sign_tx
     import apps.ripple.sign_tx
+    apps.solana
+    import apps.solana
+    apps.solana.constants
+    import apps.solana.constants
+    apps.solana.format
+    import apps.solana.format
+    apps.solana.get_address
+    import apps.solana.get_address
+    apps.solana.get_public_key
+    import apps.solana.get_public_key
+    apps.solana.layout
+    import apps.solana.layout
+    apps.solana.predefined_transaction
+    import apps.solana.predefined_transaction
+    apps.solana.sign_tx
+    import apps.solana.sign_tx
+    apps.solana.token_account
+    import apps.solana.token_account
+    apps.solana.transaction
+    import apps.solana.transaction
+    apps.solana.transaction.instruction
+    import apps.solana.transaction.instruction
+    apps.solana.transaction.instructions
+    import apps.solana.transaction.instructions
+    apps.solana.transaction.parse
+    import apps.solana.transaction.parse
+    apps.solana.types
+    import apps.solana.types
     apps.stellar
     import apps.stellar
     apps.stellar.consts

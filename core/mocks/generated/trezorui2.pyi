@@ -10,8 +10,8 @@ def disable_animation(disable: bool) -> None:
 
 
 # rust/src/ui/model_tr/layout.rs
-def toif_info(data: bytes) -> tuple[int, int, bool]:
-    """Get TOIF image dimensions and format (width: int, height: int, is_grayscale: bool)."""
+def check_homescreen_format(data: bytes) -> bool:
+    """Check homescreen format and dimensions."""
 
 
 # rust/src/ui/model_tr/layout.rs
@@ -129,12 +129,11 @@ def confirm_joint_total(
 # rust/src/ui/model_tr/layout.rs
 def confirm_modify_output(
     *,
-    address: str,
     sign: int,
     amount_change: str,
     amount_new: str,
 ) -> object:
-    """Decrease or increase amount for given address."""
+    """Decrease or increase output amount."""
 
 
 # rust/src/ui/model_tr/layout.rs
@@ -171,15 +170,16 @@ def confirm_total(
 
 
 # rust/src/ui/model_tr/layout.rs
-def confirm_ethereum_tx(
+def altcoin_tx_summary(
     *,
-    recipient: str,
-    total_amount: str,
-    maximum_fee: str,
+    amount_title: str,
+    amount_value: str,
+    fee_title: str,
+    fee_value: str,
     items: Iterable[Tuple[str, str]],
-    chunkify: bool = False,
+    cancel_cross: bool = False,
 ) -> object:
-    """Confirm details about Ethereum transaction."""
+    """Confirm details about altcoin transaction."""
 
 
 # rust/src/ui/model_tr/layout.rs
@@ -441,11 +441,6 @@ def show_lockscreen(
 
 
 # rust/src/ui/model_tr/layout.rs
-def draw_welcome_screen() -> None:
-    """Show logo icon with the model name at the bottom and return."""
-
-
-# rust/src/ui/model_tr/layout.rs
 def confirm_firmware_update(
     *,
     description: str,
@@ -463,13 +458,8 @@ def disable_animation(disable: bool) -> None:
 
 
 # rust/src/ui/model_tt/layout.rs
-def jpeg_info(data: bytes) -> tuple[int, int, int]:
-    """Get JPEG image dimensions (width: int, height: int, mcu_height: int)."""
-
-
-# rust/src/ui/model_tt/layout.rs
-def jpeg_test(data: bytes) -> bool:
-    """Test JPEG image."""
+def check_homescreen_format(data: bytes) -> bool:
+    """Check homescreen format and dimensions."""
 
 
 # rust/src/ui/model_tt/layout.rs
@@ -601,7 +591,7 @@ def confirm_value(
 def confirm_total(
     *,
     title: str,
-    items: list[tuple[str, str]],
+    items: Iterable[tuple[str, str]],
     info_button: bool = False,
     cancel_arrow: bool = False,
 ) -> object:
@@ -611,12 +601,11 @@ def confirm_total(
 # rust/src/ui/model_tt/layout.rs
 def confirm_modify_output(
     *,
-    address: str,  # ignored
     sign: int,
     amount_change: str,
     amount_new: str,
 ) -> object:
-    """Decrease or increase amount for given address."""
+    """Decrease or increase output amount."""
 
 
 # rust/src/ui/model_tt/layout.rs
@@ -901,11 +890,6 @@ def show_lockscreen(
     coinjoin_authorized: bool = False,
 ) -> CANCELLED:
     """Homescreen for locked device."""
-
-
-# rust/src/ui/model_tt/layout.rs
-def draw_welcome_screen() -> None:
-    """Show logo icon with the model name at the bottom and return."""
 
 
 # rust/src/ui/model_tt/layout.rs

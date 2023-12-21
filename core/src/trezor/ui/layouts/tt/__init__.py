@@ -429,16 +429,18 @@ async def show_address(
         details_title = "RECEIVING TO"
     elif details_title is None:
         details_title = title
-    while True:
-        layout = RustLayout(
-            trezorui2.confirm_address(
-                title=title,
-                data=address,
-                description=network or "",
-                extra=None,
-                chunkify=chunkify,
-            )
+
+    layout = RustLayout(
+        trezorui2.confirm_address(
+            title=title,
+            data=address,
+            description=network or "",
+            extra=None,
+            chunkify=chunkify,
         )
+    )
+
+    while True:
         if send_button_request:
             send_button_request = False
             await button_request(
@@ -446,6 +448,7 @@ async def show_address(
                 br_code,
                 pages=layout.page_count(),
             )
+        layout.request_complete_repaint()
         result = await ctx_wait(layout)
 
         # User pressed right button.
@@ -746,7 +749,7 @@ async def confirm_blob(
     br_type: str,
     title: str,
     data: bytes | str,
-    description: str | None = None,
+    description: str = "",
     verb: str = "CONFIRM",
     verb_cancel: str | None = None,
     hold: bool = False,
@@ -755,7 +758,6 @@ async def confirm_blob(
     chunkify: bool = False,
 ) -> None:
     title = title.upper()
-    description = description or ""
     layout = RustLayout(
         trezorui2.confirm_blob(
             title=title,
@@ -845,7 +847,7 @@ def confirm_value(
     verb: str | None = None,
     subtitle: str | None = None,
     hold: bool = False,
-    info_button: bool = False,
+    info_items: Iterable[tuple[str, str]] | None = None,
 ) -> Awaitable[None]:
     """General confirmation dialog, used by many other confirm_* functions."""
 
@@ -855,8 +857,16 @@ def confirm_value(
     if verb:
         verb = verb.upper()
 
+    info_items = info_items or []
+    info_layout = RustLayout(
+        trezorui2.show_info_with_cancel(
+            title="INFORMATION",
+            items=info_items,
+        )
+    )
+
     return raise_if_not_confirmed(
-        interact(
+        with_info(
             RustLayout(
                 trezorui2.confirm_value(
                     title=title.upper(),
@@ -865,9 +875,10 @@ def confirm_value(
                     value=value,
                     verb=verb,
                     hold=hold,
-                    info_button=info_button,
+                    info_button=bool(info_items),
                 )
             ),
+            info_layout,
             br_type,
             br_code,
         )
@@ -904,33 +915,48 @@ async def confirm_properties(
 async def confirm_total(
     total_amount: str,
     fee_amount: str,
-    fee_rate_amount: str | None = None,
     title: str = "SUMMARY",
     total_label: str = "Total amount:",
     fee_label: str = "Including fee:",
     account_label: str | None = None,
+    fee_rate_amount: str | None = None,
+    br_type: str = "confirm_total",
+    br_code: ButtonRequestType = ButtonRequestType.SignTx,
+) -> None:
+    items = [
+        (total_label, total_amount),
+        (fee_label, fee_amount),
+    ]
+    info_items = []
+    if account_label:
+        info_items.append(("Sending from account:", account_label))
+    if fee_rate_amount:
+        info_items.append(("Fee rate:", fee_rate_amount))
+
+    await confirm_summary(
+        items, "SUMMARY", info_items, br_type=br_type, br_code=br_code
+    )
+
+
+async def confirm_summary(
+    items: Iterable[tuple[str, str]],
+    title: str = "SUMMARY",
+    info_items: Iterable[tuple[str, str]] | None = None,
     br_type: str = "confirm_total",
     br_code: ButtonRequestType = ButtonRequestType.SignTx,
 ) -> None:
     total_layout = RustLayout(
         trezorui2.confirm_total(
-            title=title,
-            items=[
-                (total_label, total_amount),
-                (fee_label, fee_amount),
-            ],
-            info_button=bool(account_label or fee_rate_amount),
+            title=title.upper(),
+            items=items,
+            info_button=bool(info_items),
         )
     )
-    items: list[tuple[str, str]] = []
-    if account_label:
-        items.append(("Sending from account:", account_label))
-    if fee_rate_amount:
-        items.append(("Fee rate:", fee_rate_amount))
+    info_items = info_items or []
     info_layout = RustLayout(
         trezorui2.show_info_with_cancel(
             title="INFORMATION",
-            items=items,
+            items=info_items,
         )
     )
     await raise_if_not_confirmed(with_info(total_layout, info_layout, br_type, br_code))
@@ -983,6 +1009,23 @@ async def confirm_ethereum_tx(
             continue
 
 
+async def confirm_solana_tx(
+    amount: str,
+    fee: str,
+    items: Iterable[tuple[str, str]],
+    amount_title="Amount:",
+    fee_title="Fee",
+    br_type: str = "confirm_solana_tx",
+    br_code: ButtonRequestType = ButtonRequestType.SignTx,
+):
+    await confirm_summary(
+        ((amount_title, amount), (fee_title, fee)),
+        info_items=items,
+        br_type=br_type,
+        br_code=br_code,
+    )
+
+
 async def confirm_joint_total(spending_amount: str, total_amount: str) -> None:
     await raise_if_not_confirmed(
         interact(
@@ -1024,11 +1067,11 @@ async def confirm_metadata(
 
 async def confirm_replacement(title: str, txid: str) -> None:
     await confirm_blob(
-        title=title.upper(),
-        data=txid,
-        description="Transaction ID:",
-        verb="CONTINUE",
-        br_type="confirm_replacement",
+        "confirm_replacement",
+        title.upper(),
+        txid,
+        "Transaction ID:",
+        "CONTINUE",
         br_code=ButtonRequestType.SignTx,
     )
 
@@ -1039,44 +1082,44 @@ async def confirm_modify_output(
     amount_change: str,
     amount_new: str,
 ) -> None:
+    address_layout = RustLayout(
+        trezorui2.confirm_blob(
+            title="MODIFY AMOUNT",
+            data=address,
+            verb="CONTINUE",
+            verb_cancel=None,
+            description="Address:",
+            extra=None,
+        )
+    )
+    modify_layout = RustLayout(
+        trezorui2.confirm_modify_output(
+            sign=sign,
+            amount_change=amount_change,
+            amount_new=amount_new,
+        )
+    )
+
     send_button_request = True
     while True:
         if send_button_request:
             await button_request(
                 "modify_output",
                 ButtonRequestType.ConfirmOutput,
+                address_layout.page_count(),
             )
-        await raise_if_not_confirmed(
-            ctx_wait(
-                RustLayout(
-                    trezorui2.confirm_blob(
-                        title="MODIFY AMOUNT",
-                        data=address,
-                        verb="CONTINUE",
-                        verb_cancel=None,
-                        description="Address:",
-                        extra=None,
-                    )
-                )
-            )
-        )
+        address_layout.request_complete_repaint()
+        await raise_if_not_confirmed(ctx_wait(address_layout))
 
         if send_button_request:
             send_button_request = False
             await button_request(
                 "modify_output",
                 ButtonRequestType.ConfirmOutput,
+                modify_layout.page_count(),
             )
-        result = await ctx_wait(
-            RustLayout(
-                trezorui2.confirm_modify_output(
-                    address=address,
-                    sign=sign,
-                    amount_change=amount_change,
-                    amount_new=amount_new,
-                )
-            ),
-        )
+        modify_layout.request_complete_repaint()
+        result = await ctx_wait(modify_layout)
 
         if result is CONFIRMED:
             break
@@ -1153,10 +1196,10 @@ async def confirm_sign_identity(
     proto: str, identity: str, challenge_visual: str | None
 ) -> None:
     await confirm_blob(
-        title=f"Sign {proto}",
-        data=identity,
-        description=challenge_visual + "\n" if challenge_visual else "",
-        br_type="sign_identity",
+        "sign_identity",
+        f"Sign {proto}",
+        identity,
+        challenge_visual + "\n" if challenge_visual else "",
         br_code=BR_TYPE_OTHER,
     )
 

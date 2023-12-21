@@ -236,6 +236,12 @@ if not utils.BITCOIN_ONLY:
     WebAuthnCredentials = 801
     WebAuthnAddResidentCredential = 802
     WebAuthnRemoveResidentCredential = 803
+    SolanaGetPublicKey = 900
+    SolanaPublicKey = 901
+    SolanaGetAddress = 902
+    SolanaAddress = 903
+    SolanaSignTx = 904
+    SolanaTxSignature = 905
     MimbleWimbleCoinGetRootPublicKey = 50944
     MimbleWimbleCoinRootPublicKey = 51072
     MimbleWimbleCoinGetAddress = 50945

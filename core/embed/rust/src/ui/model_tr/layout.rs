@@ -36,10 +36,9 @@ use crate::{
         layout::{
             obj::{ComponentMsgObj, LayoutObj},
             result::{CANCELLED, CONFIRMED, INFO},
-            util::{
-                iter_into_array, iter_into_vec, upy_disable_animation, upy_toif_info, ConfirmBlob,
-            },
+            util::{iter_into_array, iter_into_vec, upy_disable_animation, ConfirmBlob},
         },
+        model_tr::component::check_homescreen_format,
     },
 };
 
@@ -580,7 +579,6 @@ extern "C" fn new_confirm_joint_total(n_args: usize, args: *const Obj, kwargs: *
 
 extern "C" fn new_confirm_modify_output(n_args: usize, args: *const Obj, kwargs: *mut Map) -> Obj {
     let block = move |_args: &[Obj], kwargs: &Map| {
-        let address: StrBuffer = kwargs.get(Qstr::MP_QSTR_address)?.try_into()?;
         let sign: i32 = kwargs.get(Qstr::MP_QSTR_sign)?.try_into()?;
         let amount_change: StrBuffer = kwargs.get(Qstr::MP_QSTR_amount_change)?.try_into()?;
         let amount_new: StrBuffer = kwargs.get(Qstr::MP_QSTR_amount_new)?.try_into()?;
@@ -592,8 +590,6 @@ extern "C" fn new_confirm_modify_output(n_args: usize, args: *const Obj, kwargs:
         };
 
         let paragraphs = Paragraphs::new([
-            Paragraph::new(&theme::TEXT_BOLD, "Address:".into()),
-            Paragraph::new(&theme::TEXT_MONO, address).break_after(),
             Paragraph::new(&theme::TEXT_NORMAL, description.into()),
             Paragraph::new(&theme::TEXT_MONO, amount_change).break_after(),
             Paragraph::new(&theme::TEXT_BOLD, "New amount:".into()),
@@ -756,51 +752,39 @@ extern "C" fn new_confirm_total(n_args: usize, args: *const Obj, kwargs: *mut Ma
     unsafe { util::try_with_args_and_kwargs(n_args, args, kwargs, block) }
 }
 
-extern "C" fn new_confirm_ethereum_tx(n_args: usize, args: *const Obj, kwargs: *mut Map) -> Obj {
+extern "C" fn new_altcoin_tx_summary(n_args: usize, args: *const Obj, kwargs: *mut Map) -> Obj {
     let block = |_args: &[Obj], kwargs: &Map| {
-        let recipient: StrBuffer = kwargs.get(Qstr::MP_QSTR_recipient)?.try_into()?;
-        let total_amount: StrBuffer = kwargs.get(Qstr::MP_QSTR_total_amount)?.try_into()?;
-        let maximum_fee: StrBuffer = kwargs.get(Qstr::MP_QSTR_maximum_fee)?.try_into()?;
+        let amount_title: StrBuffer = kwargs.get(Qstr::MP_QSTR_amount_title)?.try_into()?;
+        let amount_value: StrBuffer = kwargs.get(Qstr::MP_QSTR_amount_value)?.try_into()?;
+        let fee_title: StrBuffer = kwargs.get(Qstr::MP_QSTR_fee_title)?.try_into()?;
+        let fee_value: StrBuffer = kwargs.get(Qstr::MP_QSTR_fee_value)?.try_into()?;
+        let cancel_cross: bool = kwargs.get_or(Qstr::MP_QSTR_cancel_cross, false)?;
         let items: Obj = kwargs.get(Qstr::MP_QSTR_items)?;
-        let chunkify: bool = kwargs.get_or(Qstr::MP_QSTR_chunkify, false)?;
 
         let get_page = move |page_index| {
             match page_index {
                 0 => {
-                    // RECIPIENT
-                    let btn_layout = ButtonLayout::cancel_none_text("CONTINUE".into());
-                    let btn_actions = ButtonActions::cancel_none_next();
-
-                    let style = if chunkify {
-                        // Chunkifying the address into smaller pieces when requested
-                        theme::TEXT_MONO_ADDRESS_CHUNKS
+                    // Amount + fee
+                    let btn_layout = if cancel_cross {
+                        ButtonLayout::cancel_armed_info("CONFIRM".into())
                     } else {
-                        theme::TEXT_MONO_DATA
+                        ButtonLayout::up_arrow_armed_info("CONFIRM".into())
                     };
-
-                    let ops = OpTextLayout::new(style).text_mono(recipient.clone());
-
-                    let formatted = FormattedText::new(ops).vertically_centered();
-                    Page::new(btn_layout, btn_actions, formatted).with_title("RECIPIENT".into())
-                }
-                1 => {
-                    // Total amount + fee
-                    let btn_layout = ButtonLayout::up_arrow_armed_info("CONFIRM".into());
-                    let btn_actions = ButtonActions::prev_confirm_next();
+                    let btn_actions = ButtonActions::cancel_confirm_next();
 
                     let ops = OpTextLayout::new(theme::TEXT_MONO)
-                        .text_mono(total_amount.clone())
+                        .text_mono(amount_value.clone())
                         .newline()
                         .newline_half()
-                        .text_bold("Maximum fee:".into())
+                        .text_bold(fee_title.clone())
                         .newline()
-                        .text_mono(maximum_fee.clone());
+                        .text_mono(fee_value.clone());
 
                     let formatted = FormattedText::new(ops);
-                    Page::new(btn_layout, btn_actions, formatted).with_title("Amount:".into())
+                    Page::new(btn_layout, btn_actions, formatted).with_title(amount_title.clone())
                 }
-                2 => {
-                    // Fee information
+                1 => {
+                    // Other information
                     let btn_layout = ButtonLayout::arrow_none_none();
                     let btn_actions = ButtonActions::prev_none_none();
 
@@ -826,7 +810,7 @@ extern "C" fn new_confirm_ethereum_tx(n_args: usize, args: *const Obj, kwargs: *
                 _ => unreachable!(),
             }
         };
-        let pages = FlowPages::new(get_page, 3);
+        let pages = FlowPages::new(get_page, 2);
 
         let obj = LayoutObj::new(Flow::new(pages).with_scrollbar(false))?;
         Ok(obj.into())
@@ -1614,15 +1598,6 @@ extern "C" fn new_show_lockscreen(n_args: usize, args: *const Obj, kwargs: *mut 
     unsafe { util::try_with_args_and_kwargs(n_args, args, kwargs, block) }
 }
 
-extern "C" fn draw_welcome_screen() -> Obj {
-    // No need of util::try_or_raise, this does not allocate
-    let mut screen = WelcomeScreen::new(false);
-    screen.place(constant::screen());
-    display::sync();
-    screen.paint();
-    Obj::const_none()
-}
-
 extern "C" fn new_confirm_firmware_update(
     n_args: usize,
     args: *const Obj,
@@ -1650,6 +1625,20 @@ extern "C" fn new_confirm_firmware_update(
     unsafe { util::try_with_args_and_kwargs(n_args, args, kwargs, block) }
 }
 
+pub extern "C" fn upy_check_homescreen_format(data: Obj) -> Obj {
+    let block = || {
+        // SAFETY: buffer does not outlive this function
+        let buffer = unsafe { get_buffer(data) }?;
+
+        Ok(display::toif::Toif::new(buffer)
+            .map(|toif| check_homescreen_format(&toif))
+            .unwrap_or(false)
+            .into())
+    };
+
+    unsafe { util::try_or_raise(block) }
+}
+
 #[no_mangle]
 pub static mp_module_trezorui2: Module = obj_module! {
     Qstr::MP_QSTR___name__ => Qstr::MP_QSTR_trezorui2.to_obj(),
@@ -1667,9 +1656,9 @@ pub static mp_module_trezorui2: Module = obj_module! {
     ///     """Disable animations, debug builds only."""
     Qstr::MP_QSTR_disable_animation => obj_fn_1!(upy_disable_animation).as_obj(),
 
-    /// def toif_info(data: bytes) -> tuple[int, int, bool]:
-    ///     """Get TOIF image dimensions and format (width: int, height: int, is_grayscale: bool)."""
-    Qstr::MP_QSTR_toif_info => obj_fn_1!(upy_toif_info).as_obj(),
+    /// def check_homescreen_format(data: bytes) -> bool:
+    ///     """Check homescreen format and dimensions."""
+    Qstr::MP_QSTR_check_homescreen_format => obj_fn_1!(upy_check_homescreen_format).as_obj(),
 
     /// def confirm_action(
     ///     *,
@@ -1776,12 +1765,11 @@ pub static mp_module_trezorui2: Module = obj_module! {
 
     /// def confirm_modify_output(
     ///     *,
-    ///     address: str,
     ///     sign: int,
     ///     amount_change: str,
     ///     amount_new: str,
     /// ) -> object:
-    ///     """Decrease or increase amount for given address."""
+    ///     """Decrease or increase output amount."""
     Qstr::MP_QSTR_confirm_modify_output => obj_fn_kw!(0, new_confirm_modify_output).as_obj(),
 
     /// def confirm_output_address(
@@ -1814,16 +1802,17 @@ pub static mp_module_trezorui2: Module = obj_module! {
     ///     """Confirm summary of a transaction."""
     Qstr::MP_QSTR_confirm_total => obj_fn_kw!(0, new_confirm_total).as_obj(),
 
-    /// def confirm_ethereum_tx(
+    /// def altcoin_tx_summary(
     ///     *,
-    ///     recipient: str,
-    ///     total_amount: str,
-    ///     maximum_fee: str,
+    ///     amount_title: str,
+    ///     amount_value: str,
+    ///     fee_title: str,
+    ///     fee_value: str,
     ///     items: Iterable[Tuple[str, str]],
-    ///     chunkify: bool = False,
+    ///     cancel_cross: bool = False,
     /// ) -> object:
-    ///     """Confirm details about Ethereum transaction."""
-    Qstr::MP_QSTR_confirm_ethereum_tx => obj_fn_kw!(0, new_confirm_ethereum_tx).as_obj(),
+    ///     """Confirm details about altcoin transaction."""
+    Qstr::MP_QSTR_altcoin_tx_summary => obj_fn_kw!(0, new_altcoin_tx_summary).as_obj(),
 
     /// def tutorial() -> object:
     ///     """Show user how to interact with the device."""
@@ -2057,10 +2046,6 @@ pub static mp_module_trezorui2: Module = obj_module! {
     /// ) -> CANCELLED:
     ///     """Homescreen for locked device."""
     Qstr::MP_QSTR_show_lockscreen => obj_fn_kw!(0, new_show_lockscreen).as_obj(),
-
-    /// def draw_welcome_screen() -> None:
-    ///     """Show logo icon with the model name at the bottom and return."""
-    Qstr::MP_QSTR_draw_welcome_screen => obj_fn_0!(draw_welcome_screen).as_obj(),
 
     /// def confirm_firmware_update(
     ///     *,

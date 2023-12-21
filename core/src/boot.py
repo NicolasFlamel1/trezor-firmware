@@ -1,11 +1,12 @@
 # isort:skip_file
 
-import trezorui2
+import utime
 
-# Showing welcome screen as soon as possible
+# Welcome screen is shown immediately after display init.
+# Then it takes about 120ms to get here.
 # (display is also prepared on that occasion).
 # Remembering time to control how long we show it.
-trezorui2.draw_welcome_screen()
+welcome_screen_start_ms = utime.ticks_ms()
 
 import storage
 import storage.device
@@ -18,6 +19,17 @@ from trezor.pin import (
 from trezor.ui.layouts.homescreen import Lockscreen
 
 from apps.common.request_pin import can_lock_device, verify_user_pin
+
+_WELCOME_SCREEN_MS = 1000  # how long do we want to show welcome screen (minimum)
+
+
+def enforce_welcome_screen_duration() -> None:
+    """Make sure we will show the welcome screen for appropriate amount of time."""
+    # Not wasting the time in emulator debug builds (debugging and development)
+    if __debug__ and utils.EMULATOR:
+        return
+    while utime.ticks_ms() - welcome_screen_start_ms < _WELCOME_SCREEN_MS:
+        utime.sleep_ms(100)
 
 
 async def bootscreen() -> None:
@@ -34,9 +46,11 @@ async def bootscreen() -> None:
     while True:
         try:
             if can_lock_device():
+                enforce_welcome_screen_duration()
                 await lockscreen
             await verify_user_pin()
             storage.init_unlocked()
+            enforce_welcome_screen_duration()
             allow_all_loader_messages()
             return
         except wire.PinCancelled:

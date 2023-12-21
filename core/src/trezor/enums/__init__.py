@@ -254,6 +254,12 @@ if TYPE_CHECKING:
         WebAuthnCredentials = 801
         WebAuthnAddResidentCredential = 802
         WebAuthnRemoveResidentCredential = 803
+        SolanaGetPublicKey = 900
+        SolanaPublicKey = 901
+        SolanaGetAddress = 902
+        SolanaAddress = 903
+        SolanaSignTx = 904
+        SolanaTxSignature = 905
         MimbleWimbleCoinGetRootPublicKey = 50944
         MimbleWimbleCoinRootPublicKey = 51072
         MimbleWimbleCoinGetAddress = 50945
@@ -475,6 +481,7 @@ if TYPE_CHECKING:
         Shamir = 15
         ShamirGroups = 16
         PassphraseEntry = 17
+        Solana = 18
         MimbleWimbleCoin = 199
 
     class SdProtectOperationType(IntEnum):

@@ -27,6 +27,7 @@ ALTCOINS = (
     "monero",
     "nem",
     "ripple",
+    "solana",
     "stellar",
     "tezos",
     "webauthn",

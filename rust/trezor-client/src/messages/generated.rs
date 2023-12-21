@@ -238,44 +238,14 @@ trezor_message_impl! {
     RippleSignedTx => MessageType_RippleSignedTx,
 }
 
-#[cfg(feature = "stellar")]
+#[cfg(feature = "solana")]
 trezor_message_impl! {
-    StellarSignTx => MessageType_StellarSignTx,
-    StellarTxOpRequest => MessageType_StellarTxOpRequest,
-    StellarGetAddress => MessageType_StellarGetAddress,
-    StellarAddress => MessageType_StellarAddress,
-    StellarCreateAccountOp => MessageType_StellarCreateAccountOp,
-    StellarPaymentOp => MessageType_StellarPaymentOp,
-    StellarPathPaymentStrictReceiveOp => MessageType_StellarPathPaymentStrictReceiveOp,
-    StellarManageSellOfferOp => MessageType_StellarManageSellOfferOp,
-    StellarCreatePassiveSellOfferOp => MessageType_StellarCreatePassiveSellOfferOp,
-    StellarSetOptionsOp => MessageType_StellarSetOptionsOp,
-    StellarChangeTrustOp => MessageType_StellarChangeTrustOp,
-    StellarAllowTrustOp => MessageType_StellarAllowTrustOp,
-    StellarAccountMergeOp => MessageType_StellarAccountMergeOp,
-    StellarManageDataOp => MessageType_StellarManageDataOp,
-    StellarBumpSequenceOp => MessageType_StellarBumpSequenceOp,
-    StellarManageBuyOfferOp => MessageType_StellarManageBuyOfferOp,
-    StellarPathPaymentStrictSendOp => MessageType_StellarPathPaymentStrictSendOp,
-    StellarSignedTx => MessageType_StellarSignedTx,
-}
-
-#[cfg(feature = "tezos")]
-trezor_message_impl! {
-    TezosGetAddress => MessageType_TezosGetAddress,
-    TezosAddress => MessageType_TezosAddress,
-    TezosSignTx => MessageType_TezosSignTx,
-    TezosSignedTx => MessageType_TezosSignedTx,
-    TezosGetPublicKey => MessageType_TezosGetPublicKey,
-    TezosPublicKey => MessageType_TezosPublicKey,
-}
-
-#[cfg(feature = "webauthn")]
-trezor_message_impl! {
-    WebAuthnListResidentCredentials => MessageType_WebAuthnListResidentCredentials,
-    WebAuthnCredentials => MessageType_WebAuthnCredentials,
-    WebAuthnAddResidentCredential => MessageType_WebAuthnAddResidentCredential,
-    WebAuthnRemoveResidentCredential => MessageType_WebAuthnRemoveResidentCredential,
+    SolanaGetPublicKey => MessageType_SolanaGetPublicKey,
+    SolanaPublicKey => MessageType_SolanaPublicKey,
+    SolanaGetAddress => MessageType_SolanaGetAddress,
+    SolanaAddress => MessageType_SolanaAddress,
+    SolanaSignTx => MessageType_SolanaSignTx,
+    SolanaTxSignature => MessageType_SolanaTxSignature,
     MimbleWimbleCoinGetRootPublicKey => MessageType_MimbleWimbleCoinGetRootPublicKey,
     MimbleWimbleCoinRootPublicKey => MessageType_MimbleWimbleCoinRootPublicKey,
     MimbleWimbleCoinGetAddress => MessageType_MimbleWimbleCoinGetAddress,
@@ -316,4 +286,44 @@ trezor_message_impl! {
     MimbleWimbleCoinMqsChallengeSignature => MessageType_MimbleWimbleCoinMqsChallengeSignature,
     MimbleWimbleCoinGetLoginChallengeSignature => MessageType_MimbleWimbleCoinGetLoginChallengeSignature,
     MimbleWimbleCoinLoginChallengeSignature => MessageType_MimbleWimbleCoinLoginChallengeSignature,
+}
+
+#[cfg(feature = "stellar")]
+trezor_message_impl! {
+    StellarSignTx => MessageType_StellarSignTx,
+    StellarTxOpRequest => MessageType_StellarTxOpRequest,
+    StellarGetAddress => MessageType_StellarGetAddress,
+    StellarAddress => MessageType_StellarAddress,
+    StellarCreateAccountOp => MessageType_StellarCreateAccountOp,
+    StellarPaymentOp => MessageType_StellarPaymentOp,
+    StellarPathPaymentStrictReceiveOp => MessageType_StellarPathPaymentStrictReceiveOp,
+    StellarManageSellOfferOp => MessageType_StellarManageSellOfferOp,
+    StellarCreatePassiveSellOfferOp => MessageType_StellarCreatePassiveSellOfferOp,
+    StellarSetOptionsOp => MessageType_StellarSetOptionsOp,
+    StellarChangeTrustOp => MessageType_StellarChangeTrustOp,
+    StellarAllowTrustOp => MessageType_StellarAllowTrustOp,
+    StellarAccountMergeOp => MessageType_StellarAccountMergeOp,
+    StellarManageDataOp => MessageType_StellarManageDataOp,
+    StellarBumpSequenceOp => MessageType_StellarBumpSequenceOp,
+    StellarManageBuyOfferOp => MessageType_StellarManageBuyOfferOp,
+    StellarPathPaymentStrictSendOp => MessageType_StellarPathPaymentStrictSendOp,
+    StellarSignedTx => MessageType_StellarSignedTx,
+}
+
+#[cfg(feature = "tezos")]
+trezor_message_impl! {
+    TezosGetAddress => MessageType_TezosGetAddress,
+    TezosAddress => MessageType_TezosAddress,
+    TezosSignTx => MessageType_TezosSignTx,
+    TezosSignedTx => MessageType_TezosSignedTx,
+    TezosGetPublicKey => MessageType_TezosGetPublicKey,
+    TezosPublicKey => MessageType_TezosPublicKey,
+}
+
+#[cfg(feature = "webauthn")]
+trezor_message_impl! {
+    WebAuthnListResidentCredentials => MessageType_WebAuthnListResidentCredentials,
+    WebAuthnCredentials => MessageType_WebAuthnCredentials,
+    WebAuthnAddResidentCredential => MessageType_WebAuthnAddResidentCredential,
+    WebAuthnRemoveResidentCredential => MessageType_WebAuthnRemoveResidentCredential,
 }

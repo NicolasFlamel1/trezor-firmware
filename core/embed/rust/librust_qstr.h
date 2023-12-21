@@ -24,10 +24,12 @@ static void _librust_qstrs(void) {
   MP_QSTR_address_label;
   MP_QSTR_address_title;
   MP_QSTR_allow_cancel;
+  MP_QSTR_altcoin_tx_summary;
   MP_QSTR_amount;
   MP_QSTR_amount_change;
   MP_QSTR_amount_new;
   MP_QSTR_amount_title;
+  MP_QSTR_amount_value;
   MP_QSTR_app_name;
   MP_QSTR_attach_timer_fn;
   MP_QSTR_bootscreen;
@@ -35,7 +37,9 @@ static void _librust_qstrs(void) {
   MP_QSTR_button;
   MP_QSTR_button_event;
   MP_QSTR_cancel_arrow;
+  MP_QSTR_cancel_cross;
   MP_QSTR_case_sensitive;
+  MP_QSTR_check_homescreen_format;
   MP_QSTR_chunkify;
   MP_QSTR_coinjoin_authorized;
   MP_QSTR_confirm_action;
@@ -44,7 +48,6 @@ static void _librust_qstrs(void) {
   MP_QSTR_confirm_blob;
   MP_QSTR_confirm_coinjoin;
   MP_QSTR_confirm_emphasized;
-  MP_QSTR_confirm_ethereum_tx;
   MP_QSTR_confirm_fido;
   MP_QSTR_confirm_firmware_update;
   MP_QSTR_confirm_homescreen;
@@ -66,7 +69,6 @@ static void _librust_qstrs(void) {
   MP_QSTR_description;
   MP_QSTR_details_title;
   MP_QSTR_disable_animation;
-  MP_QSTR_draw_welcome_screen;
   MP_QSTR_dry_run;
   MP_QSTR_encode;
   MP_QSTR_encoded_length;
@@ -74,6 +76,8 @@ static void _librust_qstrs(void) {
   MP_QSTR_fee_amount;
   MP_QSTR_fee_label;
   MP_QSTR_fee_rate_amount;
+  MP_QSTR_fee_title;
+  MP_QSTR_fee_value;
   MP_QSTR_fingerprint;
   MP_QSTR_hold;
   MP_QSTR_hold_danger;
@@ -84,8 +88,6 @@ static void _librust_qstrs(void) {
   MP_QSTR_info_button;
   MP_QSTR_is_type_of;
   MP_QSTR_items;
-  MP_QSTR_jpeg_info;
-  MP_QSTR_jpeg_test;
   MP_QSTR_label;
   MP_QSTR_left_is_small;
   MP_QSTR_lines;
@@ -93,7 +95,6 @@ static void _librust_qstrs(void) {
   MP_QSTR_max_feerate;
   MP_QSTR_max_len;
   MP_QSTR_max_rounds;
-  MP_QSTR_maximum_fee;
   MP_QSTR_min_count;
   MP_QSTR_multiple_pages_texts;
   MP_QSTR_notification;
@@ -105,7 +106,6 @@ static void _librust_qstrs(void) {
   MP_QSTR_progress_event;
   MP_QSTR_prompt;
   MP_QSTR_qr_title;
-  MP_QSTR_recipient;
   MP_QSTR_request_bip39;
   MP_QSTR_request_complete_repaint;
   MP_QSTR_request_number;
@@ -141,7 +141,6 @@ static void _librust_qstrs(void) {
   MP_QSTR_time_ms;
   MP_QSTR_timer;
   MP_QSTR_title;
-  MP_QSTR_toif_info;
   MP_QSTR_total_amount;
   MP_QSTR_total_fee_new;
   MP_QSTR_total_label;
