@@ -11,7 +11,7 @@ sed -i "s/static const size_t SECP256K1_ECMULT_CONTEXT_PREALLOCATED_SIZE;/\/\/st
 cd ..
 g++ -D USE_NUM_NONE -D USE_FIELD_10X26 -D USE_SCALAR_8X32 -D USE_FIELD_INV_BUILTIN -D USE_SCALAR_INV_BUILTIN main.cpp -I secp256k1-zkp-master/include/ -I secp256k1-zkp-master/src/ -L secp256k1-zkp-master/.libs/ -l secp256k1
 ./a.out ../../../legacy/firmware/mimblewimble_coin_generators.c 6
-./a.out ../../../core/embed/extmod/modtrezorcrypto/mimblewimble_coin_generators.c 5
+./a.out ../../../core/embed/extmod/modtrezorcrypto/mimblewimble_coin_generators.c 4
 */
 
 // Header files
