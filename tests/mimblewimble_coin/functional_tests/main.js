@@ -2961,7 +2961,7 @@ async function receiveTransactionTest(hardwareWallet, extendedPrivateKey, switch
 			]);
 			
 			// Log message
-			console.log("Verify that the transaction's kernel features on the device is: Height Locked");
+			console.log("Verify that the transaction's kernel features on the device is: Height locked");
 			
 			// Log message
 			console.log("Verify that the transaction's lock height on the device is: " + lockHeight.toFixed());
@@ -2983,7 +2983,7 @@ async function receiveTransactionTest(hardwareWallet, extendedPrivateKey, switch
 			]);
 			
 			// Log message
-			console.log("Verify that the transaction's kernel features on the device is: No Recent Duplicate");
+			console.log("Verify that the transaction's kernel features on the device is: No recent duplicate");
 			
 			// Log message
 			console.log("Verify that the transaction's relative height on the device is: " + relativeHeight.toFixed());
@@ -3505,7 +3505,7 @@ async function sendTransactionTest(hardwareWallet, extendedPrivateKey, switchTyp
 			]);
 			
 			// Log message
-			console.log("Verify that the transaction's kernel features on the device is: Height Locked");
+			console.log("Verify that the transaction's kernel features on the device is: Height locked");
 			
 			// Log message
 			console.log("Verify that the transaction's lock height on the device is: " + lockHeight.toFixed());
@@ -3527,7 +3527,7 @@ async function sendTransactionTest(hardwareWallet, extendedPrivateKey, switchTyp
 			]);
 			
 			// Log message
-			console.log("Verify that the transaction's kernel features on the device is: No Recent Duplicate");
+			console.log("Verify that the transaction's kernel features on the device is: No recent duplicate");
 			
 			// Log message
 			console.log("Verify that the transaction's relative height on the device is: " + relativeHeight.toFixed());
