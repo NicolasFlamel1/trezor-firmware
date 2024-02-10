@@ -5699,17 +5699,13 @@ void mimbleWimbleCoinUseLrGenerator(bignum256 *t0, bignum256 *t1, bignum256 *t2,
 		
 		// Double z22n
 		bn_addmod(&z22n, &z22n, &secp256k1.order);
-		
-		// Check if time to update progress
-		if(!(i % 32)) {
-		
-			// Check if progress is shown
-			if(updateProgressObject != mp_const_none) {
-			
-				// Update shown progress
-				mp_call_function_1(updateProgressObject, MP_OBJ_NEW_SMALL_INT(1000 * (i + 64 * 2) / (64 * 3)));
-			}
-		}
+	}
+	
+	// Check if progress is shown
+	if(updateProgressObject != mp_const_none) {
+	
+		// Update shown progress
+		mp_call_function_1(updateProgressObject, MP_OBJ_NEW_SMALL_INT(1000 * 12 / 12));
 	}
 	
 	// Go through all outputs
@@ -5717,13 +5713,6 @@ void mimbleWimbleCoinUseLrGenerator(bignum256 *t0, bignum256 *t1, bignum256 *t2,
 	
 		// Normalize output
 		bn_mod(outputs[i], &secp256k1.order);
-	}
-	
-	// Check if progress is shown
-	if(updateProgressObject != mp_const_none) {
-	
-		// Update shown progress
-		mp_call_function_1(updateProgressObject, MP_OBJ_NEW_SMALL_INT(1000));
 	}
 }
 
@@ -5808,24 +5797,13 @@ bool mimbleWimbleCoinCalculateBulletproofComponents(uint8_t *tauX, uint8_t *tOne
 			// Return false
 			return false;
 		}
-		
-		// Check if time to update progress
-		if(!(i % 32)) {
-		
-			// Check if progress is shown
-			if(updateProgressObject != mp_const_none) {
-		
-				// Update shown progress
-				mp_call_function_1(updateProgressObject, MP_OBJ_NEW_SMALL_INT(1000 * i / (64 * 3)));
-			}
-		}
 	}
 	
 	// Check if progress is shown
 	if(updateProgressObject != mp_const_none) {
-	
+
 		// Update shown progress
-		mp_call_function_1(updateProgressObject, MP_OBJ_NEW_SMALL_INT(1000 * 64 / (64 * 3)));
+		mp_call_function_1(updateProgressObject, MP_OBJ_NEW_SMALL_INT(1000 * 1 / 12));
 	}
 	
 	// Check if getting the product of rho and generator G failed
@@ -5896,7 +5874,7 @@ bool mimbleWimbleCoinCalculateBulletproofComponents(uint8_t *tauX, uint8_t *tOne
 		if(updateProgressObject != mp_const_none) {
 		
 			// Update shown progress
-			mp_call_function_1(updateProgressObject, MP_OBJ_NEW_SMALL_INT(1000 * (i * (MIMBLEWIMBLE_COIN_BITS_TO_PROVE / MIMBLEWIMBLE_COIN_MULTIEXPONENTIATION_STEPS) + MIMBLEWIMBLE_COIN_BITS_TO_PROVE / MIMBLEWIMBLE_COIN_MULTIEXPONENTIATION_STEPS + 64) / (64 * 3)));
+			mp_call_function_1(updateProgressObject, MP_OBJ_NEW_SMALL_INT((1000 * (i + 1) * (12 - 2) / MIMBLEWIMBLE_COIN_MULTIEXPONENTIATION_STEPS + (1000 * 1)) / 12));
 		}
 	}
 	

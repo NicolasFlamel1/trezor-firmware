@@ -102,7 +102,7 @@
 #define BITS_TO_PROVE (sizeof(uint64_t) * BITS_IN_A_BYTE)
 
 // Multiexponentiation steps
-#define MULTIEXPONENTIATION_STEPS 2
+#define MULTIEXPONENTIATION_STEPS 8
 
 // Secp256k1 compact signature size
 #define SECP256K1_COMPACT_SIGNATURE_SIZE 64
@@ -3114,14 +3114,10 @@ void useLrGenerator(bignum256 *t0, bignum256 *t1, bignum256 *t2, const bignum256
 		
 		// Double z22n
 		bn_addmod(&z22n, &z22n, &secp256k1.order);
-		
-		// Check if time to update progress
-		if(!(i % 32)) {
-		
-			// Update shown progress
-			layoutProgress(displayMessage, 1000 * (i + 64 * 2) / (64 * 3));
-		}
 	}
+	
+	// Update shown progress
+	layoutProgress(displayMessage, 1000 * 12 / 12);
 	
 	// Go through all outputs
 	for(size_t i = 0; i < sizeof(outputs) / sizeof(outputs[0]); ++i) {
@@ -3129,9 +3125,6 @@ void useLrGenerator(bignum256 *t0, bignum256 *t1, bignum256 *t2, const bignum256
 		// Normalize output
 		bn_mod(outputs[i], &secp256k1.order);
 	}
-	
-	// Update shown progress
-	layoutProgress(displayMessage, 1000);
 }
 
 // Calculate Bulletproof components
@@ -3215,17 +3208,10 @@ bool calculateBulletproofComponents(uint8_t *tauX, uint8_t *tOne, uint8_t *tTwo,
 			// Return false
 			return false;
 		}
-		
-		// Check if time to update progress
-		if(!(i % 32)) {
-		
-			// Update shown progress
-			layoutProgress(displayMessage, 1000 * i / (64 * 3));
-		}
 	}
 	
 	// Update shown progress
-	layoutProgress(displayMessage, 1000 * 64 / (64 * 3));
+	layoutProgress(displayMessage, 1000 * 1 / 12);
 	
 	// Check if getting the product of rho and generator G failed
 	curve_point rhoImage;
@@ -3292,7 +3278,7 @@ bool calculateBulletproofComponents(uint8_t *tauX, uint8_t *tOne, uint8_t *tTwo,
 		}
 		
 		// Update shown progress
-		layoutProgress(displayMessage, 1000 * (i * (BITS_TO_PROVE / MULTIEXPONENTIATION_STEPS) + BITS_TO_PROVE / MULTIEXPONENTIATION_STEPS + 64) / (64 * 3));
+		layoutProgress(displayMessage, (1000 * (i + 1) * (12 - 2) / MULTIEXPONENTIATION_STEPS + (1000 * 1)) / 12);
 	}
 	
 	// Update challenge with the alpha image and rho image
