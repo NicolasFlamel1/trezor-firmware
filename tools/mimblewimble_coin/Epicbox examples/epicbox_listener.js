@@ -16,7 +16,7 @@ const HardwareWalletDefinitions = require("../../../tests/mimblewimble_coin/func
 // Constants
 
 // Epicbox server
-const EPICBOX_SERVER = "wss://epicbox.epic.tech:443";
+const EPICBOX_SERVER = "wss://epicbox.epicnet.us:443";
 
 // EPIC wallet type
 const EPIC_WALLET_TYPE = 2;

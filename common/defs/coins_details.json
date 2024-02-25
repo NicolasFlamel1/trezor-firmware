@@ -41684,7 +41684,7 @@
         "mimblewimble_coin:EPIC": {
             "links": {
                 "Github": "https://github.com/EpicCash",
-                "Homepage": "https://epic.tech"
+                "Homepage": "https://epiccash.com"
             },
             "name": "Epic Cash",
             "shortcut": "EPIC",
@@ -41735,7 +41735,7 @@
         "mimblewimble_coin:tEPIC": {
             "links": {
                 "Github": "https://github.com/EpicCash",
-                "Homepage": "https://epic.tech"
+                "Homepage": "https://epiccash.com"
             },
             "name": "Epic Cash Floonet",
             "shortcut": "tEPIC",

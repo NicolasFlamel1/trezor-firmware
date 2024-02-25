@@ -17,13 +17,13 @@ const HardwareWalletDefinitions = require("../../../tests/mimblewimble_coin/func
 // Constants
 
 // Destination
-const DESTINATION = "esZ1P3crbc2XCHaGf7fQCGEcbnpgTBngPcZwciZZBbbdmPryFNEA@epicbox.epic.tech";
+const DESTINATION = "esZ1P3crbc2XCHaGf7fQCGEcbnpgTBngPcZwciZZBbbdmPryFNEA@epicbox.epicnet.us";
 
 // Data
 const DATA = "Hello, World!";
 
 // Epicbox server
-const EPICBOX_SERVER = "wss://epicbox.epic.tech:443";
+const EPICBOX_SERVER = "wss://epicbox.epicnet.us:443";
 
 // EPIC wallet type
 const EPIC_WALLET_TYPE = 2;
