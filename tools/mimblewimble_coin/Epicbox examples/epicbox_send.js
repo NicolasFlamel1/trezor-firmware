@@ -17,13 +17,13 @@ const HardwareWalletDefinitions = require("../../../tests/mimblewimble_coin/func
 // Constants
 
 // Destination
-const DESTINATION = "esZ1P3crbc2XCHaGf7fQCGEcbnpgTBngPcZwciZZBbbdmPryFNEA@epicbox.epicnet.us";
+const DESTINATION = "esZ1P3crbc2XCHaGf7fQCGEcbnpgTBngPcZwciZZBbbdmPryFNEA@epicbox.epiccash.com";
 
 // Data
 const DATA = "Hello, World!";
 
 // Epicbox server
-const EPICBOX_SERVER = "wss://epicbox.epicnet.us:443";
+const EPICBOX_SERVER = "wss://epicbox.epiccash.com:443";
 
 // EPIC wallet type
 const EPIC_WALLET_TYPE = 2;
@@ -55,6 +55,9 @@ const USB_PRODUCT_ID = 0x53C1;
 
 	// Connect to the hardware wallet using USB
 	const hardwareWallet = await UsbTransport.getDevice(USB_VENDOR_ID, USB_PRODUCT_ID);
+	
+	// Initialize hardware wallet
+	await hardwareWallet.send(HardwareWalletDefinitions.TREZOR_INITIALIZE_MESSAGE_TYPE, {}, HardwareWalletDefinitions.TREZOR_FEATURES_MESSAGE_TYPE);
 	
 	// Display message
 	console.log("Getting Epicbox address from hardware wallet");

@@ -49,6 +49,9 @@ const USB_PRODUCT_ID = 0x53C1;
 	// Connect to the hardware wallet using USB
 	const hardwareWallet = await UsbTransport.getDevice(USB_VENDOR_ID, USB_PRODUCT_ID);
 	
+	// Initialize hardware wallet
+	await hardwareWallet.send(HardwareWalletDefinitions.TREZOR_INITIALIZE_MESSAGE_TYPE, {}, HardwareWalletDefinitions.TREZOR_FEATURES_MESSAGE_TYPE);
+	
 	// Display message
 	console.log("Getting MQS address from hardware wallet");
 	
