@@ -639,7 +639,7 @@ extern "C" fn new_confirm_properties(n_args: usize, args: *const Obj, kwargs: *m
             ButtonPage::new(paragraphs.into_paragraphs(), theme::BG).with_hold()?
         } else {
             ButtonPage::new(paragraphs.into_paragraphs(), theme::BG)
-                .with_cancel_confirm(None, verb)
+                .with_cancel_confirm(None, Some(verb))
         };
         let obj = LayoutObj::new(Frame::left_aligned(theme::label_title(), title, page))?;
         Ok(obj.into())
