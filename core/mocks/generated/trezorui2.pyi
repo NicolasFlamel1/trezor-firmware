@@ -309,6 +309,8 @@ def request_passphrase(
 def request_bip39(
     *,
     prompt: str,
+    prefill_word: str,
+    can_go_back: bool,
 ) -> str:
     """Get recovery word for BIP39."""
 
@@ -317,6 +319,8 @@ def request_bip39(
 def request_slip39(
     *,
     prompt: str,
+    prefill_word: str,
+    can_go_back: bool,
 ) -> str:
    """SLIP39 word input keyboard."""
 
@@ -447,6 +451,11 @@ def confirm_firmware_update(
     fingerprint: str,
 ) -> None:
     """Ask whether to update firmware, optionally show fingerprint. Shared with bootloader."""
+
+
+# rust/src/ui/model_tr/layout.rs
+def show_wait_text(/, message: str) -> None:
+    """Show single-line text in the middle of the screen."""
 CONFIRMED: object
 CANCELLED: object
 INFO: object
@@ -567,6 +576,7 @@ def show_info_with_cancel(
     title: str,
     items: Iterable[Tuple[str, str]],
     horizontal: bool = False,
+    chunkify: bool = False,
 ) -> object:
     """Show metadata for outgoing transaction."""
 
@@ -583,6 +593,7 @@ def confirm_value(
     info_button: bool = False,
     hold: bool = False,
     chunkify: bool = False,
+    text_mono: bool = True,
 ) -> object:
     """Confirm value. Merge of confirm_total and confirm_output."""
 
@@ -753,6 +764,8 @@ def request_passphrase(
 def request_bip39(
     *,
     prompt: str,
+    prefill_word: str,
+    can_go_back: bool,
 ) -> str:
     """BIP39 word input keyboard."""
 
@@ -761,6 +774,8 @@ def request_bip39(
 def request_slip39(
     *,
     prompt: str,
+    prefill_word: str,
+    can_go_back: bool,
 ) -> str:
     """SLIP39 word input keyboard."""
 
@@ -899,3 +914,8 @@ def confirm_firmware_update(
     fingerprint: str,
 ) -> None:
     """Ask whether to update firmware, optionally show fingerprint. Shared with bootloader."""
+
+
+# rust/src/ui/model_tt/layout.rs
+def show_wait_text(/, message: str) -> None:
+    """Show single-line text in the middle of the screen."""

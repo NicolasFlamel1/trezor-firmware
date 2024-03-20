@@ -17,12 +17,16 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "optiga_prodtest.h"
+#include <string.h>
+
 #include "aes/aes.h"
+#include "buffer.h"
+#include "der.h"
 #include "ecdsa.h"
 #include "memzero.h"
 #include "nist256p1.h"
 #include "optiga_commands.h"
+#include "optiga_prodtest.h"
 #include "optiga_transport.h"
 #include "prodtest_common.h"
 #include "rand.h"
@@ -46,6 +50,18 @@ static const optiga_metadata_item KEY_USE_SIGN = {
     (const uint8_t[]){OPTIGA_KEY_USAGE_SIGN}, 1};
 static const optiga_metadata_item TYPE_PTFBIND = {
     (const uint8_t[]){OPTIGA_DATA_TYPE_PTFBIND}, 1};
+
+// Identifier of context-specific constructed tag 3, which is used for
+// extensions in X.509.
+#define DER_X509_EXTENSIONS 0xa3
+
+// Identifier of context-specific primitive tag 0, which is used for
+// keyIdentifier in authorityKeyIdentifier.
+#define DER_X509_KEY_IDENTIFIER 0x80
+
+// DER-encoded object identifier of the authority key identifier extension
+// (id-ce-authorityKeyIdentifier).
+const uint8_t OID_AUTHORITY_KEY_IDENTIFIER[] = {0x06, 0x03, 0x55, 0x1d, 0x23};
 
 static bool optiga_paired(void) {
   const char *details = "";
@@ -295,7 +311,7 @@ void optigaid_read(void) {
 void cert_read(uint16_t oid) {
   if (!optiga_paired()) return;
 
-  static uint8_t cert[2048] = {0};
+  static uint8_t cert[OPTIGA_MAX_CERT_SIZE] = {0};
   size_t cert_size = 0;
   optiga_result ret =
       optiga_get_data_object(oid, false, cert, sizeof(cert), &cert_size);
@@ -337,7 +353,7 @@ void cert_write(uint16_t oid, char *data) {
   metadata.change = OPTIGA_META_ACCESS_ALWAYS;
   set_metadata(oid, &metadata);  // Ignore result.
 
-  uint8_t data_bytes[1024];
+  uint8_t data_bytes[OPTIGA_MAX_CERT_SIZE];
 
   int len = get_from_hex(data_bytes, sizeof(data_bytes), data);
   if (len < 0) {
@@ -348,6 +364,21 @@ void cert_write(uint16_t oid, char *data) {
   optiga_result ret = optiga_set_data_object(oid, false, data_bytes, len);
   if (OPTIGA_SUCCESS != ret) {
     vcp_println("ERROR optiga_set_data error %d for 0x%04x.", ret, oid);
+    return;
+  }
+
+  // Verify that the certificate was written correctly.
+  static uint8_t cert[OPTIGA_MAX_CERT_SIZE] = {0};
+  size_t cert_size = 0;
+  ret = optiga_get_data_object(oid, false, cert, sizeof(cert), &cert_size);
+  if (OPTIGA_SUCCESS != ret || cert_size != len ||
+      memcmp(data_bytes, cert, len) != 0) {
+    vcp_println("ERROR optiga_get_data_object error %d for 0x%04x.", ret, oid);
+    return;
+  }
+
+  if (oid == OID_CERT_DEV && !check_device_cert_chain(cert, cert_size)) {
+    // Error returned by check_device_cert_chain().
     return;
   }
 
@@ -478,8 +509,9 @@ void keyfido_write(char *data) {
   // Set change access condition for the FIDO key to Int(0xE0E8), so that we
   // can write the FIDO key using the trust anchor in OID 0xE0E8.
   memzero(&metadata, sizeof(metadata));
-  metadata.change.ptr = (const uint8_t *)"\x21\xe0\xe8";
-  metadata.change.len = 3;
+  metadata.change = (const optiga_metadata_item)OPTIGA_ACCESS_CONDITION(
+      OPTIGA_ACCESS_COND_INT, OID_TRUST_ANCHOR);
+  metadata.version = OPTIGA_META_VERSION_DEFAULT;
   if (!set_metadata(OID_KEY_FIDO, &metadata)) {
     return;
   }
@@ -493,4 +525,273 @@ void keyfido_write(char *data) {
   }
 
   vcp_println("OK");
+}
+
+void sec_read(void) {
+  if (!optiga_paired()) return;
+
+  uint8_t sec = 0;
+  size_t size = 0;
+
+  optiga_result ret =
+      optiga_get_data_object(OPTIGA_OID_SEC, false, &sec, sizeof(sec), &size);
+  if (OPTIGA_SUCCESS != ret || sizeof(sec) != size) {
+    vcp_println("ERROR optiga_get_data_object error %d for 0x%04x.", ret,
+                OPTIGA_OID_SEC);
+    return;
+  }
+
+  vcp_print("OK ");
+  vcp_println_hex(&sec, sizeof(sec));
+}
+
+// clang-format off
+static const uint8_t ECDSA_WITH_SHA256[] = {
+  0x30, 0x0a, // a sequence of 10 bytes
+    0x06, 0x08, // an OID of 8 bytes
+      0x2a, 0x86, 0x48, 0xce, 0x3d, 0x04, 0x03, 0x02,
+};
+// clang-format on
+
+static bool get_cert_extensions(DER_ITEM *tbs_cert, DER_ITEM *extensions) {
+  // Find the certificate extensions in the tbsCertificate.
+  DER_ITEM cert_item = {0};
+  while (der_read_item(&tbs_cert->buf, &cert_item)) {
+    if (cert_item.id == DER_X509_EXTENSIONS) {
+      // Open the extensions sequence.
+      return der_read_item(&cert_item.buf, extensions) &&
+             extensions->id == DER_SEQUENCE;
+    }
+  }
+  return false;
+}
+
+static bool get_extension_value(const uint8_t *extension_oid,
+                                size_t extension_oid_size, DER_ITEM *extensions,
+                                DER_ITEM *extension_value) {
+  // Find the extension with the given OID.
+  DER_ITEM extension = {0};
+  while (der_read_item(&extensions->buf, &extension)) {
+    DER_ITEM extension_id = {0};
+    if (der_read_item(&extension.buf, &extension_id) &&
+        extension_id.buf.size == extension_oid_size &&
+        memcmp(extension_id.buf.data, extension_oid, extension_oid_size) == 0) {
+      // Find the extension's extnValue, skipping the optional critical flag.
+      while (der_read_item(&extension.buf, extension_value)) {
+        if (extension_value->id == DER_OCTET_STRING) {
+          return true;
+        }
+      }
+      memzero(extension_value, sizeof(DER_ITEM));
+      return false;
+    }
+  }
+  return false;
+}
+
+static bool get_authority_key_digest(DER_ITEM *tbs_cert,
+                                     const uint8_t **authority_key_digest) {
+  DER_ITEM extensions = {0};
+  if (!get_cert_extensions(tbs_cert, &extensions)) {
+    vcp_println("ERROR get_authority_key_digest, extensions not found.");
+    return false;
+  }
+
+  // Find the authority key identifier extension's extnValue.
+  DER_ITEM extension_value = {0};
+  if (!get_extension_value(OID_AUTHORITY_KEY_IDENTIFIER,
+                           sizeof(OID_AUTHORITY_KEY_IDENTIFIER), &extensions,
+                           &extension_value)) {
+    vcp_println(
+        "ERROR get_authority_key_digest, authority key identifier extension "
+        "not found.");
+    return false;
+  }
+
+  // Open the AuthorityKeyIdentifier sequence.
+  DER_ITEM auth_key_id = {0};
+  if (!der_read_item(&extension_value.buf, &auth_key_id) ||
+      auth_key_id.id != DER_SEQUENCE) {
+    vcp_println(
+        "ERROR get_authority_key_digest, failed to open authority key "
+        "identifier extnValue.");
+    return false;
+  }
+
+  // Find the keyIdentifier field.
+  DER_ITEM key_id = {0};
+  if (!der_read_item(&auth_key_id.buf, &key_id) ||
+      key_id.id != DER_X509_KEY_IDENTIFIER) {
+    vcp_println(
+        "ERROR get_authority_key_digest, failed to find keyIdentifier field.");
+    return false;
+  }
+
+  // Return the pointer to the keyIdentifier data.
+  if (buffer_remaining(&key_id.buf) != SHA1_DIGEST_LENGTH ||
+      !buffer_ptr(&key_id.buf, authority_key_digest)) {
+    vcp_println(
+        "ERROR get_authority_key_digest, invalid length of keyIdentifier.");
+    return false;
+  }
+
+  return true;
+}
+
+bool check_device_cert_chain(const uint8_t *chain, size_t chain_size) {
+  // Checks the integrity of the device certificate chain to ensure that the
+  // certificate data was not corrupted in transport and that the device
+  // certificate belongs to this device. THIS IS NOT A FULL VERIFICATION OF THE
+  // CERTIFICATE CHAIN.
+
+  // Enable signing with the device private key.
+  optiga_metadata metadata = {0};
+  metadata.key_usage = KEY_USE_SIGN;
+  metadata.execute = OPTIGA_META_ACCESS_ALWAYS;
+  if (!set_metadata(OID_KEY_DEV, &metadata)) {
+    vcp_println("ERROR check_device_cert_chain, set_metadata.");
+    return false;
+  }
+
+  // Generate a P-256 signature using the device private key.
+  uint8_t digest[SHA256_DIGEST_LENGTH] = {1};
+  uint8_t der_sig[72] = {DER_SEQUENCE};
+  size_t der_sig_size = 0;
+  if (optiga_calc_sign(OID_KEY_DEV, digest, sizeof(digest), &der_sig[2],
+                       sizeof(der_sig) - 2, &der_sig_size) != OPTIGA_SUCCESS) {
+    vcp_println("ERROR check_device_cert_chain, optiga_calc_sign.");
+    return false;
+  }
+  der_sig[1] = der_sig_size;
+
+  uint8_t sig[64] = {0};
+  if (ecdsa_sig_from_der(der_sig, der_sig_size + 2, sig) != 0) {
+    vcp_println("ERROR check_device_cert_chain, ecdsa_sig_from_der.");
+    return false;
+  }
+
+  // This will be populated with a pointer to the key identifier data of the
+  // AuthorityKeyIdentifier extension from the last certificate in the chain.
+  const uint8_t *authority_key_digest = NULL;
+
+  BUFFER_READER chain_reader = {0};
+  buffer_reader_init(&chain_reader, chain, chain_size);
+  int cert_count = 0;
+  while (buffer_remaining(&chain_reader) > 0) {
+    // Read the next certificate in the chain.
+    cert_count += 1;
+    DER_ITEM cert = {0};
+    if (!der_read_item(&chain_reader, &cert) || cert.id != DER_SEQUENCE) {
+      vcp_println("ERROR check_device_cert_chain, der_read_item 1, cert %d.",
+                  cert_count);
+      return false;
+    }
+
+    // Read the tbsCertificate.
+    DER_ITEM tbs_cert = {0};
+    if (!der_read_item(&cert.buf, &tbs_cert)) {
+      vcp_println("ERROR check_device_cert_chain, der_read_item 2, cert %d.",
+                  cert_count);
+      return false;
+    }
+
+    // Read the Subject Public Key Info.
+    DER_ITEM pub_key_info = {0};
+    for (int i = 0; i < 7; ++i) {
+      if (!der_read_item(&tbs_cert.buf, &pub_key_info)) {
+        vcp_println("ERROR check_device_cert_chain, der_read_item 3, cert %d.",
+                    cert_count);
+        return false;
+      }
+    }
+
+    // Read the public key.
+    DER_ITEM pub_key = {0};
+    uint8_t unused_bits = 0;
+    const uint8_t *pub_key_bytes = NULL;
+    for (int i = 0; i < 2; ++i) {
+      if (!der_read_item(&pub_key_info.buf, &pub_key)) {
+        vcp_println("ERROR check_device_cert_chain, der_read_item 4, cert %d.",
+                    cert_count);
+        return false;
+      }
+    }
+
+    if (!buffer_get(&pub_key.buf, &unused_bits) ||
+        buffer_remaining(&pub_key.buf) != 65 ||
+        !buffer_ptr(&pub_key.buf, &pub_key_bytes)) {
+      vcp_println("ERROR check_device_cert_chain, reading public key, cert %d.",
+                  cert_count);
+      return false;
+    }
+
+    // Verify the previous signature.
+    if (ecdsa_verify_digest(&nist256p1, pub_key_bytes, sig, digest) != 0) {
+      vcp_println(
+          "ERROR check_device_cert_chain, ecdsa_verify_digest, cert %d.",
+          cert_count);
+      return false;
+    }
+
+    // Get the authority key identifier from the last certificate.
+    if (buffer_remaining(&chain_reader) == 0 &&
+        !get_authority_key_digest(&tbs_cert, &authority_key_digest)) {
+      // Error returned by get_authority_key_digest().
+      return false;
+    }
+
+    // Prepare the hash of tbsCertificate for the next signature verification.
+    sha256_Raw(tbs_cert.buf.data, tbs_cert.buf.size, digest);
+
+    // Read the signatureAlgorithm and ensure it matches ECDSA_WITH_SHA256.
+    DER_ITEM sig_alg = {0};
+    if (!der_read_item(&cert.buf, &sig_alg) ||
+        sig_alg.buf.size != sizeof(ECDSA_WITH_SHA256) ||
+        memcmp(ECDSA_WITH_SHA256, sig_alg.buf.data,
+               sizeof(ECDSA_WITH_SHA256)) != 0) {
+      vcp_println(
+          "ERROR check_device_cert_chain, checking signatureAlgorithm, cert "
+          "%d.",
+          cert_count);
+      return false;
+    }
+
+    // Read the signatureValue.
+    DER_ITEM sig_val = {0};
+    if (!der_read_item(&cert.buf, &sig_val) || sig_val.id != DER_BIT_STRING ||
+        !buffer_get(&sig_val.buf, &unused_bits) || unused_bits != 0) {
+      vcp_println(
+          "ERROR check_device_cert_chain, reading signatureValue, cert %d.",
+          cert_count);
+      return false;
+    }
+
+    // Extract the signature for the next signature verification.
+    const uint8_t *sig_bytes = NULL;
+    if (!buffer_ptr(&sig_val.buf, &sig_bytes) ||
+        ecdsa_sig_from_der(sig_bytes, buffer_remaining(&sig_val.buf), sig) !=
+            0) {
+      vcp_println("ERROR check_device_cert_chain, ecdsa_sig_from_der, cert %d.",
+                  cert_count);
+      return false;
+    }
+  }
+
+  // Verify that the signature of the last certificate in the chain matches its
+  // own AuthorityKeyIdentifier to verify the integrity of the certificate data.
+  uint8_t pub_key[65] = {0};
+  uint8_t pub_key_digest[SHA1_DIGEST_LENGTH] = {0};
+  for (int recid = 0; recid < 4; ++recid) {
+    if (ecdsa_recover_pub_from_sig(&nist256p1, pub_key, sig, digest, recid) ==
+        0) {
+      sha1_Raw(pub_key, sizeof(pub_key), pub_key_digest);
+      if (memcmp(authority_key_digest, pub_key_digest,
+                 sizeof(pub_key_digest)) == 0) {
+        return true;
+      }
+    }
+  }
+
+  vcp_println("ERROR check_device_cert_chain, ecdsa_verify_digest root.");
+  return false;
 }

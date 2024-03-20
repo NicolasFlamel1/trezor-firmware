@@ -1,3 +1,5 @@
+#include "flash_common.h"
+
 #include "flash.h"
 
 secbool flash_write_byte(uint16_t sector, uint32_t offset, uint8_t data);
@@ -121,13 +123,17 @@ secbool flash_area_write_word(const flash_area_t *area, uint32_t offset,
   return flash_write_word(sector, sector_offset, data);
 }
 
-secbool flash_area_write_quadword(const flash_area_t *area, uint32_t offset,
-                                  const uint32_t *data) {
-  for (int i = 0; i < 4; i++) {
-    if (sectrue !=
-        flash_area_write_word(area, offset + i * sizeof(uint32_t), data[i])) {
-      return secfalse;
-    }
+secbool flash_area_write_block(const flash_area_t *area, uint32_t offset,
+                               const flash_block_t block) {
+  if (!FLASH_IS_ALIGNED(offset)) {
+    return secfalse;
   }
-  return sectrue;
+
+  uint16_t sector;
+  uint32_t sector_offset;
+  if (sectrue != get_sector_and_offset(area, offset, &sector, &sector_offset)) {
+    return secfalse;
+  }
+
+  return flash_write_block(sector, sector_offset, block);
 }

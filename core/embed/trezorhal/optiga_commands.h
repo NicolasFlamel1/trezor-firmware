@@ -28,6 +28,7 @@
 // Data object identifiers.
 typedef enum {
   OPTIGA_OID_COPROC_UID = 0xE0C2,      // Coprocessor UID.
+  OPTIGA_OID_SEC = 0xE0C5,             // Security event counter.
   OPTIGA_OID_CERT = 0xE0E0,            // Public key certificates [1-4].
   OPTIGA_OID_CA_CERT = 0xE0E8,         // Root CA public key certificates [1-2].
   OPTIGA_OID_ECC_KEY = 0xE0F0,         // Private ECC keys [1-4].
@@ -129,6 +130,7 @@ typedef struct {
 #define OPTIGA_MAX_METADATA_SIZE 44
 #define OPTIGA_RANDOM_MIN_SIZE 8
 #define OPTIGA_RANDOM_MAX_SIZE 256
+#define OPTIGA_MAX_CERT_SIZE 1728
 
 #define OPTIGA_ACCESS_CONDITION(ac_id, oid) \
   { (const uint8_t[]){ac_id, oid >> 8, oid & 0xff}, 3 }
@@ -139,6 +141,7 @@ extern const optiga_metadata_item OPTIGA_META_ACCESS_ALWAYS;
 extern const optiga_metadata_item OPTIGA_META_ACCESS_NEVER;
 extern const optiga_metadata_item OPTIGA_META_KEY_USE_ENC;
 extern const optiga_metadata_item OPTIGA_META_KEY_USE_KEYAGREE;
+extern const optiga_metadata_item OPTIGA_META_VERSION_DEFAULT;
 
 optiga_result optiga_parse_metadata(const uint8_t *serialized,
                                     size_t serialized_size,

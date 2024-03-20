@@ -58,6 +58,7 @@ SOURCE_MOD += [
     'embed/extmod/modtrezorconfig/modtrezorconfig.c',
     'vendor/trezor-storage/norcow.c',
     'vendor/trezor-storage/storage.c',
+    'vendor/trezor-storage/storage_utils.c',
     'vendor/trezor-storage/flash_common.c',
 ]
 
@@ -187,14 +188,16 @@ CPPPATH_MOD += [
         'vendor/micropython/lib/uzlib',
 ]
 SOURCE_MOD += [
-    'embed/lib/unit_variant.c',
+    'embed/extmod/modtrezorui/modtrezorui.c',
     'embed/lib/buffers.c',
     'embed/lib/colors.c',
+    'embed/lib/display_utils.c',
     'embed/lib/display.c',
-    'embed/lib/fonts/fonts.c',
     'embed/lib/fonts/font_bitmap.c',
+    'embed/lib/fonts/fonts.c',
     'embed/lib/image.c',
-    'embed/extmod/modtrezorui/modtrezorui.c',
+    'embed/lib/terminal.c',
+    'embed/lib/unit_variant.c',
     'vendor/micropython/lib/uzlib/adler32.c',
     'vendor/micropython/lib/uzlib/crc32.c',
     'vendor/micropython/lib/uzlib/tinflate.c',
@@ -217,6 +220,7 @@ elif TREZOR_MODEL in ('R', ):
 
 CPPDEFINES_MOD += [
     'TREZOR_UI2',
+    'TRANSLATIONS',
 ]
 if TREZOR_MODEL not in ('1', ):
     CPPDEFINES_MOD += [
@@ -370,6 +374,7 @@ SOURCE_MICROPYTHON = [
 ]
 
 SOURCE_UNIX = [
+    'embed/trezorhal/unix/translations.c',
     'embed/trezorhal/unix/common.c',
     'embed/trezorhal/unix/display-unix.c',
     'embed/trezorhal/unix/flash.c',
@@ -522,6 +527,8 @@ env.Replace(
         'TREZOR_EMULATOR',
         'TREZOR_MODEL_'+TREZOR_MODEL,
         'TREZOR_BOARD=\\"boards/board-unix.h\\"',
+        ('FLASH_BIT_ACCESS', '1'),
+        ('FLASH_BLOCK_WORDS', '1'),
         'MCU_TYPE='+CPU_MODEL,
         ('MP_CONFIGFILE', '\\"embed/unix/mpconfigport.h\\"'),
         UI_LAYOUT,
@@ -562,8 +569,10 @@ qstr_protobuf = env.Command(
 
 qstr_micropython = 'vendor/micropython/py/qstrdefs.h'
 
+micropy_defines = env.MicroPyDefines(source=SOURCE_QSTR)
+
 qstr_collected = env.CollectQstr(
-    target='genhdr/qstrdefs.collected.h', source=SOURCE_QSTR)
+    target='genhdr/qstrdefs.collected.h', source=micropy_defines)
 
 qstr_preprocessed = env.PreprocessQstr(
     target='genhdr/qstrdefs.preprocessed.h',
@@ -579,7 +588,7 @@ env.Ignore(qstr_collected, qstr_generated)
 #
 
 moduledefs_collected = env.CollectModules(
-    target='genhdr/moduledefs.collected.h', source=SOURCE_QSTR)
+    target='genhdr/moduledefs.collected.h', source=micropy_defines)
 
 
 hdr_moduledefs = env.Command(
@@ -600,10 +609,10 @@ hdr_version = env.Command(
     source='',
     action='$MAKEVERSIONHDR $TARGET', )
 
-env.Ignore(hdr_moduledefs, hdr_moduledefs)
-env.Ignore(hdr_moduledefs, qstr_collected)
-env.Ignore(hdr_moduledefs, qstr_preprocessed)
-env.Ignore(hdr_moduledefs, qstr_generated)
+env.Ignore(micropy_defines, hdr_moduledefs)
+env.Ignore(micropy_defines, qstr_collected)
+env.Ignore(micropy_defines, qstr_preprocessed)
+env.Ignore(micropy_defines, qstr_generated)
 
 #
 # Frozen modules
@@ -795,6 +804,7 @@ def cargo_build():
     if BITCOIN_ONLY == '1':
         features.append('bitcoin_only')
     features.append('ui')
+    features.append('translations')
     if PYOPT == '0':
         features.append('debug')
     if DMA2D:

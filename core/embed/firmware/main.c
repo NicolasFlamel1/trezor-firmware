@@ -110,6 +110,10 @@ int main(void) {
   enable_systemview();
 #endif
 
+#ifdef USE_DMA2D
+  dma2d_init();
+#endif
+
   display_reinit();
 
   screen_boot_full();
@@ -134,10 +138,6 @@ int main(void) {
 
   // Init peripherals
   pendsv_init();
-
-#ifdef USE_DMA2D
-  dma2d_init();
-#endif
 
 #if !PRODUCTION
   // enable BUS fault and USAGE fault handlers
@@ -218,6 +218,9 @@ int main(void) {
   // Clean up
   printf("CORE: Main script finished, cleaning up\n");
   mp_deinit();
+
+  // Python code shouldn't ever exit, avoid black screen if it does
+  error_shutdown("INTERNAL ERROR", "(PE)");
 
   return 0;
 }

@@ -1241,7 +1241,6 @@ def load_device(
     pin: Optional[str],
     passphrase_protection: bool,
     label: Optional[str],
-    language: str = "en-US",
     skip_checksum: bool = False,
     needs_backup: bool = False,
     no_backup: bool = False,
@@ -1261,7 +1260,6 @@ def load_device(
             mnemonics=mnemonics,
             pin=pin,
             passphrase_protection=passphrase_protection,
-            language=language,
             label=label,
             skip_checksum=skip_checksum,
             needs_backup=needs_backup,
@@ -1277,12 +1275,12 @@ load_device_by_mnemonic = load_device
 
 
 @expect(messages.Success, field="message", ret_type=str)
-def self_test(client: "TrezorClient") -> protobuf.MessageType:
+def prodtest_t1(client: "TrezorClient") -> protobuf.MessageType:
     if client.features.bootloader_mode is not True:
         raise RuntimeError("Device must be in bootloader mode")
 
     return client.call(
-        messages.SelfTest(
+        messages.ProdTestT1(
             payload=b"\x00\xFF\x55\xAA\x66\x99\x33\xCCABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!\x00\xFF\x55\xAA\x66\x99\x33\xCC"
         )
     )

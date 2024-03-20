@@ -57,13 +57,16 @@ CPPPATH_MOD += [
         'vendor/micropython/lib/uzlib',
 ]
 SOURCE_MOD += [
-    'embed/lib/display.c',
     'embed/lib/colors.c',
-    'embed/lib/fonts/fonts.c',
+    'embed/lib/display_utils.c',
+    'embed/lib/display.c',
     'embed/lib/fonts/font_bitmap.c',
+    'embed/lib/fonts/fonts.c',
     'embed/lib/image.c',
     'embed/lib/mini_printf.c',
+    'embed/lib/terminal.c',
     'vendor/trezor-storage/flash_common.c',
+
 ]
 
 SOURCE_BOARDLOADER = [

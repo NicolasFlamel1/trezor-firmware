@@ -1,6 +1,18 @@
 name: Legacy
 
-on: [pull_request]
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  id-token: write       # for fetching the OIDC token
+  contents: read        # for actions/checkout
+  pull-requests: write  # For dflook comments on PR
+
+env:
+  PULL_COMMENT: |
+    |legacy UI changes|[device test](https://data.trezor.io/dev/firmware/ui_report/${{ github.run_id }}/T1B1-legacy_device_test/index.html)([screens](https://data.trezor.io/dev/firmware/ui_report/${{ github.run_id }}/T1B1-legacy_device_test/differing_screens.html)) [main](https://data.trezor.io/dev/firmware/master_diff/${{ github.run_id }}/)([screens](https://data.trezor.io/dev/firmware/master_diff/${{ github.run_id }}/master_diff.html))|
+    |-----------------|-----|
 
 jobs:
   legacy_firmware:
@@ -24,7 +36,7 @@ jobs:
       - run: nix-shell --run "export PRODUCTION=0 && poetry run legacy/script/cibuild"
       - run: nix-shell --run "poetry run make -C legacy/demo"
         if: matrix.coins == 'universal' && matrix.type == 'normal'
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           name: legacy-firmware-${{ matrix.coins }}-${{ matrix.type }}
           path: legacy/firmware/firmware-*.bin
@@ -51,7 +63,7 @@ jobs:
           submodules: recursive
       - uses: ./.github/actions/environment
       - run: nix-shell --run "poetry run legacy/script/cibuild"
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           name: legacy-emu-${{ matrix.coins }}-${{ matrix.type }}-${{ matrix.asan }}
           path: legacy/firmware/*.elf
@@ -72,14 +84,22 @@ jobs:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         with:
           name: legacy-emu-${{ matrix.coins }}-debuglink-${{ matrix.asan }}
           path: legacy/firmware
       - run: chmod +x legacy/firmware/*.elf
       - uses: ./.github/actions/environment
+      - run: nix-shell --run "poetry run make -C legacy test_emu_ui"
+        if: matrix.coins == 'universal'
       - run: nix-shell --run "poetry run make -C legacy test_emu"
-        # if: matrix.coins == 'universal' && matrix.type == 'normal'
+        if: matrix.coins != 'universal'
+      - uses: ./.github/actions/ui-report
+        with:
+          model: T1B1
+        if: ${{ always() && matrix.coins == 'universal' }}
+      - uses: ./.github/actions/ui-comment
+        if: ${{ failure() && matrix.coins == 'universal' }}
 
   legacy_upgrade_test:
     name: Upgrade test
@@ -94,7 +114,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         with:
           name: legacy-emu-universal-debuglink-${{ matrix.asan }}
           path: legacy/firmware
@@ -115,7 +135,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         with:
           name: legacy-emu-universal-debuglink-noasan
           path: legacy/firmware
@@ -124,3 +144,42 @@ jobs:
       - run: nix-shell --run "git clone --depth=1 https://github.com/bitcoin-core/HWI.git"
       # see python_test for explanation of _PYTHON_SYSCONFIGDATA_NAME
       - run: nix-shell --arg fullDeps true --run "unset _PYTHON_SYSCONFIGDATA_NAME && cd HWI && poetry install && poetry run ./test/test_trezor.py --model_1 ../legacy/firmware/trezor.elf bitcoind"
+
+  legacy_ui_main:
+    name: UI diff from main branch
+    runs-on: ubuntu-latest
+    needs:
+      - legacy_device_test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: ui-records-*
+          merge-multiple: true
+      - uses: ./.github/actions/environment
+      - name: Configure aws credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::538326561891:role/gh_actions_deploy_dev_firmware_data
+          aws-region: eu-west-1
+      - run: "for F in screens_*.tar; do tar xvf $F; done"
+      - run: nix-shell --run "poetry run python -m tests.ui_tests.reporting master-diff T1"
+      - run: mv tests/ui_tests/reports/master_diff .
+      - name: Upload main branch diff
+        run: |
+          aws s3 sync master_diff s3://data.trezor.io/dev/firmware/master_diff/${{ github.run_id }}
+
+  legacy_ui_comment:
+    name: Post comment with UI diff URLs
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha }}
+      - run: |
+          git fetch origin main
+          git diff --quiet origin/main...HEAD -- tests/ui_tests/fixtures.json || echo "FIXTURES_CHANGED=$?" >> $GITHUB_OUTPUT
+        id: check-fixtures-changed
+      - uses: ./.github/actions/ui-comment
+        if: ${{ steps.check-fixtures-changed.outputs.FIXTURES_CHANGED == '1' }}

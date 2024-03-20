@@ -2,6 +2,7 @@
 #![deny(clippy::all)]
 #![allow(clippy::new_without_default)]
 #![deny(unsafe_op_in_unsafe_fn)]
+#![allow(internal_features)]
 // Allowing dead code not to cause a lot of warnings when building for a specific target
 // (when building for TR, a lot of code only used in TT would get marked as unused).
 #![allow(dead_code)]
@@ -16,6 +17,10 @@ mod error;
 // use trezorhal for its macros early
 #[macro_use]
 mod trezorhal;
+
+#[cfg(feature = "crypto")]
+mod crypto;
+mod io;
 mod maybe_trace;
 #[cfg(feature = "micropython")]
 #[macro_use]
@@ -26,6 +31,8 @@ mod storage;
 mod time;
 #[cfg(feature = "ui_debug")]
 mod trace;
+#[cfg(feature = "translations")]
+pub mod translations;
 
 #[cfg(feature = "ui")]
 #[macro_use]

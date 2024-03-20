@@ -24,7 +24,6 @@ from unittest import mock
 import pytest
 
 from trezorlib import btc, messages, tools
-from trezorlib.messages import ButtonRequestType
 
 if TYPE_CHECKING:
     from _pytest.mark.structures import MarkDecorator
@@ -33,6 +32,7 @@ if TYPE_CHECKING:
     from trezorlib.debuglink import TrezorClientDebugLink as Client
     from trezorlib.messages import ButtonRequest
 
+PRIVATE_KEYS_DEV = [byte * 32 for byte in (b"\xdd", b"\xde", b"\xdf")]
 
 BRGeneratorType = Generator[None, messages.ButtonRequest, None]
 
@@ -86,14 +86,27 @@ def parametrize_using_common_fixtures(*paths: str) -> "MarkDecorator":
                 if test_id is not None:
                     test_id = test_id.lower().replace(" ", "_")
 
+            skip_models = test.get("skip_models", [])
+            skip_marks = []
+            for skip_model in skip_models:
+                if skip_model == "t1":
+                    skip_marks.append(pytest.mark.skip_t1)
+                if skip_model == "t2":
+                    skip_marks.append(pytest.mark.skip_t2)
+                if skip_model == "tr":
+                    skip_marks.append(pytest.mark.skip_tr)
+
             tests.append(
                 pytest.param(
                     test["parameters"],
                     test["result"],
-                    marks=pytest.mark.setup_client(
-                        passphrase=fixture["setup"]["passphrase"],
-                        mnemonic=fixture["setup"]["mnemonic"],
-                    ),
+                    marks=[
+                        pytest.mark.setup_client(
+                            passphrase=fixture["setup"]["passphrase"],
+                            mnemonic=fixture["setup"]["mnemonic"],
+                        )
+                    ]
+                    + skip_marks,
                     id=test_id,
                 )
             )
@@ -135,7 +148,7 @@ def generate_entropy(
 
 
 def click_through(
-    debug: "DebugLink", screens: int, code: Optional[ButtonRequestType] = None
+    debug: "DebugLink", screens: int, code: Optional[messages.ButtonRequestType] = None
 ) -> Generator[None, "ButtonRequest", None]:
     """Click through N dialog screens.
 
@@ -201,7 +214,11 @@ def read_and_confirm_mnemonic_tt(
 
     # check share
     for _ in range(3):
-        word_pos = int(debug.wait_layout().text_content().split()[2])
+        # Word position is the first number in the text
+        word_pos_match = re.search(r"\d+", debug.wait_layout().text_content())
+        assert word_pos_match is not None
+        word_pos = int(word_pos_match.group(0))
+
         index = word_pos - 1
         if choose_wrong:
             debug.input(mnemonic[(index + 1) % len(mnemonic)])
@@ -265,7 +282,7 @@ def get_test_address(client: "Client") -> str:
     return btc.get_address(client, "Testnet", TEST_ADDRESS_N)
 
 
-def compact_size(n) -> bytes:
+def compact_size(n: int) -> bytes:
     if n < 253:
         return n.to_bytes(1, "little")
     elif n < 0x1_0000:
@@ -274,3 +291,28 @@ def compact_size(n) -> bytes:
         return bytes([254]) + n.to_bytes(4, "little")
     else:
         return bytes([255]) + n.to_bytes(8, "little")
+
+
+def get_text_possible_pagination(debug: "DebugLink", br: messages.ButtonRequest) -> str:
+    text = debug.wait_layout().text_content()
+    if br.pages is not None:
+        for _ in range(br.pages - 1):
+            debug.swipe_up()
+            text += " "
+            text += debug.wait_layout().text_content()
+    return text
+
+
+def swipe_if_necessary(
+    debug: "DebugLink", br_code: messages.ButtonRequestType | None = None
+) -> BRGeneratorType:
+    br = yield
+    if br_code is not None:
+        assert br.code == br_code
+    swipe_till_the_end(debug, br)
+
+
+def swipe_till_the_end(debug: "DebugLink", br: messages.ButtonRequest) -> None:
+    if br.pages is not None:
+        for _ in range(br.pages - 1):
+            debug.swipe_up()

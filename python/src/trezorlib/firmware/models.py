@@ -24,6 +24,8 @@ from .util import FirmwareHashParameters
 if t.TYPE_CHECKING:
     from typing_extensions import Self
 
+    from ..models import TrezorModel
+
 
 class Model(Enum):
     T1B1 = b"T1B1"
@@ -32,18 +34,22 @@ class Model(Enum):
     D001 = b"D001"
 
     # legacy aliases
-    ONE = T1B1
-    T = T2T1
-    R = T2B1
-    DISC1 = D001
+    ONE = b"T1B1"
+    T = b"T2T1"
+    R = b"T2B1"
+    DISC1 = b"D001"
 
     @classmethod
-    def from_hw_model(cls, hw_model: t.Union["Self", bytes]) -> "Self":
+    def from_hw_model(cls, hw_model: t.Union["Self", bytes]) -> "Model":
         if isinstance(hw_model, cls):
             return hw_model
         if hw_model == b"\x00\x00\x00\x00":
             return cls.T2T1
         raise ValueError(f"Unknown hardware model: {hw_model}")
+
+    @classmethod
+    def from_trezor_model(cls, trezor_model: "TrezorModel") -> "Self":
+        return cls(trezor_model.internal_name.encode("ascii"))
 
     def model_keys(self, dev_keys: bool = False) -> "ModelKeys":
         if dev_keys:

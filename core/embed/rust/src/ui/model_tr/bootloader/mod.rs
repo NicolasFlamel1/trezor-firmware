@@ -1,40 +1,37 @@
+use heapless::String;
+
 use crate::{
     strutil::hexlify,
-    trezorhal::io::io_button_read,
+    trezorhal::{io::io_button_read, secbool::secbool},
     ui::{
-        component::{Component, Event, EventCtx, Label, LineBreaking::BreakWordsNoHyphen, Never},
-        constant::SCREEN,
+        component::{
+            connect::Connect, Component, Event, EventCtx, Label, LineBreaking::BreakWordsNoHyphen,
+            Never,
+        },
+        constant,
+        constant::{HEIGHT, SCREEN},
         display::{self, Color, Font, Icon},
         event::ButtonEvent,
-        geometry::{Alignment2D, Offset, Rect},
+        geometry::{Alignment2D, Offset, Point, Rect},
         util::{from_c_array, from_c_str},
     },
 };
-use heapless::String;
 
-use super::component::{ResultScreen, WelcomeScreen};
+use super::{
+    component::{
+        bl_confirm::{Confirm, ConfirmMsg},
+        ResultScreen, WelcomeScreen,
+    },
+    theme::{
+        bootloader::{BLD_BG, BLD_FG, ICON_ALERT, ICON_SPINNER, ICON_SUCCESS},
+        ICON_ARM_LEFT, ICON_ARM_RIGHT, TEXT_BOLD, TEXT_NORMAL, WHITE,
+    },
+};
 
-mod connect;
 mod intro;
 mod menu;
 mod welcome;
 
-use crate::{
-    trezorhal::secbool::secbool,
-    ui::{
-        constant,
-        constant::HEIGHT,
-        geometry::Point,
-        model_tr::{
-            component::bl_confirm::{Confirm, ConfirmMsg},
-            theme::{
-                bootloader::{BLD_BG, BLD_FG, ICON_ALERT, ICON_SPINNER, ICON_SUCCESS},
-                ICON_ARM_LEFT, ICON_ARM_RIGHT, TEXT_BOLD, TEXT_NORMAL, WHITE,
-            },
-        },
-    },
-};
-use connect::Connect;
 use intro::Intro;
 use menu::Menu;
 use welcome::Welcome;
@@ -132,7 +129,7 @@ extern "C" fn screen_install_confirm(
 
     let mut fingerprint_buffer: [u8; 64] = [0; 64];
     let fingerprint_str = unsafe {
-        let fingerprint_slice = core::slice::from_raw_parts(fingerprint as *const u8, 32);
+        let fingerprint_slice = core::slice::from_raw_parts(fingerprint, 32);
         hexlify(fingerprint_slice, &mut fingerprint_buffer);
         core::str::from_utf8_unchecked(fingerprint_buffer.as_ref())
     };
@@ -301,7 +298,7 @@ extern "C" fn screen_wipe_progress(progress: u16, initialize: bool) {
 
 #[no_mangle]
 extern "C" fn screen_connect(_initial_setup: bool) {
-    let mut frame = Connect::new("Waiting for host...");
+    let mut frame = Connect::new("Waiting for host...", BLD_FG, BLD_BG);
     show(&mut frame);
 }
 

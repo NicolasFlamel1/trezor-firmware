@@ -26,6 +26,7 @@
 #include "button.h"
 #include "common.h"
 #include "display.h"
+#include "display_utils.h"
 #include "flash.h"
 #include "i2c.h"
 #include "model.h"
@@ -644,6 +645,8 @@ int main(void) {
       optiga_lock();
     } else if (startswith(line, "CHECK LOCKED")) {
       check_locked();
+    } else if (startswith(line, "SEC READ")) {
+      sec_read();
 
 #endif
 

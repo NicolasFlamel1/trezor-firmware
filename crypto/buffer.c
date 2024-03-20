@@ -46,6 +46,16 @@ size_t buffer_remaining(BUFFER_READER *buf) {
   return buf->size - buf->pos;
 }
 
+bool buffer_ptr(BUFFER_READER *buf, const uint8_t **ptr) {
+  if ((buf->data == NULL) || (buf->pos > buf->size)) {
+    return false;
+  }
+
+  *ptr = &buf->data[buf->pos];
+
+  return true;
+}
+
 bool buffer_peek(const BUFFER_READER *buf, uint8_t *byte) {
   if ((buf->data == NULL) || (buf->pos >= buf->size)) {
     return false;
@@ -61,6 +71,16 @@ bool buffer_get(BUFFER_READER *buf, uint8_t *byte) {
   }
 
   buf->pos += 1;
+  return true;
+}
+
+bool buffer_seek(BUFFER_READER *buf, size_t pos) {
+  if ((buf->data == NULL) || (pos > buf->size)) {
+    return false;
+  }
+
+  buf->pos = pos;
+
   return true;
 }
 

@@ -36,7 +36,9 @@ def generate_master_diff_report(
 
 
 def get_diff(
-    current: FixturesType, print_to_console: bool = False
+    current: FixturesType,
+    print_to_console: bool = False,
+    models: list[str] | None = None,
 ) -> tuple[dict[str, str], dict[str, str], dict[str, tuple[str, str]]]:
     master = _get_preprocessed_master_fixtures()
 
@@ -45,6 +47,9 @@ def get_diff(
     diff = {}
 
     for model in master.keys() | current.keys():
+        if models and model not in models:
+            continue
+
         master_groups = master.get(model, {})
         current_groups = current.get(model, {})
         for group in master_groups.keys() | current_groups.keys():
@@ -215,7 +220,7 @@ def _get_unique_differing_screens(
         current_screens_path = get_screen_path(test_name)
         if not current_screens_path:
             current_screens_path = MASTER_CACHE_DIR / "empty_current_screens"
-            current_screens_path.mkdir()
+            current_screens_path.mkdir(exist_ok=True)
 
         # Saving all the images to a common directory
         # They will be referenced from the HTML files
