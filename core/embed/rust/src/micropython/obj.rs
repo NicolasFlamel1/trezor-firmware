@@ -113,7 +113,7 @@ impl Obj {
         // micropython/py/obj.h
         // #define MP_OBJ_NEW_SMALL_INT(small_int) \
         //     ((mp_obj_t)((((mp_uint_t)(small_int)) << 1) | 1))
-        unsafe { Self::from_bits(((val << 1) | 1) as usize) }
+        unsafe { Self::from_bits((((val as u32) << 1) | 1) as usize) }
     }
 }
 
