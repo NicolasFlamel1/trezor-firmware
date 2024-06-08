@@ -34,5 +34,6 @@ extern const curve_info secp256k1_info;
 extern const curve_info secp256k1_decred_info;
 extern const curve_info secp256k1_groestl_info;
 extern const curve_info secp256k1_smart_info;
+extern const curve_info secp256k1_mimblewimble_coin_info;
 
 #endif

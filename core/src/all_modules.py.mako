@@ -21,6 +21,7 @@ ALTCOINS = (
     "cardano",
     "eos",
     "ethereum",
+    "mimblewimble_coin",
     "monero",
     "nem",
     "ripple",

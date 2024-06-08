@@ -50,7 +50,7 @@ if not utils.BITCOIN_ONLY:
     # We want to derive both the normal seed and the Cardano seed together, AND
     # expose a method for Cardano to do the same
 
-    async def derive_and_store_roots() -> None:
+    async def derive_and_store_roots(progress_bar: bool = True) -> None:
         from trezor import wire
 
         if not storage_device.is_initialized():
@@ -67,7 +67,7 @@ if not utils.BITCOIN_ONLY:
         passphrase = await get_passphrase()
 
         if need_seed:
-            common_seed = mnemonic.get_seed(passphrase)
+            common_seed = mnemonic.get_seed(passphrase, progress_bar)
             storage_cache.set(storage_cache.APP_COMMON_SEED, common_seed)
 
         if need_cardano_secret:
@@ -76,8 +76,8 @@ if not utils.BITCOIN_ONLY:
             derive_and_store_secrets(passphrase)
 
     @storage_cache.stored_async(storage_cache.APP_COMMON_SEED)
-    async def get_seed() -> bytes:
-        await derive_and_store_roots()
+    async def get_seed(progress_bar: bool = True) -> bytes:
+        await derive_and_store_roots(progress_bar)
         common_seed = storage_cache.get(storage_cache.APP_COMMON_SEED)
         assert common_seed is not None
         return common_seed

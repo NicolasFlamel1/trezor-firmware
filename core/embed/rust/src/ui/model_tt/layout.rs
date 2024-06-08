@@ -569,6 +569,8 @@ extern "C" fn new_confirm_properties(n_args: usize, args: *const Obj, kwargs: *m
         let title: TString = kwargs.get(Qstr::MP_QSTR_title)?.try_into()?;
         let hold: bool = kwargs.get_or(Qstr::MP_QSTR_hold, false)?;
         let items: Obj = kwargs.get(Qstr::MP_QSTR_items)?;
+        let verb: TString<'static> =
+            kwargs.get_or(Qstr::MP_QSTR_verb, TR::buttons__confirm.into())?;
 
         let paragraphs = PropsList::new(
             items,
@@ -580,7 +582,7 @@ extern "C" fn new_confirm_properties(n_args: usize, args: *const Obj, kwargs: *m
             ButtonPage::new(paragraphs.into_paragraphs(), theme::BG).with_hold()?
         } else {
             ButtonPage::new(paragraphs.into_paragraphs(), theme::BG)
-                .with_cancel_confirm(None, Some(TR::buttons__confirm.into()))
+                .with_cancel_confirm(None, Some(verb))
         };
         let obj = LayoutObj::new(Frame::left_aligned(theme::label_title(), title, page))?;
         Ok(obj.into())
@@ -868,6 +870,7 @@ fn new_show_modal(
     let button: TString = kwargs.get_or(Qstr::MP_QSTR_button, TR::buttons__continue.into())?;
     let allow_cancel: bool = kwargs.get_or(Qstr::MP_QSTR_allow_cancel, true)?;
     let time_ms: u32 = kwargs.get_or(Qstr::MP_QSTR_time_ms, 0)?;
+    let left_is_small: bool = kwargs.get_or(Qstr::MP_QSTR_left_is_small, false)?;
 
     let no_buttons = button.is_empty();
     let obj = if no_buttons && time_ms == 0 {
@@ -900,7 +903,7 @@ fn new_show_modal(
                 Button::cancel_confirm(
                     Button::with_icon(theme::ICON_CANCEL),
                     Button::with_text(button).styled(button_style),
-                    false,
+                    left_is_small,
                 ),
             )
             .with_value(value)
@@ -1776,6 +1779,7 @@ pub static mp_module_trezorui2: Module = obj_module! {
     ///     *,
     ///     title: str,
     ///     items: list[tuple[str | None, str | bytes | None, bool]],
+    ///     verb: str = TR::buttons__confirm,
     ///     hold: bool = False,
     /// ) -> LayoutObj[UiResult]:
     ///     """Confirm list of key-value pairs. The third component in the tuple should be True if

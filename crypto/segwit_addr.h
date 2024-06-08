@@ -68,6 +68,19 @@ int segwit_addr_decode(
     const char* addr
 );
 
+/** Converts data so that it can be Bech32 encoded
+ *  Returns 1 if successful.
+ */
+int convert_bits(
+    uint8_t* out,
+    size_t* outlen,
+    int outbits,
+    const uint8_t* in,
+    size_t inlen,
+    int inbits,
+    int pad
+);
+
 /** Supported encodings. */
 typedef enum {
     BECH32_ENCODING_NONE,

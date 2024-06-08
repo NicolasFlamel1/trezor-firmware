@@ -605,6 +605,7 @@ def show_warning(
     subheader: str | None = None,
     button: str | None = None,
     br_code: ButtonRequestType = ButtonRequestType.Warning,
+    left_is_small: bool = False,
 ) -> Awaitable[None]:
     button = button or TR.buttons__continue  # def_arg
     return raise_if_not_confirmed(
@@ -614,6 +615,7 @@ def show_warning(
                     title=content,
                     description=subheader or "",
                     button=button,
+                    left_is_small=left_is_small,
                 )
             ),
             br_type,
@@ -884,6 +886,7 @@ def confirm_text(
     data: str,
     description: str | None = None,
     br_code: ButtonRequestType = BR_TYPE_OTHER,
+    verb: str = TR.buttons__confirm,
 ) -> Awaitable[None]:
     return confirm_value(
         title,
@@ -891,7 +894,7 @@ def confirm_text(
         description or "",
         br_type,
         br_code,
-        verb=TR.buttons__confirm,
+        verb=verb,
     )
 
 
@@ -967,6 +970,7 @@ def confirm_properties(
     br_type: str,
     title: str,
     props: Iterable[PropertyType],
+    verb: str = TR.buttons__confirm,
     hold: bool = False,
     br_code: ButtonRequestType = ButtonRequestType.ConfirmOutput,
 ) -> Awaitable[None]:
@@ -979,6 +983,7 @@ def confirm_properties(
                 trezorui2.confirm_properties(
                     title=title,
                     items=items,
+                    verb=verb.upper(),
                     hold=hold,
                 )
             ),

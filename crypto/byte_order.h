@@ -39,6 +39,12 @@
 #define BYTE_ORDER LITTLE_ENDIAN
 #endif
 
+#define REVERSE16(w, x)            \
+  {                                \
+    uint16_t tmp = (w);            \
+    (x) = (tmp >> 8) | (tmp << 8); \
+  }
+
 #define REVERSE32(w, x)                                              \
   {                                                                  \
     uint32_t tmp = (w);                                              \

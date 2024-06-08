@@ -1,0 +1,471 @@
+syntax = "proto2";
+package hw.trezor.messages.mimblewimble_coin;
+
+// Sugar for easier handling in Java
+option java_package = "com.satoshilabs.trezor.lib.protobuf";
+option java_outer_classname = "TrezorMessageMimbleWimbleCoin";
+
+// Coin type
+enum MimbleWimbleCoinCoinType {
+    MIMBLEWIMBLE_COIN = 0;
+    GRIN = 1;
+    EPIC_CASH = 2;
+}
+
+// Network type
+enum MimbleWimbleCoinNetworkType {
+    MAINNET = 0;
+    TESTNET = 1;
+}
+
+// Address type
+enum MimbleWimbleCoinAddressType {
+    MQS = 0;
+    TOR = 1;
+    SLATEPACK = 2;
+}
+
+// Switch type
+enum MimbleWimbleCoinSwitchType {
+    NONE = 0;
+    REGULAR = 1;
+}
+
+// Message type
+enum MimbleWimbleCoinMessageType {
+    SENDING_TRANSACTION = 0;
+    RECEIVING_TRANSACTION = 1;
+    CREATING_COINBASE = 2;
+}
+
+/**
+ * Request: Get root public key
+ * @start
+ * @next MimbleWimbleCoinRootPublicKey
+ * @next Failure
+ */
+message MimbleWimbleCoinGetRootPublicKey {
+    required MimbleWimbleCoinCoinType coin_type = 1; // Coin type
+    required MimbleWimbleCoinNetworkType network_type = 2; // Network type
+    required uint32 account = 3; // Account
+}
+
+/**
+ * Response: Root public key
+ * @end
+ */
+message MimbleWimbleCoinRootPublicKey {
+    required bytes root_public_key = 1; // Root public key
+}
+
+/**
+ * Request: Get address
+ * @start
+ * @next MimbleWimbleCoinAddress
+ * @next Failure
+ */
+message MimbleWimbleCoinGetAddress {
+    required MimbleWimbleCoinCoinType coin_type = 1; // Coin type
+    required MimbleWimbleCoinNetworkType network_type = 2; // Network type
+    required MimbleWimbleCoinAddressType address_type = 3; // Address type
+    required uint32 account = 4; // Account
+    required uint32 index = 5; // Index
+}
+
+/**
+ * Response: Address
+ * @end
+ */
+message MimbleWimbleCoinAddress {
+    required string address = 1; // Address
+}
+
+/**
+ * Request: Get seed cookie
+ * @start
+ * @next MimbleWimbleCoinSeedCookie
+ * @next Failure
+ */
+message MimbleWimbleCoinGetSeedCookie {
+    required MimbleWimbleCoinCoinType coin_type = 1; // Coin type
+    required MimbleWimbleCoinNetworkType network_type = 2; // Network type
+    required uint32 account = 3; // Account
+}
+
+/**
+ * Response: Seed cookie
+ * @end
+ */
+message MimbleWimbleCoinSeedCookie {
+    required bytes seed_cookie = 1; // Seed cookie
+}
+
+/**
+ * Request: Get commitment
+ * @start
+ * @next MimbleWimbleCoinCommitment
+ * @next Failure
+ */
+message MimbleWimbleCoinGetCommitment {
+    required MimbleWimbleCoinCoinType coin_type = 1; // Coin type
+    required MimbleWimbleCoinNetworkType network_type = 2; // Network type
+    required uint32 account = 3; // Account
+    required bytes identifier = 4; // Identifier
+    required uint64 value = 5; // Value
+    required MimbleWimbleCoinSwitchType switch_type = 6; // Switch type
+}
+
+/**
+ * Response: Commitment
+ * @end
+ */
+message MimbleWimbleCoinCommitment {
+    required bytes commitment = 1; // Commitment
+}
+
+/**
+ * Request: Get Bulletproof components
+ * @start
+ * @next MimbleWimbleCoinBulletproofComponents
+ * @next Failure
+ */
+message MimbleWimbleCoinGetBulletproofComponents {
+    required MimbleWimbleCoinCoinType coin_type = 1; // Coin type
+    required MimbleWimbleCoinNetworkType network_type = 2; // Network type
+    required MimbleWimbleCoinMessageType message_type = 3; // Message type
+    required uint32 account = 4; // Account
+    required bytes identifier = 5; // Identifier
+    required uint64 value = 6; // Value
+    required MimbleWimbleCoinSwitchType switch_type = 7; // Switch type
+}
+
+/**
+ * Response: Bulletproof components
+ * @end
+ */
+message MimbleWimbleCoinBulletproofComponents {
+    required bytes tau_x = 1; // Tau x
+    required bytes t_one = 2; // T one
+    required bytes t_two = 3; // T two
+}
+
+/**
+ * Request: Verify root public key
+ * @start
+ * @next Success
+ * @next Failure
+ */
+message MimbleWimbleCoinVerifyRootPublicKey {
+    required MimbleWimbleCoinCoinType coin_type = 1; // Coin type
+    required MimbleWimbleCoinNetworkType network_type = 2; // Network type
+    required uint32 account = 3; // Account
+}
+
+/**
+ * Request: Verify address
+ * @start
+ * @next Success
+ * @next Failure
+ */
+message MimbleWimbleCoinVerifyAddress {
+    required MimbleWimbleCoinCoinType coin_type = 1; // Coin type
+    required MimbleWimbleCoinNetworkType network_type = 2; // Network type
+    required MimbleWimbleCoinAddressType address_type = 3; // Address type
+    required uint32 account = 4; // Account
+    required uint32 index = 5; // Index
+}
+
+/**
+ * Request: Start encrypting slate
+ * @start
+ * @next MimbleWimbleCoinEncryptedSlateNonceAndSalt
+ * @next Failure
+ */
+message MimbleWimbleCoinStartEncryptingSlate {
+    required MimbleWimbleCoinCoinType coin_type = 1; // Coin type
+    required MimbleWimbleCoinNetworkType network_type = 2; // Network type
+    required uint32 account = 3; // Account
+    required uint32 index = 4; // Index
+    required bytes recipient_address = 5; // Recipient address
+}
+
+/**
+ * Response: Encrypted slate nonce and salt
+ * @end
+ */
+message MimbleWimbleCoinEncryptedSlateNonceAndSalt {
+    required bytes nonce = 1; // Nonce
+    optional bytes salt = 2; // Salt
+}
+
+/**
+ * Request: Continue encrypting slate
+ * @start
+ * @next MimbleWimbleCoinEncryptedSlateData
+ * @next Failure
+ */
+message MimbleWimbleCoinContinueEncryptingSlate {
+    required bytes data = 1; // Data
+}
+
+/**
+ * Response: Encrypted slate data
+ * @end
+ */
+message MimbleWimbleCoinEncryptedSlateData {
+    required bytes encrypted_data = 1; // Encrypted data
+}
+
+/**
+ * Request: Finish encrypting slate
+ * @start
+ * @next MimbleWimbleCoinEncryptedSlateTagAndSignature
+ * @next Failure
+ */
+message MimbleWimbleCoinFinishEncryptingSlate {
+}
+
+/**
+ * Response: Encrypted slate tag
+ * @end
+ */
+message MimbleWimbleCoinEncryptedSlateTagAndSignature {
+    required bytes tag = 1; // Tag
+    optional bytes mqs_message_signature = 2; // MQS message signature
+}
+
+/**
+ * Request: Start decrypting slate
+ * @start
+ * @next Success
+ * @next Failure
+ */
+message MimbleWimbleCoinStartDecryptingSlate {
+    required MimbleWimbleCoinCoinType coin_type = 1; // Coin type
+    required MimbleWimbleCoinNetworkType network_type = 2; // Network type
+    required uint32 account = 3; // Account
+    required uint32 index = 4; // Index
+    required bytes nonce = 5; // Nonce
+    required bytes sender_address_or_ephemeral_x25519_public_key = 6; // Sender address or ephemeral X25519 public key
+    optional bytes salt_or_encrypted_file_key = 7; // Salt or encrypted file key
+    optional bytes payload_nonce = 8; // Payload nonce
+}
+
+/**
+ * Request: Continue decrypting slate
+ * @start
+ * @next MimbleWimbleCoinDecryptedSlateData
+ * @next Failure
+ */
+message MimbleWimbleCoinContinueDecryptingSlate {
+    required bytes encrypted_data = 1; // Encrypted data
+}
+
+/**
+ * Response: Decrypted slate data
+ * @end
+ */
+message MimbleWimbleCoinDecryptedSlateData {
+    required bytes data = 1; // Data
+}
+
+/**
+ * Request: Finish decrypting slate
+ * @start
+ * @next MimbleWimbleCoinDecryptedSlateAesKey
+ * @next Failure
+ */
+message MimbleWimbleCoinFinishDecryptingSlate {
+    required bytes tag = 1; // Tag
+}
+
+/**
+ * Response: Decrypted slate AES key
+ * @end
+ */
+message MimbleWimbleCoinDecryptedSlateAesKey {
+    required bytes aes_key = 1; // AES key
+}
+
+/**
+ * Request: Start transaction
+ * @start
+ * @next Success
+ * @next Failure
+ */
+message MimbleWimbleCoinStartTransaction {
+    required MimbleWimbleCoinCoinType coin_type = 1; // Coin type
+    required MimbleWimbleCoinNetworkType network_type = 2; // Network type
+    required uint32 account = 3; // Account
+    required uint32 index = 4; // Index
+    required uint64 output = 5; // Output
+    required uint64 input = 6; // Input
+    required uint64 fee = 7; // Fee
+    required uint32 secret_nonce_index = 8;// Secret nonce index
+    optional bytes address = 9; // Address
+}
+
+/**
+ * Request: Continue transaction include output
+ * @start
+ * @next Success
+ * @next Failure
+ */
+message MimbleWimbleCoinContinueTransactionIncludeOutput {
+    required bytes identifier = 1; // Identifier
+    required uint64 value = 2; // Value
+    required MimbleWimbleCoinSwitchType switch_type = 3; // Switch type
+}
+
+/**
+ * Request: Continue transaction include input
+ * @start
+ * @next Success
+ * @next Failure
+ */
+message MimbleWimbleCoinContinueTransactionIncludeInput {
+    required bytes identifier = 1; // Identifier
+    required uint64 value = 2; // Value
+    required MimbleWimbleCoinSwitchType switch_type = 3; // Switch type
+}
+
+/**
+ * Request: Continue transaction apply offset
+ * @start
+ * @next MimbleWimbleCoinTransactionSecretNonceIndex
+ * @next Failure
+ */
+message MimbleWimbleCoinContinueTransactionApplyOffset {
+    required bytes offset = 1; // Offset
+}
+
+/**
+ * Response: Transaction secret nonce index
+ * @end
+ */
+message MimbleWimbleCoinTransactionSecretNonceIndex {
+    optional uint32 secret_nonce_index = 1; // Secret nonce index
+}
+
+/**
+ * Request: Continue transaction get public key
+ * @start
+ * @next MimbleWimbleCoinTransactionPublicKey
+ * @next Failure
+ */
+message MimbleWimbleCoinContinueTransactionGetPublicKey {
+}
+
+/**
+ * Response: Transaction public key
+ * @end
+ */
+message MimbleWimbleCoinTransactionPublicKey {
+    required bytes public_key = 1; // Public key
+}
+
+/**
+ * Request: Continue transaction get public nonce
+ * @start
+ * @next MimbleWimbleCoinTransactionPublicNonce
+ * @next Failure
+ */
+message MimbleWimbleCoinContinueTransactionGetPublicNonce {
+}
+
+/**
+ * Response: Transaction public nonce
+ * @end
+ */
+message MimbleWimbleCoinTransactionPublicNonce {
+    required bytes public_nonce = 1; // Public nonce
+}
+
+/**
+ * Request: Continue transaction get message signature
+ * @start
+ * @next MimbleWimbleCoinTransactionMessageSignature
+ * @next Failure
+ */
+message MimbleWimbleCoinContinueTransactionGetMessageSignature {
+    required bytes message = 1; // Message
+}
+
+/**
+ * Response: Transaction message signature
+ * @end
+ */
+message MimbleWimbleCoinTransactionMessageSignature {
+    required bytes message_signature = 1; // Message signature
+}
+
+/**
+ * Request: Finish transaction
+ * @start
+ * @next MimbleWimbleCoinTransactionSignatureAndPaymentProof
+ * @next Failure
+ */
+message MimbleWimbleCoinFinishTransaction {
+    required MimbleWimbleCoinAddressType address_type = 1; // Address type
+    required bytes public_nonce = 2; // Public nonce
+    required bytes public_key = 3; // Public key
+    required bytes kernel_information = 4; // Kernel information
+    optional bytes kernel_commitment = 5; // Kernel commitment
+    optional bytes payment_proof = 6; // Payment proof
+}
+
+/**
+ * Response: Transaction signature and payment proof
+ * @end
+ */
+message MimbleWimbleCoinTransactionSignatureAndPaymentProof {
+    required bytes signature = 1; // signature
+    optional bytes payment_proof = 2; // Payment proof
+}
+
+/**
+ * Request: Get MQS challenge signature
+ * @start
+ * @next MimbleWimbleCoinMqsChallengeSignature
+ * @next Failure
+ */
+message MimbleWimbleCoinGetMqsChallengeSignature {
+    required MimbleWimbleCoinCoinType coin_type = 1; // Coin type
+    required MimbleWimbleCoinNetworkType network_type = 2; // Network type
+    required uint32 account = 3; // Account
+    required uint32 index = 4; // Index
+    optional uint64 timestamp = 5; // Timestamp
+    optional sint32 time_zone_offset = 6; // Time zone offset
+}
+
+/**
+ * Response: MQS challenge signature
+ * @end
+ */
+message MimbleWimbleCoinMqsChallengeSignature {
+    required bytes mqs_challenge_signature = 1; // MQS challenge signature
+}
+
+/**
+ * Request: Get login challenge signature
+ * @start
+ * @next MimbleWimbleCoinLoginChallengeSignature
+ * @next Failure
+ */
+message MimbleWimbleCoinGetLoginChallengeSignature {
+    required MimbleWimbleCoinCoinType coin_type = 1; // Coin type
+    required MimbleWimbleCoinNetworkType network_type = 2; // Network type
+    required uint32 account = 3; // Account
+    required uint64 timestamp = 4; // Timestamp
+    required sint32 time_zone_offset = 5; // Time zone offset
+    required bytes identifier = 6; // Identifier
+}
+
+/**
+ * Response: Login challenge signature
+ * @end
+ */
+message MimbleWimbleCoinLoginChallengeSignature {
+    required bytes login_public_key = 1; // Login public key
+    required bytes login_challenge_signature = 2; // Login challenge signature
+}

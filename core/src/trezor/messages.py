@@ -47,6 +47,11 @@ if TYPE_CHECKING:
     from trezor.enums import HomescreenFormat  # noqa: F401
     from trezor.enums import InputScriptType  # noqa: F401
     from trezor.enums import MessageType  # noqa: F401
+    from trezor.enums import MimbleWimbleCoinAddressType  # noqa: F401
+    from trezor.enums import MimbleWimbleCoinCoinType  # noqa: F401
+    from trezor.enums import MimbleWimbleCoinMessageType  # noqa: F401
+    from trezor.enums import MimbleWimbleCoinNetworkType  # noqa: F401
+    from trezor.enums import MimbleWimbleCoinSwitchType  # noqa: F401
     from trezor.enums import MoneroNetworkType  # noqa: F401
     from trezor.enums import NEMImportanceTransferMode  # noqa: F401
     from trezor.enums import NEMModificationType  # noqa: F401
@@ -4041,6 +4046,680 @@ if TYPE_CHECKING:
 
         @classmethod
         def is_type_of(cls, msg: Any) -> TypeGuard["EthereumAccessList"]:
+            return isinstance(msg, cls)
+
+    class MimbleWimbleCoinGetRootPublicKey(protobuf.MessageType):
+        coin_type: "MimbleWimbleCoinCoinType"
+        network_type: "MimbleWimbleCoinNetworkType"
+        account: "int"
+
+        def __init__(
+            self,
+            *,
+            coin_type: "MimbleWimbleCoinCoinType",
+            network_type: "MimbleWimbleCoinNetworkType",
+            account: "int",
+        ) -> None:
+            pass
+
+        @classmethod
+        def is_type_of(cls, msg: Any) -> TypeGuard["MimbleWimbleCoinGetRootPublicKey"]:
+            return isinstance(msg, cls)
+
+    class MimbleWimbleCoinRootPublicKey(protobuf.MessageType):
+        root_public_key: "bytes"
+
+        def __init__(
+            self,
+            *,
+            root_public_key: "bytes",
+        ) -> None:
+            pass
+
+        @classmethod
+        def is_type_of(cls, msg: Any) -> TypeGuard["MimbleWimbleCoinRootPublicKey"]:
+            return isinstance(msg, cls)
+
+    class MimbleWimbleCoinGetAddress(protobuf.MessageType):
+        coin_type: "MimbleWimbleCoinCoinType"
+        network_type: "MimbleWimbleCoinNetworkType"
+        address_type: "MimbleWimbleCoinAddressType"
+        account: "int"
+        index: "int"
+
+        def __init__(
+            self,
+            *,
+            coin_type: "MimbleWimbleCoinCoinType",
+            network_type: "MimbleWimbleCoinNetworkType",
+            address_type: "MimbleWimbleCoinAddressType",
+            account: "int",
+            index: "int",
+        ) -> None:
+            pass
+
+        @classmethod
+        def is_type_of(cls, msg: Any) -> TypeGuard["MimbleWimbleCoinGetAddress"]:
+            return isinstance(msg, cls)
+
+    class MimbleWimbleCoinAddress(protobuf.MessageType):
+        address: "str"
+
+        def __init__(
+            self,
+            *,
+            address: "str",
+        ) -> None:
+            pass
+
+        @classmethod
+        def is_type_of(cls, msg: Any) -> TypeGuard["MimbleWimbleCoinAddress"]:
+            return isinstance(msg, cls)
+
+    class MimbleWimbleCoinGetSeedCookie(protobuf.MessageType):
+        coin_type: "MimbleWimbleCoinCoinType"
+        network_type: "MimbleWimbleCoinNetworkType"
+        account: "int"
+
+        def __init__(
+            self,
+            *,
+            coin_type: "MimbleWimbleCoinCoinType",
+            network_type: "MimbleWimbleCoinNetworkType",
+            account: "int",
+        ) -> None:
+            pass
+
+        @classmethod
+        def is_type_of(cls, msg: Any) -> TypeGuard["MimbleWimbleCoinGetSeedCookie"]:
+            return isinstance(msg, cls)
+
+    class MimbleWimbleCoinSeedCookie(protobuf.MessageType):
+        seed_cookie: "bytes"
+
+        def __init__(
+            self,
+            *,
+            seed_cookie: "bytes",
+        ) -> None:
+            pass
+
+        @classmethod
+        def is_type_of(cls, msg: Any) -> TypeGuard["MimbleWimbleCoinSeedCookie"]:
+            return isinstance(msg, cls)
+
+    class MimbleWimbleCoinGetCommitment(protobuf.MessageType):
+        coin_type: "MimbleWimbleCoinCoinType"
+        network_type: "MimbleWimbleCoinNetworkType"
+        account: "int"
+        identifier: "bytes"
+        value: "int"
+        switch_type: "MimbleWimbleCoinSwitchType"
+
+        def __init__(
+            self,
+            *,
+            coin_type: "MimbleWimbleCoinCoinType",
+            network_type: "MimbleWimbleCoinNetworkType",
+            account: "int",
+            identifier: "bytes",
+            value: "int",
+            switch_type: "MimbleWimbleCoinSwitchType",
+        ) -> None:
+            pass
+
+        @classmethod
+        def is_type_of(cls, msg: Any) -> TypeGuard["MimbleWimbleCoinGetCommitment"]:
+            return isinstance(msg, cls)
+
+    class MimbleWimbleCoinCommitment(protobuf.MessageType):
+        commitment: "bytes"
+
+        def __init__(
+            self,
+            *,
+            commitment: "bytes",
+        ) -> None:
+            pass
+
+        @classmethod
+        def is_type_of(cls, msg: Any) -> TypeGuard["MimbleWimbleCoinCommitment"]:
+            return isinstance(msg, cls)
+
+    class MimbleWimbleCoinGetBulletproofComponents(protobuf.MessageType):
+        coin_type: "MimbleWimbleCoinCoinType"
+        network_type: "MimbleWimbleCoinNetworkType"
+        message_type: "MimbleWimbleCoinMessageType"
+        account: "int"
+        identifier: "bytes"
+        value: "int"
+        switch_type: "MimbleWimbleCoinSwitchType"
+
+        def __init__(
+            self,
+            *,
+            coin_type: "MimbleWimbleCoinCoinType",
+            network_type: "MimbleWimbleCoinNetworkType",
+            message_type: "MimbleWimbleCoinMessageType",
+            account: "int",
+            identifier: "bytes",
+            value: "int",
+            switch_type: "MimbleWimbleCoinSwitchType",
+        ) -> None:
+            pass
+
+        @classmethod
+        def is_type_of(cls, msg: Any) -> TypeGuard["MimbleWimbleCoinGetBulletproofComponents"]:
+            return isinstance(msg, cls)
+
+    class MimbleWimbleCoinBulletproofComponents(protobuf.MessageType):
+        tau_x: "bytes"
+        t_one: "bytes"
+        t_two: "bytes"
+
+        def __init__(
+            self,
+            *,
+            tau_x: "bytes",
+            t_one: "bytes",
+            t_two: "bytes",
+        ) -> None:
+            pass
+
+        @classmethod
+        def is_type_of(cls, msg: Any) -> TypeGuard["MimbleWimbleCoinBulletproofComponents"]:
+            return isinstance(msg, cls)
+
+    class MimbleWimbleCoinVerifyRootPublicKey(protobuf.MessageType):
+        coin_type: "MimbleWimbleCoinCoinType"
+        network_type: "MimbleWimbleCoinNetworkType"
+        account: "int"
+
+        def __init__(
+            self,
+            *,
+            coin_type: "MimbleWimbleCoinCoinType",
+            network_type: "MimbleWimbleCoinNetworkType",
+            account: "int",
+        ) -> None:
+            pass
+
+        @classmethod
+        def is_type_of(cls, msg: Any) -> TypeGuard["MimbleWimbleCoinVerifyRootPublicKey"]:
+            return isinstance(msg, cls)
+
+    class MimbleWimbleCoinVerifyAddress(protobuf.MessageType):
+        coin_type: "MimbleWimbleCoinCoinType"
+        network_type: "MimbleWimbleCoinNetworkType"
+        address_type: "MimbleWimbleCoinAddressType"
+        account: "int"
+        index: "int"
+
+        def __init__(
+            self,
+            *,
+            coin_type: "MimbleWimbleCoinCoinType",
+            network_type: "MimbleWimbleCoinNetworkType",
+            address_type: "MimbleWimbleCoinAddressType",
+            account: "int",
+            index: "int",
+        ) -> None:
+            pass
+
+        @classmethod
+        def is_type_of(cls, msg: Any) -> TypeGuard["MimbleWimbleCoinVerifyAddress"]:
+            return isinstance(msg, cls)
+
+    class MimbleWimbleCoinStartEncryptingSlate(protobuf.MessageType):
+        coin_type: "MimbleWimbleCoinCoinType"
+        network_type: "MimbleWimbleCoinNetworkType"
+        account: "int"
+        index: "int"
+        recipient_address: "bytes"
+
+        def __init__(
+            self,
+            *,
+            coin_type: "MimbleWimbleCoinCoinType",
+            network_type: "MimbleWimbleCoinNetworkType",
+            account: "int",
+            index: "int",
+            recipient_address: "bytes",
+        ) -> None:
+            pass
+
+        @classmethod
+        def is_type_of(cls, msg: Any) -> TypeGuard["MimbleWimbleCoinStartEncryptingSlate"]:
+            return isinstance(msg, cls)
+
+    class MimbleWimbleCoinEncryptedSlateNonceAndSalt(protobuf.MessageType):
+        nonce: "bytes"
+        salt: "bytes | None"
+
+        def __init__(
+            self,
+            *,
+            nonce: "bytes",
+            salt: "bytes | None" = None,
+        ) -> None:
+            pass
+
+        @classmethod
+        def is_type_of(cls, msg: Any) -> TypeGuard["MimbleWimbleCoinEncryptedSlateNonceAndSalt"]:
+            return isinstance(msg, cls)
+
+    class MimbleWimbleCoinContinueEncryptingSlate(protobuf.MessageType):
+        data: "bytes"
+
+        def __init__(
+            self,
+            *,
+            data: "bytes",
+        ) -> None:
+            pass
+
+        @classmethod
+        def is_type_of(cls, msg: Any) -> TypeGuard["MimbleWimbleCoinContinueEncryptingSlate"]:
+            return isinstance(msg, cls)
+
+    class MimbleWimbleCoinEncryptedSlateData(protobuf.MessageType):
+        encrypted_data: "bytes"
+
+        def __init__(
+            self,
+            *,
+            encrypted_data: "bytes",
+        ) -> None:
+            pass
+
+        @classmethod
+        def is_type_of(cls, msg: Any) -> TypeGuard["MimbleWimbleCoinEncryptedSlateData"]:
+            return isinstance(msg, cls)
+
+    class MimbleWimbleCoinFinishEncryptingSlate(protobuf.MessageType):
+
+        @classmethod
+        def is_type_of(cls, msg: Any) -> TypeGuard["MimbleWimbleCoinFinishEncryptingSlate"]:
+            return isinstance(msg, cls)
+
+    class MimbleWimbleCoinEncryptedSlateTagAndSignature(protobuf.MessageType):
+        tag: "bytes"
+        mqs_message_signature: "bytes | None"
+
+        def __init__(
+            self,
+            *,
+            tag: "bytes",
+            mqs_message_signature: "bytes | None" = None,
+        ) -> None:
+            pass
+
+        @classmethod
+        def is_type_of(cls, msg: Any) -> TypeGuard["MimbleWimbleCoinEncryptedSlateTagAndSignature"]:
+            return isinstance(msg, cls)
+
+    class MimbleWimbleCoinStartDecryptingSlate(protobuf.MessageType):
+        coin_type: "MimbleWimbleCoinCoinType"
+        network_type: "MimbleWimbleCoinNetworkType"
+        account: "int"
+        index: "int"
+        nonce: "bytes"
+        sender_address_or_ephemeral_x25519_public_key: "bytes"
+        salt_or_encrypted_file_key: "bytes | None"
+        payload_nonce: "bytes | None"
+
+        def __init__(
+            self,
+            *,
+            coin_type: "MimbleWimbleCoinCoinType",
+            network_type: "MimbleWimbleCoinNetworkType",
+            account: "int",
+            index: "int",
+            nonce: "bytes",
+            sender_address_or_ephemeral_x25519_public_key: "bytes",
+            salt_or_encrypted_file_key: "bytes | None" = None,
+            payload_nonce: "bytes | None" = None,
+        ) -> None:
+            pass
+
+        @classmethod
+        def is_type_of(cls, msg: Any) -> TypeGuard["MimbleWimbleCoinStartDecryptingSlate"]:
+            return isinstance(msg, cls)
+
+    class MimbleWimbleCoinContinueDecryptingSlate(protobuf.MessageType):
+        encrypted_data: "bytes"
+
+        def __init__(
+            self,
+            *,
+            encrypted_data: "bytes",
+        ) -> None:
+            pass
+
+        @classmethod
+        def is_type_of(cls, msg: Any) -> TypeGuard["MimbleWimbleCoinContinueDecryptingSlate"]:
+            return isinstance(msg, cls)
+
+    class MimbleWimbleCoinDecryptedSlateData(protobuf.MessageType):
+        data: "bytes"
+
+        def __init__(
+            self,
+            *,
+            data: "bytes",
+        ) -> None:
+            pass
+
+        @classmethod
+        def is_type_of(cls, msg: Any) -> TypeGuard["MimbleWimbleCoinDecryptedSlateData"]:
+            return isinstance(msg, cls)
+
+    class MimbleWimbleCoinFinishDecryptingSlate(protobuf.MessageType):
+        tag: "bytes"
+
+        def __init__(
+            self,
+            *,
+            tag: "bytes",
+        ) -> None:
+            pass
+
+        @classmethod
+        def is_type_of(cls, msg: Any) -> TypeGuard["MimbleWimbleCoinFinishDecryptingSlate"]:
+            return isinstance(msg, cls)
+
+    class MimbleWimbleCoinDecryptedSlateAesKey(protobuf.MessageType):
+        aes_key: "bytes"
+
+        def __init__(
+            self,
+            *,
+            aes_key: "bytes",
+        ) -> None:
+            pass
+
+        @classmethod
+        def is_type_of(cls, msg: Any) -> TypeGuard["MimbleWimbleCoinDecryptedSlateAesKey"]:
+            return isinstance(msg, cls)
+
+    class MimbleWimbleCoinStartTransaction(protobuf.MessageType):
+        coin_type: "MimbleWimbleCoinCoinType"
+        network_type: "MimbleWimbleCoinNetworkType"
+        account: "int"
+        index: "int"
+        output: "int"
+        input: "int"
+        fee: "int"
+        secret_nonce_index: "int"
+        address: "bytes | None"
+
+        def __init__(
+            self,
+            *,
+            coin_type: "MimbleWimbleCoinCoinType",
+            network_type: "MimbleWimbleCoinNetworkType",
+            account: "int",
+            index: "int",
+            output: "int",
+            input: "int",
+            fee: "int",
+            secret_nonce_index: "int",
+            address: "bytes | None" = None,
+        ) -> None:
+            pass
+
+        @classmethod
+        def is_type_of(cls, msg: Any) -> TypeGuard["MimbleWimbleCoinStartTransaction"]:
+            return isinstance(msg, cls)
+
+    class MimbleWimbleCoinContinueTransactionIncludeOutput(protobuf.MessageType):
+        identifier: "bytes"
+        value: "int"
+        switch_type: "MimbleWimbleCoinSwitchType"
+
+        def __init__(
+            self,
+            *,
+            identifier: "bytes",
+            value: "int",
+            switch_type: "MimbleWimbleCoinSwitchType",
+        ) -> None:
+            pass
+
+        @classmethod
+        def is_type_of(cls, msg: Any) -> TypeGuard["MimbleWimbleCoinContinueTransactionIncludeOutput"]:
+            return isinstance(msg, cls)
+
+    class MimbleWimbleCoinContinueTransactionIncludeInput(protobuf.MessageType):
+        identifier: "bytes"
+        value: "int"
+        switch_type: "MimbleWimbleCoinSwitchType"
+
+        def __init__(
+            self,
+            *,
+            identifier: "bytes",
+            value: "int",
+            switch_type: "MimbleWimbleCoinSwitchType",
+        ) -> None:
+            pass
+
+        @classmethod
+        def is_type_of(cls, msg: Any) -> TypeGuard["MimbleWimbleCoinContinueTransactionIncludeInput"]:
+            return isinstance(msg, cls)
+
+    class MimbleWimbleCoinContinueTransactionApplyOffset(protobuf.MessageType):
+        offset: "bytes"
+
+        def __init__(
+            self,
+            *,
+            offset: "bytes",
+        ) -> None:
+            pass
+
+        @classmethod
+        def is_type_of(cls, msg: Any) -> TypeGuard["MimbleWimbleCoinContinueTransactionApplyOffset"]:
+            return isinstance(msg, cls)
+
+    class MimbleWimbleCoinTransactionSecretNonceIndex(protobuf.MessageType):
+        secret_nonce_index: "int | None"
+
+        def __init__(
+            self,
+            *,
+            secret_nonce_index: "int | None" = None,
+        ) -> None:
+            pass
+
+        @classmethod
+        def is_type_of(cls, msg: Any) -> TypeGuard["MimbleWimbleCoinTransactionSecretNonceIndex"]:
+            return isinstance(msg, cls)
+
+    class MimbleWimbleCoinContinueTransactionGetPublicKey(protobuf.MessageType):
+
+        @classmethod
+        def is_type_of(cls, msg: Any) -> TypeGuard["MimbleWimbleCoinContinueTransactionGetPublicKey"]:
+            return isinstance(msg, cls)
+
+    class MimbleWimbleCoinTransactionPublicKey(protobuf.MessageType):
+        public_key: "bytes"
+
+        def __init__(
+            self,
+            *,
+            public_key: "bytes",
+        ) -> None:
+            pass
+
+        @classmethod
+        def is_type_of(cls, msg: Any) -> TypeGuard["MimbleWimbleCoinTransactionPublicKey"]:
+            return isinstance(msg, cls)
+
+    class MimbleWimbleCoinContinueTransactionGetPublicNonce(protobuf.MessageType):
+
+        @classmethod
+        def is_type_of(cls, msg: Any) -> TypeGuard["MimbleWimbleCoinContinueTransactionGetPublicNonce"]:
+            return isinstance(msg, cls)
+
+    class MimbleWimbleCoinTransactionPublicNonce(protobuf.MessageType):
+        public_nonce: "bytes"
+
+        def __init__(
+            self,
+            *,
+            public_nonce: "bytes",
+        ) -> None:
+            pass
+
+        @classmethod
+        def is_type_of(cls, msg: Any) -> TypeGuard["MimbleWimbleCoinTransactionPublicNonce"]:
+            return isinstance(msg, cls)
+
+    class MimbleWimbleCoinContinueTransactionGetMessageSignature(protobuf.MessageType):
+        message: "bytes"
+
+        def __init__(
+            self,
+            *,
+            message: "bytes",
+        ) -> None:
+            pass
+
+        @classmethod
+        def is_type_of(cls, msg: Any) -> TypeGuard["MimbleWimbleCoinContinueTransactionGetMessageSignature"]:
+            return isinstance(msg, cls)
+
+    class MimbleWimbleCoinTransactionMessageSignature(protobuf.MessageType):
+        message_signature: "bytes"
+
+        def __init__(
+            self,
+            *,
+            message_signature: "bytes",
+        ) -> None:
+            pass
+
+        @classmethod
+        def is_type_of(cls, msg: Any) -> TypeGuard["MimbleWimbleCoinTransactionMessageSignature"]:
+            return isinstance(msg, cls)
+
+    class MimbleWimbleCoinFinishTransaction(protobuf.MessageType):
+        address_type: "MimbleWimbleCoinAddressType"
+        public_nonce: "bytes"
+        public_key: "bytes"
+        kernel_information: "bytes"
+        kernel_commitment: "bytes | None"
+        payment_proof: "bytes | None"
+
+        def __init__(
+            self,
+            *,
+            address_type: "MimbleWimbleCoinAddressType",
+            public_nonce: "bytes",
+            public_key: "bytes",
+            kernel_information: "bytes",
+            kernel_commitment: "bytes | None" = None,
+            payment_proof: "bytes | None" = None,
+        ) -> None:
+            pass
+
+        @classmethod
+        def is_type_of(cls, msg: Any) -> TypeGuard["MimbleWimbleCoinFinishTransaction"]:
+            return isinstance(msg, cls)
+
+    class MimbleWimbleCoinTransactionSignatureAndPaymentProof(protobuf.MessageType):
+        signature: "bytes"
+        payment_proof: "bytes | None"
+
+        def __init__(
+            self,
+            *,
+            signature: "bytes",
+            payment_proof: "bytes | None" = None,
+        ) -> None:
+            pass
+
+        @classmethod
+        def is_type_of(cls, msg: Any) -> TypeGuard["MimbleWimbleCoinTransactionSignatureAndPaymentProof"]:
+            return isinstance(msg, cls)
+
+    class MimbleWimbleCoinGetMqsChallengeSignature(protobuf.MessageType):
+        coin_type: "MimbleWimbleCoinCoinType"
+        network_type: "MimbleWimbleCoinNetworkType"
+        account: "int"
+        index: "int"
+        timestamp: "int | None"
+        time_zone_offset: "int | None"
+
+        def __init__(
+            self,
+            *,
+            coin_type: "MimbleWimbleCoinCoinType",
+            network_type: "MimbleWimbleCoinNetworkType",
+            account: "int",
+            index: "int",
+            timestamp: "int | None" = None,
+            time_zone_offset: "int | None" = None,
+        ) -> None:
+            pass
+
+        @classmethod
+        def is_type_of(cls, msg: Any) -> TypeGuard["MimbleWimbleCoinGetMqsChallengeSignature"]:
+            return isinstance(msg, cls)
+
+    class MimbleWimbleCoinMqsChallengeSignature(protobuf.MessageType):
+        mqs_challenge_signature: "bytes"
+
+        def __init__(
+            self,
+            *,
+            mqs_challenge_signature: "bytes",
+        ) -> None:
+            pass
+
+        @classmethod
+        def is_type_of(cls, msg: Any) -> TypeGuard["MimbleWimbleCoinMqsChallengeSignature"]:
+            return isinstance(msg, cls)
+
+    class MimbleWimbleCoinGetLoginChallengeSignature(protobuf.MessageType):
+        coin_type: "MimbleWimbleCoinCoinType"
+        network_type: "MimbleWimbleCoinNetworkType"
+        account: "int"
+        timestamp: "int"
+        time_zone_offset: "int"
+        identifier: "bytes"
+
+        def __init__(
+            self,
+            *,
+            coin_type: "MimbleWimbleCoinCoinType",
+            network_type: "MimbleWimbleCoinNetworkType",
+            account: "int",
+            timestamp: "int",
+            time_zone_offset: "int",
+            identifier: "bytes",
+        ) -> None:
+            pass
+
+        @classmethod
+        def is_type_of(cls, msg: Any) -> TypeGuard["MimbleWimbleCoinGetLoginChallengeSignature"]:
+            return isinstance(msg, cls)
+
+    class MimbleWimbleCoinLoginChallengeSignature(protobuf.MessageType):
+        login_public_key: "bytes"
+        login_challenge_signature: "bytes"
+
+        def __init__(
+            self,
+            *,
+            login_public_key: "bytes",
+            login_challenge_signature: "bytes",
+        ) -> None:
+            pass
+
+        @classmethod
+        def is_type_of(cls, msg: Any) -> TypeGuard["MimbleWimbleCoinLoginChallengeSignature"]:
             return isinstance(msg, cls)
 
     class MoneroTransactionSourceEntry(protobuf.MessageType):

@@ -4,7 +4,7 @@ from micropython import const
 _SECONDS_1970_TO_2000 = const(946684800)
 
 
-def format_amount(amount: int, decimals: int) -> str:
+def format_amount(amount: int, decimals: int, useGrouping = True) -> str:
     if amount < 0:
         amount = -amount
         sign = "-"
@@ -15,7 +15,7 @@ def format_amount(amount: int, decimals: int) -> str:
     decimal = amount % d
 
     # TODO: bug in mpz: https://github.com/micropython/micropython/issues/8984
-    grouped_integer = f"{integer:,}".lstrip(",")
+    grouped_integer = f"{integer:,}".lstrip(",") if useGrouping else str(integer)
 
     s = f"{sign}{grouped_integer}.{decimal:0{decimals}}".rstrip("0").rstrip(".")
     return s

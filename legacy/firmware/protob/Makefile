@@ -14,12 +14,12 @@ SKIPPED_MESSAGES := Binance Cardano DebugMonero Eos Monero Ontology Ripple SdPro
 	SetBrightness \
 
 ifeq ($(BITCOIN_ONLY), 1)
-SKIPPED_MESSAGES += Ethereum NEM Stellar
+SKIPPED_MESSAGES += Ethereum NEM Stellar MimbleWimbleCoin
 endif
 
 PROTO_NAMES = messages messages-bitcoin messages-common messages-crypto messages-debug \
 	messages-ethereum messages-ethereum-definitions messages-management messages-nem \
-	messages-stellar
+	messages-stellar messages-mimblewimble-coin
 
 PROTO_OPTIONS = $(PROTO_NAMES:=.options)
 PROTO_COMPILED = $(PROTO_NAMES:=.pb)

@@ -516,7 +516,7 @@ env.Replace(
     CCFLAGS='$COPT '
     '-g3 '
     '-nostdlib '
-    '-std=gnu11 -Wall -Werror -Wdouble-promotion -Wpointer-arith -Wno-missing-braces -fno-common '
+    '-std=gnu11 -Wall -Werror -Wdouble-promotion -Wpointer-arith -Wno-missing-braces -fno-common -Wno-vla-larger-than -Wno-dangling-pointer '
     '-fsingle-precision-constant -fdata-sections -ffunction-sections '
     '-ffreestanding '
     '-fstack-protector-all '
@@ -675,6 +675,7 @@ if FROZEN:
             SOURCE_PY_DIR + 'trezor/enums/Stellar*.py',
             SOURCE_PY_DIR + 'trezor/enums/Tezos*.py',
             SOURCE_PY_DIR + 'trezor/enums/Zcash*.py',
+            SOURCE_PY_DIR + 'trezor/enums/MimbleWimbleCoin*.py',
         ])
     )
 
@@ -752,6 +753,9 @@ if FROZEN:
         SOURCE_PY.extend(Glob(SOURCE_PY_DIR + 'apps/bitcoin/sign_tx/bitcoinlike.py'))
         SOURCE_PY.extend(Glob(SOURCE_PY_DIR + 'apps/bitcoin/sign_tx/zcash_v4.py'))
         SOURCE_PY.extend(Glob(SOURCE_PY_DIR + 'trezor/enums/Zcash*.py'))
+
+        SOURCE_PY.extend(Glob(SOURCE_PY_DIR + 'apps/mimblewimble_coin/*.py'))
+        SOURCE_PY.extend(Glob(SOURCE_PY_DIR + 'trezor/enums/MimbleWimbleCoin*.py'))
 
     source_mpy = env.FrozenModule(
         source=SOURCE_PY,

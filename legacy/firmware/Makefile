@@ -67,6 +67,10 @@ OBJS += ethereum_tokens.o
 OBJS += nem2.o
 OBJS += nem_mosaics.o
 OBJS += stellar.o
+OBJS += mimblewimble_coin.o
+OBJS += mimblewimble_coin_coins.o
+OBJS += mimblewimble_coin_coin_info.o
+OBJS += mimblewimble_coin_generators.o
 endif
 
 OBJS += debug.o
@@ -146,6 +150,7 @@ OBJS += protob/messages-ethereum.pb.o
 OBJS += protob/messages-ethereum-definitions.pb.o
 OBJS += protob/messages-nem.pb.o
 OBJS += protob/messages-stellar.pb.o
+OBJS += protob/messages-mimblewimble-coin.pb.o
 endif
 
 OPTFLAGS ?= -Os

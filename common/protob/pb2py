@@ -93,7 +93,7 @@ if not PROTOC:
 PROTOC_PREFIX = Path(PROTOC).resolve().parent.parent
 
 
-ENUM_ENTRY = c.PrefixedArray(c.Byte, c.Int16ul)
+ENUM_ENTRY = c.PrefixedArray(c.Int16ul, c.Int16ul)
 
 FIELD_STRUCT = c.Struct(
     "tag" / c.Byte,
@@ -569,12 +569,14 @@ class RustBlobRenderer:
         wire_type = message.wire_type
         if wire_type is None:
             wire_type = 0x7FFF
-        if wire_type > 0x7FFF:
+        if wire_type > 0x7FFF and (wire_type & 0xFF00) != 0xC700:
             raise ValueError("Unsupported wire type")
 
         flags_and_wire_type = wire_type
         if message.extensions.get("experimental_message"):
             flags_and_wire_type |= 0x8000
+            if (flags_and_wire_type & 0xFF00) == 0xC700:
+                raise ValueError("Unsupported wire type")
 
         return flags_and_wire_type
 

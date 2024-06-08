@@ -265,6 +265,46 @@ if TYPE_CHECKING:
         SolanaAddress = 903
         SolanaSignTx = 904
         SolanaTxSignature = 905
+        MimbleWimbleCoinGetRootPublicKey = 50944
+        MimbleWimbleCoinRootPublicKey = 51072
+        MimbleWimbleCoinGetAddress = 50945
+        MimbleWimbleCoinAddress = 51073
+        MimbleWimbleCoinGetSeedCookie = 50946
+        MimbleWimbleCoinSeedCookie = 51074
+        MimbleWimbleCoinGetCommitment = 50947
+        MimbleWimbleCoinCommitment = 51075
+        MimbleWimbleCoinGetBulletproofComponents = 50948
+        MimbleWimbleCoinBulletproofComponents = 51076
+        MimbleWimbleCoinVerifyRootPublicKey = 50949
+        MimbleWimbleCoinVerifyAddress = 50950
+        MimbleWimbleCoinStartEncryptingSlate = 50951
+        MimbleWimbleCoinEncryptedSlateNonceAndSalt = 51079
+        MimbleWimbleCoinContinueEncryptingSlate = 50952
+        MimbleWimbleCoinEncryptedSlateData = 51080
+        MimbleWimbleCoinFinishEncryptingSlate = 50953
+        MimbleWimbleCoinEncryptedSlateTagAndSignature = 51081
+        MimbleWimbleCoinStartDecryptingSlate = 50954
+        MimbleWimbleCoinContinueDecryptingSlate = 50955
+        MimbleWimbleCoinDecryptedSlateData = 51083
+        MimbleWimbleCoinFinishDecryptingSlate = 50956
+        MimbleWimbleCoinDecryptedSlateAesKey = 51084
+        MimbleWimbleCoinStartTransaction = 50957
+        MimbleWimbleCoinContinueTransactionIncludeOutput = 50958
+        MimbleWimbleCoinContinueTransactionIncludeInput = 50959
+        MimbleWimbleCoinContinueTransactionApplyOffset = 50960
+        MimbleWimbleCoinTransactionSecretNonceIndex = 51088
+        MimbleWimbleCoinContinueTransactionGetPublicKey = 50961
+        MimbleWimbleCoinTransactionPublicKey = 51089
+        MimbleWimbleCoinContinueTransactionGetPublicNonce = 50962
+        MimbleWimbleCoinTransactionPublicNonce = 51090
+        MimbleWimbleCoinContinueTransactionGetMessageSignature = 50963
+        MimbleWimbleCoinTransactionMessageSignature = 51091
+        MimbleWimbleCoinFinishTransaction = 50964
+        MimbleWimbleCoinTransactionSignatureAndPaymentProof = 51092
+        MimbleWimbleCoinGetMqsChallengeSignature = 50965
+        MimbleWimbleCoinMqsChallengeSignature = 51093
+        MimbleWimbleCoinGetLoginChallengeSignature = 50966
+        MimbleWimbleCoinLoginChallengeSignature = 51094
 
     class FailureType(IntEnum):
         UnexpectedMessage = 1
@@ -475,6 +515,7 @@ if TYPE_CHECKING:
         PassphraseEntry = 17
         Solana = 18
         Translations = 19
+        MimbleWimbleCoin = 199
         Brightness = 20
         Haptic = 21
 
@@ -525,6 +566,29 @@ if TYPE_CHECKING:
         ADDRESS = 6
         ARRAY = 7
         STRUCT = 8
+
+    class MimbleWimbleCoinCoinType(IntEnum):
+        MIMBLEWIMBLE_COIN = 0
+        GRIN = 1
+        EPIC_CASH = 2
+
+    class MimbleWimbleCoinNetworkType(IntEnum):
+        MAINNET = 0
+        TESTNET = 1
+
+    class MimbleWimbleCoinAddressType(IntEnum):
+        MQS = 0
+        TOR = 1
+        SLATEPACK = 2
+
+    class MimbleWimbleCoinSwitchType(IntEnum):
+        NONE = 0
+        REGULAR = 1
+
+    class MimbleWimbleCoinMessageType(IntEnum):
+        SENDING_TRANSACTION = 0
+        RECEIVING_TRANSACTION = 1
+        CREATING_COINBASE = 2
 
     class MoneroNetworkType(IntEnum):
         MAINNET = 0

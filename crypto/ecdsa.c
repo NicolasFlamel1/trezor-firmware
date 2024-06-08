@@ -405,6 +405,104 @@ void point_jacobian_double(jacobian_curve_point *p, const ecdsa_curve *curve) {
   bn_fast_mod(&p->y, prime);
 }
 
+// gets WNAF notation of k
+// assumes window_size < 8
+// assumes k < curve->order
+// not timing safe
+void get_wnaf(const ecdsa_curve *curve, bignum256 *k, const size_t window_size, int8_t *wnaf) {
+  memzero(wnaf, WNAF_SIZE);
+
+  int is_negative;
+  if(bn_testbit(k, UINT8_MAX)) {
+    is_negative = 1;
+    bn_cnegate(true, k, &curve->order);
+    bn_fast_mod(k, &curve->order);
+    bn_mod(k, &curve->order);
+  }
+  else {
+    is_negative = 0;
+  }
+
+  uint8_t carry = 0;
+  for(size_t i = 0; i < WNAF_SIZE;) {
+    if(bn_testbit(k, i) == carry) {
+      i++;
+    }
+    else {
+      const size_t length = (window_size < WNAF_SIZE - i) ? window_size : WNAF_SIZE - i;
+
+      uint8_t bits;
+      if((i + length - 1) / BN_BITS_PER_LIMB == i / BN_BITS_PER_LIMB) {
+        bits = (k->val[i / BN_BITS_PER_LIMB] >> (i % BN_BITS_PER_LIMB)) & ((1 << length) - 1);
+      }
+      else {
+        bits = ((k->val[i / BN_BITS_PER_LIMB] >> (i % BN_BITS_PER_LIMB)) | (k->val[i / BN_BITS_PER_LIMB + 1] << (BN_BITS_PER_LIMB - i % BN_BITS_PER_LIMB))) & ((1 << length) - 1);
+      }
+
+      bits += carry;
+      carry = (bits >> (window_size - 1)) & 1;
+
+      wnaf[i] = bits - (carry << window_size);
+      if(is_negative) {
+        wnaf[i] *= -1;
+      }
+
+      i += length;
+    }
+  }
+}
+
+// res = aP + bQ + ...
+// not timing safe
+void point_multiexponentiation(const ecdsa_curve *curve, const curve_point *points, const size_t number_of_points, const int8_t wnafs[][WNAF_SIZE], const size_t window_size, curve_point *res) {
+  int initialized = 0;
+  jacobian_curve_point result;
+
+  curve_point temp;
+  for(int i = UINT8_MAX; i >= 0; --i) {
+    if(initialized) {
+      point_jacobian_double(&result, curve);
+    }
+
+    for(size_t j = 0; j < number_of_points; ++j) {
+      if(wnafs[j][i]) {
+        const curve_point *point = &points[j * (1 << (window_size - 2)) + (((wnafs[j][i] < 0) ? -wnafs[j][i] : wnafs[j][i]) - 1) / 2];
+
+        if(wnafs[j][i] < 0) {
+          point_copy(point, &temp);
+          bn_cnegate(true, &temp.y, &curve->prime);
+          bn_fast_mod(&temp.y, &curve->prime);
+          bn_mod(&temp.y, &curve->prime);
+
+          if(initialized) {
+            point_jacobian_add(&temp, &result, curve);
+          }
+          else {
+            initialized = 1;
+            curve_to_jacobian(&temp, &result, &curve->prime);
+          }
+        }
+        else {
+          if(initialized) {
+            point_jacobian_add(point, &result, curve);
+          }
+          else {
+            initialized = 1;
+            curve_to_jacobian(point, &result, &curve->prime);
+          }
+        }
+      }
+    }
+  }
+
+  if(initialized) {
+    jacobian_to_curve(&result, res, &curve->prime);
+  }
+  else {
+    point_set_infinity(res);
+  }
+}
+
 // res = k * p
 // returns 0 on success
 int point_multiply(const ecdsa_curve *curve, const bignum256 *k,

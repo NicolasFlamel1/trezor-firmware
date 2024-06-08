@@ -117,6 +117,16 @@ trezor.enums.InputScriptType
 import trezor.enums.InputScriptType
 trezor.enums.MessageType
 import trezor.enums.MessageType
+trezor.enums.MimbleWimbleCoinAddressType
+import trezor.enums.MimbleWimbleCoinAddressType
+trezor.enums.MimbleWimbleCoinCoinType
+import trezor.enums.MimbleWimbleCoinCoinType
+trezor.enums.MimbleWimbleCoinMessageType
+import trezor.enums.MimbleWimbleCoinMessageType
+trezor.enums.MimbleWimbleCoinNetworkType
+import trezor.enums.MimbleWimbleCoinNetworkType
+trezor.enums.MimbleWimbleCoinSwitchType
+import trezor.enums.MimbleWimbleCoinSwitchType
 trezor.enums.OutputScriptType
 import trezor.enums.OutputScriptType
 trezor.enums.PinMatrixRequestType
@@ -557,6 +567,60 @@ if not utils.BITCOIN_ONLY:
     import apps.ethereum.tokens
     apps.ethereum.verify_message
     import apps.ethereum.verify_message
+    apps.mimblewimble_coin
+    import apps.mimblewimble_coin
+    apps.mimblewimble_coin.coins
+    import apps.mimblewimble_coin.coins
+    apps.mimblewimble_coin.common
+    import apps.mimblewimble_coin.common
+    apps.mimblewimble_coin.continue_decrypting_slate
+    import apps.mimblewimble_coin.continue_decrypting_slate
+    apps.mimblewimble_coin.continue_encrypting_slate
+    import apps.mimblewimble_coin.continue_encrypting_slate
+    apps.mimblewimble_coin.continue_transaction_apply_offset
+    import apps.mimblewimble_coin.continue_transaction_apply_offset
+    apps.mimblewimble_coin.continue_transaction_get_message_signature
+    import apps.mimblewimble_coin.continue_transaction_get_message_signature
+    apps.mimblewimble_coin.continue_transaction_get_public_key
+    import apps.mimblewimble_coin.continue_transaction_get_public_key
+    apps.mimblewimble_coin.continue_transaction_get_public_nonce
+    import apps.mimblewimble_coin.continue_transaction_get_public_nonce
+    apps.mimblewimble_coin.continue_transaction_include_input
+    import apps.mimblewimble_coin.continue_transaction_include_input
+    apps.mimblewimble_coin.continue_transaction_include_output
+    import apps.mimblewimble_coin.continue_transaction_include_output
+    apps.mimblewimble_coin.finish_decrypting_slate
+    import apps.mimblewimble_coin.finish_decrypting_slate
+    apps.mimblewimble_coin.finish_encrypting_slate
+    import apps.mimblewimble_coin.finish_encrypting_slate
+    apps.mimblewimble_coin.finish_transaction
+    import apps.mimblewimble_coin.finish_transaction
+    apps.mimblewimble_coin.get_address
+    import apps.mimblewimble_coin.get_address
+    apps.mimblewimble_coin.get_bulletproof_components
+    import apps.mimblewimble_coin.get_bulletproof_components
+    apps.mimblewimble_coin.get_commitment
+    import apps.mimblewimble_coin.get_commitment
+    apps.mimblewimble_coin.get_login_challenge_signature
+    import apps.mimblewimble_coin.get_login_challenge_signature
+    apps.mimblewimble_coin.get_mqs_challenge_signature
+    import apps.mimblewimble_coin.get_mqs_challenge_signature
+    apps.mimblewimble_coin.get_root_public_key
+    import apps.mimblewimble_coin.get_root_public_key
+    apps.mimblewimble_coin.get_seed_cookie
+    import apps.mimblewimble_coin.get_seed_cookie
+    apps.mimblewimble_coin.start_decrypting_slate
+    import apps.mimblewimble_coin.start_decrypting_slate
+    apps.mimblewimble_coin.start_encrypting_slate
+    import apps.mimblewimble_coin.start_encrypting_slate
+    apps.mimblewimble_coin.start_transaction
+    import apps.mimblewimble_coin.start_transaction
+    apps.mimblewimble_coin.storage
+    import apps.mimblewimble_coin.storage
+    apps.mimblewimble_coin.verify_address
+    import apps.mimblewimble_coin.verify_address
+    apps.mimblewimble_coin.verify_root_public_key
+    import apps.mimblewimble_coin.verify_root_public_key
     apps.monero
     import apps.monero
     apps.monero.diag

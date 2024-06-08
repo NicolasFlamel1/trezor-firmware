@@ -26,6 +26,7 @@ const char SECP256K1_NAME[] = "secp256k1";
 const char SECP256K1_DECRED_NAME[] = "secp256k1-decred";
 const char SECP256K1_GROESTL_NAME[] = "secp256k1-groestl";
 const char SECP256K1_SMART_NAME[] = "secp256k1-smart";
+const char SECP256K1_MIMBLEWIMBLE_COIN_NAME[] = "secp256k1-mimblewimble-coin";
 const char NIST256P1_NAME[] = "nist256p1";
 const char ED25519_NAME[] = "ed25519";
 const char ED25519_SEED_NAME[] = "ed25519 seed";

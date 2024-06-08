@@ -758,7 +758,7 @@ void fsm_msgAuthorizeCoinJoin(const AuthorizeCoinJoin *msg) {
   }
 
   // Cache the seed.
-  if (config_getSeed() == NULL) {
+  if (config_getSeed(true) == NULL) {
     layoutHome();
     return;
   }

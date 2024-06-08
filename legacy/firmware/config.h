@@ -25,6 +25,7 @@
 #include "messages-common.pb.h"
 #include "messages-management.pb.h"
 #include "messages.pb.h"
+#include "mimblewimble_coin_session.h"
 
 #define STORAGE_FIELD(TYPE, NAME) \
   bool has_##NAME;                \
@@ -77,6 +78,9 @@ typedef struct _Storage {
   STORAGE_BOOL(unfinished_backup)
   STORAGE_UINT32(auto_lock_delay_ms)
   STORAGE_BOOL(no_backup)
+
+  STORAGE_BYTES(mimblewimble_coin_transaction_secret_nonces, MIMBLEWIMBLE_COIN_ENCRYPTED_TRANSACTION_SECRET_NONCE_SIZE * MIMBLEWIMBLE_COIN_NUMBER_OF_TRANSACTION_SECRET_NONCES)
+  STORAGE_UINT32(mimblewimble_coin_current_transaction_secret_nonce_index)
 } Storage;
 
 extern Storage configUpdate;
@@ -102,11 +106,13 @@ void config_lockDevice(void);
 
 void config_loadDevice(const LoadDevice *msg);
 
-const uint8_t *config_getSeed(void);
+const uint8_t *config_getSeed(bool showLoading);
 
 bool config_setCoinJoinAuthorization(const AuthorizeCoinJoin *authorization);
 MessageType config_getAuthorizationType(void);
 const AuthorizeCoinJoin *config_getCoinJoinAuthorization(void);
+
+MimbleWimbleCoinSession *config_getMimbleWimbleCoinSession(void);
 
 bool config_getU2FRoot(HDNode *node);
 bool config_getRootNode(HDNode *node, const char *curve);
@@ -170,6 +176,11 @@ void config_setAutoLockDelayMs(uint32_t auto_lock_delay_ms);
 
 SafetyCheckLevel config_getSafetyCheckLevel(void);
 void config_setSafetyCheckLevel(SafetyCheckLevel safety_check_level);
+
+bool config_setMimbleWimbleCoinTransactionSecretNonce(const uint8_t *mimblewimble_coin_transaction_secret_nonce, const uint32_t mimblewimble_coin_transaction_secret_nonce_index);
+bool config_getMimbleWimbleCoinTransactionSecretNonce(uint8_t *mimblewimble_coin_transaction_secret_nonce, const uint32_t mimblewimble_coin_transaction_secret_nonce_index);
+bool config_setMimbleWimbleCoinCurrentTransactionSecretNonceIndex(const uint32_t mimblewimble_coin_current_transaction_secret_nonce_index);
+bool config_getMimbleWimbleCoinCurrentTransactionSecretNonceIndex(uint32_t *mimblewimble_coin_current_transaction_secret_nonce_index);
 
 void config_wipe(void);
 

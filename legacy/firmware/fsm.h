@@ -28,6 +28,7 @@
 #include "messages-management.pb.h"
 #include "messages-nem.pb.h"
 #include "messages-stellar.pb.h"
+#include "messages-mimblewimble-coin.pb.h"
 
 // CoinJoin fee rate multiplier.
 #define FEE_RATE_DECIMALS (1000000)
@@ -147,6 +148,53 @@ void fsm_msgStellarAllowTrustOp(const StellarAllowTrustOp *msg);
 void fsm_msgStellarAccountMergeOp(const StellarAccountMergeOp *msg);
 void fsm_msgStellarManageDataOp(const StellarManageDataOp *msg);
 void fsm_msgStellarBumpSequenceOp(const StellarBumpSequenceOp *msg);
+
+// MimbleWimble Coin
+void fsm_msgMimbleWimbleCoinGetRootPublicKey(
+const MimbleWimbleCoinGetRootPublicKey *msg);
+void fsm_msgMimbleWimbleCoinGetAddress(const MimbleWimbleCoinGetAddress *msg);
+void fsm_msgMimbleWimbleCoinGetSeedCookie(
+    const MimbleWimbleCoinGetSeedCookie *msg);
+void fsm_msgMimbleWimbleCoinGetCommitment(
+    const MimbleWimbleCoinGetCommitment *msg);
+void fsm_msgMimbleWimbleCoinGetBulletproofComponents(
+    const MimbleWimbleCoinGetBulletproofComponents *msg);
+void fsm_msgMimbleWimbleCoinVerifyRootPublicKey(
+    const MimbleWimbleCoinVerifyRootPublicKey *msg);
+void fsm_msgMimbleWimbleCoinVerifyAddress(
+    const MimbleWimbleCoinVerifyAddress *msg);
+void fsm_msgMimbleWimbleCoinStartEncryptingSlate(
+    const MimbleWimbleCoinStartEncryptingSlate *msg);
+void fsm_msgMimbleWimbleCoinContinueEncryptingSlate(
+    const MimbleWimbleCoinContinueEncryptingSlate *msg);
+void fsm_msgMimbleWimbleCoinFinishEncryptingSlate(
+    const MimbleWimbleCoinFinishEncryptingSlate *msg);
+void fsm_msgMimbleWimbleCoinStartDecryptingSlate(
+    const MimbleWimbleCoinStartDecryptingSlate *msg);
+void fsm_msgMimbleWimbleCoinContinueDecryptingSlate(
+    const MimbleWimbleCoinContinueDecryptingSlate *msg);
+void fsm_msgMimbleWimbleCoinFinishDecryptingSlate(
+    const MimbleWimbleCoinFinishDecryptingSlate *msg);
+void fsm_msgMimbleWimbleCoinStartTransaction(
+    const MimbleWimbleCoinStartTransaction *msg);
+void fsm_msgMimbleWimbleCoinContinueTransactionIncludeOutput(
+    const MimbleWimbleCoinContinueTransactionIncludeOutput *msg);
+void fsm_msgMimbleWimbleCoinContinueTransactionIncludeInput(
+    const MimbleWimbleCoinContinueTransactionIncludeInput *msg);
+void fsm_msgMimbleWimbleCoinContinueTransactionApplyOffset(
+    const MimbleWimbleCoinContinueTransactionApplyOffset *msg);
+void fsm_msgMimbleWimbleCoinContinueTransactionGetPublicKey(
+    const MimbleWimbleCoinContinueTransactionGetPublicKey *msg);
+void fsm_msgMimbleWimbleCoinContinueTransactionGetPublicNonce(
+    const MimbleWimbleCoinContinueTransactionGetPublicNonce *msg);
+void fsm_msgMimbleWimbleCoinContinueTransactionGetMessageSignature(
+    const MimbleWimbleCoinContinueTransactionGetMessageSignature *msg);
+void fsm_msgMimbleWimbleCoinFinishTransaction(
+    const MimbleWimbleCoinFinishTransaction *msg);
+void fsm_msgMimbleWimbleCoinGetMqsChallengeSignature(
+    const MimbleWimbleCoinGetMqsChallengeSignature *msg);
+void fsm_msgMimbleWimbleCoinGetLoginChallengeSignature(
+    const MimbleWimbleCoinGetLoginChallengeSignature *msg);
 
 void fsm_msgRebootToBootloader(void);
 

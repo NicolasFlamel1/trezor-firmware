@@ -171,7 +171,8 @@ class CoinsInfo(Dict[str, Coins]):
     `eth` for ethereum networks,
     `erc20` for ERC20 tokens,
     `nem` for NEM mosaics,
-    `misc` for other networks.
+    `misc` for other networks,
+    `mimblewimble_coin` for MimbleWimble Coin-like coins.
 
     Accessible as a dict or by attribute: `info["misc"] == info.misc`
     """
@@ -422,6 +423,24 @@ def _load_misc() -> Coins:
     return others
 
 
+def _load_mimblewimble_coin_coins() -> Coins:
+    """Loads MimbleWimble Coin-like coins from `mimblewimble_coin/mimblewimble_coin_coins.json`"""
+    coins: Coins = load_json("mimblewimble_coin/mimblewimble_coin_coins.json")
+    for coin in coins:
+        coin.update(
+            key=f"mimblewimble_coin:{coin['shortcut']}",
+            enable_mqs_address=True if "has_mqs_address" in coin and coin["has_mqs_address"] is True else False,
+            enable_tor_address=True if "has_tor_address" in coin and coin["has_tor_address"] is True else False,
+            enable_slatepack_address=True if "has_slatepack_address" in coin and coin["has_slatepack_address"] is True else False,
+            enable_no_recent_duplicate_kernels=True if "has_no_recent_duplicate_kernels" in coin and coin["has_no_recent_duplicate_kernels"] is True else False,
+            mqs_version=coin["mqs_version"] if "mqs_version" in coin else [0,0],
+            slatepack_address_human_readable_part=coin["slatepack_prefix"] if "slatepack_prefix" in coin else "",
+            maximum_fee=coin["maximum_fee"] if "maximum_fee" in coin else "UINT64_MAX",
+            mqs_name=coin["mqs_name"] if "mqs_name" in coin else "",
+        )
+    return coins
+
+
 def _load_fido_apps() -> FidoApps:
     """Load FIDO apps from `fido/*.json`"""
     apps: FidoApps = []
@@ -618,7 +637,8 @@ def collect_coin_info() -> CoinsInfo:
     `eth` for ethereum networks,
     `erc20` for ERC20 tokens,
     `nem` for NEM mosaics,
-    `misc` for other networks.
+    `misc` for other networks,
+    `mimblewimble_coin` for MimbleWimble Coin-like coins.
     """
     all_coins = CoinsInfo(
         bitcoin=_load_btc_coins(),
@@ -626,6 +646,7 @@ def collect_coin_info() -> CoinsInfo:
         erc20=_load_builtin_erc20_tokens(),
         nem=_load_nem_mosaics(),
         misc=_load_misc(),
+        mimblewimble_coin=_load_mimblewimble_coin_coins(),
     )
 
     for coins in all_coins.values():

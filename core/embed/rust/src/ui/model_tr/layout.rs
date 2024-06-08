@@ -348,6 +348,8 @@ extern "C" fn new_confirm_properties(n_args: usize, args: *const Obj, kwargs: *m
         let title: TString = kwargs.get(Qstr::MP_QSTR_title)?.try_into()?;
         let hold: bool = kwargs.get_or(Qstr::MP_QSTR_hold, false)?;
         let items: Obj = kwargs.get(Qstr::MP_QSTR_items)?;
+        let verb: TString<'static> =
+            kwargs.get_or(Qstr::MP_QSTR_verb, TR::buttons__confirm.into())?;
 
         let mut paragraphs = ParagraphVecLong::new();
 
@@ -383,7 +385,7 @@ extern "C" fn new_confirm_properties(n_args: usize, args: *const Obj, kwargs: *m
         content_in_button_page(
             title,
             paragraphs.into_paragraphs(),
-            TR::buttons__confirm.into(),
+            verb,
             None,
             hold,
         )
@@ -1697,6 +1699,7 @@ pub static mp_module_trezorui2: Module = obj_module! {
     ///     *,
     ///     title: str,
     ///     items: list[tuple[str | None, str | bytes | None, bool]],
+    ///     verb: str = TR::buttons__confirm,
     ///     hold: bool = False,
     /// ) -> LayoutObj[UiResult]:
     ///     """Confirm list of key-value pairs. The third component in the tuple should be True if

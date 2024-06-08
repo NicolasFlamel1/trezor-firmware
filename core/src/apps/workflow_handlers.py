@@ -203,6 +203,54 @@ def _find_message_handler_module(msg_type: int) -> str:
         if msg_type == MessageType.SolanaSignTx:
             return "apps.solana.sign_tx"
 
+        # mimblewimble_coin
+        if msg_type == MessageType.MimbleWimbleCoinGetRootPublicKey:
+            return "apps.mimblewimble_coin.get_root_public_key"
+        if msg_type == MessageType.MimbleWimbleCoinGetAddress:
+            return "apps.mimblewimble_coin.get_address"
+        if msg_type == MessageType.MimbleWimbleCoinGetSeedCookie:
+            return "apps.mimblewimble_coin.get_seed_cookie"
+        if msg_type == MessageType.MimbleWimbleCoinGetCommitment:
+            return "apps.mimblewimble_coin.get_commitment"
+        if msg_type == MessageType.MimbleWimbleCoinGetBulletproofComponents:
+            return "apps.mimblewimble_coin.get_bulletproof_components"
+        if msg_type == MessageType.MimbleWimbleCoinVerifyRootPublicKey:
+            return "apps.mimblewimble_coin.verify_root_public_key"
+        if msg_type == MessageType.MimbleWimbleCoinVerifyAddress:
+            return "apps.mimblewimble_coin.verify_address"
+        if msg_type == MessageType.MimbleWimbleCoinStartEncryptingSlate:
+            return "apps.mimblewimble_coin.start_encrypting_slate"
+        if msg_type == MessageType.MimbleWimbleCoinContinueEncryptingSlate:
+            return "apps.mimblewimble_coin.continue_encrypting_slate"
+        if msg_type == MessageType.MimbleWimbleCoinFinishEncryptingSlate:
+            return "apps.mimblewimble_coin.finish_encrypting_slate"
+        if msg_type == MessageType.MimbleWimbleCoinStartDecryptingSlate:
+            return "apps.mimblewimble_coin.start_decrypting_slate"
+        if msg_type == MessageType.MimbleWimbleCoinContinueDecryptingSlate:
+            return "apps.mimblewimble_coin.continue_decrypting_slate"
+        if msg_type == MessageType.MimbleWimbleCoinFinishDecryptingSlate:
+            return "apps.mimblewimble_coin.finish_decrypting_slate"
+        if msg_type == MessageType.MimbleWimbleCoinStartTransaction:
+            return "apps.mimblewimble_coin.start_transaction"
+        if msg_type == MessageType.MimbleWimbleCoinContinueTransactionIncludeOutput:
+            return "apps.mimblewimble_coin.continue_transaction_include_output"
+        if msg_type == MessageType.MimbleWimbleCoinContinueTransactionIncludeInput:
+            return "apps.mimblewimble_coin.continue_transaction_include_input"
+        if msg_type == MessageType.MimbleWimbleCoinContinueTransactionApplyOffset:
+            return "apps.mimblewimble_coin.continue_transaction_apply_offset"
+        if msg_type == MessageType.MimbleWimbleCoinContinueTransactionGetPublicKey:
+            return "apps.mimblewimble_coin.continue_transaction_get_public_key"
+        if msg_type == MessageType.MimbleWimbleCoinContinueTransactionGetPublicNonce:
+            return "apps.mimblewimble_coin.continue_transaction_get_public_nonce"
+        if msg_type == MessageType.MimbleWimbleCoinContinueTransactionGetMessageSignature:
+            return "apps.mimblewimble_coin.continue_transaction_get_message_signature"
+        if msg_type == MessageType.MimbleWimbleCoinFinishTransaction:
+            return "apps.mimblewimble_coin.finish_transaction"
+        if msg_type == MessageType.MimbleWimbleCoinGetMqsChallengeSignature:
+            return "apps.mimblewimble_coin.get_mqs_challenge_signature"
+        if msg_type == MessageType.MimbleWimbleCoinGetLoginChallengeSignature:
+            return "apps.mimblewimble_coin.get_login_challenge_signature"
+
     raise ValueError
 
 
