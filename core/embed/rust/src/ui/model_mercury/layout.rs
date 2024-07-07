@@ -774,18 +774,34 @@ extern "C" fn new_show_warning(n_args: usize, args: *const Obj, kwargs: *mut Map
         let description: TString = kwargs.get_or(Qstr::MP_QSTR_description, "".into())?;
         let value: TString = kwargs.get_or(Qstr::MP_QSTR_value, "".into())?;
         let action: Option<TString> = kwargs.get(Qstr::MP_QSTR_button)?.try_into_option()?;
+        let allow_cancel: bool = kwargs.get(Qstr::MP_QSTR_allow_cancel)?.try_into()?;
+        let text_mono: bool = kwargs.get_or(Qstr::MP_QSTR_text_mono, false)?;
 
-        let content = ParagraphVecShort::from_iter([
-            Paragraph::new(&theme::TEXT_MAIN_GREY_LIGHT, description),
-            Paragraph::new(&theme::TEXT_MAIN_GREY_EXTRA_LIGHT, value),
-        ])
-        .into_paragraphs();
-        let obj = LayoutObj::new(SwipeUpScreen::new(
+        let content = if text_mono {
+            ParagraphVecShort::from_iter([
+                Paragraph::new(&theme::TEXT_MAIN_GREY_LIGHT, description),
+                Paragraph::new(&theme::TEXT_MONO, value),
+            ])
+            .into_paragraphs()
+        } else {
+            ParagraphVecShort::from_iter([
+                Paragraph::new(&theme::TEXT_MAIN_GREY_LIGHT, description),
+                Paragraph::new(&theme::TEXT_MAIN_GREY_EXTRA_LIGHT, value),
+            ])
+            .into_paragraphs()
+        };
+        let frame = if allow_cancel {
+            Frame::left_aligned(title, SwipeContent::new(content))
+                .with_cancel_button()
+                .with_footer(TR::instructions__swipe_up.into(), action)
+                .with_swipe(SwipeDirection::Up, SwipeSettings::default())
+        } else {
             Frame::left_aligned(title, SwipeContent::new(content))
                 .with_warning_button()
                 .with_footer(TR::instructions__swipe_up.into(), action)
-                .with_swipe(SwipeDirection::Up, SwipeSettings::default()),
-        ))?;
+                .with_swipe(SwipeDirection::Up, SwipeSettings::default())
+        };
+        let obj = LayoutObj::new(SwipeUpScreen::new(frame))?;
         Ok(obj.into())
     };
     unsafe { util::try_with_args_and_kwargs(n_args, args, kwargs, block) }
@@ -1571,6 +1587,7 @@ pub static mp_module_trezorui2: Module = obj_module! {
     ///     value: str = "",
     ///     description: str = "",
     ///     allow_cancel: bool = False,
+    ///     text_mono: bool = False,
     ///     time_ms: int = 0,
     /// ) -> LayoutObj[UiResult]:
     ///     """Warning modal. No buttons shown when `button` is empty string."""

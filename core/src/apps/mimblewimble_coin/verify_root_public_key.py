@@ -21,9 +21,11 @@ async def verify_root_public_key(message: MimbleWimbleCoinVerifyRootPublicKey) -
 	from trezor.workflow import idle_timer
 	from storage.cache import delete, APP_MIMBLEWIMBLE_COIN_ENCRYPTION_AND_DECRYPTION_CONTEXT, APP_MIMBLEWIMBLE_COIN_TRANSACTION_CONTEXT
 	from trezor.wire import NotInitialized, ProcessError, DataError
-	from trezor.ui.layouts import confirm_action, confirm_blob
+	from trezor.ui.layouts import confirm_action, confirm_blob, show_warning
+	from trezor.enums import ButtonRequestType
 	from trezor.crypto import mimblewimble_coin
 	from apps.common.paths import HARDENED
+	from trezor.utils import UI_LAYOUT
 	from .coins import getCoinInfo
 	from .common import getExtendedPrivateKey
 	from .storage import initializeStorage
@@ -80,8 +82,17 @@ async def verify_root_public_key(message: MimbleWimbleCoinVerifyRootPublicKey) -
 		# Show prompt
 		await confirm_action("", coinInfo.name, action = "Verify root public key.", verb = "Next")
 		
-		# Show prompt
-		await confirm_blob("", "Root Public Key", rootPublicKey, verb = "Valid".upper())
+		# Check if UI layout is mercury
+		if UI_LAYOUT == "MERCURY":
+		
+			# Show prompt
+			await show_warning("", "".join(f"{i:02x}" for i in rootPublicKey), "Valid", "Root Public Key", ButtonRequestType.Other, allow_cancel = True, value_text_mono = True)
+		
+		# Otherwise
+		else:
+		
+			# Show prompt
+			await confirm_blob("", "Root Public Key", rootPublicKey, verb = "Valid".upper())
 	
 	# Finally
 	finally:

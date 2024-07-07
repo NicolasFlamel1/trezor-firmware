@@ -28,7 +28,8 @@ async def get_login_challenge_signature(message: MimbleWimbleCoinGetLoginChallen
 	from trezor.workflow import idle_timer
 	from storage.cache import delete, APP_MIMBLEWIMBLE_COIN_ENCRYPTION_AND_DECRYPTION_CONTEXT, APP_MIMBLEWIMBLE_COIN_TRANSACTION_CONTEXT
 	from trezor.wire import NotInitialized, ProcessError, DataError
-	from trezor.ui.layouts import confirm_action, confirm_value, confirm_blob
+	from trezor.ui.layouts import confirm_action, confirm_value, confirm_blob, show_warning
+	from trezor.enums import ButtonRequestType
 	from trezor.crypto import mimblewimble_coin
 	from apps.common.paths import HARDENED
 	from trezor.utils import UI_LAYOUT
@@ -101,7 +102,7 @@ async def get_login_challenge_signature(message: MimbleWimbleCoinGetLoginChallen
 	await confirm_value("Account Index", str(message.account), "", "", verb = "Next")
 	
 	# Show prompt
-	await confirm_blob("", "Identifier", bytes(message.identifier).split(b"\0", 1)[0].decode(), verb = "Next".upper())
+	await confirm_blob("", "Identifier", bytes(message.identifier).split(b"\0", 1)[0].decode(), verb = "Next".upper(), prompt_screen = False)
 	
 	# Get timestamp from timestamp
 	timestamp = message.timestamp // MILLISECONDS_IN_A_SECOND
@@ -121,11 +122,17 @@ async def get_login_challenge_signature(message: MimbleWimbleCoinGetLoginChallen
 		# Show prompt
 		await confirm_value("Time And Date", f"{time[3]:02d}:{time[4]:02d}:{time[5]:02d} on {time[0]}-{time[1]:02d}-{time[2]:02d} UTC{'-' if timeZoneOffset > 0 else '+'}{abs(timeZoneOffset) // MINUTES_IN_AN_HOUR:02d}:{abs(timeZoneOffset) % MINUTES_IN_AN_HOUR:02d}", "", "", verb = "Approve")
 		
+	# Otherwise check if UI layout is TT
+	elif UI_LAYOUT == "TT":
+	
+		# Show prompt
+		await confirm_action("", "Time And Date", action = f"{time[3]:02d}:{time[4]:02d}:{time[5]:02d} on {time[0]}-{time[1]:02d}-{time[2]:02d} UTC{'-' if timeZoneOffset > 0 else '+'}{abs(timeZoneOffset) // MINUTES_IN_AN_HOUR:02d}:{abs(timeZoneOffset) % MINUTES_IN_AN_HOUR:02d}", verb = "Approve")
+	
 	# Otherwise
 	else:
 	
 		# Show prompt
-		await confirm_action("", "Time And Date", action = f"{time[3]:02d}:{time[4]:02d}:{time[5]:02d} on {time[0]}-{time[1]:02d}-{time[2]:02d} UTC{'-' if timeZoneOffset > 0 else '+'}{abs(timeZoneOffset) // MINUTES_IN_AN_HOUR:02d}:{abs(timeZoneOffset) % MINUTES_IN_AN_HOUR:02d}", verb = "Approve")
+		await show_warning("", f"{time[3]:02d}:{time[4]:02d}:{time[5]:02d} on {time[0]}-{time[1]:02d}-{time[2]:02d} UTC{'-' if timeZoneOffset > 0 else '+'}{abs(timeZoneOffset) // MINUTES_IN_AN_HOUR:02d}:{abs(timeZoneOffset) % MINUTES_IN_AN_HOUR:02d}", "Approve", "Time And Date", ButtonRequestType.Other, allow_cancel = True)
 	
 	# Get extended private key
 	extendedPrivateKey = await getExtendedPrivateKey(coinInfo, message.account)

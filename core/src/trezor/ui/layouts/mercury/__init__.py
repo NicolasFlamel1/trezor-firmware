@@ -537,15 +537,19 @@ def show_warning(
     subheader: str | None = None,
     button: str | None = None,
     br_code: ButtonRequestType = ButtonRequestType.Warning,
+    allow_cancel: bool = False,
+    value_text_mono: bool = False,
 ) -> Awaitable[None]:
     button = button or TR.buttons__continue  # def_arg
     return raise_if_not_confirmed(
         interact(
             RustLayout(
                 trezorui2.show_warning(
-                    title=TR.words__important,
+                    title=button or TR.words__important,
                     value=content,
                     button=subheader or TR.words__continue_anyway,
+                    allow_cancel=allow_cancel,
+                    text_mono=value_text_mono,
                 )
             ),
             br_type,

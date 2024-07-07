@@ -112,17 +112,23 @@ async def get_mqs_challenge_signature(message: MimbleWimbleCoinGetMqsChallengeSi
 			# Show prompt
 			await confirm_value("Time And Date", f"{time[3]:02d}:{time[4]:02d}:{time[5]:02d} on {time[0]}-{time[1]:02d}-{time[2]:02d} UTC{'-' if timeZoneOffset > 0 else '+'}{abs(timeZoneOffset) // MINUTES_IN_AN_HOUR:02d}:{abs(timeZoneOffset) % MINUTES_IN_AN_HOUR:02d}", "", "", verb = "Next")
 			
+		# Otherwise check if UI layout is TT
+		elif UI_LAYOUT == "TT":
+		
+			# Show prompt
+			await confirm_action("", "Time And Date", action = f"{time[3]:02d}:{time[4]:02d}:{time[5]:02d} on {time[0]}-{time[1]:02d}-{time[2]:02d} UTC{'-' if timeZoneOffset > 0 else '+'}{abs(timeZoneOffset) // MINUTES_IN_AN_HOUR:02d}:{abs(timeZoneOffset) % MINUTES_IN_AN_HOUR:02d}", verb = "Next")
+		
 		# Otherwise
 		else:
 		
 			# Show prompt
-			await confirm_action("", "Time And Date", action = f"{time[3]:02d}:{time[4]:02d}:{time[5]:02d} on {time[0]}-{time[1]:02d}-{time[2]:02d} UTC{'-' if timeZoneOffset > 0 else '+'}{abs(timeZoneOffset) // MINUTES_IN_AN_HOUR:02d}:{abs(timeZoneOffset) % MINUTES_IN_AN_HOUR:02d}", verb = "Next")
+			await confirm_value("Time And Date", "", f"{time[3]:02d}:{time[4]:02d}:{time[5]:02d} on {time[0]}-{time[1]:02d}-{time[2]:02d} UTC{'-' if timeZoneOffset > 0 else '+'}{abs(timeZoneOffset) // MINUTES_IN_AN_HOUR:02d}:{abs(timeZoneOffset) % MINUTES_IN_AN_HOUR:02d}", "", verb = "Next")
 	
 	# Otherwise
 	else:
 	
 		# Show prompt
-		await confirm_blob("", "Default Challenge", mimblewimble_coin.DEFAULT_MQS_CHALLENGE, verb = "Next".upper())
+		await confirm_blob("", "Default Challenge", mimblewimble_coin.DEFAULT_MQS_CHALLENGE, verb = "Next".upper(), prompt_screen = False)
 	
 	# Check if UI layout is TR
 	if UI_LAYOUT == "TR":
@@ -130,11 +136,17 @@ async def get_mqs_challenge_signature(message: MimbleWimbleCoinGetMqsChallengeSi
 		# Show prompt
 		await confirm_text("", "Warning", f"The host will be able to listen for the account's {coinInfo.mqsName} transactions.", verb = "Approve")
 	
+	# Otherwise check if UI layout is TT
+	elif UI_LAYOUT == "TT":
+	
+		# Show prompt
+		await show_warning("", f"The host will be able to listen for the account's {coinInfo.mqsName} transactions.", button = "Approve", br_code = ButtonRequestType.Other, left_is_small = True)
+	
 	# Otherwise
 	else:
 	
 		# Show prompt
-		await show_warning("", f"The host will be able to listen for the account's {coinInfo.mqsName} transactions.", button = "Approve", br_code = ButtonRequestType.Other, left_is_small = True)
+		await show_warning("", f"The host will be able to listen for the account's {coinInfo.mqsName} transactions.", "Approve", "Warning", ButtonRequestType.Other, allow_cancel = True)
 	
 	# Get extended private key
 	extendedPrivateKey = await getExtendedPrivateKey(coinInfo, message.account)

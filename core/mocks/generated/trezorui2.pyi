@@ -264,6 +264,7 @@ def show_warning(
     value: str = "",
     description: str = "",
     allow_cancel: bool = False,
+    text_mono: bool = False,
     time_ms: int = 0,
 ) -> LayoutObj[UiResult]:
     """Warning modal. No buttons shown when `button` is empty string."""
