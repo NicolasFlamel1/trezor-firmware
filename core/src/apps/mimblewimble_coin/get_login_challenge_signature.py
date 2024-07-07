@@ -95,8 +95,17 @@ async def get_login_challenge_signature(message: MimbleWimbleCoinGetLoginChallen
 		# Raise data error
 		raise DataError("")
 	
-	# Show prompt
-	await confirm_action("", coinInfo.name, action = "Login with wallet?", verb = "Next")
+	# Check if UI layout is mercury
+	if UI_LAYOUT == "MERCURY":
+	
+		# Show prompt
+		await confirm_value(coinInfo.name, "", "Login with wallet?", "", verb = "Next")
+		
+	# Otherwise
+	else:
+	
+		# Show prompt
+		await confirm_action("", coinInfo.name, action = "Login with wallet?", verb = "Next")
 	
 	# Show prompt
 	await confirm_value("Account Index", str(message.account), "", "", verb = "Next")

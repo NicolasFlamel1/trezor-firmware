@@ -61,8 +61,17 @@ async def get_root_public_key(message: MimbleWimbleCoinGetRootPublicKey) -> Mimb
 		# Raise data error
 		raise DataError("")
 	
-	# Show prompt
-	await confirm_action("", coinInfo.name, action = "Export root public key?", verb = "Next")
+	# Check if UI layout is mercury
+	if UI_LAYOUT == "MERCURY":
+	
+		# Show prompt
+		await confirm_value(coinInfo.name, "", "Export root public key?", "", verb = "Next")
+		
+	# Otherwise
+	else:
+	
+		# Show prompt
+		await confirm_action("", coinInfo.name, action = "Export root public key?", verb = "Next")
 	
 	# Show prompt
 	await confirm_value("Account Index", str(message.account), "", "", verb = "Next")

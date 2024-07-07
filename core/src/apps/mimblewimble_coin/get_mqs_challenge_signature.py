@@ -85,8 +85,17 @@ async def get_mqs_challenge_signature(message: MimbleWimbleCoinGetMqsChallengeSi
 		# Raise data error
 		raise DataError("")
 	
-	# Show prompt
-	await confirm_action("", coinInfo.name, action = f"Sign {coinInfo.mqsName} challenge?", verb = "Next")
+	# Check if UI layout is mercury
+	if UI_LAYOUT == "MERCURY":
+	
+		# Show prompt
+		await confirm_value(coinInfo.name, "", f"Sign {coinInfo.mqsName} challenge?", "", verb = "Next")
+		
+	# Otherwise
+	else:
+	
+		# Show prompt
+		await confirm_action("", coinInfo.name, action = f"Sign {coinInfo.mqsName} challenge?", verb = "Next")
 	
 	# Show prompt
 	await confirm_value("Account Index", str(message.account), "", "", verb = "Next")

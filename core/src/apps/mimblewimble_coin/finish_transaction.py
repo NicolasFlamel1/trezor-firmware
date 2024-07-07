@@ -302,8 +302,17 @@ async def finish_transaction(message: MimbleWimbleCoinFinishTransaction) -> Mimb
 	# Try
 	try:
 	
-		# Show prompt
-		await confirm_action("", coinInfo.name, action = "Send transaction?" if send != 0 else "Receive transaction?", verb = "Next")
+		# Check if UI layout is mercury
+		if UI_LAYOUT == "MERCURY":
+		
+			# Show prompt
+			await confirm_value(coinInfo.name, "", "Send transaction?" if send != 0 else "Receive transaction?", "", verb = "Next")
+			
+		# Otherwise
+		else:
+		
+			# Show prompt
+			await confirm_action("", coinInfo.name, action = "Send transaction?" if send != 0 else "Receive transaction?", verb = "Next")
 		
 		# Show prompt
 		await confirm_value("Account Index", str(transactionContextStructure.account), "", "", verb = "Next")

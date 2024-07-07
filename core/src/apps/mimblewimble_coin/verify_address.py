@@ -21,7 +21,7 @@ async def verify_address(message: MimbleWimbleCoinVerifyAddress) -> Success:
 	from trezor.workflow import idle_timer
 	from storage.cache import delete, APP_MIMBLEWIMBLE_COIN_ENCRYPTION_AND_DECRYPTION_CONTEXT, APP_MIMBLEWIMBLE_COIN_TRANSACTION_CONTEXT
 	from trezor.wire import NotInitialized, ProcessError, DataError
-	from trezor.ui.layouts import confirm_action, confirm_blob, show_warning
+	from trezor.ui.layouts import confirm_action, confirm_value, confirm_blob, show_warning
 	from trezor.enums import ButtonRequestType, MimbleWimbleCoinAddressType
 	from trezor.crypto import mimblewimble_coin
 	from apps.common.paths import HARDENED
@@ -91,8 +91,17 @@ async def verify_address(message: MimbleWimbleCoinVerifyAddress) -> Success:
 			# Raise process error
 			raise ProcessError("")
 		
-		# Show prompt
-		await confirm_action("", coinInfo.name, action = f"Verify {coinInfo.mqsName} address.", verb = "Next")
+		# Check if UI layout is mercury
+		if UI_LAYOUT == "MERCURY":
+		
+			# Show prompt
+			await confirm_value(coinInfo.name, "", f"Verify {coinInfo.mqsName} address.", "", verb = "Next")
+			
+		# Otherwise
+		else:
+		
+			# Show prompt
+			await confirm_action("", coinInfo.name, action = f"Verify {coinInfo.mqsName} address.", verb = "Next")
 		
 		# Check if UI layout is mercury
 		if UI_LAYOUT == "MERCURY":
@@ -127,8 +136,17 @@ async def verify_address(message: MimbleWimbleCoinVerifyAddress) -> Success:
 			# Raise process error
 			raise ProcessError("")
 		
-		# Show prompt
-		await confirm_action("", coinInfo.name, action = "Verify Tor address.", verb = "Next")
+		# Check if UI layout is mercury
+		if UI_LAYOUT == "MERCURY":
+		
+			# Show prompt
+			await confirm_value(coinInfo.name, "", "Verify Tor address.", "", verb = "Next")
+			
+		# Otherwise
+		else:
+		
+			# Show prompt
+			await confirm_action("", coinInfo.name, action = "Verify Tor address.", verb = "Next")
 		
 		# Check if UI layout is mercury
 		if UI_LAYOUT == "MERCURY":
@@ -163,8 +181,17 @@ async def verify_address(message: MimbleWimbleCoinVerifyAddress) -> Success:
 			# Raise process error
 			raise ProcessError("")
 		
-		# Show prompt
-		await confirm_action("", coinInfo.name, action = "Verify Slatepack address.", verb = "Next")
+		# Check if UI layout is mercury
+		if UI_LAYOUT == "MERCURY":
+		
+			# Show prompt
+			await confirm_value(coinInfo.name, "", "Verify Slatepack address.", "", verb = "Next")
+			
+		# Otherwise
+		else:
+		
+			# Show prompt
+			await confirm_action("", coinInfo.name, action = "Verify Slatepack address.", verb = "Next")
 		
 		# Check if UI layout is mercury
 		if UI_LAYOUT == "MERCURY":
