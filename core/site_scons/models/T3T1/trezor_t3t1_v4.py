@@ -75,7 +75,6 @@ def configure(
     if "input" in features_wanted:
         sources += ["embed/trezorhal/stm32u5/i2c.c"]
         sources += ["embed/trezorhal/stm32u5/touch/ft6x36.c"]
-        sources += ["embed/lib/touch.c"]
         features_available.append("touch")
 
     if "haptic" in features_wanted:
@@ -102,11 +101,14 @@ def configure(
 
     if "usb" in features_wanted:
         sources += [
-            "embed/trezorhal/stm32u5/usb.c",
-            "embed/trezorhal/stm32u5/usbd_conf.c",
-            "embed/trezorhal/stm32u5/usbd_core.c",
-            "embed/trezorhal/stm32u5/usbd_ctlreq.c",
-            "embed/trezorhal/stm32u5/usbd_ioreq.c",
+            "embed/trezorhal/stm32u5/usb/usb_class_hid.c",
+            "embed/trezorhal/stm32u5/usb/usb_class_vcp.c",
+            "embed/trezorhal/stm32u5/usb/usb_class_webusb.c",
+            "embed/trezorhal/stm32u5/usb/usb.c",
+            "embed/trezorhal/stm32u5/usb/usbd_conf.c",
+            "embed/trezorhal/stm32u5/usb/usbd_core.c",
+            "embed/trezorhal/stm32u5/usb/usbd_ctlreq.c",
+            "embed/trezorhal/stm32u5/usb/usbd_ioreq.c",
             "vendor/stm32u5xx_hal_driver/Src/stm32u5xx_ll_usb.c",
         ]
         features_available.append("usb")

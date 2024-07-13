@@ -86,11 +86,6 @@ where
         self
     }
 
-    pub fn title_styled(mut self, style: TextStyle) -> Self {
-        self.title = self.title.styled(style);
-        self
-    }
-
     #[inline(never)]
     pub fn with_subtitle(mut self, subtitle: TString<'static>) -> Self {
         let style = theme::TEXT_SUB_GREY;
@@ -125,6 +120,18 @@ where
             .button_styled(theme::button_danger())
     }
 
+    pub fn title_styled(mut self, style: TextStyle) -> Self {
+        self.title = self.title.styled(style);
+        self
+    }
+
+    pub fn subtitle_styled(mut self, style: TextStyle) -> Self {
+        if let Some(subtitle) = self.subtitle.take() {
+            self.subtitle = Some(subtitle.styled(style))
+        }
+        self
+    }
+
     pub fn button_styled(mut self, style: ButtonStyleSheet) -> Self {
         if self.button.is_some() {
             self.button = Some(self.button.unwrap().styled(style));
@@ -146,6 +153,12 @@ where
         self
     }
 
+    #[inline(never)]
+    pub fn with_footer_counter(mut self, instruction: TString<'static>, max_value: u8) -> Self {
+        self.footer = Some(Footer::new(instruction).with_page_counter(max_value));
+        self
+    }
+
     pub fn with_danger(self) -> Self {
         self.button_styled(theme::button_danger())
             .title_styled(theme::label_title_danger())
@@ -160,6 +173,25 @@ where
         ctx.request_paint();
     }
 
+    pub fn update_subtitle(
+        &mut self,
+        ctx: &mut EventCtx,
+        new_subtitle: TString<'static>,
+        new_style: Option<TextStyle>,
+    ) {
+        let style = new_style.unwrap_or(theme::TEXT_SUB_GREY);
+        match &mut self.subtitle {
+            Some(subtitle) => {
+                subtitle.set_style(style);
+                subtitle.set_text(new_subtitle);
+            }
+            None => {
+                self.subtitle = Some(Label::new(new_subtitle, self.title.alignment(), style));
+            }
+        }
+        ctx.request_paint();
+    }
+
     pub fn update_content<F, R>(&mut self, ctx: &mut EventCtx, update_fn: F) -> R
     where
         F: Fn(&mut EventCtx, &mut T) -> R,
@@ -167,6 +199,12 @@ where
         let res = update_fn(ctx, &mut self.content);
         ctx.request_paint();
         res
+    }
+
+    pub fn update_footer_counter(&mut self, ctx: &mut EventCtx, new_val: u8) {
+        if let Some(footer) = &mut self.footer {
+            footer.update_page_counter(ctx, new_val);
+        }
     }
 
     #[inline(never)]

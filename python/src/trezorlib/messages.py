@@ -110,10 +110,6 @@ class MessageType(IntEnum):
     SignedIdentity = 54
     GetECDHSessionKey = 61
     ECDHSessionKey = 62
-    CosiCommit = 71
-    CosiCommitment = 72
-    CosiSign = 73
-    CosiSignature = 74
     DebugLinkDecision = 100
     DebugLinkGetState = 101
     DebugLinkState = 102
@@ -3204,77 +3200,6 @@ class ECDHSessionKey(protobuf.MessageType):
         self.public_key = public_key
 
 
-class CosiCommit(protobuf.MessageType):
-    MESSAGE_WIRE_TYPE = 71
-    FIELDS = {
-        1: protobuf.Field("address_n", "uint32", repeated=True, required=False, default=None),
-        2: protobuf.Field("data", "bytes", repeated=False, required=False, default=None),
-    }
-
-    def __init__(
-        self,
-        *,
-        address_n: Optional[Sequence["int"]] = None,
-        data: Optional["bytes"] = None,
-    ) -> None:
-        self.address_n: Sequence["int"] = address_n if address_n is not None else []
-        self.data = data
-
-
-class CosiCommitment(protobuf.MessageType):
-    MESSAGE_WIRE_TYPE = 72
-    FIELDS = {
-        1: protobuf.Field("commitment", "bytes", repeated=False, required=True),
-        2: protobuf.Field("pubkey", "bytes", repeated=False, required=True),
-    }
-
-    def __init__(
-        self,
-        *,
-        commitment: "bytes",
-        pubkey: "bytes",
-    ) -> None:
-        self.commitment = commitment
-        self.pubkey = pubkey
-
-
-class CosiSign(protobuf.MessageType):
-    MESSAGE_WIRE_TYPE = 73
-    FIELDS = {
-        1: protobuf.Field("address_n", "uint32", repeated=True, required=False, default=None),
-        2: protobuf.Field("data", "bytes", repeated=False, required=True),
-        3: protobuf.Field("global_commitment", "bytes", repeated=False, required=True),
-        4: protobuf.Field("global_pubkey", "bytes", repeated=False, required=True),
-    }
-
-    def __init__(
-        self,
-        *,
-        data: "bytes",
-        global_commitment: "bytes",
-        global_pubkey: "bytes",
-        address_n: Optional[Sequence["int"]] = None,
-    ) -> None:
-        self.address_n: Sequence["int"] = address_n if address_n is not None else []
-        self.data = data
-        self.global_commitment = global_commitment
-        self.global_pubkey = global_pubkey
-
-
-class CosiSignature(protobuf.MessageType):
-    MESSAGE_WIRE_TYPE = 74
-    FIELDS = {
-        1: protobuf.Field("signature", "bytes", repeated=False, required=True),
-    }
-
-    def __init__(
-        self,
-        *,
-        signature: "bytes",
-    ) -> None:
-        self.signature = signature
-
-
 class Initialize(protobuf.MessageType):
     MESSAGE_WIRE_TYPE = 0
     FIELDS = {
@@ -3353,6 +3278,7 @@ class Features(protobuf.MessageType):
         51: protobuf.Field("unit_packaging", "uint32", repeated=False, required=False, default=None),
         52: protobuf.Field("haptic_feedback", "bool", repeated=False, required=False, default=None),
         53: protobuf.Field("recovery_type", "RecoveryType", repeated=False, required=False, default=None),
+        54: protobuf.Field("optiga_sec", "uint32", repeated=False, required=False, default=None),
     }
 
     def __init__(
@@ -3409,6 +3335,7 @@ class Features(protobuf.MessageType):
         unit_packaging: Optional["int"] = None,
         haptic_feedback: Optional["bool"] = None,
         recovery_type: Optional["RecoveryType"] = None,
+        optiga_sec: Optional["int"] = None,
     ) -> None:
         self.capabilities: Sequence["Capability"] = capabilities if capabilities is not None else []
         self.major_version = major_version
@@ -3461,6 +3388,7 @@ class Features(protobuf.MessageType):
         self.unit_packaging = unit_packaging
         self.haptic_feedback = haptic_feedback
         self.recovery_type = recovery_type
+        self.optiga_sec = optiga_sec
 
 
 class LockDevice(protobuf.MessageType):

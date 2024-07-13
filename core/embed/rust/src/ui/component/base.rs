@@ -212,6 +212,7 @@ where
 pub struct Root<T> {
     inner: Option<Child<T>>,
     marked_for_clear: bool,
+    transition_out: Option<AttachType>,
 }
 
 impl<T> Root<T> {
@@ -219,6 +220,7 @@ impl<T> Root<T> {
         Self {
             inner: Some(Child::new(component)),
             marked_for_clear: true,
+            transition_out: None,
         }
     }
 
@@ -226,7 +228,7 @@ impl<T> Root<T> {
         if let Some(ref mut c) = self.inner {
             c
         } else {
-            fatal_error!("deallocated", "Root object is deallocated")
+            fatal_error!("Root object is deallocated")
         }
     }
 
@@ -234,7 +236,7 @@ impl<T> Root<T> {
         if let Some(ref c) = self.inner {
             c
         } else {
-            fatal_error!("deallocated", "Root object is deallocated")
+            fatal_error!("Root object is deallocated")
         }
     }
 
@@ -244,6 +246,10 @@ impl<T> Root<T> {
 
     pub fn clear_screen(&mut self) {
         self.marked_for_clear = true;
+    }
+
+    pub fn get_transition_out(&self) -> Option<AttachType> {
+        self.transition_out
     }
 
     pub fn delete(&mut self) {
@@ -270,6 +276,11 @@ where
             assert!(paint_msg.is_none());
             assert!(dummy_ctx.timers.is_empty());
         }
+
+        if let Some(t) = ctx.get_transition_out() {
+            self.transition_out = Some(t);
+        }
+
         msg
     }
 
@@ -459,7 +470,7 @@ where
             // Messages raised during a `RequestPaint` dispatch are not propagated, let's
             // make sure we don't do that.
             #[cfg(feature = "ui_debug")]
-            panic!("cannot raise messages during RequestPaint");
+            fatal_error!("Cannot raise messages during RequestPaint");
         }
         // Make sure to at least a propagate the paint flag upwards (in case there are
         // no `Child` instances in `self`, paint would not get automatically requested
@@ -469,6 +480,7 @@ where
 }
 
 #[derive(Copy, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "debug", derive(ufmt::derive::uDebug))]
 pub enum AttachType {
     Initial,
     #[cfg(feature = "touch")]
@@ -476,6 +488,7 @@ pub enum AttachType {
 }
 
 #[derive(Copy, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "debug", derive(ufmt::derive::uDebug))]
 pub enum Event {
     #[cfg(feature = "button")]
     Button(ButtonEvent),
@@ -499,6 +512,7 @@ pub enum Event {
 }
 
 #[derive(Copy, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "debug", derive(ufmt::derive::uDebug))]
 pub struct TimerToken(u32);
 
 impl TimerToken {
@@ -525,6 +539,7 @@ pub struct EventCtx {
     root_repaint_requested: bool,
     swipe_disable_req: bool,
     swipe_enable_req: bool,
+    transition_out: Option<AttachType>,
 }
 
 impl EventCtx {
@@ -532,7 +547,7 @@ impl EventCtx {
     pub const ANIM_FRAME_TIMER: TimerToken = TimerToken(1);
 
     /// How long into the future we should schedule the animation frame timer.
-    const ANIM_FRAME_DEADLINE: Duration = Duration::from_millis(18);
+    const ANIM_FRAME_DEADLINE: Duration = Duration::from_millis(1);
 
     // 0 == `TimerToken::INVALID`,
     // 1 == `Self::ANIM_FRAME_TIMER`.
@@ -554,6 +569,7 @@ impl EventCtx {
             root_repaint_requested: false,
             swipe_disable_req: false,
             swipe_enable_req: false,
+            transition_out: None,
         }
     }
 
@@ -655,6 +671,7 @@ impl EventCtx {
         self.root_repaint_requested = false;
         self.swipe_disable_req = false;
         self.swipe_enable_req = false;
+        self.transition_out = None;
     }
 
     fn register_timer(&mut self, token: TimerToken, deadline: Duration) {
@@ -662,7 +679,7 @@ impl EventCtx {
             // The timer queue is full, this would be a development error in the layout
             // layer. Let's panic in the debug env.
             #[cfg(feature = "ui_debug")]
-            panic!("timer queue is full");
+            fatal_error!("Timer queue is full");
         }
     }
 
@@ -676,5 +693,13 @@ impl EventCtx {
             .checked_add(1)
             .unwrap_or(Self::STARTING_TIMER_TOKEN);
         token
+    }
+
+    pub fn set_transition_out(&mut self, attach_type: AttachType) {
+        self.transition_out = Some(attach_type);
+    }
+
+    pub fn get_transition_out(&self) -> Option<AttachType> {
+        self.transition_out
     }
 }

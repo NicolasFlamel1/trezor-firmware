@@ -1,10 +1,18 @@
 use core::{cmp::Ordering, convert::TryInto};
 
 use crate::{
-    error::Error,
+    error::{value_error, Error},
     io::BinaryData,
     micropython::{
-        gc::Gc, iter::IterBuf, list::List, map::Map, module::Module, obj::Obj, qstr::Qstr, util,
+        gc::Gc,
+        iter::IterBuf,
+        list::List,
+        macros::{obj_fn_1, obj_fn_kw, obj_module},
+        map::Map,
+        module::Module,
+        obj::Obj,
+        qstr::Qstr,
+        util,
     },
     strutil::TString,
     translations::TR,
@@ -12,9 +20,8 @@ use crate::{
     ui::{
         backlight::BACKLIGHT_LEVELS_OBJ,
         component::{
-            base::{AttachType, ComponentExt},
+            base::ComponentExt,
             connect::Connect,
-            jpeg::Jpeg,
             swipe_detect::SwipeSettings,
             text::{
                 op::OpTextLayout,
@@ -24,7 +31,7 @@ use crate::{
                 },
                 TextStyle,
             },
-            Border, Component, FormattedText, Label, Never, SwipeDirection, Timeout,
+            Border, CachedJpeg, Component, FormattedText, Label, Never, SwipeDirection, Timeout,
         },
         flow::Swipable,
         geometry,
@@ -33,7 +40,10 @@ use crate::{
             result::{CANCELLED, CONFIRMED, INFO},
             util::{upy_disable_animation, ConfirmBlob, PropsList},
         },
-        model_mercury::component::{check_homescreen_format, SwipeContent},
+        model_mercury::{
+            component::{check_homescreen_format, SwipeContent},
+            flow::new_confirm_action_simple,
+        },
     },
 };
 
@@ -133,7 +143,7 @@ where
                 if let Some(word) = self.mnemonic() {
                     word.try_into()
                 } else {
-                    panic!("invalid mnemonic")
+                    fatal_error!("Invalid mnemonic")
                 }
             }
             MnemonicKeyboardMsg::Previous => "".try_into(),
@@ -508,38 +518,38 @@ extern "C" fn new_confirm_homescreen(n_args: usize, args: *const Obj, kwargs: *m
         let obj = if jpeg.is_empty() {
             // Incoming data may be empty, meaning we should
             // display default homescreen message.
-            LayoutObj::new(SwipeUpScreen::new(
-                Frame::centered(
-                    title,
-                    SwipeContent::new(Paragraphs::new([Paragraph::new(
-                        &theme::TEXT_DEMIBOLD,
-                        TR::homescreen__set_default,
-                    )
-                    .centered()])),
-                )
-                .with_cancel_button()
-                .with_footer(
-                    TR::instructions__swipe_up.into(),
-                    Some(TR::buttons__change.into()),
-                )
-                .with_swipe(SwipeDirection::Up, SwipeSettings::default()),
-            ))
+            let paragraphs = ParagraphVecShort::from_iter([Paragraph::new(
+                &theme::TEXT_DEMIBOLD,
+                TR::homescreen__set_default,
+            )])
+            .into_paragraphs();
+
+            new_confirm_action_simple(
+                paragraphs,
+                TR::homescreen__settings_title.into(),
+                Some(TR::homescreen__settings_subtitle.into()),
+                None,
+                Some(TR::homescreen__settings_title.into()),
+                false,
+                false,
+            )
         } else {
             if !check_homescreen_format(jpeg) {
-                return Err(value_error!("Invalid image."));
+                return Err(value_error!(c"Invalid image."));
             };
 
-            LayoutObj::new(SwipeUpScreen::new(
-                Frame::left_aligned(title, Jpeg::new(jpeg, 1))
+            let obj = LayoutObj::new(SwipeUpScreen::new(
+                Frame::left_aligned(title, SwipeContent::new(CachedJpeg::new(jpeg, 1)))
                     .with_cancel_button()
                     .with_footer(
                         TR::instructions__swipe_up.into(),
                         Some(TR::buttons__change.into()),
                     )
                     .with_swipe(SwipeDirection::Up, SwipeSettings::default()),
-            ))
+            ));
+            Ok(obj?.into())
         };
-        Ok(obj?.into())
+        obj
     };
 
     unsafe { util::try_with_args_and_kwargs(n_args, args, kwargs, block) }
@@ -817,7 +827,7 @@ extern "C" fn new_show_success(n_args: usize, args: *const Obj, kwargs: *mut Map
 
         let content = StatusScreen::new_success();
         let obj = LayoutObj::new(SwipeUpScreen::new(
-            Frame::left_aligned(title, SwipeContent::new(content).with_normal_attach(None))
+            Frame::left_aligned(title, SwipeContent::new(content).with_no_attach_anim())
                 .with_footer(TR::instructions__swipe_up.into(), description)
                 .with_swipe(SwipeDirection::Up, SwipeSettings::default()),
         ))?;
@@ -1071,16 +1081,14 @@ extern "C" fn new_show_checklist(n_args: usize, args: *const Obj, kwargs: *mut M
                 .with_spacing(theme::CHECKLIST_SPACING),
         )
         .with_check_width(theme::CHECKLIST_CHECK_WIDTH)
-        .with_icon_done_color(theme::GREEN);
+        .with_numerals()
+        .with_icon_done_color(theme::GREEN)
+        .with_done_offset(theme::CHECKLIST_DONE_OFFSET);
 
         let obj = LayoutObj::new(SwipeUpScreen::new(
-            Frame::left_aligned(
-                title,
-                SwipeContent::new(checklist_content)
-                    .with_normal_attach(Some(AttachType::Swipe(SwipeDirection::Up))),
-            )
-            .with_footer(TR::instructions__swipe_up.into(), None)
-            .with_swipe(SwipeDirection::Up, SwipeSettings::default()),
+            Frame::left_aligned(title, SwipeContent::new(checklist_content))
+                .with_footer(TR::instructions__swipe_up.into(), None)
+                .with_swipe(SwipeDirection::Up, SwipeSettings::default()),
         ))?;
         Ok(obj.into())
     };
@@ -1321,12 +1329,15 @@ pub static mp_module_trezorui2: Module = obj_module! {
     ///
     /// T = TypeVar("T")
     ///
+    /// class AttachType:
+    ///     ...
+    ///
     /// class LayoutObj(Generic[T]):
     ///     """Representation of a Rust-based layout object.
     ///     see `trezor::ui::layout::obj::LayoutObj`.
     ///     """
     ///
-    ///     def attach_timer_fn(self, fn: Callable[[int, int], None]) -> None:
+    ///     def attach_timer_fn(self, fn: Callable[[int, int], None], attach_type: AttachType | None) -> None:
     ///         """Attach a timer setter function.
     ///
     ///         The layout object can call the timer setter with two arguments,
@@ -1382,6 +1393,9 @@ pub static mp_module_trezorui2: Module = obj_module! {
     ///
     ///     def page_count(self) -> int:
     ///         """Return the number of pages in the layout object."""
+    ///
+    ///     def get_transition_out(self) -> AttachType:
+    ///         """Return the transition type."""
     ///
     ///     def __del__(self) -> None:
     ///         """Calls drop on contents of the root component."""
@@ -1715,6 +1729,7 @@ pub static mp_module_trezorui2: Module = obj_module! {
     ///     description: str,
     ///     text_info: Iterable[str],
     ///     text_confirm: str,
+    ///     highlight_repeated: bool,
     /// ) -> LayoutObj[UiResult]:
     ///     """Show wallet backup words preceded by an instruction screen and followed by
     ///     confirmation."""
@@ -1835,6 +1850,10 @@ pub static mp_module_trezorui2: Module = obj_module! {
     /// ) -> LayoutObj[UiResult]:
     ///     """Ask whether to update firmware, optionally show fingerprint. Shared with bootloader."""
     Qstr::MP_QSTR_confirm_firmware_update => obj_fn_kw!(0, new_confirm_firmware_update).as_obj(),
+
+    /// def tutorial() -> LayoutObj[UiResult]:
+    ///     """Show user how to interact with the device."""
+    Qstr::MP_QSTR_tutorial => obj_fn_kw!(0, flow::show_tutorial::new_show_tutorial).as_obj(), // FIXME turn this into obj_fn_0, T2B1 as well
 
     /// def show_wait_text(message: str, /) -> LayoutObj[None]:
     ///     """Show single-line text in the middle of the screen."""

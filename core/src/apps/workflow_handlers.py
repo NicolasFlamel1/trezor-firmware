@@ -55,7 +55,10 @@ def _find_message_handler_module(msg_type: int) -> str:
     if msg_type == MessageType.RebootToBootloader:
         return "apps.management.reboot_to_bootloader"
 
-    if utils.INTERNAL_MODEL in ("T2B1",) and msg_type == MessageType.ShowDeviceTutorial:
+    if (
+        utils.INTERNAL_MODEL in ("T2B1", "T3T1")
+        and msg_type == MessageType.ShowDeviceTutorial
+    ):
         return "apps.management.show_tutorial"
 
     if utils.USE_BACKLIGHT and msg_type == MessageType.SetBrightness:
@@ -96,8 +99,6 @@ def _find_message_handler_module(msg_type: int) -> str:
         return "apps.misc.cipher_key_value"
     if msg_type == MessageType.GetFirmwareHash:
         return "apps.misc.get_firmware_hash"
-    if msg_type == MessageType.CosiCommit:
-        return "apps.misc.cosi_commit"
 
     if not utils.BITCOIN_ONLY:
         if msg_type == MessageType.SetU2FCounter:

@@ -45,6 +45,9 @@ impl AttachAnimation {
         );
 
         match attach_type {
+            Some(AttachType::Initial) => {
+                Offset::lerp(Offset::new(0, -20), Offset::zero(), value.eval(t))
+            }
             Some(AttachType::Swipe(dir)) => match dir {
                 SwipeDirection::Up => {
                     Offset::lerp(Offset::new(0, 20), Offset::zero(), value.eval(t))
@@ -66,7 +69,8 @@ impl AttachAnimation {
             pareen::constant(1.0),
         );
         match attach_type {
-            Some(AttachType::Swipe(SwipeDirection::Up))
+            Some(AttachType::Initial)
+            | Some(AttachType::Swipe(SwipeDirection::Up))
             | Some(AttachType::Swipe(SwipeDirection::Down)) => {}
             _ => {
                 return 255;
@@ -89,9 +93,9 @@ pub struct SwipeContent<T> {
     bounds: Rect,
     progress: i16,
     dir: SwipeDirection,
-    normal: Option<AttachType>,
     attach_animation: AttachAnimation,
     attach_type: Option<AttachType>,
+    show_attach_anim: bool,
 }
 
 impl<T: Component> SwipeContent<T> {
@@ -101,39 +105,28 @@ impl<T: Component> SwipeContent<T> {
             bounds: Rect::zero(),
             progress: 0,
             dir: SwipeDirection::Up,
-            normal: Some(AttachType::Swipe(SwipeDirection::Down)),
             attach_animation: AttachAnimation::default(),
             attach_type: None,
+            show_attach_anim: true,
         }
     }
 
-    pub fn with_normal_attach(self, attach_type: Option<AttachType>) -> Self {
-        Self {
-            normal: attach_type,
-            ..self
-        }
+    pub fn with_no_attach_anim(mut self) -> Self {
+        self.show_attach_anim = false;
+        self
     }
 
     pub fn inner(&self) -> &T {
         &self.inner
     }
-}
 
-impl<T: Component> Component for SwipeContent<T> {
-    type Msg = T::Msg;
-
-    fn place(&mut self, bounds: Rect) -> Rect {
-        self.bounds = self.inner.place(bounds);
-        self.bounds
-    }
-
-    fn event(&mut self, ctx: &mut EventCtx, event: Event) -> Option<Self::Msg> {
+    fn process_event(&mut self, ctx: &mut EventCtx, event: Event, animate: bool) -> Option<T::Msg> {
         if let Event::Attach(attach_type) = event {
             self.progress = 0;
-            if let AttachType::Initial = attach_type {
-                self.attach_type = self.normal;
-            } else {
+            if self.show_attach_anim && animate {
                 self.attach_type = Some(attach_type);
+            } else {
+                self.attach_type = None;
             }
             self.attach_animation.reset();
             ctx.request_anim_frame();
@@ -153,13 +146,14 @@ impl<T: Component> Component for SwipeContent<T> {
         if let Event::Swipe(SwipeEvent::Move(dir, progress)) = event {
             match dir {
                 SwipeDirection::Up | SwipeDirection::Down => {
-                    self.dir = dir;
-                    self.progress = progress;
+                    if animate {
+                        self.dir = dir;
+                        self.progress = progress;
+                    }
                 }
                 _ => {}
             }
             ctx.request_paint();
-            ctx.request_anim_frame();
         }
 
         match event {
@@ -172,6 +166,19 @@ impl<T: Component> Component for SwipeContent<T> {
             }
             _ => self.inner.event(ctx, event),
         }
+    }
+}
+
+impl<T: Component> Component for SwipeContent<T> {
+    type Msg = T::Msg;
+
+    fn place(&mut self, bounds: Rect) -> Rect {
+        self.bounds = self.inner.place(bounds);
+        self.bounds
+    }
+
+    fn event(&mut self, ctx: &mut EventCtx, event: Event) -> Option<Self::Msg> {
+        self.process_event(ctx, event, true)
     }
 
     fn paint(&mut self) {
@@ -258,5 +265,120 @@ where
     fn trace(&self, t: &mut dyn crate::trace::Tracer) {
         t.component("SwipeContent");
         t.child("content", &self.inner);
+    }
+}
+
+pub trait InternallySwipable {
+    fn current_page(&self) -> usize;
+
+    fn num_pages(&self) -> usize;
+}
+
+pub struct InternallySwipableContent<T>
+where
+    T: Component + InternallySwipable,
+{
+    content: SwipeContent<T>,
+    animate: bool,
+}
+
+impl<T> InternallySwipableContent<T>
+where
+    T: Component + InternallySwipable,
+{
+    pub fn new(content: T) -> Self {
+        Self {
+            content: SwipeContent::new(content),
+            animate: true,
+        }
+    }
+
+    pub fn inner(&self) -> &T {
+        self.content.inner()
+    }
+
+    fn should_animate_attach(&self, attach_type: AttachType) -> bool {
+        let is_first_page = self.content.inner.current_page() == 0;
+        let is_last_page =
+            self.content.inner.current_page() == (self.content.inner.num_pages() - 1);
+
+        let is_swipe_up = matches!(attach_type, AttachType::Swipe(SwipeDirection::Up));
+        let is_swipe_down = matches!(attach_type, AttachType::Swipe(SwipeDirection::Down));
+
+        if !self.content.show_attach_anim {
+            return false;
+        }
+
+        if is_first_page && is_swipe_up {
+            return true;
+        }
+
+        if is_last_page && is_swipe_down {
+            return true;
+        }
+
+        false
+    }
+
+    fn should_animate_swipe(&self, swipe_direction: SwipeDirection) -> bool {
+        let is_first_page = self.content.inner.current_page() == 0;
+        let is_last_page =
+            self.content.inner.current_page() == (self.content.inner.num_pages() - 1);
+
+        let is_swipe_up = matches!(swipe_direction, SwipeDirection::Up);
+        let is_swipe_down = matches!(swipe_direction, SwipeDirection::Down);
+
+        if is_last_page && is_swipe_up {
+            return true;
+        }
+
+        if is_first_page && is_swipe_down {
+            return true;
+        }
+
+        false
+    }
+}
+
+impl<T> Component for InternallySwipableContent<T>
+where
+    T: Component + InternallySwipable,
+{
+    type Msg = T::Msg;
+
+    fn place(&mut self, bounds: Rect) -> Rect {
+        self.content.place(bounds)
+    }
+
+    fn event(&mut self, ctx: &mut EventCtx, event: Event) -> Option<Self::Msg> {
+        let animate = match event {
+            Event::Attach(attach_type) => self.should_animate_attach(attach_type),
+            Event::Swipe(SwipeEvent::Move(dir, _)) => self.should_animate_swipe(dir),
+            Event::Swipe(SwipeEvent::End(dir)) => self.should_animate_swipe(dir),
+            _ => self.animate,
+        };
+
+        self.animate = animate;
+
+        self.content.process_event(ctx, event, animate)
+    }
+
+    fn paint(&mut self) {
+        self.content.paint()
+    }
+
+    fn render<'s>(&'s self, target: &mut impl Renderer<'s>) {
+        self.content.render(target)
+    }
+}
+
+#[cfg(feature = "ui_debug")]
+impl<T> crate::trace::Trace for InternallySwipableContent<T>
+where
+    T: crate::trace::Trace + Component + InternallySwipable,
+{
+    fn trace(&self, t: &mut dyn crate::trace::Tracer) {
+        t.component("InternallySwipableContent");
+        t.child("content", &self.content);
     }
 }

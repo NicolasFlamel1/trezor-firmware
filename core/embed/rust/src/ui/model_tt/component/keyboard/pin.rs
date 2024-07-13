@@ -1,8 +1,7 @@
 use core::mem;
-use heapless::String;
 
 use crate::{
-    strutil::TString,
+    strutil::{ShortString, TString},
     time::Duration,
     trezorhal::random,
     ui::{
@@ -14,11 +13,13 @@ use crate::{
         event::TouchEvent,
         geometry::{Alignment, Alignment2D, Grid, Insets, Offset, Rect},
         model_tt::component::{
-            button::{Button, ButtonContent, ButtonMsg, ButtonMsg::Clicked},
+            button::{
+                Button, ButtonContent,
+                ButtonMsg::{self, Clicked},
+            },
             theme,
         },
-        shape,
-        shape::Renderer,
+        shape::{self, Renderer},
     },
 };
 
@@ -304,7 +305,7 @@ struct PinDots {
     area: Rect,
     pad: Pad,
     style: TextStyle,
-    digits: String<MAX_LENGTH>,
+    digits: ShortString,
     display_digits: bool,
 }
 
@@ -314,11 +315,13 @@ impl PinDots {
     const TWITCH: i16 = 4;
 
     fn new(style: TextStyle) -> Self {
+        let digits = ShortString::new();
+        debug_assert!(digits.capacity() >= MAX_LENGTH);
         Self {
             area: Rect::zero(),
             pad: Pad::with_background(style.background_color),
             style,
-            digits: String::new(),
+            digits,
             display_digits: false,
         }
     }
@@ -335,7 +338,7 @@ impl PinDots {
     }
 
     fn is_full(&self) -> bool {
-        self.digits.len() == self.digits.capacity()
+        self.digits.len() >= MAX_LENGTH
     }
 
     fn clear(&mut self, ctx: &mut EventCtx) {
@@ -552,7 +555,7 @@ impl crate::trace::Trace for PinKeyboard<'_> {
     fn trace(&self, t: &mut dyn crate::trace::Tracer) {
         t.component("PinKeyboard");
         // So that debuglink knows the locations of the buttons
-        let mut digits_order: String<10> = String::new();
+        let mut digits_order = ShortString::new();
         for btn in self.digit_btns.iter() {
             let btn_content = btn.inner().content();
 

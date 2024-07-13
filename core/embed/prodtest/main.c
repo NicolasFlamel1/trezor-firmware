@@ -79,7 +79,7 @@ static secbool startswith(const char *s, const char *prefix) {
 
 static void vcp_intr(void) {
   display_clear();
-  ensure(secfalse, "vcp_intr");
+  error_shutdown("vcp_intr");
 }
 
 static char vcp_getchar(void) {
@@ -148,16 +148,16 @@ static void usb_init_all(void) {
       .rx_intr_byte = 3,  // Ctrl-C
       .iface_num = VCP_IFACE,
       .data_iface_num = 0x01,
-      .ep_cmd = 0x82,
-      .ep_in = 0x81,
+      .ep_cmd = 0x02,
+      .ep_in = 0x01,
       .ep_out = 0x01,
       .polling_interval = 10,
       .max_packet_len = VCP_PACKET_LEN,
   };
 
-  usb_init(&dev_info);
+  ensure(usb_init(&dev_info), NULL);
   ensure(usb_vcp_add(&vcp_info), "usb_vcp_add");
-  usb_start();
+  ensure(usb_start(), NULL);
 }
 
 static void draw_border(int width, int padding) {
@@ -312,15 +312,15 @@ static secbool touch_click_timeout(uint32_t *touch, uint32_t timeout_ms) {
   uint32_t deadline = HAL_GetTick() + timeout_ms;
   uint32_t r = 0;
 
-  while (touch_read())
+  while (touch_get_event())
     ;
-  while ((touch_read() & TOUCH_START) == 0) {
+  while ((touch_get_event() & TOUCH_START) == 0) {
     if (HAL_GetTick() > deadline) return secfalse;
   }
-  while (((r = touch_read()) & TOUCH_END) == 0) {
+  while (((r = touch_get_event()) & TOUCH_END) == 0) {
     if (HAL_GetTick() > deadline) return secfalse;
   }
-  while (touch_read())
+  while (touch_get_event())
     ;
 
   *touch = r;
@@ -348,7 +348,7 @@ static void test_touch(const char *args) {
   }
   display_refresh();
 
-  touch_power_on();
+  touch_init();
 
   uint32_t evt = 0;
   if (touch_click_timeout(&evt, timeout * 1000)) {
@@ -361,20 +361,20 @@ static void test_touch(const char *args) {
   display_clear();
   display_refresh();
 
-  touch_power_off();
+  touch_deinit();
 }
 
 static void test_sensitivity(const char *args) {
   int v = atoi(args);
 
-  touch_power_on();
-  touch_sensitivity(v & 0xFF);
+  touch_init();
+  touch_set_sensitivity(v & 0xFF);
 
   display_clear();
   display_refresh();
 
   for (;;) {
-    uint32_t evt = touch_read();
+    uint32_t evt = touch_get_event();
     if (evt & TOUCH_START || evt & TOUCH_MOVE) {
       int x = touch_unpack_x(evt);
       int y = touch_unpack_y(evt);
@@ -387,12 +387,14 @@ static void test_sensitivity(const char *args) {
     }
   }
 
-  touch_power_off();
+  touch_deinit();
 }
 
 static void touch_version(void) {
+  touch_init();
   uint8_t version = touch_get_version();
   vcp_println("OK %d", version);
+  touch_deinit();
 }
 #endif
 
@@ -602,6 +604,8 @@ static void test_otp_write_device_variant(const char *args) {
   vcp_println("OK");
 }
 
+static void test_reboot(void) { svc_reboot(); }
+
 void cpuid_read(void) {
   uint32_t cpuid[3];
   cpuid[0] = LL_GetUID_Word0();
@@ -760,7 +764,8 @@ int main(void) {
 
     } else if (startswith(line, "WIPE")) {
       test_wipe();
-
+    } else if (startswith(line, "REBOOT")) {
+      test_reboot();
     } else {
       vcp_println("UNKNOWN");
     }

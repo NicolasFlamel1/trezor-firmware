@@ -10,7 +10,7 @@ use crate::{
 };
 
 use super::super::{theme, ButtonLayout, ChangingTextLine, ChoiceFactory, ChoiceItem, ChoicePage};
-use heapless::{String, Vec};
+use heapless::Vec;
 
 enum WordlistAction {
     Letter(char),
@@ -20,6 +20,7 @@ enum WordlistAction {
 }
 
 const MAX_WORD_LENGTH: usize = 10;
+const LINE_CAPACITY: usize = MAX_WORD_LENGTH + 1;
 
 /// Offer words when there will be fewer of them than this
 const OFFER_WORDS_THRESHOLD: usize = 10;
@@ -156,8 +157,8 @@ impl ChoiceFactory for ChoiceFactoryWordlist {
 /// Component for entering a mnemonic from a wordlist - BIP39 or SLIP39.
 pub struct WordlistEntry {
     choice_page: ChoicePage<ChoiceFactoryWordlist, WordlistAction>,
-    chosen_letters: Child<ChangingTextLine<String<{ MAX_WORD_LENGTH + 1 }>>>,
-    textbox: TextBox<MAX_WORD_LENGTH>,
+    chosen_letters: Child<ChangingTextLine>,
+    textbox: TextBox,
     offer_words: bool,
     wordlist_type: WordlistType,
     /// Whether going back is allowed (is not on the very first word).
@@ -174,10 +175,8 @@ impl WordlistEntry {
                 .with_incomplete(true)
                 .with_carousel(true)
                 .with_initial_page_counter(get_random_position(choices_count)),
-            chosen_letters: Child::new(ChangingTextLine::center_mono(unwrap!(String::try_from(
-                PROMPT
-            )))),
-            textbox: TextBox::empty(),
+            chosen_letters: Child::new(ChangingTextLine::center_mono(PROMPT, LINE_CAPACITY)),
+            textbox: TextBox::empty(MAX_WORD_LENGTH),
             offer_words: false,
             wordlist_type,
             can_go_back,
@@ -196,10 +195,8 @@ impl WordlistEntry {
             choice_page: ChoicePage::new(choices)
                 .with_incomplete(true)
                 .with_initial_page_counter(1),
-            chosen_letters: Child::new(ChangingTextLine::center_mono(unwrap!(String::try_from(
-                word
-            )))),
-            textbox: TextBox::new(unwrap!(String::try_from(word))),
+            chosen_letters: Child::new(ChangingTextLine::center_mono(word, LINE_CAPACITY)),
+            textbox: TextBox::new(word, MAX_WORD_LENGTH),
             offer_words: false,
             wordlist_type,
             can_go_back,
@@ -263,9 +260,9 @@ impl WordlistEntry {
 
     /// Reflects currently chosen letters in the textbox.
     fn update_chosen_letters(&mut self, ctx: &mut EventCtx) {
-        let text = build_string!({ MAX_WORD_LENGTH + 1 }, self.textbox.content(), PROMPT);
+        let text = uformat!("{}{}", self.textbox.content(), PROMPT);
         self.chosen_letters.mutate(ctx, |ctx, chosen_letters| {
-            chosen_letters.update_text(text);
+            chosen_letters.update_text(&text);
             chosen_letters.request_complete_repaint(ctx);
         });
     }

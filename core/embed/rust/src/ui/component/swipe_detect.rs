@@ -3,6 +3,7 @@ use crate::{
     ui::{
         animation::Animation,
         component::{Event, EventCtx, SwipeDirection},
+        constant::screen,
         event::TouchEvent,
         geometry::{Offset, Point},
         util::animation_disabled,
@@ -141,6 +142,7 @@ impl core::ops::IndexMut<SwipeDirection> for SwipeConfig {
 
 #[derive(Copy, Clone, Eq, PartialEq)]
 pub enum SwipeDetectMsg {
+    Start(SwipeDirection),
     Move(SwipeDirection, u16),
     Trigger(SwipeDirection),
 }
@@ -180,8 +182,63 @@ impl SwipeDetect {
         Self::MIN_TRIGGER
     }
 
+    fn is_lockable(&self, dir: SwipeDirection) -> bool {
+        let Some(origin) = self.origin else {
+            return false;
+        };
+
+        let min_distance = self.min_trigger() as i16;
+
+        match dir {
+            SwipeDirection::Up => origin.y > min_distance,
+            SwipeDirection::Down => origin.y < (screen().height() - min_distance),
+            SwipeDirection::Left => origin.x > min_distance,
+            SwipeDirection::Right => origin.x < (screen().width() - min_distance),
+        }
+    }
+
     fn progress(&self, val: u16) -> u16 {
         ((val as f32 / Self::DISTANCE as f32) * Self::PROGRESS_MAX as f32) as u16
+    }
+
+    fn eval_anim_frame(&mut self, ctx: &mut EventCtx) -> Option<SwipeDetectMsg> {
+        if let Some(locked) = self.locked {
+            let mut finish = false;
+            let res = if let Some(animation) = &self.final_animation {
+                if animation.finished(Instant::now()) {
+                    finish = true;
+                    if animation.to != 0 {
+                        Some(SwipeDetectMsg::Trigger(locked))
+                    } else {
+                        Some(SwipeDetectMsg::Move(locked, 0))
+                    }
+                } else {
+                    ctx.request_anim_frame();
+                    ctx.request_paint();
+                    if animation_disabled() {
+                        None
+                    } else {
+                        Some(SwipeDetectMsg::Move(
+                            locked,
+                            animation.value(Instant::now()).max(0) as u16,
+                        ))
+                    }
+                }
+            } else {
+                None
+            };
+
+            if finish {
+                self.locked = None;
+                ctx.request_anim_frame();
+                ctx.request_paint();
+                self.final_animation = None;
+                self.moved = 0;
+            }
+
+            return res;
+        }
+        None
     }
 
     pub fn trigger(&mut self, ctx: &mut EventCtx, dir: SwipeDirection, config: SwipeConfig) {
@@ -216,8 +273,12 @@ impl SwipeDetect {
     ) -> Option<SwipeDetectMsg> {
         match (event, self.origin) {
             (Event::Touch(TouchEvent::TouchStart(pos)), _) => {
-                // Mark the starting position of this touch.
-                self.origin.replace(pos);
+                if self.final_animation.is_none() {
+                    // Mark the starting position of this touch.
+                    self.origin.replace(pos);
+                } else {
+                    return self.eval_anim_frame(ctx);
+                }
             }
             (Event::Touch(TouchEvent::TouchMove(pos)), Some(origin)) => {
                 if self.final_animation.is_none() {
@@ -235,17 +296,15 @@ impl SwipeDetect {
                             let mut res = None;
                             for dir in SwipeDirection::iter() {
                                 let progress = config.progress(dir, ofs, self.min_lock());
-                                if progress > 0 {
+                                if progress > 0 && self.is_lockable(dir) {
                                     self.locked = Some(dir);
-                                    res = Some(SwipeDetectMsg::Move(dir, self.progress(progress)));
+                                    res = Some(SwipeDetectMsg::Start(dir));
                                     break;
                                 }
                             }
                             res
                         }
                     };
-
-                    // Todo trigger an action if distance is met
 
                     if let Some(SwipeDetectMsg::Move(_, progress)) = res {
                         self.moved = progress;
@@ -256,6 +315,8 @@ impl SwipeDetect {
                     }
 
                     return res;
+                } else {
+                    return self.eval_anim_frame(ctx);
                 }
             }
             (Event::Touch(TouchEvent::TouchEnd(pos)), Some(origin)) => {
@@ -276,18 +337,7 @@ impl SwipeDetect {
                         // advance in direction other than locked trigger animation towards starting
                         // position
                         Some(_) => 0,
-                        None => {
-                            let mut res = 0;
-                            for dir in SwipeDirection::iter() {
-                                // insta-lock if the movement went at least the trigger distance
-                                if config.progress(dir, ofs, self.min_trigger()) > 0 {
-                                    self.locked = Some(dir);
-                                    res = Self::PROGRESS_MAX;
-                                }
-                            }
-
-                            res
-                        }
+                        None => return None,
                     };
 
                     let Some(locked) = self.locked else {
@@ -300,7 +350,7 @@ impl SwipeDetect {
 
                     if !animation_disabled() {
                         let done = self.moved as f32 / Self::PROGRESS_MAX as f32;
-                        let ratio = 1.0 - done;
+                        let ratio = if final_value == 0 { done } else { 1.0 - done };
 
                         let duration = config
                             .duration(locked)
@@ -321,45 +371,12 @@ impl SwipeDetect {
                         return Some(SwipeDetectMsg::Trigger(locked));
                     }
                     return None;
+                } else {
+                    return self.eval_anim_frame(ctx);
                 }
             }
             (Event::Timer(EventCtx::ANIM_FRAME_TIMER), _) => {
-                if let Some(locked) = self.locked {
-                    let mut finish = false;
-                    let res = if let Some(animation) = &self.final_animation {
-                        if animation.finished(Instant::now()) {
-                            finish = true;
-                            if animation.to != 0 {
-                                Some(SwipeDetectMsg::Trigger(locked))
-                            } else {
-                                Some(SwipeDetectMsg::Move(locked, 0))
-                            }
-                        } else {
-                            ctx.request_anim_frame();
-                            ctx.request_paint();
-                            if animation_disabled() {
-                                None
-                            } else {
-                                Some(SwipeDetectMsg::Move(
-                                    locked,
-                                    animation.value(Instant::now()).max(0) as u16,
-                                ))
-                            }
-                        }
-                    } else {
-                        None
-                    };
-
-                    if finish {
-                        self.locked = None;
-                        ctx.request_anim_frame();
-                        ctx.request_paint();
-                        self.final_animation = None;
-                        self.moved = 0;
-                    }
-
-                    return res;
-                }
+                return self.eval_anim_frame(ctx);
             }
             _ => {
                 // Do nothing.

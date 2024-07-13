@@ -1,8 +1,7 @@
 use core::iter;
 
-use heapless::String;
-
 use crate::{
+    strutil::ShortString,
     trezorhal::slip39,
     ui::{
         component::{
@@ -21,8 +20,7 @@ use crate::{
             },
             theme,
         },
-        shape,
-        shape::Renderer,
+        shape::{self, Renderer},
         util::ResultExt,
     },
 };
@@ -31,7 +29,7 @@ const MAX_LENGTH: usize = 8;
 
 pub struct Slip39Input {
     button: Button,
-    textbox: TextBox<MAX_LENGTH>,
+    textbox: TextBox,
     multi_tap: MultiTapKeyboard,
     final_word: Option<&'static str>,
     input_mask: Slip39Mask,
@@ -136,7 +134,7 @@ impl Component for Slip39Input {
 
         // To simplify things, we always copy the printed string here, even if it
         // wouldn't be strictly necessary.
-        let mut text: String<MAX_LENGTH> = String::new();
+        let mut text = ShortString::new();
 
         if let Some(word) = self.final_word {
             // We're done with input, paint the full word.
@@ -200,7 +198,7 @@ impl Component for Slip39Input {
 
         // To simplify things, we always copy the printed string here, even if it
         // wouldn't be strictly necessary.
-        let mut text: String<MAX_LENGTH> = String::new();
+        let mut text = ShortString::new();
 
         if let Some(word) = self.final_word {
             // We're done with input, paint the full word.
@@ -263,7 +261,7 @@ impl Slip39Input {
         Self {
             // Button has the same style the whole time
             button: Button::empty().styled(theme::button_pin_confirm()),
-            textbox: TextBox::empty(),
+            textbox: TextBox::empty(MAX_LENGTH),
             multi_tap: MultiTapKeyboard::new(),
             final_word: None,
             input_mask: Slip39Mask::full(),
@@ -281,17 +279,16 @@ impl Slip39Input {
         Self {
             // Button has the same style the whole time
             button: Button::empty().styled(theme::button_pin_confirm()),
-            textbox: TextBox::new(buff),
+            textbox: TextBox::new(&buff, MAX_LENGTH),
             multi_tap: MultiTapKeyboard::new(),
             final_word,
             input_mask,
         }
     }
 
-    fn setup_from_prefilled_word(
-        word: &str,
-    ) -> (String<MAX_LENGTH>, Slip39Mask, Option<&'static str>) {
-        let mut buff: String<MAX_LENGTH> = String::new();
+    fn setup_from_prefilled_word(word: &str) -> (ShortString, Slip39Mask, Option<&'static str>) {
+        let mut buff = ShortString::new();
+        debug_assert!(buff.capacity() >= MAX_LENGTH);
 
         // Gradually appending encoded key digits to the buffer and checking if
         // have not already formed a final word.

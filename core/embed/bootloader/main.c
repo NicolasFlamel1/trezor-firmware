@@ -112,8 +112,8 @@ static void usb_init_all(secbool usb21_landing) {
 #ifdef TREZOR_EMULATOR
       .emu_port = 21324,
 #else
-      .ep_in = USB_EP_DIR_IN | 0x01,
-      .ep_out = USB_EP_DIR_OUT | 0x01,
+      .ep_in = 0x01,
+      .ep_out = 0x01,
 #endif
       .subclass = 0,
       .protocol = 0,
@@ -122,11 +122,11 @@ static void usb_init_all(secbool usb21_landing) {
       .polling_interval = 1,
   };
 
-  usb_init(&dev_info);
+  ensure(usb_init(&dev_info), NULL);
 
   ensure(usb_webusb_add(&webusb_info), NULL);
 
-  usb_start();
+  ensure(usb_start(), NULL);
 }
 
 static usb_result_t bootloader_usb_loop(const vendor_header *const vhdr,
@@ -165,7 +165,6 @@ static usb_result_t bootloader_usb_loop(const vendor_header *const vhdr,
         if (INPUT_CANCEL == response) {
           send_user_abort(USB_IFACE_NUM, "Wipe cancelled");
           hal_delay(100);
-          usb_stop();
           usb_deinit();
           return RETURN_TO_MENU;
         }
@@ -174,13 +173,11 @@ static usb_result_t bootloader_usb_loop(const vendor_header *const vhdr,
         if (r < 0) {  // error
           screen_wipe_fail();
           hal_delay(100);
-          usb_stop();
           usb_deinit();
           return SHUTDOWN;
         } else {  // success
           screen_wipe_success();
           hal_delay(100);
-          usb_stop();
           usb_deinit();
           return SHUTDOWN;
         }
@@ -192,16 +189,15 @@ static usb_result_t bootloader_usb_loop(const vendor_header *const vhdr,
         r = process_msg_FirmwareUpload(USB_IFACE_NUM, msg_size, buf);
         if (r < 0 && r != UPLOAD_ERR_USER_ABORT) {  // error, but not user abort
           if (r == UPLOAD_ERR_BOOTLOADER_LOCKED) {
-            secret_show_install_restricted_screen();
+            // This function does not return
+            show_install_restricted_screen();
           } else {
             ui_screen_fail();
           }
-          usb_stop();
           usb_deinit();
           return SHUTDOWN;
         } else if (r == UPLOAD_ERR_USER_ABORT) {
           hal_delay(100);
-          usb_stop();
           usb_deinit();
           return RETURN_TO_MENU;
         } else if (r == 0) {  // last chunk received
@@ -213,7 +209,6 @@ static usb_result_t bootloader_usb_loop(const vendor_header *const vhdr,
           hal_delay(1000);
           ui_screen_done(1, secfalse);
           hal_delay(1000);
-          usb_stop();
           usb_deinit();
           return CONTINUE_TO_FIRMWARE;
         }
@@ -227,14 +222,12 @@ static usb_result_t bootloader_usb_loop(const vendor_header *const vhdr,
         if (INPUT_CANCEL == response) {
           send_user_abort(USB_IFACE_NUM, "Bootloader unlock cancelled");
           hal_delay(100);
-          usb_stop();
           usb_deinit();
           return RETURN_TO_MENU;
         }
         process_msg_UnlockBootloader(USB_IFACE_NUM, msg_size, buf);
         screen_unlock_bootloader_success();
         hal_delay(100);
-        usb_stop();
         usb_deinit();
         return SHUTDOWN;
         break;
@@ -291,9 +284,7 @@ static void check_bootloader_version(void) {
 
 #endif
 
-void failed_jump_to_firmware(void) {
-  error_shutdown("INTERNAL ERROR", "(glitch)");
-}
+void failed_jump_to_firmware(void) { error_shutdown("(glitch)"); }
 
 void real_jump_to_firmware(void) {
   const image_header *hdr = NULL;
@@ -407,7 +398,6 @@ int bootloader_main(void) {
   unit_variant_init();
 
 #ifdef USE_TOUCH
-  touch_power_on();
 #ifdef TREZOR_MODEL_T3T1
   // on T3T1, tester needs to run without touch, so making an exception
   // until unit variant is written in OTP
@@ -523,17 +513,22 @@ int bootloader_main(void) {
   uint32_t touched = 0;
 #ifdef USE_TOUCH
   if (firmware_present == sectrue && stay_in_bootloader != sectrue) {
-    touch_wait_until_ready();
+    // Wait until the touch controller is ready
+    // (on hardware this may take a while)
+    while (touch_ready() != sectrue) {
+      hal_delay(1);
+    }
+#ifdef TREZOR_EMULATOR
+    hal_delay(500);
+#endif
+    // Give the touch controller time to report events
+    // if someone touches the screen
     for (int i = 0; i < 10; i++) {
-      touched = touch_is_detected() | touch_read();
-      if (touched) {
+      if (touch_activity() == sectrue) {
+        touched = 1;
         break;
       }
-#ifdef TREZOR_EMULATOR
-      hal_delay(25);
-#else
-      hal_delay_us(1000);
-#endif
+      hal_delay(5);
     }
   }
 #elif defined USE_BUTTON

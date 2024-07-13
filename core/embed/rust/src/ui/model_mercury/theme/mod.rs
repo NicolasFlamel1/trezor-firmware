@@ -9,8 +9,9 @@ use crate::{
             text::{layout::Chunks, LineBreaking, PageBreaking, TextStyle},
             FixedHeightBar,
         },
-        display::{Color, Font, Icon},
-        geometry::Insets,
+        display::{Color, Font},
+        geometry::{Insets, Offset},
+        util::include_icon,
     },
 };
 
@@ -55,6 +56,9 @@ pub const RADIUS: u8 = 0;
 pub const QR_SIDE_MAX: u32 = 140;
 
 // UI icons (white color).
+
+// 12x12
+include_icon!(ICON_FORESLASH, "model_mercury/res/foreslash12.toif");
 
 // 20x20
 include_icon!(
@@ -139,9 +143,6 @@ include_icon!(ICON_FORWARD, "model_tt/res/caret-right24.toif");
 include_icon!(ICON_UP, "model_tt/res/caret-up24.toif");
 include_icon!(ICON_DOWN, "model_tt/res/caret-down24.toif");
 include_icon!(ICON_CLICK, "model_tt/res/finger24.toif");
-
-include_icon!(ICON_CORNER_CANCEL, "model_tt/res/x32.toif");
-include_icon!(ICON_CORNER_INFO, "model_tt/res/info32.toif");
 
 // Homescreen notifications.
 include_icon!(ICON_WARN, "model_tt/res/warning16.toif");
@@ -716,6 +717,8 @@ pub const TEXT_MAIN_GREY_LIGHT: TextStyle =
     TextStyle::new(Font::NORMAL, GREY_LIGHT, BG, GREY, GREY);
 pub const TEXT_SUB_GREY_LIGHT: TextStyle = TextStyle::new(Font::SUB, GREY_LIGHT, BG, GREY, GREY);
 pub const TEXT_SUB_GREY: TextStyle = TextStyle::new(Font::SUB, GREY, BG, GREY, GREY);
+pub const TEXT_SUB_GREEN_LIME: TextStyle =
+    TextStyle::new(Font::SUB, GREEN_LIME, BG, GREEN_LIME, GREEN_LIME);
 pub const TEXT_WARNING: TextStyle = TextStyle::new(Font::NORMAL, ORANGE_LIGHT, BG, GREY, GREY);
 pub const TEXT_MONO: TextStyle = TextStyle::new(Font::MONO, GREY_EXTRA_LIGHT, BG, GREY, GREY)
     .with_line_breaking(LineBreaking::BreakWordsNoHyphen)
@@ -801,6 +804,7 @@ pub const DETAILS_SPACING: i16 = 8;
 
 // checklist settings
 pub const CHECKLIST_CHECK_WIDTH: i16 = 32; // icon width (20px) + padding (12px)
+pub const CHECKLIST_DONE_OFFSET: Offset = Offset::y(-2);
 
 pub const fn button_bar<T>(inner: T) -> FixedHeightBar<T> {
     FixedHeightBar::bottom(inner, BUTTON_HEIGHT)

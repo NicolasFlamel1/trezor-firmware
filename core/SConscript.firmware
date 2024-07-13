@@ -226,6 +226,7 @@ SOURCE_MOD += [
     'embed/lib/buffers.c',
     'embed/lib/colors.c',
     'embed/lib/display_utils.c',
+    'embed/lib/error_handling.c',
     'embed/lib/fonts/font_bitmap.c',
     'embed/lib/fonts/fonts.c',
     'embed/lib/gfx_color.c',
@@ -846,6 +847,9 @@ def cargo_build():
     if TREZOR_MODEL in ('T', 'T3T1', 'DISC1', 'DISC2'):
         features.append('ui_blurring')
         features.append('ui_jpeg_decoder')
+
+    if NEW_RENDERING and TREZOR_MODEL in ('T3T1', 'DISC2'):
+        features.append('ui_image_buffer')
 
     features.extend(FEATURES_AVAILABLE)
 

@@ -3,6 +3,7 @@ use crate::ui::{
     constant::{HEIGHT, WIDTH},
     display::{Color, Font},
     geometry::{Offset, Point, Rect},
+    util::include_res,
 };
 
 use super::super::{

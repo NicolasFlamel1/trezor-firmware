@@ -18,7 +18,6 @@ use crate::{
         shape::Renderer,
     },
 };
-use heapless::String;
 
 const MAX_LENGTH: usize = 8;
 
@@ -26,7 +25,7 @@ pub struct Bip39Input {
     button: Button,
     // used only to keep track of suggestion text color
     button_suggestion: Button,
-    textbox: TextBox<MAX_LENGTH>,
+    textbox: TextBox,
     multi_tap: MultiTapKeyboard,
     options_num: Option<usize>,
     suggested_word: Option<&'static str>,
@@ -177,7 +176,7 @@ impl Bip39Input {
     pub fn new() -> Self {
         Self {
             button: Button::empty(),
-            textbox: TextBox::empty(),
+            textbox: TextBox::empty(MAX_LENGTH),
             multi_tap: MultiTapKeyboard::new(),
             options_num: None,
             suggested_word: None,
@@ -194,7 +193,7 @@ impl Bip39Input {
         // Styling the input to reflect already filled word
         Self {
             button: Button::empty().styled(theme::button_recovery_confirm()),
-            textbox: TextBox::new(unwrap!(String::try_from(word))),
+            textbox: TextBox::new(word, MAX_LENGTH),
             multi_tap: MultiTapKeyboard::new(),
             options_num: bip39::options_num(word),
             suggested_word: bip39::complete_word(word),

@@ -4,11 +4,16 @@ T = TypeVar("T")
 
 
 # rust/src/ui/model_mercury/layout.rs
+class AttachType:
+    ...
+
+
+# rust/src/ui/model_mercury/layout.rs
 class LayoutObj(Generic[T]):
     """Representation of a Rust-based layout object.
     see `trezor::ui::layout::obj::LayoutObj`.
     """
-    def attach_timer_fn(self, fn: Callable[[int, int], None]) -> None:
+    def attach_timer_fn(self, fn: Callable[[int, int], None], attach_type: AttachType | None) -> None:
         """Attach a timer setter function.
         The layout object can call the timer setter with two arguments,
         `token` and `deadline`. When `deadline` is reached, the layout object
@@ -49,6 +54,8 @@ class LayoutObj(Generic[T]):
             """Paint bounds of individual components on screen."""
     def page_count(self) -> int:
         """Return the number of pages in the layout object."""
+    def get_transition_out(self) -> AttachType:
+        """Return the transition type."""
     def __del__(self) -> None:
         """Calls drop on contents of the root component."""
 
@@ -406,6 +413,7 @@ def flow_show_share_words(
     description: str,
     text_info: Iterable[str],
     text_confirm: str,
+    highlight_repeated: bool,
 ) -> LayoutObj[UiResult]:
     """Show wallet backup words preceded by an instruction screen and followed by
     confirmation."""
@@ -537,6 +545,11 @@ def confirm_firmware_update(
     fingerprint: str,
 ) -> LayoutObj[UiResult]:
     """Ask whether to update firmware, optionally show fingerprint. Shared with bootloader."""
+
+
+# rust/src/ui/model_mercury/layout.rs
+def tutorial() -> LayoutObj[UiResult]:
+    """Show user how to interact with the device."""
 
 
 # rust/src/ui/model_mercury/layout.rs
@@ -1085,11 +1098,16 @@ T = TypeVar("T")
 
 
 # rust/src/ui/model_tt/layout.rs
+class AttachType:
+    ...
+
+
+# rust/src/ui/model_tt/layout.rs
 class LayoutObj(Generic[T]):
     """Representation of a Rust-based layout object.
     see `trezor::ui::layout::obj::LayoutObj`.
     """
-    def attach_timer_fn(self, fn: Callable[[int, int], None]) -> None:
+    def attach_timer_fn(self, fn: Callable[[int, int], None], attach_type: AttachType | None) -> None:
         """Attach a timer setter function.
         The layout object can call the timer setter with two arguments,
         `token` and `deadline`. When `deadline` is reached, the layout object
@@ -1132,6 +1150,8 @@ class LayoutObj(Generic[T]):
         """Return the number of pages in the layout object."""
     def button_request(self) -> tuple[int, str] | None:
         """Return (code, type) of button request made during the last event or timer pass."""
+    def get_transition_out(self) -> AttachType:
+        """Return the transition type."""
     def __del__(self) -> None:
         """Calls drop on contents of the root component."""
 

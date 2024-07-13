@@ -57,8 +57,10 @@ def configure(
 
     if "optiga" in features_wanted:
         sources += ["embed/trezorhal/unix/optiga.c"]
+        features_available.append("optiga")
 
     if "input" in features_wanted:
+        sources += ["embed/trezorhal/unix/touch.c"]
         features_available.append("touch")
 
     features_available.append("backlight")

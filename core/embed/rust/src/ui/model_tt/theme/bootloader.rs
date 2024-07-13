@@ -7,6 +7,7 @@ use crate::ui::{
         component::{ButtonStyle, ButtonStyleSheet, ResultStyle},
         theme::{BLACK, FG, GREY_DARK, GREY_LIGHT, WHITE},
     },
+    util::include_res,
 };
 
 pub const BLD_BG: Color = Color::rgb(0x00, 0x1E, 0xAD);

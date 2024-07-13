@@ -1,10 +1,18 @@
 use core::{cmp::Ordering, convert::TryInto};
 
 use crate::{
-    error::Error,
+    error::{value_error, Error},
     io::BinaryData,
     micropython::{
-        gc::Gc, iter::IterBuf, list::List, map::Map, module::Module, obj::Obj, qstr::Qstr, util,
+        gc::Gc,
+        iter::IterBuf,
+        list::List,
+        macros::{obj_fn_1, obj_fn_kw, obj_module},
+        map::Map,
+        module::Module,
+        obj::Obj,
+        qstr::Qstr,
+        util,
     },
     strutil::TString,
     translations::TR,
@@ -162,7 +170,7 @@ where
                 if let Some(word) = self.mnemonic() {
                     word.try_into()
                 } else {
-                    panic!("invalid mnemonic")
+                    fatal_error!("Invalid mnemonic")
                 }
             }
             MnemonicKeyboardMsg::Previous => "".try_into(),
@@ -604,7 +612,7 @@ extern "C" fn new_confirm_homescreen(n_args: usize, args: *const Obj, kwargs: *m
         }
 
         if !check_homescreen_format(jpeg, false) {
-            return Err(value_error!("Invalid image."));
+            return Err(value_error!(c"Invalid image."));
         };
 
         let buttons = Button::cancel_confirm_text(None, Some(TR::buttons__change.into()));
@@ -1620,12 +1628,15 @@ pub static mp_module_trezorui2: Module = obj_module! {
     ///
     /// T = TypeVar("T")
     ///
+    /// class AttachType:
+    ///     ...
+    ///
     /// class LayoutObj(Generic[T]):
     ///     """Representation of a Rust-based layout object.
     ///     see `trezor::ui::layout::obj::LayoutObj`.
     ///     """
     ///
-    ///     def attach_timer_fn(self, fn: Callable[[int, int], None]) -> None:
+    ///     def attach_timer_fn(self, fn: Callable[[int, int], None], attach_type: AttachType | None) -> None:
     ///         """Attach a timer setter function.
     ///
     ///         The layout object can call the timer setter with two arguments,
@@ -1684,6 +1695,9 @@ pub static mp_module_trezorui2: Module = obj_module! {
     ///
     ///     def button_request(self) -> tuple[int, str] | None:
     ///         """Return (code, type) of button request made during the last event or timer pass."""
+    ///
+    ///     def get_transition_out(self) -> AttachType:
+    ///         """Return the transition type."""
     ///
     ///     def __del__(self) -> None:
     ///         """Calls drop on contents of the root component."""

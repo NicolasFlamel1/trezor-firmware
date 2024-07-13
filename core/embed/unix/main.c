@@ -53,6 +53,7 @@
 #include "py/repl.h"
 #include "py/runtime.h"
 #include "py/stackctrl.h"
+#include "touch.h"
 
 #include "common.h"
 
@@ -407,16 +408,6 @@ STATIC void set_sys_argv(char *argv[], int argc, int start_arg) {
   }
 }
 
-void main_clean_exit(int status) {
-  fflush(stdout);
-  fflush(stderr);
-  // sys.exit is disabled, so raise a SystemExit exception directly
-  nlr_raise(mp_obj_new_exception_arg1(&mp_type_SystemExit,
-                                      MP_OBJ_NEW_SMALL_INT(status)));
-  // the above shouldn't return, but make sure we exit just in case
-  exit(status);
-}
-
 #ifdef _WIN32
 #define PATHLIST_SEP_CHAR ';'
 #else
@@ -483,6 +474,10 @@ MP_NOINLINE int main_(int argc, char **argv) {
   pre_process_options(argc, argv);
 
   display_init();
+
+#if USE_TOUCH
+  touch_init();
+#endif
 
   // Map trezor.flash to memory.
   flash_init();

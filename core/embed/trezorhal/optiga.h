@@ -42,9 +42,11 @@
 // Size of secrets used in PIN processing, e.g. salted PIN, master secret etc.
 #define OPTIGA_PIN_SECRET_SIZE 32
 
-// The number of milliseconds it takes to execute optiga_pin_set() or
-// optiga_pin_verify().
-#define OPTIGA_PIN_DERIVE_MS 1200
+// The number of milliseconds it takes to execute optiga_pin_set().
+#define OPTIGA_PIN_SET_MS 1300
+
+// The number of milliseconds it takes to execute optiga_pin_verify().
+#define OPTIGA_PIN_VERIFY_MS 900
 
 typedef secbool (*OPTIGA_UI_PROGRESS)(uint32_t elapsed_ms);
 
@@ -57,17 +59,25 @@ bool __wur optiga_cert_size(uint8_t index, size_t *cert_size);
 bool __wur optiga_read_cert(uint8_t index, uint8_t *cert, size_t max_cert_size,
                             size_t *cert_size);
 
+bool __wur optiga_read_sec(uint8_t *sec);
+
 bool __wur optiga_random_buffer(uint8_t *dest, size_t size);
 
 int __wur optiga_pin_set(OPTIGA_UI_PROGRESS ui_progress,
-                         const uint8_t pin_secret[OPTIGA_PIN_SECRET_SIZE],
-                         uint8_t out_secret[OPTIGA_PIN_SECRET_SIZE]);
+                         uint8_t stretched_pin[OPTIGA_PIN_SECRET_SIZE]);
 
 int __wur optiga_pin_verify(OPTIGA_UI_PROGRESS ui_progress,
-                            const uint8_t pin_secret[OPTIGA_PIN_SECRET_SIZE],
-                            uint8_t out_secret[OPTIGA_PIN_SECRET_SIZE]);
+                            uint8_t stretched_pin[OPTIGA_PIN_SECRET_SIZE]);
+
+int __wur optiga_pin_verify_v4(OPTIGA_UI_PROGRESS ui_progress,
+                               const uint8_t pin_secret[OPTIGA_PIN_SECRET_SIZE],
+                               uint8_t out_secret[OPTIGA_PIN_SECRET_SIZE]);
+
+int __wur optiga_pin_get_fails_v4(uint32_t *ctr);
 
 int __wur optiga_pin_get_fails(uint32_t *ctr);
+
+int __wur optiga_pin_fails_increase_v4(uint32_t count);
 
 int __wur optiga_pin_fails_increase(uint32_t count);
 

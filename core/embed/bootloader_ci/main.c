@@ -69,8 +69,8 @@ static void usb_init_all(secbool usb21_landing) {
 
   static const usb_webusb_info_t webusb_info = {
       .iface_num = USB_IFACE_NUM,
-      .ep_in = USB_EP_DIR_IN | 0x01,
-      .ep_out = USB_EP_DIR_OUT | 0x01,
+      .ep_in = 0x01,
+      .ep_out = 0x01,
       .subclass = 0,
       .protocol = 0,
       .max_packet_len = sizeof(rx_buffer),
@@ -78,11 +78,11 @@ static void usb_init_all(secbool usb21_landing) {
       .polling_interval = 1,
   };
 
-  usb_init(&dev_info);
+  ensure(usb_init(&dev_info), NULL);
 
   ensure(usb_webusb_add(&webusb_info), NULL);
 
-  usb_start();
+  ensure(usb_start(), NULL);
 }
 
 static secbool bootloader_usb_loop(const vendor_header *const vhdr,
@@ -117,12 +117,10 @@ static secbool bootloader_usb_loop(const vendor_header *const vhdr,
         r = process_msg_WipeDevice(USB_IFACE_NUM, msg_size, buf);
         if (r < 0) {  // error
           ui_screen_fail();
-          usb_stop();
           usb_deinit();
           return secfalse;  // shutdown
         } else {            // success
           ui_screen_done(0, sectrue);
-          usb_stop();
           usb_deinit();
           return secfalse;  // shutdown
         }
@@ -134,7 +132,6 @@ static secbool bootloader_usb_loop(const vendor_header *const vhdr,
         r = process_msg_FirmwareUpload(USB_IFACE_NUM, msg_size, buf);
         if (r < 0 && r != UPLOAD_ERR_USER_ABORT) {  // error, but not user abort
           ui_screen_fail();
-          usb_stop();
           usb_deinit();
           return secfalse;    // shutdown
         } else if (r == 0) {  // last chunk received
@@ -146,7 +143,6 @@ static secbool bootloader_usb_loop(const vendor_header *const vhdr,
           hal_delay(1000);
           ui_screen_done(1, secfalse);
           hal_delay(1000);
-          usb_stop();
           usb_deinit();
           return sectrue;  // jump to firmware
         }
@@ -210,7 +206,6 @@ int main(void) {
   random_delays_init();
 #ifdef USE_TOUCH
   touch_init();
-  touch_power_on();
 #endif
 
 #ifdef USE_HASH_PROCESSOR
