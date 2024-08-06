@@ -8,7 +8,7 @@ use crate::{
     ui::{
         button_request::{ButtonRequest, ButtonRequestCode},
         component::{maybe::PaintOverlapping, MsgMap, PageMap},
-        display::{self, Color},
+        display::Color,
         geometry::{Offset, Rect},
         shape::Renderer,
     },
@@ -66,10 +66,6 @@ pub trait Component {
     fn paint(&mut self);
 
     fn render<'s>(&'s self, _target: &mut impl Renderer<'s>);
-
-    #[cfg(feature = "ui_bounds")]
-    /// Report current paint bounds of this component. Used for debugging.
-    fn bounds(&self, _sink: &mut dyn FnMut(Rect)) {}
 }
 
 /// Components should always avoid unnecessary overpaint to prevent obvious
@@ -164,11 +160,6 @@ where
     fn render<'s>(&'s self, target: &mut impl Renderer<'s>) {
         self.component.render(target);
     }
-
-    #[cfg(feature = "ui_bounds")]
-    fn bounds(&self, sink: &mut dyn FnMut(Rect)) {
-        self.component.bounds(sink)
-    }
 }
 
 impl<T: Paginate> Paginate for Child<T> {
@@ -207,111 +198,6 @@ where
     }
 }
 
-/// Same as `Child` but also handles screen clearing when layout is first
-/// painted.
-pub struct Root<T> {
-    inner: Option<Child<T>>,
-    marked_for_clear: bool,
-    transition_out: Option<AttachType>,
-}
-
-impl<T> Root<T> {
-    pub fn new(component: T) -> Self {
-        Self {
-            inner: Some(Child::new(component)),
-            marked_for_clear: true,
-            transition_out: None,
-        }
-    }
-
-    pub fn inner_mut(&mut self) -> &mut Child<T> {
-        if let Some(ref mut c) = self.inner {
-            c
-        } else {
-            fatal_error!("Root object is deallocated")
-        }
-    }
-
-    pub fn inner(&self) -> &Child<T> {
-        if let Some(ref c) = self.inner {
-            c
-        } else {
-            fatal_error!("Root object is deallocated")
-        }
-    }
-
-    pub fn skip_paint(&mut self) {
-        self.inner_mut().skip_paint();
-    }
-
-    pub fn clear_screen(&mut self) {
-        self.marked_for_clear = true;
-    }
-
-    pub fn get_transition_out(&self) -> Option<AttachType> {
-        self.transition_out
-    }
-
-    pub fn delete(&mut self) {
-        self.inner = None;
-    }
-}
-
-impl<T> Component for Root<T>
-where
-    T: Component,
-{
-    type Msg = T::Msg;
-
-    fn place(&mut self, bounds: Rect) -> Rect {
-        self.inner_mut().place(bounds)
-    }
-
-    fn event(&mut self, ctx: &mut EventCtx, event: Event) -> Option<Self::Msg> {
-        let msg = self.inner_mut().event(ctx, event);
-        if ctx.needs_repaint_root() {
-            self.marked_for_clear = true;
-            let mut dummy_ctx = EventCtx::new();
-            let paint_msg = self.inner_mut().event(&mut dummy_ctx, Event::RequestPaint);
-            assert!(paint_msg.is_none());
-            assert!(dummy_ctx.timers.is_empty());
-        }
-
-        if let Some(t) = ctx.get_transition_out() {
-            self.transition_out = Some(t);
-        }
-
-        msg
-    }
-
-    fn paint(&mut self) {
-        if self.marked_for_clear && self.inner().will_paint() {
-            self.marked_for_clear = false;
-            display::clear()
-        }
-        self.inner.paint();
-    }
-
-    fn render<'s>(&'s self, target: &mut impl Renderer<'s>) {
-        self.inner().render(target);
-    }
-
-    #[cfg(feature = "ui_bounds")]
-    fn bounds(&self, sink: &mut dyn FnMut(Rect)) {
-        self.inner().bounds(sink)
-    }
-}
-
-#[cfg(feature = "ui_debug")]
-impl<T> crate::trace::Trace for Root<T>
-where
-    T: crate::trace::Trace,
-{
-    fn trace(&self, t: &mut dyn crate::trace::Tracer) {
-        self.inner().trace(t);
-    }
-}
-
 impl<M, T, U> Component for (T, U)
 where
     T: Component<Msg = M>,
@@ -337,12 +223,6 @@ where
     fn render<'s>(&'s self, target: &mut impl Renderer<'s>) {
         self.0.render(target);
         self.1.render(target);
-    }
-
-    #[cfg(feature = "ui_bounds")]
-    fn bounds(&self, sink: &mut dyn FnMut(Rect)) {
-        self.0.bounds(sink);
-        self.1.bounds(sink);
     }
 }
 
@@ -393,13 +273,6 @@ where
         self.1.render(target);
         self.2.render(target);
     }
-
-    #[cfg(feature = "ui_bounds")]
-    fn bounds(&self, sink: &mut dyn FnMut(Rect)) {
-        self.0.bounds(sink);
-        self.1.bounds(sink);
-        self.2.bounds(sink);
-    }
 }
 
 impl<T> Component for Option<T>
@@ -431,13 +304,6 @@ where
         match self {
             Some(ref mut c) => c.place(bounds),
             _ => bounds.with_size(Offset::zero()),
-        }
-    }
-
-    #[cfg(feature = "ui_bounds")]
-    fn bounds(&self, sink: &mut dyn FnMut(Rect)) {
-        if let Some(ref c) = self {
-            c.bounds(sink)
         }
     }
 }
@@ -482,7 +348,12 @@ where
 #[derive(Copy, Clone, PartialEq, Eq)]
 #[cfg_attr(feature = "debug", derive(ufmt::derive::uDebug))]
 pub enum AttachType {
+    /// Initial attach, redraw the whole screen
     Initial,
+    /// The layout is already rendered on display, resume any animation
+    /// where we left off. The animation state is expected to be stored locally
+    /// in the given component.
+    Resume,
     #[cfg(feature = "touch")]
     Swipe(SwipeDirection),
 }
@@ -582,7 +453,7 @@ impl EventCtx {
 
     /// Returns `true` if we should first perform a place traversal before
     /// processing events or painting.
-    pub fn needs_place_before_next_event_or_paint(&self) -> bool {
+    pub fn needs_place(&self) -> bool {
         self.place_requested
     }
 
@@ -616,6 +487,10 @@ impl EventCtx {
         self.root_repaint_requested
     }
 
+    pub fn needs_repaint(&self) -> bool {
+        self.paint_requested
+    }
+
     pub fn set_page_count(&mut self, count: usize) {
         // #[cfg(feature = "ui_debug")]
         // assert!(self.page_count.unwrap_or(count) == count);
@@ -630,10 +505,10 @@ impl EventCtx {
         self.page_count
     }
 
-    pub fn send_button_request(&mut self, code: ButtonRequestCode, br_type: TString<'static>) {
+    pub fn send_button_request(&mut self, code: ButtonRequestCode, name: TString<'static>) {
         #[cfg(feature = "ui_debug")]
         assert!(self.button_request.is_none());
-        self.button_request = Some(ButtonRequest::new(code, br_type));
+        self.button_request = Some(ButtonRequest::new(code, name));
     }
 
     pub fn button_request(&mut self) -> Option<ButtonRequest> {

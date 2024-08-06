@@ -11,6 +11,7 @@ mod vertical_menu;
 mod fido_icons;
 mod error;
 mod frame;
+mod header;
 #[cfg(feature = "translations")]
 mod hold_to_confirm;
 #[cfg(feature = "translations")]
@@ -20,14 +21,13 @@ mod keyboard;
 mod loader;
 #[cfg(feature = "translations")]
 mod number_input;
+#[cfg(feature = "translations")]
 pub mod number_input_slider;
 mod progress;
 #[cfg(feature = "translations")]
 mod prompt_screen;
 mod result;
 mod scroll;
-#[cfg(feature = "translations")]
-mod set_brightness;
 #[cfg(feature = "translations")]
 mod share_words;
 mod status_screen;
@@ -36,6 +36,7 @@ mod swipe_content;
 mod swipe_up_screen;
 #[cfg(feature = "translations")]
 mod tap_to_confirm;
+mod updatable_more_info;
 mod welcome_screen;
 
 #[cfg(feature = "translations")]
@@ -50,6 +51,7 @@ pub use error::ErrorScreen;
 pub use fido::{FidoConfirm, FidoMsg};
 pub use footer::Footer;
 pub use frame::{Frame, FrameMsg};
+pub use header::Header;
 #[cfg(feature = "translations")]
 pub use hold_to_confirm::HoldToConfirm;
 #[cfg(feature = "micropython")]
@@ -74,8 +76,6 @@ pub use prompt_screen::PromptScreen;
 pub use result::{ResultFooter, ResultScreen, ResultStyle};
 pub use scroll::ScrollBar;
 #[cfg(feature = "translations")]
-pub use set_brightness::SetBrightnessDialog;
-#[cfg(feature = "translations")]
 pub use share_words::ShareWords;
 pub use status_screen::StatusScreen;
 pub use swipe_content::{InternallySwipable, InternallySwipableContent, SwipeContent};
@@ -83,6 +83,7 @@ pub use swipe_content::{InternallySwipable, InternallySwipableContent, SwipeCont
 pub use swipe_up_screen::{SwipeUpScreen, SwipeUpScreenMsg};
 #[cfg(feature = "translations")]
 pub use tap_to_confirm::TapToConfirm;
+pub use updatable_more_info::UpdatableMoreInfo;
 pub use vertical_menu::{VerticalMenu, VerticalMenuChoiceMsg};
 pub use welcome_screen::WelcomeScreen;
 

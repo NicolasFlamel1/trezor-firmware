@@ -150,6 +150,7 @@ impl AttachAnimation {
                 self.attach_top = true;
                 self.duration = Duration::from_millis(350);
             } else {
+                self.attach_top = false;
                 self.duration = Duration::from_millis(350);
             }
             self.reset();
@@ -307,11 +308,6 @@ impl Component for VerticalMenu {
                 .with_bg(Color::black())
                 .render(target);
         });
-    }
-
-    #[cfg(feature = "ui_bounds")]
-    fn bounds(&self, sink: &mut dyn FnMut(Rect)) {
-        sink(self.area);
     }
 }
 

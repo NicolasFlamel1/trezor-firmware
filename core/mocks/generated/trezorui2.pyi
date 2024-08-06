@@ -4,11 +4,6 @@ T = TypeVar("T")
 
 
 # rust/src/ui/model_mercury/layout.rs
-class AttachType:
-    ...
-
-
-# rust/src/ui/model_mercury/layout.rs
 class LayoutObj(Generic[T]):
     """Representation of a Rust-based layout object.
     see `trezor::ui::layout::obj::LayoutObj`.
@@ -159,13 +154,8 @@ def confirm_properties(
 
 
 # rust/src/ui/model_mercury/layout.rs
-def flow_confirm_reset_recover() -> LayoutObj[UiResult]:
-    """Confirm TOS before recovery process."""
-
-
-# rust/src/ui/model_mercury/layout.rs
-def flow_confirm_reset_create() -> LayoutObj[UiResult]:
-    """Confirm TOS before creating a wallet and have a user hold to confirm creation."""
+def flow_confirm_reset(recovery: bool) -> LayoutObj[UiResult]:
+    """Confirm TOS before creating wallet creation or wallet recovery."""
 
 
 # rust/src/ui/model_mercury/layout.rs
@@ -426,10 +416,10 @@ def flow_request_number(
     count: int,
     min_count: int,
     max_count: int,
-    description: Callable[[int], str] | None = None,
+    description: str,
     info: Callable[[int], str] | None = None,
     br_code: ButtonRequestType,
-    br_type: str,
+    br_name: str,
 ) -> LayoutObj[tuple[UiResult, int]]:
     """Numer input with + and - buttons, description, and context menu with cancel and
     info."""
@@ -456,13 +446,12 @@ def show_checklist(
 
 
 # rust/src/ui/model_mercury/layout.rs
-def confirm_recovery(
+def flow_continue_recovery(
     *,
-    title: str,
-    description: str,
-    button: str,
+    first_screen: bool,
     recovery_type: RecoveryType,
-    info_button: bool = False,
+    text: str,
+    subtext: str | None = None,
 ) -> LayoutObj[UiResult]:
     """Device recovery homescreen."""
 
@@ -544,7 +533,7 @@ def confirm_firmware_update(
     description: str,
     fingerprint: str,
 ) -> LayoutObj[UiResult]:
-    """Ask whether to update firmware, optionally show fingerprint. Shared with bootloader."""
+    """Ask whether to update firmware, optionally show fingerprint."""
 
 
 # rust/src/ui/model_mercury/layout.rs
@@ -571,7 +560,7 @@ def flow_get_address(
     path: str | None,
     xpubs: list[tuple[str, str]],
     br_code: ButtonRequestType,
-    br_type: str,
+    br_name: str,
 ) -> LayoutObj[UiResult]:
     """Get address / receive funds."""
 
@@ -596,7 +585,7 @@ def flow_confirm_output(
     account: str | None,
     account_path: str | None,
     br_code: ButtonRequestType,
-    br_type: str,
+    br_name: str,
 ) -> LayoutObj[UiResult]:
     """Confirm recipient."""
 
@@ -609,7 +598,7 @@ def flow_confirm_summary(
     account_items: Iterable[tuple[str, str]],
     fee_items: Iterable[tuple[str, str]],
     br_code: ButtonRequestType,
-    br_type: str,
+    br_name: str,
 ) -> LayoutObj[UiResult]:
     """Total summary and hold to confirm."""
 
@@ -622,6 +611,16 @@ class BacklightLevels:
     LOW: ClassVar[int]
     DIM: ClassVar[int]
     NONE: ClassVar[int]
+
+
+# rust/src/ui/model_mercury/layout.rs
+class AttachType:
+    INITIAL: ClassVar[int]
+    RESUME: ClassVar[int]
+    SWIPE_UP: ClassVar[int]
+    SWIPE_DOWN: ClassVar[int]
+    SWIPE_LEFT: ClassVar[int]
+    SWIPE_RIGHT: ClassVar[int]
 CONFIRMED: UiResult
 CANCELLED: UiResult
 INFO: UiResult
@@ -1076,7 +1075,7 @@ def confirm_firmware_update(
     *,
     description: str,
     fingerprint: str,
-) -> None:
+) -> LayoutObj[UiResult]:
     """Ask whether to update firmware, optionally show fingerprint. Shared with bootloader."""
 
 
@@ -1093,13 +1092,18 @@ class BacklightLevels:
     LOW: ClassVar[int]
     DIM: ClassVar[int]
     NONE: ClassVar[int]
+
+
+# rust/src/ui/model_tr/layout.rs
+class AttachType:
+    INITIAL: ClassVar[int]
+    RESUME: ClassVar[int]
+    SWIPE_UP: ClassVar[int]
+    SWIPE_DOWN: ClassVar[int]
+    SWIPE_LEFT: ClassVar[int]
+    SWIPE_RIGHT: ClassVar[int]
 from trezor import utils
 T = TypeVar("T")
-
-
-# rust/src/ui/model_tt/layout.rs
-class AttachType:
-    ...
 
 
 # rust/src/ui/model_tt/layout.rs
@@ -1645,3 +1649,13 @@ class BacklightLevels:
     LOW: ClassVar[int]
     DIM: ClassVar[int]
     NONE: ClassVar[int]
+
+
+# rust/src/ui/model_tt/layout.rs
+class AttachType:
+    INITIAL: ClassVar[int]
+    RESUME: ClassVar[int]
+    SWIPE_UP: ClassVar[int]
+    SWIPE_DOWN: ClassVar[int]
+    SWIPE_LEFT: ClassVar[int]
+    SWIPE_RIGHT: ClassVar[int]

@@ -717,10 +717,10 @@ pub enum TranslatedString {
     nem__unencrypted = 430,  // "Unencrypted:"
     #[cfg(feature = "universal_fw")]
     nem__unknown_mosaic = 431,  // "Unknown mosaic!"
-    passphrase__access_hidden_wallet = 432,  // "Access hidden wallet?"
+    passphrase__access_wallet = 432,  // "Access passphrase wallet?"
     passphrase__always_on_device = 433,  // "Always enter your passphrase on Trezor?"
     passphrase__from_host_not_shown = 434,  // "Passphrase provided by host will be used but will not be displayed due to the device settings."
-    passphrase__hidden_wallet = 435,  // "Hidden wallet"
+    passphrase__wallet = 435,  // "Passphrase wallet"
     passphrase__hide = 436,  // "Hide passphrase coming from host?"
     passphrase__next_screen_will_show_passphrase = 437,  // "The next screen shows your passphrase."
     passphrase__please_enter = 438,  // "Please enter your passphrase."
@@ -845,8 +845,8 @@ pub enum TranslatedString {
     reset__needed_to_recover_your_wallet = 557,  // "needed to recover your wallet. "
     reset__never_make_digital_copy = 558,  // "Never put your backup anywhere digital."
     reset__num_of_share_holders_template = 559,  // "{0} people or locations will each hold one share."
-    reset__num_of_shares_advanced_info_template = 560,  // "Each recovery share is a sequence of 20 words. Next you will choose the threshold number of shares needed to form Group {0}."
-    reset__num_of_shares_basic_info = 561,  // "Each recovery share is a sequence of 20 words. Next you will choose how many shares you need to recover your wallet."
+    reset__num_of_shares_advanced_info_template = 560,  // "Each recovery share is a sequence of {0} words. Next you will choose the threshold number of shares needed to form Group {1}."
+    reset__num_of_shares_basic_info_template = 561,  // "Each recovery share is a sequence of {0} words. Next you will choose how many shares you need to recover your wallet."
     reset__num_shares_for_group_template = 562,  // "The required number of shares to form Group {0}."
     reset__number_of_shares_info = 563,  // "= total number of unique word lists used for wallet backup."
     reset__one_share = 564,  // "1 share"
@@ -1289,7 +1289,7 @@ pub enum TranslatedString {
     instructions__continue_holding = 888,  // "Continue\nholding"
     instructions__enter_next_share = 889,  // "Enter next share"
     instructions__hold_to_continue = 890,  // "Hold to continue"
-    instructions__exit_tutorial = 891,  // "Exit tutorial"
+    instructions__hold_to_exit_tutorial = 891,  // "Hold to exit tutorial"
     instructions__hold_to_finish_tutorial = 892,  // "\"\""
     instructions__learn_more = 893,  // "Learn more"
     instructions__shares_continue_with_x_template = 894,  // "Continue with Share #{0}"
@@ -1308,7 +1308,7 @@ pub enum TranslatedString {
     reset__incorrect_word_selected = 907,  // "Incorrect word selected"
     reset__more_at = 908,  // "More at"
     reset__num_of_shares_how_many = 909,  // "How many wallet backup shares do you want to create?"
-    reset__num_of_shares_long_info = 910,  // "Each backup share is a sequence of 20 words. Store each wordlist in a separate, safe location or share with trusted individuals. Collect as needed to recover your wallet."
+    reset__num_of_shares_long_info_template = 910,  // "Each backup share is a sequence of {0} words. Store each wordlist in a separate, safe location or share with trusted individuals. Collect as needed to recover your wallet."
     reset__select_threshold = 911,  // "Select the minimum shares required to recover your wallet."
     reset__share_completed_template = 912,  // "Share #{0} completed"
     reset__slip39_checklist_num_shares_x_template = 913,  // "Number of shares: {0}"
@@ -1330,7 +1330,7 @@ pub enum TranslatedString {
     words__settings = 929,  // "Settings"
     words__try_again = 930,  // "Try again."
     reset__slip39_checklist_num_groups_x_template = 931,  // "Number of groups: {0}"
-    brightness__title = 932,  // "Set brightness"
+    brightness__title = 932,  // "Display brightness"
     recovery__title_unlock_repeated_backup = 933,  // "Multi-share backup"
     recovery__unlock_repeated_backup = 934,  // "Create additional backup?"
     recovery__unlock_repeated_backup_verb = 935,  // "Create backup"
@@ -1349,6 +1349,14 @@ pub enum TranslatedString {
     tutorial__title_well_done = 948,  // "Well done!"
     tutorial__lets_begin = 949,  // "Learn how to use and navigate this device with ease."
     tutorial__get_started = 950,  // "Get started!"
+    instructions__swipe_horizontally = 951,  // "Swipe horizontally"
+    setting__adjust = 952,  // "Adjust"
+    setting__apply = 953,  // "Apply"
+    brightness__changed_title = 954,  // "Display brightness changed"
+    brightness__change_title = 955,  // "Change display brightness"
+    words__title_done = 956,  // "Done"
+    reset__slip39_checklist_more_info_threshold = 957,  // "The threshold sets the minumum number of shares needed to recover your wallet."
+    reset__slip39_checklist_more_info_threshold_example_template = 958,  // "If you set {0} out of {1} shares, you'll need {2} backup shares to recover your wallet."
 }
 
 impl TranslatedString {
@@ -2060,10 +2068,10 @@ impl TranslatedString {
             Self::nem__unencrypted => "Unencrypted:",
             #[cfg(feature = "universal_fw")]
             Self::nem__unknown_mosaic => "Unknown mosaic!",
-            Self::passphrase__access_hidden_wallet => "Access hidden wallet?",
+            Self::passphrase__access_wallet => "Access passphrase wallet?",
             Self::passphrase__always_on_device => "Always enter your passphrase on Trezor?",
             Self::passphrase__from_host_not_shown => "Passphrase provided by host will be used but will not be displayed due to the device settings.",
-            Self::passphrase__hidden_wallet => "Hidden wallet",
+            Self::passphrase__wallet => "Passphrase wallet",
             Self::passphrase__hide => "Hide passphrase coming from host?",
             Self::passphrase__next_screen_will_show_passphrase => "The next screen shows your passphrase.",
             Self::passphrase__please_enter => "Please enter your passphrase.",
@@ -2188,8 +2196,8 @@ impl TranslatedString {
             Self::reset__needed_to_recover_your_wallet => "needed to recover your wallet. ",
             Self::reset__never_make_digital_copy => "Never put your backup anywhere digital.",
             Self::reset__num_of_share_holders_template => "{0} people or locations will each hold one share.",
-            Self::reset__num_of_shares_advanced_info_template => "Each recovery share is a sequence of 20 words. Next you will choose the threshold number of shares needed to form Group {0}.",
-            Self::reset__num_of_shares_basic_info => "Each recovery share is a sequence of 20 words. Next you will choose how many shares you need to recover your wallet.",
+            Self::reset__num_of_shares_advanced_info_template => "Each recovery share is a sequence of {0} words. Next you will choose the threshold number of shares needed to form Group {1}.",
+            Self::reset__num_of_shares_basic_info_template => "Each recovery share is a sequence of {0} words. Next you will choose how many shares you need to recover your wallet.",
             Self::reset__num_shares_for_group_template => "The required number of shares to form Group {0}.",
             Self::reset__number_of_shares_info => "= total number of unique word lists used for wallet backup.",
             Self::reset__one_share => "1 share",
@@ -2632,7 +2640,7 @@ impl TranslatedString {
             Self::instructions__continue_holding => "Continue\nholding",
             Self::instructions__enter_next_share => "Enter next share",
             Self::instructions__hold_to_continue => "Hold to continue",
-            Self::instructions__exit_tutorial => "Exit tutorial",
+            Self::instructions__hold_to_exit_tutorial => "Hold to exit tutorial",
             Self::instructions__hold_to_finish_tutorial => "\"\"",
             Self::instructions__learn_more => "Learn more",
             Self::instructions__shares_continue_with_x_template => "Continue with Share #{0}",
@@ -2651,7 +2659,7 @@ impl TranslatedString {
             Self::reset__incorrect_word_selected => "Incorrect word selected",
             Self::reset__more_at => "More at",
             Self::reset__num_of_shares_how_many => "How many wallet backup shares do you want to create?",
-            Self::reset__num_of_shares_long_info => "Each backup share is a sequence of 20 words. Store each wordlist in a separate, safe location or share with trusted individuals. Collect as needed to recover your wallet.",
+            Self::reset__num_of_shares_long_info_template => "Each backup share is a sequence of {0} words. Store each wordlist in a separate, safe location or share with trusted individuals. Collect as needed to recover your wallet.",
             Self::reset__select_threshold => "Select the minimum shares required to recover your wallet.",
             Self::reset__share_completed_template => "Share #{0} completed",
             Self::reset__slip39_checklist_num_shares_x_template => "Number of shares: {0}",
@@ -2673,7 +2681,7 @@ impl TranslatedString {
             Self::words__settings => "Settings",
             Self::words__try_again => "Try again.",
             Self::reset__slip39_checklist_num_groups_x_template => "Number of groups: {0}",
-            Self::brightness__title => "Set brightness",
+            Self::brightness__title => "Display brightness",
             Self::recovery__title_unlock_repeated_backup => "Multi-share backup",
             Self::recovery__unlock_repeated_backup => "Create additional backup?",
             Self::recovery__unlock_repeated_backup_verb => "Create backup",
@@ -2692,6 +2700,14 @@ impl TranslatedString {
             Self::tutorial__title_well_done => "Well done!",
             Self::tutorial__lets_begin => "Learn how to use and navigate this device with ease.",
             Self::tutorial__get_started => "Get started!",
+            Self::instructions__swipe_horizontally => "Swipe horizontally",
+            Self::setting__adjust => "Adjust",
+            Self::setting__apply => "Apply",
+            Self::brightness__changed_title => "Display brightness changed",
+            Self::brightness__change_title => "Change display brightness",
+            Self::words__title_done => "Done",
+            Self::reset__slip39_checklist_more_info_threshold => "The threshold sets the minumum number of shares needed to recover your wallet.",
+            Self::reset__slip39_checklist_more_info_threshold_example_template => "If you set {0} out of {1} shares, you'll need {2} backup shares to recover your wallet.",
         }
     }
 
@@ -3404,10 +3420,10 @@ impl TranslatedString {
             Qstr::MP_QSTR_nem__unencrypted => Some(Self::nem__unencrypted),
             #[cfg(feature = "universal_fw")]
             Qstr::MP_QSTR_nem__unknown_mosaic => Some(Self::nem__unknown_mosaic),
-            Qstr::MP_QSTR_passphrase__access_hidden_wallet => Some(Self::passphrase__access_hidden_wallet),
+            Qstr::MP_QSTR_passphrase__access_wallet => Some(Self::passphrase__access_wallet),
             Qstr::MP_QSTR_passphrase__always_on_device => Some(Self::passphrase__always_on_device),
             Qstr::MP_QSTR_passphrase__from_host_not_shown => Some(Self::passphrase__from_host_not_shown),
-            Qstr::MP_QSTR_passphrase__hidden_wallet => Some(Self::passphrase__hidden_wallet),
+            Qstr::MP_QSTR_passphrase__wallet => Some(Self::passphrase__wallet),
             Qstr::MP_QSTR_passphrase__hide => Some(Self::passphrase__hide),
             Qstr::MP_QSTR_passphrase__next_screen_will_show_passphrase => Some(Self::passphrase__next_screen_will_show_passphrase),
             Qstr::MP_QSTR_passphrase__please_enter => Some(Self::passphrase__please_enter),
@@ -3533,7 +3549,7 @@ impl TranslatedString {
             Qstr::MP_QSTR_reset__never_make_digital_copy => Some(Self::reset__never_make_digital_copy),
             Qstr::MP_QSTR_reset__num_of_share_holders_template => Some(Self::reset__num_of_share_holders_template),
             Qstr::MP_QSTR_reset__num_of_shares_advanced_info_template => Some(Self::reset__num_of_shares_advanced_info_template),
-            Qstr::MP_QSTR_reset__num_of_shares_basic_info => Some(Self::reset__num_of_shares_basic_info),
+            Qstr::MP_QSTR_reset__num_of_shares_basic_info_template => Some(Self::reset__num_of_shares_basic_info_template),
             Qstr::MP_QSTR_reset__num_shares_for_group_template => Some(Self::reset__num_shares_for_group_template),
             Qstr::MP_QSTR_reset__number_of_shares_info => Some(Self::reset__number_of_shares_info),
             Qstr::MP_QSTR_reset__one_share => Some(Self::reset__one_share),
@@ -3976,7 +3992,7 @@ impl TranslatedString {
             Qstr::MP_QSTR_instructions__continue_holding => Some(Self::instructions__continue_holding),
             Qstr::MP_QSTR_instructions__enter_next_share => Some(Self::instructions__enter_next_share),
             Qstr::MP_QSTR_instructions__hold_to_continue => Some(Self::instructions__hold_to_continue),
-            Qstr::MP_QSTR_instructions__exit_tutorial => Some(Self::instructions__exit_tutorial),
+            Qstr::MP_QSTR_instructions__hold_to_exit_tutorial => Some(Self::instructions__hold_to_exit_tutorial),
             Qstr::MP_QSTR_instructions__hold_to_finish_tutorial => Some(Self::instructions__hold_to_finish_tutorial),
             Qstr::MP_QSTR_instructions__learn_more => Some(Self::instructions__learn_more),
             Qstr::MP_QSTR_instructions__shares_continue_with_x_template => Some(Self::instructions__shares_continue_with_x_template),
@@ -3995,7 +4011,7 @@ impl TranslatedString {
             Qstr::MP_QSTR_reset__incorrect_word_selected => Some(Self::reset__incorrect_word_selected),
             Qstr::MP_QSTR_reset__more_at => Some(Self::reset__more_at),
             Qstr::MP_QSTR_reset__num_of_shares_how_many => Some(Self::reset__num_of_shares_how_many),
-            Qstr::MP_QSTR_reset__num_of_shares_long_info => Some(Self::reset__num_of_shares_long_info),
+            Qstr::MP_QSTR_reset__num_of_shares_long_info_template => Some(Self::reset__num_of_shares_long_info_template),
             Qstr::MP_QSTR_reset__select_threshold => Some(Self::reset__select_threshold),
             Qstr::MP_QSTR_reset__share_completed_template => Some(Self::reset__share_completed_template),
             Qstr::MP_QSTR_reset__slip39_checklist_num_shares_x_template => Some(Self::reset__slip39_checklist_num_shares_x_template),
@@ -4036,6 +4052,14 @@ impl TranslatedString {
             Qstr::MP_QSTR_tutorial__title_well_done => Some(Self::tutorial__title_well_done),
             Qstr::MP_QSTR_tutorial__lets_begin => Some(Self::tutorial__lets_begin),
             Qstr::MP_QSTR_tutorial__get_started => Some(Self::tutorial__get_started),
+            Qstr::MP_QSTR_instructions__swipe_horizontally => Some(Self::instructions__swipe_horizontally),
+            Qstr::MP_QSTR_setting__adjust => Some(Self::setting__adjust),
+            Qstr::MP_QSTR_setting__apply => Some(Self::setting__apply),
+            Qstr::MP_QSTR_brightness__changed_title => Some(Self::brightness__changed_title),
+            Qstr::MP_QSTR_brightness__change_title => Some(Self::brightness__change_title),
+            Qstr::MP_QSTR_words__title_done => Some(Self::words__title_done),
+            Qstr::MP_QSTR_reset__slip39_checklist_more_info_threshold => Some(Self::reset__slip39_checklist_more_info_threshold),
+            Qstr::MP_QSTR_reset__slip39_checklist_more_info_threshold_example_template => Some(Self::reset__slip39_checklist_more_info_threshold_example_template),
             _ => None,
         }
     }

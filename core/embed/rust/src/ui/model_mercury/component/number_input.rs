@@ -3,10 +3,8 @@ use crate::{
     strutil::{self, TString},
     ui::{
         component::{
-            base::ComponentExt,
-            paginated::Paginate,
             text::paragraphs::{Paragraph, Paragraphs},
-            Child, Component, Event, EventCtx, Pad, SwipeDirection,
+            Component, Event, EventCtx, Pad, SwipeDirection,
         },
         display::Font,
         event::SwipeEvent,
@@ -17,56 +15,34 @@ use crate::{
 
 use super::{theme, Button, ButtonMsg};
 
-pub struct NumberInputDialogMsg(pub u32);
+pub enum NumberInputDialogMsg {
+    Confirmed(u32),
+    Changed(u32),
+}
 
-pub struct NumberInputDialog<F>
-where
-    F: Fn(u32) -> TString<'static>,
-{
+pub struct NumberInputDialog {
     area: Rect,
-    description_func: F,
-    input: Child<NumberInput>,
-    paragraphs: Child<Paragraphs<Paragraph<'static>>>,
+    input: NumberInput,
+    paragraphs: Paragraphs<Paragraph<'static>>,
     paragraphs_pad: Pad,
 }
 
-impl<F> NumberInputDialog<F>
-where
-    F: Fn(u32) -> TString<'static>,
-{
-    pub fn new(min: u32, max: u32, init_value: u32, description_func: F) -> Result<Self, Error> {
-        let text = description_func(init_value);
+impl NumberInputDialog {
+    pub fn new(min: u32, max: u32, init_value: u32, text: TString<'static>) -> Result<Self, Error> {
         Ok(Self {
             area: Rect::zero(),
-            description_func,
-            input: NumberInput::new(min, max, init_value).into_child(),
-            paragraphs: Paragraphs::new(Paragraph::new(&theme::TEXT_MAIN_GREY_LIGHT, text))
-                .into_child(),
+            input: NumberInput::new(min, max, init_value),
+            paragraphs: Paragraphs::new(Paragraph::new(&theme::TEXT_MAIN_GREY_LIGHT, text)),
             paragraphs_pad: Pad::with_background(theme::BG),
         })
     }
 
-    fn update_text(&mut self, ctx: &mut EventCtx, value: u32) {
-        let text = (self.description_func)(value);
-        self.paragraphs.mutate(ctx, move |ctx, para| {
-            para.inner_mut().update(text);
-            // Recompute bounding box.
-            para.change_page(0);
-            ctx.request_paint()
-        });
-        self.paragraphs_pad.clear();
-        ctx.request_paint();
-    }
-
     pub fn value(&self) -> u32 {
-        self.input.inner().value
+        self.input.value
     }
 }
 
-impl<F> Component for NumberInputDialog<F>
-where
-    F: Fn(u32) -> TString<'static>,
-{
+impl Component for NumberInputDialog {
     type Msg = NumberInputDialogMsg;
 
     fn place(&mut self, bounds: Rect) -> Rect {
@@ -87,11 +63,11 @@ where
 
     fn event(&mut self, ctx: &mut EventCtx, event: Event) -> Option<Self::Msg> {
         if let Some(NumberInputMsg::Changed(i)) = self.input.event(ctx, event) {
-            self.update_text(ctx, i);
+            return Some(NumberInputDialogMsg::Changed(i));
         }
 
         if let Event::Swipe(SwipeEvent::End(SwipeDirection::Up)) = event {
-            return Some(NumberInputDialogMsg(self.input.inner().value));
+            return Some(NumberInputDialogMsg::Confirmed(self.input.value));
         }
         self.paragraphs.event(ctx, event);
         None
@@ -106,20 +82,10 @@ where
         self.paragraphs_pad.render(target);
         self.paragraphs.render(target);
     }
-
-    #[cfg(feature = "ui_bounds")]
-    fn bounds(&self, sink: &mut dyn FnMut(Rect)) {
-        sink(self.area);
-        self.input.bounds(sink);
-        self.paragraphs.bounds(sink);
-    }
 }
 
 #[cfg(feature = "ui_debug")]
-impl<F> crate::trace::Trace for NumberInputDialog<F>
-where
-    F: Fn(u32) -> TString<'static>,
-{
+impl crate::trace::Trace for NumberInputDialog {
     fn trace(&self, t: &mut dyn crate::trace::Tracer) {
         t.component("NumberInputDialog");
         t.child("input", &self.input);
@@ -133,8 +99,8 @@ pub enum NumberInputMsg {
 
 pub struct NumberInput {
     area: Rect,
-    dec: Child<Button>,
-    inc: Child<Button>,
+    dec: Button,
+    inc: Button,
     min: u32,
     max: u32,
     value: u32,
@@ -142,12 +108,8 @@ pub struct NumberInput {
 
 impl NumberInput {
     pub fn new(min: u32, max: u32, value: u32) -> Self {
-        let dec = Button::with_icon(theme::ICON_MINUS)
-            .styled(theme::button_counter())
-            .into_child();
-        let inc = Button::with_icon(theme::ICON_PLUS)
-            .styled(theme::button_counter())
-            .into_child();
+        let dec = Button::with_icon(theme::ICON_MINUS).styled(theme::button_counter());
+        let inc = Button::with_icon(theme::ICON_PLUS).styled(theme::button_counter());
         let value = value.clamp(min, max);
         Self {
             area: Rect::zero(),
@@ -182,10 +144,8 @@ impl Component for NumberInput {
             changed = true;
         };
         if changed {
-            self.dec
-                .mutate(ctx, |ctx, btn| btn.enable_if(ctx, self.value > self.min));
-            self.inc
-                .mutate(ctx, |ctx, btn| btn.enable_if(ctx, self.value < self.max));
+            self.dec.enable_if(ctx, self.value > self.min);
+            self.inc.enable_if(ctx, self.value < self.max);
             ctx.request_paint();
             return Some(NumberInputMsg::Changed(self.value));
         }
@@ -213,13 +173,6 @@ impl Component for NumberInput {
 
         self.dec.render(target);
         self.inc.render(target);
-    }
-
-    #[cfg(feature = "ui_bounds")]
-    fn bounds(&self, sink: &mut dyn FnMut(Rect)) {
-        self.dec.bounds(sink);
-        self.inc.bounds(sink);
-        sink(self.area)
     }
 }
 

@@ -2106,6 +2106,25 @@ class InputFlowSlip39BasicRecoveryAbort(InputFlowBase):
         yield from self.REC.abort_recovery(True)
 
 
+class InputFlowSlip39BasicRecoveryAbortBetweenShares(InputFlowBase):
+    def __init__(self, client: Client, shares: list[str]):
+        super().__init__(client)
+        self.first_share = shares[0].split(" ")
+        self.word_count = len(self.first_share)
+
+    def input_flow_common(self) -> BRGeneratorType:
+        yield from self.REC.confirm_recovery()
+        if self.model() in (models.T2T1, models.T3T1):
+            yield from self.REC.input_number_of_words(20)
+        else:
+            yield from self.REC.tr_recovery_homescreen()
+            yield from self.REC.input_number_of_words(self.word_count)
+
+        yield from self.REC.enter_any_share()
+        yield from self.REC.input_mnemonic(self.first_share)
+        yield from self.REC.abort_recovery_between_shares()
+
+
 class InputFlowSlip39BasicRecoveryNoAbort(InputFlowBase):
     def __init__(self, client: Client, shares: list[str]):
         super().__init__(client)
@@ -2293,3 +2312,30 @@ class InputFlowConfirmAllWarnings(InputFlowBase):
             else:
                 self.debug.press_yes()
             br = yield
+
+
+class InputFlowTutorial(InputFlowBase):
+    def __init__(self, client: Client, cancel: bool = False):
+        super().__init__(client)
+        self.cancel = cancel
+
+    def input_flow_t3t1(self) -> BRGeneratorType:
+        yield
+        self.debug.click(buttons.TAP_TO_CONFIRM, wait=True)
+        self.debug.swipe_up(wait=True)
+        self.debug.swipe_up(wait=True)
+        if self.cancel:
+            self.debug.click(buttons.CORNER_BUTTON, wait=True)
+            self.debug.click(buttons.VERTICAL_MENU[0], wait=True)
+            self.debug.click(buttons.CORNER_BUTTON, wait=True)
+            self.debug.click(buttons.VERTICAL_MENU[1], wait=True)
+            self.debug.swipe_up(wait=True)
+            self.debug.swipe_up(wait=True)
+            self.debug.click(buttons.CORNER_BUTTON, wait=True)
+            self.debug.click(buttons.VERTICAL_MENU[2], wait=True)
+            self.debug.click(buttons.TAP_TO_CONFIRM, wait=True)
+            self.debug.swipe_up(wait=True)
+        else:
+            self.debug.swipe_up(wait=True)
+            self.debug.click(buttons.TAP_TO_CONFIRM, wait=True)
+            self.debug.swipe_up(wait=True)

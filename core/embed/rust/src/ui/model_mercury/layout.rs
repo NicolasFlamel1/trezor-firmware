@@ -1,5 +1,16 @@
 use core::{cmp::Ordering, convert::TryInto};
 
+use super::{
+    component::{
+        AddressDetails, Bip39Input, Button, CancelConfirmMsg, CancelInfoConfirmMsg,
+        CoinJoinProgress, FidoConfirm, FidoMsg, Frame, FrameMsg, Homescreen, HomescreenMsg,
+        Lockscreen, MnemonicInput, MnemonicKeyboard, MnemonicKeyboardMsg, PassphraseKeyboard,
+        PassphraseKeyboardMsg, PinKeyboard, PinKeyboardMsg, Progress, PromptScreen,
+        SelectWordCount, SelectWordCountMsg, Slip39Input, StatusScreen, SwipeUpScreen,
+        SwipeUpScreenMsg, VerticalMenu, VerticalMenuChoiceMsg,
+    },
+    flow, theme,
+};
 use crate::{
     error::{value_error, Error},
     io::BinaryData,
@@ -31,32 +42,21 @@ use crate::{
                 },
                 TextStyle,
             },
-            Border, CachedJpeg, Component, FormattedText, Label, Never, SwipeDirection, Timeout,
+            Border, CachedJpeg, Component, FormattedText, Never, SwipeDirection, Timeout,
         },
         flow::Swipable,
         geometry,
         layout::{
-            obj::{ComponentMsgObj, LayoutObj},
+            obj::{ComponentMsgObj, LayoutObj, ATTACH_TYPE_OBJ},
             result::{CANCELLED, CONFIRMED, INFO},
             util::{upy_disable_animation, ConfirmBlob, PropsList},
         },
         model_mercury::{
             component::{check_homescreen_format, SwipeContent},
             flow::new_confirm_action_simple,
+            theme::ICON_BULLET_CHECKMARK,
         },
     },
-};
-
-use super::{
-    component::{
-        AddressDetails, Bip39Input, Button, CancelConfirmMsg, CancelInfoConfirmMsg,
-        CoinJoinProgress, FidoConfirm, FidoMsg, Frame, FrameMsg, Homescreen, HomescreenMsg,
-        Lockscreen, MnemonicInput, MnemonicKeyboard, MnemonicKeyboardMsg, PassphraseKeyboard,
-        PassphraseKeyboardMsg, PinKeyboard, PinKeyboardMsg, Progress, PromptScreen,
-        SelectWordCount, SelectWordCountMsg, SetBrightnessDialog, Slip39Input, StatusScreen,
-        SwipeUpScreen, SwipeUpScreenMsg, VerticalMenu, VerticalMenuChoiceMsg,
-    },
-    flow, theme,
 };
 
 impl TryFrom<CancelConfirmMsg> for Obj {
@@ -218,15 +218,6 @@ where
     }
 }
 
-impl ComponentMsgObj for SetBrightnessDialog {
-    fn msg_try_into_obj(&self, msg: Self::Msg) -> Result<Obj, Error> {
-        match msg {
-            CancelConfirmMsg::Confirmed => Ok(CONFIRMED.as_obj()),
-            CancelConfirmMsg::Cancelled => Ok(CANCELLED.as_obj()),
-        }
-    }
-}
-
 impl ComponentMsgObj for Progress {
     fn msg_try_into_obj(&self, _msg: Self::Msg) -> Result<Obj, Error> {
         unreachable!()
@@ -272,15 +263,6 @@ where
 {
     fn msg_try_into_obj(&self, _msg: Self::Msg) -> Result<Obj, Error> {
         unreachable!();
-    }
-}
-
-impl ComponentMsgObj for super::component::bl_confirm::Confirm<'_> {
-    fn msg_try_into_obj(&self, msg: Self::Msg) -> Result<Obj, Error> {
-        match msg {
-            super::component::bl_confirm::ConfirmMsg::Cancel => Ok(CANCELLED.as_obj()),
-            super::component::bl_confirm::ConfirmMsg::Confirm => Ok(CONFIRMED.as_obj()),
-        }
     }
 }
 
@@ -412,9 +394,6 @@ impl ConfirmBlobParams {
         )
     }
 }
-
-const RECOVERY_TYPE_DRY_RUN: u32 = 1;
-const RECOVERY_TYPE_UNLOCK_REPEATED_BACKUP: u32 = 2;
 
 extern "C" fn new_confirm_blob(n_args: usize, args: *const Obj, kwargs: *mut Map) -> Obj {
     let block = move |_args: &[Obj], kwargs: &Map| {
@@ -825,11 +804,15 @@ extern "C" fn new_show_success(n_args: usize, args: *const Obj, kwargs: *mut Map
             .try_into_option()?
             .and_then(|desc: TString| if desc.is_empty() { None } else { Some(desc) });
 
-        let content = StatusScreen::new_success();
+        let content = StatusScreen::new_success(title);
         let obj = LayoutObj::new(SwipeUpScreen::new(
-            Frame::left_aligned(title, SwipeContent::new(content).with_no_attach_anim())
-                .with_footer(TR::instructions__swipe_up.into(), description)
-                .with_swipe(SwipeDirection::Up, SwipeSettings::default()),
+            Frame::left_aligned(
+                TR::words__title_success.into(),
+                SwipeContent::new(content).with_no_attach_anim(),
+            )
+            .with_footer(TR::instructions__swipe_up.into(), description)
+            .with_result_icon(ICON_BULLET_CHECKMARK, theme::GREEN_LIGHT)
+            .with_swipe(SwipeDirection::Up, SwipeSettings::default()),
         ))?;
         Ok(obj.into())
     };
@@ -1042,18 +1025,6 @@ extern "C" fn new_select_word(n_args: usize, args: *const Obj, kwargs: *mut Map)
     unsafe { util::try_with_args_and_kwargs(n_args, args, kwargs, block) }
 }
 
-extern "C" fn new_set_brightness(n_args: usize, args: *const Obj, kwargs: *mut Map) -> Obj {
-    let block = move |_args: &[Obj], kwargs: &Map| {
-        let current: Option<u16> = kwargs.get(Qstr::MP_QSTR_current)?.try_into_option()?;
-        let obj = LayoutObj::new(Frame::centered(
-            TR::brightness__title.into(),
-            SetBrightnessDialog::new(current),
-        ))?;
-        Ok(obj.into())
-    };
-    unsafe { util::try_with_args_and_kwargs(n_args, args, kwargs, block) }
-}
-
 extern "C" fn new_show_checklist(n_args: usize, args: *const Obj, kwargs: *mut Map) -> Obj {
     let block = move |_args: &[Obj], kwargs: &Map| {
         let title: TString = kwargs.get(Qstr::MP_QSTR_title)?.try_into()?;
@@ -1088,34 +1059,6 @@ extern "C" fn new_show_checklist(n_args: usize, args: *const Obj, kwargs: *mut M
         let obj = LayoutObj::new(SwipeUpScreen::new(
             Frame::left_aligned(title, SwipeContent::new(checklist_content))
                 .with_footer(TR::instructions__swipe_up.into(), None)
-                .with_swipe(SwipeDirection::Up, SwipeSettings::default()),
-        ))?;
-        Ok(obj.into())
-    };
-    unsafe { util::try_with_args_and_kwargs(n_args, args, kwargs, block) }
-}
-
-extern "C" fn new_confirm_recovery(n_args: usize, args: *const Obj, kwargs: *mut Map) -> Obj {
-    let block = move |_args: &[Obj], kwargs: &Map| {
-        let _title: TString = kwargs.get(Qstr::MP_QSTR_title)?.try_into()?;
-        let description: TString = kwargs.get(Qstr::MP_QSTR_description)?.try_into()?;
-        let _button: TString = kwargs.get(Qstr::MP_QSTR_button)?.try_into()?;
-        let recovery_type: u32 = kwargs.get(Qstr::MP_QSTR_recovery_type)?.try_into()?;
-        let _info_button: bool = kwargs.get_or(Qstr::MP_QSTR_info_button, false)?;
-
-        let paragraphs = Paragraphs::new(Paragraph::new(&theme::TEXT_NORMAL, description));
-
-        let notification = match recovery_type {
-            RECOVERY_TYPE_DRY_RUN => TR::recovery__title_dry_run.into(),
-            RECOVERY_TYPE_UNLOCK_REPEATED_BACKUP => TR::recovery__title_dry_run.into(),
-            _ => TR::recovery__title.into(),
-        };
-
-        let obj = LayoutObj::new(SwipeUpScreen::new(
-            Frame::left_aligned(notification, SwipeContent::new(paragraphs))
-                .with_cancel_button()
-                .with_footer(TR::instructions__swipe_up.into(), None)
-                .with_subtitle(TR::words__instructions.into())
                 .with_swipe(SwipeDirection::Up, SwipeSettings::default()),
         ))?;
         Ok(obj.into())
@@ -1283,36 +1226,6 @@ pub extern "C" fn upy_check_homescreen_format(data: Obj) -> Obj {
     unsafe { util::try_or_raise(block) }
 }
 
-#[no_mangle]
-extern "C" fn new_confirm_firmware_update(
-    n_args: usize,
-    args: *const Obj,
-    kwargs: *mut Map,
-) -> Obj {
-    use super::component::bl_confirm::{Confirm, ConfirmTitle};
-    let block = move |_args: &[Obj], kwargs: &Map| {
-        let description: TString = kwargs.get(Qstr::MP_QSTR_description)?.try_into()?;
-        let fingerprint: TString = kwargs.get(Qstr::MP_QSTR_fingerprint)?.try_into()?;
-
-        let title_str = TR::firmware_update__title.into();
-        let title = Label::left_aligned(title_str, theme::TEXT_BOLD).vertically_centered();
-        let msg = Label::left_aligned(description, theme::TEXT_NORMAL);
-
-        let left = Button::with_text(TR::buttons__cancel.into()).styled(theme::button_default());
-        let right = Button::with_text(TR::buttons__install.into()).styled(theme::button_confirm());
-
-        let obj = LayoutObj::new(
-            Confirm::new(theme::BG, left, right, ConfirmTitle::Text(title), msg).with_info(
-                TR::firmware_update__title_fingerprint.into(),
-                fingerprint,
-                theme::button_default(),
-            ),
-        )?;
-        Ok(obj.into())
-    };
-    unsafe { util::try_with_args_and_kwargs(n_args, args, kwargs, block) }
-}
-
 extern "C" fn new_show_wait_text(message: Obj) -> Obj {
     let block = || {
         let message: TString<'static> = message.try_into()?;
@@ -1328,9 +1241,6 @@ pub static mp_module_trezorui2: Module = obj_module! {
     /// from trezor import utils
     ///
     /// T = TypeVar("T")
-    ///
-    /// class AttachType:
-    ///     ...
     ///
     /// class LayoutObj(Generic[T]):
     ///     """Representation of a Rust-based layout object.
@@ -1497,13 +1407,9 @@ pub static mp_module_trezorui2: Module = obj_module! {
     ///     the value is to be rendered as binary with monospace font, False otherwise."""
     Qstr::MP_QSTR_confirm_properties => obj_fn_kw!(0, new_confirm_properties).as_obj(),
 
-    /// def flow_confirm_reset_recover() -> LayoutObj[UiResult]:
-    ///     """Confirm TOS before recovery process."""
-    Qstr::MP_QSTR_flow_confirm_reset_recover => obj_fn_kw!(0, flow::confirm_reset_recover::new_confirm_reset_recover).as_obj(),
-
-    /// def flow_confirm_reset_create() -> LayoutObj[UiResult]:
-    ///     """Confirm TOS before creating a wallet and have a user hold to confirm creation."""
-    Qstr::MP_QSTR_flow_confirm_reset_create => obj_fn_kw!(0, flow::confirm_reset_create::new_confirm_reset_create).as_obj(),
+    /// def flow_confirm_reset(recovery: bool) -> LayoutObj[UiResult]:
+    ///     """Confirm TOS before creating wallet creation or wallet recovery."""
+    Qstr::MP_QSTR_flow_confirm_reset => obj_fn_kw!(0, flow::confirm_reset::new_confirm_reset).as_obj(),
 
     // TODO: supply more arguments for Wipe code setting when figma done
     /// def flow_confirm_set_new_pin(
@@ -1741,10 +1647,10 @@ pub static mp_module_trezorui2: Module = obj_module! {
     ///     count: int,
     ///     min_count: int,
     ///     max_count: int,
-    ///     description: Callable[[int], str] | None = None,
+    ///     description: str,
     ///     info: Callable[[int], str] | None = None,
     ///     br_code: ButtonRequestType,
-    ///     br_type: str,
+    ///     br_name: str,
     /// ) -> LayoutObj[tuple[UiResult, int]]:
     ///     """Numer input with + and - buttons, description, and context menu with cancel and
     ///     info."""
@@ -1755,7 +1661,7 @@ pub static mp_module_trezorui2: Module = obj_module! {
     ///     current: int | None = None
     /// ) -> LayoutObj[UiResult]:
     ///     """Show the brightness configuration dialog."""
-    Qstr::MP_QSTR_set_brightness => obj_fn_kw!(0, new_set_brightness).as_obj(),
+    Qstr::MP_QSTR_set_brightness => obj_fn_kw!(0, flow::set_brightness::new_set_brightness).as_obj(),
 
     /// def show_checklist(
     ///     *,
@@ -1768,16 +1674,15 @@ pub static mp_module_trezorui2: Module = obj_module! {
     ///    mark next to them."""
     Qstr::MP_QSTR_show_checklist => obj_fn_kw!(0, new_show_checklist).as_obj(),
 
-    /// def confirm_recovery(
+    /// def flow_continue_recovery(
     ///     *,
-    ///     title: str,
-    ///     description: str,
-    ///     button: str,
+    ///     first_screen: bool,
     ///     recovery_type: RecoveryType,
-    ///     info_button: bool = False,
+    ///     text: str,
+    ///     subtext: str | None = None,
     /// ) -> LayoutObj[UiResult]:
     ///     """Device recovery homescreen."""
-    Qstr::MP_QSTR_confirm_recovery => obj_fn_kw!(0, new_confirm_recovery).as_obj(),
+    Qstr::MP_QSTR_flow_continue_recovery => obj_fn_kw!(0, flow::continue_recovery::new_continue_recovery).as_obj(),
 
     /// def select_word_count(
     ///     *,
@@ -1848,8 +1753,8 @@ pub static mp_module_trezorui2: Module = obj_module! {
     ///     description: str,
     ///     fingerprint: str,
     /// ) -> LayoutObj[UiResult]:
-    ///     """Ask whether to update firmware, optionally show fingerprint. Shared with bootloader."""
-    Qstr::MP_QSTR_confirm_firmware_update => obj_fn_kw!(0, new_confirm_firmware_update).as_obj(),
+    ///     """Ask whether to update firmware, optionally show fingerprint."""
+    Qstr::MP_QSTR_confirm_firmware_update => obj_fn_kw!(0, flow::confirm_firmware_update::new_confirm_firmware_update).as_obj(),
 
     /// def tutorial() -> LayoutObj[UiResult]:
     ///     """Show user how to interact with the device."""
@@ -1872,7 +1777,7 @@ pub static mp_module_trezorui2: Module = obj_module! {
     ///     path: str | None,
     ///     xpubs: list[tuple[str, str]],
     ///     br_code: ButtonRequestType,
-    ///     br_type: str,
+    ///     br_name: str,
     /// ) -> LayoutObj[UiResult]:
     ///     """Get address / receive funds."""
     Qstr::MP_QSTR_flow_get_address => obj_fn_kw!(0, flow::get_address::new_get_address).as_obj(),
@@ -1895,7 +1800,7 @@ pub static mp_module_trezorui2: Module = obj_module! {
     ///     account: str | None,
     ///     account_path: str | None,
     ///     br_code: ButtonRequestType,
-    ///     br_type: str,
+    ///     br_name: str,
     /// ) -> LayoutObj[UiResult]:
     ///     """Confirm recipient."""
     Qstr::MP_QSTR_flow_confirm_output => obj_fn_kw!(0, flow::new_confirm_output).as_obj(),
@@ -1907,7 +1812,7 @@ pub static mp_module_trezorui2: Module = obj_module! {
     ///     account_items: Iterable[tuple[str, str]],
     ///     fee_items: Iterable[tuple[str, str]],
     ///     br_code: ButtonRequestType,
-    ///     br_type: str,
+    ///     br_name: str,
     /// ) -> LayoutObj[UiResult]:
     ///     """Total summary and hold to confirm."""
     Qstr::MP_QSTR_flow_confirm_summary => obj_fn_kw!(0, flow::new_confirm_summary).as_obj(),
@@ -1922,4 +1827,14 @@ pub static mp_module_trezorui2: Module = obj_module! {
     ///
     /// mock:global
     Qstr::MP_QSTR_BacklightLevels => BACKLIGHT_LEVELS_OBJ.as_obj(),
+
+    /// class AttachType:
+    ///     INITIAL: ClassVar[int]
+    ///     RESUME: ClassVar[int]
+    ///     SWIPE_UP: ClassVar[int]
+    ///     SWIPE_DOWN: ClassVar[int]
+    ///     SWIPE_LEFT: ClassVar[int]
+    ///     SWIPE_RIGHT: ClassVar[int]
+    Qstr::MP_QSTR_AttachType => ATTACH_TYPE_OBJ.as_obj(),
+
 };

@@ -43,7 +43,7 @@ pub struct ButtonPage<T> {
     /// Whether to pass-through right swipe to parent component.
     swipe_right: bool,
     /// Fade to given backlight level on next paint().
-    fade: Cell<Option<u16>>,
+    fade: Cell<Option<u8>>,
 }
 
 impl<T> ButtonPage<T>
@@ -444,17 +444,6 @@ where
             // Note that this is blocking and takes some time.
             display::fade_backlight(val);
         }
-    }
-
-    #[cfg(feature = "ui_bounds")]
-    fn bounds(&self, sink: &mut dyn FnMut(Rect)) {
-        sink(self.pad.area);
-        self.scrollbar.bounds(sink);
-        self.content.bounds(sink);
-        self.button_cancel.bounds(sink);
-        self.button_confirm.bounds(sink);
-        self.button_prev.bounds(sink);
-        self.button_next.bounds(sink);
     }
 }
 

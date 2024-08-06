@@ -18,7 +18,7 @@ pub struct SimplePage<T> {
     scrollbar: ScrollBar,
     axis: Axis,
     swipe_right_to_go_back: bool,
-    fade: Cell<Option<u16>>,
+    fade: Cell<Option<u8>>,
 }
 
 impl<T> SimplePage<T>
@@ -177,13 +177,6 @@ where
             // Note that this is blocking and takes some time.
             display::fade_backlight(val);
         }
-    }
-
-    #[cfg(feature = "ui_bounds")]
-    fn bounds(&self, sink: &mut dyn FnMut(Rect)) {
-        sink(self.pad.area);
-        self.scrollbar.bounds(sink);
-        self.content.bounds(sink);
     }
 }
 

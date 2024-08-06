@@ -1,5 +1,17 @@
 use core::{cmp::Ordering, convert::TryInto};
 
+use super::{
+    component::{
+        AddressDetails, Bip39Input, Button, ButtonMsg, ButtonPage, ButtonStyleSheet,
+        CancelConfirmMsg, CancelInfoConfirmMsg, CoinJoinProgress, Dialog, DialogMsg, FidoConfirm,
+        FidoMsg, Frame, FrameMsg, Homescreen, HomescreenMsg, IconDialog, Lockscreen, MnemonicInput,
+        MnemonicKeyboard, MnemonicKeyboardMsg, NumberInputDialog, NumberInputDialogMsg,
+        PassphraseKeyboard, PassphraseKeyboardMsg, PinKeyboard, PinKeyboardMsg, Progress,
+        SelectWordCount, SelectWordCountMsg, SelectWordMsg, SetBrightnessDialog, SimplePage,
+        Slip39Input,
+    },
+    theme,
+};
 use crate::{
     error::{value_error, Error},
     io::BinaryData,
@@ -38,25 +50,12 @@ use crate::{
         },
         geometry,
         layout::{
-            obj::{ComponentMsgObj, LayoutObj},
+            obj::{ComponentMsgObj, LayoutObj, ATTACH_TYPE_OBJ},
             result::{CANCELLED, CONFIRMED, INFO},
             util::{upy_disable_animation, ConfirmBlob, PropsList},
         },
         model_tt::component::check_homescreen_format,
     },
-};
-
-use super::{
-    component::{
-        AddressDetails, Bip39Input, Button, ButtonMsg, ButtonPage, ButtonStyleSheet,
-        CancelConfirmMsg, CancelInfoConfirmMsg, CoinJoinProgress, Dialog, DialogMsg, FidoConfirm,
-        FidoMsg, Frame, FrameMsg, Homescreen, HomescreenMsg, IconDialog, Lockscreen, MnemonicInput,
-        MnemonicKeyboard, MnemonicKeyboardMsg, NumberInputDialog, NumberInputDialogMsg,
-        PassphraseKeyboard, PassphraseKeyboardMsg, PinKeyboard, PinKeyboardMsg, Progress,
-        SelectWordCount, SelectWordCountMsg, SelectWordMsg, SetBrightnessDialog, SimplePage,
-        Slip39Input,
-    },
-    theme,
 };
 
 impl TryFrom<CancelConfirmMsg> for Obj {
@@ -1320,7 +1319,7 @@ extern "C" fn new_request_number(n_args: usize, args: *const Obj, kwargs: *mut M
 
 extern "C" fn new_set_brightness(n_args: usize, args: *const Obj, kwargs: *mut Map) -> Obj {
     let block = move |_args: &[Obj], kwargs: &Map| {
-        let current: Option<u16> = kwargs.get(Qstr::MP_QSTR_current)?.try_into_option()?;
+        let current: Option<u8> = kwargs.get(Qstr::MP_QSTR_current)?.try_into_option()?;
         let obj = LayoutObj::new(Frame::centered(
             theme::label_title(),
             TR::brightness__title.into(),
@@ -1627,9 +1626,6 @@ pub static mp_module_trezorui2: Module = obj_module! {
     /// from trezor import utils
     ///
     /// T = TypeVar("T")
-    ///
-    /// class AttachType:
-    ///     ...
     ///
     /// class LayoutObj(Generic[T]):
     ///     """Representation of a Rust-based layout object.
@@ -2157,6 +2153,15 @@ pub static mp_module_trezorui2: Module = obj_module! {
     ///
     /// mock:global
     Qstr::MP_QSTR_BacklightLevels => BACKLIGHT_LEVELS_OBJ.as_obj(),
+
+    /// class AttachType:
+    ///     INITIAL: ClassVar[int]
+    ///     RESUME: ClassVar[int]
+    ///     SWIPE_UP: ClassVar[int]
+    ///     SWIPE_DOWN: ClassVar[int]
+    ///     SWIPE_LEFT: ClassVar[int]
+    ///     SWIPE_RIGHT: ClassVar[int]
+    Qstr::MP_QSTR_AttachType => ATTACH_TYPE_OBJ.as_obj(),
 };
 
 #[cfg(test)]

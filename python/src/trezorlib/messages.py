@@ -125,6 +125,7 @@ class MessageType(IntEnum):
     DebugLinkEraseSdCard = 9005
     DebugLinkWatchLayout = 9006
     DebugLinkResetDebugEvents = 9007
+    DebugLinkOptigaSetSecMax = 9008
     EthereumGetPublicKey = 450
     EthereumPublicKey = 451
     EthereumGetAddress = 56
@@ -960,6 +961,7 @@ class ButtonRequest(protobuf.MessageType):
     FIELDS = {
         1: protobuf.Field("code", "ButtonRequestType", repeated=False, required=False, default=None),
         2: protobuf.Field("pages", "uint32", repeated=False, required=False, default=None),
+        4: protobuf.Field("name", "string", repeated=False, required=False, default=None),
     }
 
     def __init__(
@@ -967,9 +969,11 @@ class ButtonRequest(protobuf.MessageType):
         *,
         code: Optional["ButtonRequestType"] = None,
         pages: Optional["int"] = None,
+        name: Optional["str"] = None,
     ) -> None:
         self.code = code
         self.pages = pages
+        self.name = name
 
 
 class ButtonAck(protobuf.MessageType):
@@ -4277,6 +4281,10 @@ class DebugLinkWatchLayout(protobuf.MessageType):
 
 class DebugLinkResetDebugEvents(protobuf.MessageType):
     MESSAGE_WIRE_TYPE = 9007
+
+
+class DebugLinkOptigaSetSecMax(protobuf.MessageType):
+    MESSAGE_WIRE_TYPE = 9008
 
 
 class EosGetPublicKey(protobuf.MessageType):

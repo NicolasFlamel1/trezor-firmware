@@ -3,15 +3,18 @@ use crate::{
     translations::TR,
     ui::{
         component::{
-            base::ComponentExt, text::common::TextBox, Child, Component, Event, EventCtx, Label,
-            Maybe, Never, Swipe, SwipeDirection,
+            base::ComponentExt, text::common::TextBox, Component, Event, EventCtx, Label, Maybe,
+            Never, Swipe, SwipeDirection,
         },
         display,
         geometry::{Alignment, Grid, Insets, Offset, Rect},
-        model_mercury::component::{
-            button::{Button, ButtonContent, ButtonMsg},
-            keyboard::common::{render_pending_marker, MultiTapKeyboard},
-            theme,
+        model_mercury::{
+            component::{
+                button::{Button, ButtonContent, ButtonMsg},
+                keyboard::common::{render_pending_marker, MultiTapKeyboard},
+                theme,
+            },
+            cshape,
         },
         shape,
         shape::Renderer,
@@ -72,13 +75,14 @@ impl From<KeyboardLayout> for ButtonContent {
 
 pub struct PassphraseKeyboard {
     page_swipe: Swipe,
-    input: Child<Input>,
-    input_prompt: Child<Label<'static>>,
-    erase_btn: Child<Maybe<Button>>,
-    cancel_btn: Child<Maybe<Button>>,
-    confirm_btn: Child<Button>,
-    next_btn: Child<Button>,
-    keys: [Child<Button>; KEY_COUNT],
+    input: Input,
+    input_prompt: Label<'static>,
+    erase_btn: Maybe<Button>,
+    cancel_btn: Maybe<Button>,
+    confirm_btn: Button,
+    next_btn: Button,
+    keypad_area: Rect,
+    keys: [Button; KEY_COUNT],
     active_layout: KeyboardLayout,
     fade: Cell<bool>,
 }
@@ -99,44 +103,40 @@ impl PassphraseKeyboard {
     pub fn new() -> Self {
         let active_layout = KeyboardLayout::LettersLower;
 
-        let confirm_btn = Button::with_icon(theme::ICON_CONFIRM)
+        let confirm_btn = Button::with_icon(theme::ICON_SIMPLE_CHECKMARK24)
             .styled(theme::button_passphrase_confirm())
-            .with_radius(15)
-            .into_child();
+            .with_radius(15);
 
         let next_btn = Button::new(active_layout.next().into())
             .styled(theme::button_passphrase_next())
-            .with_text_align(Alignment::Center)
-            .into_child();
+            .with_text_align(Alignment::Center);
 
         let erase_btn = Button::with_icon(theme::ICON_DELETE)
             .styled(theme::button_keyboard_erase())
             .with_long_press(theme::ERASE_HOLD_DURATION)
             .initially_enabled(false);
-        let erase_btn = Maybe::hidden(theme::BG, erase_btn).into_child();
+        let erase_btn = Maybe::hidden(theme::BG, erase_btn);
 
         let cancel_btn =
             Button::with_icon(theme::ICON_CLOSE).styled(theme::button_keyboard_cancel());
-        let cancel_btn = Maybe::visible(theme::BG, cancel_btn).into_child();
+        let cancel_btn = Maybe::visible(theme::BG, cancel_btn);
 
         Self {
             page_swipe: Swipe::horizontal(),
-            input: Input::new().into_child(),
+            input: Input::new(),
             input_prompt: Label::left_aligned(
                 TString::from_translation(TR::passphrase__title_enter),
                 theme::label_keyboard(),
-            )
-            .into_child(),
+            ),
             erase_btn,
             cancel_btn,
             confirm_btn,
             next_btn,
+            keypad_area: Rect::zero(),
             keys: KEYBOARD[active_layout.to_usize().unwrap()].map(|text| {
-                Child::new(
-                    Button::new(Self::key_content(text))
-                        .styled(theme::button_keyboard())
-                        .with_text_align(Alignment::Center),
-                )
+                Button::new(Self::key_content(text))
+                    .styled(theme::button_keyboard())
+                    .with_text_align(Alignment::Center)
             }),
             active_layout,
             fade: Cell::new(false),
@@ -169,8 +169,7 @@ impl PassphraseKeyboard {
             _ => self.active_layout,
         };
         // Clear the pending state.
-        self.input
-            .mutate(ctx, |ctx, i| i.multi_tap.clear_pending_state(ctx));
+        self.input.multi_tap.clear_pending_state(ctx);
         // Update keys.
         self.replace_keys_contents(ctx);
         // Reset backlight to normal level on next paint.
@@ -181,13 +180,12 @@ impl PassphraseKeyboard {
     }
 
     fn replace_keys_contents(&mut self, ctx: &mut EventCtx) {
-        self.next_btn.mutate(ctx, |ctx, b| {
-            b.set_content(ctx, self.active_layout.next().into());
-        });
+        self.next_btn
+            .set_content(ctx, self.active_layout.next().into());
         for (i, btn) in self.keys.iter_mut().enumerate() {
             let text = KEYBOARD[self.active_layout.to_usize().unwrap()][i];
             let content = Self::key_content(text);
-            btn.mutate(ctx, |ctx, b| b.set_content(ctx, content));
+            btn.set_content(ctx, content);
             btn.request_complete_repaint(ctx);
         }
     }
@@ -196,15 +194,11 @@ impl PassphraseKeyboard {
     fn after_edit(&mut self, ctx: &mut EventCtx) {
         // When the input is empty, enable cancel button. Otherwise show erase and
         // confirm button.
-        let is_empty = self.input.inner().textbox.is_empty();
-        self.erase_btn.mutate(ctx, |ctx, btn| {
-            btn.show_if(ctx, !is_empty);
-            btn.inner_mut().enable_if(ctx, !is_empty);
-        });
-        self.cancel_btn.mutate(ctx, |ctx, btn| {
-            btn.show_if(ctx, is_empty);
-            btn.inner_mut().enable_if(ctx, is_empty);
-        });
+        let is_empty = self.input.textbox.is_empty();
+        self.erase_btn.show_if(ctx, !is_empty);
+        self.erase_btn.inner_mut().enable_if(ctx, !is_empty);
+        self.cancel_btn.show_if(ctx, is_empty);
+        self.cancel_btn.inner_mut().enable_if(ctx, is_empty);
 
         self.update_input_btns_state(ctx);
     }
@@ -213,13 +207,11 @@ impl PassphraseKeyboard {
     fn update_input_btns_state(&mut self, ctx: &mut EventCtx) {
         let active_states = self.get_buttons_active_states();
         for (key, btn) in self.keys.iter_mut().enumerate() {
-            btn.mutate(ctx, |ctx, b| {
-                if active_states[key] {
-                    b.enable(ctx);
-                } else {
-                    b.disable(ctx);
-                }
-            });
+            if active_states[key] {
+                btn.enable(ctx);
+            } else {
+                btn.disable(ctx);
+            }
         }
     }
 
@@ -236,9 +228,9 @@ impl PassphraseKeyboard {
     /// We should disable the input when the passphrase has reached maximum
     /// length and we are not cycling through the characters.
     fn is_button_active(&self, key: usize) -> bool {
-        let textbox_not_full = self.input.inner().textbox.len() < MAX_LENGTH;
+        let textbox_not_full = self.input.textbox.len() < MAX_LENGTH;
         let key_is_pending = {
-            if let Some(pending) = self.input.inner().multi_tap.pending_key() {
+            if let Some(pending) = self.input.multi_tap.pending_key() {
                 pending == key
             } else {
                 false
@@ -248,7 +240,7 @@ impl PassphraseKeyboard {
     }
 
     pub fn passphrase(&self) -> &str {
-        self.input.inner().textbox.content()
+        self.input.textbox.content()
     }
 }
 
@@ -261,15 +253,16 @@ impl Component for PassphraseKeyboard {
         const CONFIRM_BTN_INSETS: Insets = Insets::new(5, 0, 5, 0);
 
         let bounds = bounds.inset(theme::borders());
-        let (top_area, key_grid_area) =
+        let (top_area, keypad_area) =
             bounds.split_bottom(4 * theme::PASSPHRASE_BUTTON_HEIGHT + 3 * theme::BUTTON_SPACING);
+        self.keypad_area = keypad_area;
         let (input_area, confirm_btn_area) = top_area.split_right(CONFIRM_BTN_WIDTH);
 
         let top_area = top_area.inset(INPUT_INSETS);
         let input_area = input_area.inset(INPUT_INSETS);
         let confirm_btn_area = confirm_btn_area.inset(CONFIRM_BTN_INSETS);
 
-        let key_grid = Grid::new(key_grid_area, 4, 3).with_spacing(theme::BUTTON_SPACING);
+        let key_grid = Grid::new(keypad_area, 4, 3).with_spacing(theme::BUTTON_SPACING);
         let next_btn_area = key_grid.cell(11);
         let erase_cancel_area = key_grid.cell(9);
 
@@ -301,9 +294,8 @@ impl Component for PassphraseKeyboard {
     }
 
     fn event(&mut self, ctx: &mut EventCtx, event: Event) -> Option<Self::Msg> {
-        if self.input.inner().multi_tap.is_timeout_event(event) {
-            self.input
-                .mutate(ctx, |ctx, i| i.multi_tap.clear_pending_state(ctx));
+        if self.input.multi_tap.is_timeout_event(event) {
+            self.input.multi_tap.clear_pending_state(ctx);
             return None;
         }
         if let Some(swipe) = self.page_swipe.event(ctx, event) {
@@ -325,18 +317,14 @@ impl Component for PassphraseKeyboard {
 
         match self.erase_btn.event(ctx, event) {
             Some(ButtonMsg::Clicked) => {
-                self.input.mutate(ctx, |ctx, i| {
-                    i.multi_tap.clear_pending_state(ctx);
-                    i.textbox.delete_last(ctx);
-                });
+                self.input.multi_tap.clear_pending_state(ctx);
+                self.input.textbox.delete_last(ctx);
                 self.after_edit(ctx);
                 return None;
             }
             Some(ButtonMsg::LongPressed) => {
-                self.input.mutate(ctx, |ctx, i| {
-                    i.multi_tap.clear_pending_state(ctx);
-                    i.textbox.clear(ctx);
-                });
+                self.input.multi_tap.clear_pending_state(ctx);
+                self.input.textbox.clear(ctx);
                 self.after_edit(ctx);
                 return None;
             }
@@ -356,11 +344,9 @@ impl Component for PassphraseKeyboard {
             if let Some(ButtonMsg::Clicked) = btn.event(ctx, event) {
                 // Key button was clicked. If this button is pending, let's cycle the pending
                 // character in textbox. If not, let's just append the first character.
-                let text = Self::key_text(btn.inner().content());
-                self.input.mutate(ctx, |ctx, i| {
-                    let edit = text.map(|c| i.multi_tap.click_key(ctx, key, c));
-                    i.textbox.apply(ctx, edit);
-                });
+                let text = Self::key_text(btn.content());
+                let edit = text.map(|c| self.input.multi_tap.click_key(ctx, key, c));
+                self.input.textbox.apply(ctx, edit);
                 self.after_edit(ctx);
                 return None;
             }
@@ -377,7 +363,7 @@ impl Component for PassphraseKeyboard {
         self.next_btn.render(target);
         self.erase_btn.render(target);
         self.confirm_btn.render(target);
-        if self.input.inner().textbox.is_empty() {
+        if self.input.textbox.is_empty() {
             self.cancel_btn.render(target);
             // FIXME: when prompt fixed in Figma
             // self.input_prompt.render(target);
@@ -389,18 +375,8 @@ impl Component for PassphraseKeyboard {
             // Note that this is blocking and takes some time.
             display::fade_backlight(theme::backlight::get_backlight_normal());
         }
-    }
 
-    #[cfg(feature = "ui_bounds")]
-    fn bounds(&self, sink: &mut dyn FnMut(Rect)) {
-        self.input.bounds(sink);
-        self.input_prompt.bounds(sink);
-        self.confirm_btn.bounds(sink);
-        self.erase_btn.bounds(sink);
-        self.cancel_btn.bounds(sink);
-        for btn in &self.keys {
-            btn.bounds(sink)
-        }
+        cshape::KeyboardOverlay::new(self.keypad_area).render(target);
     }
 }
 
@@ -468,11 +444,6 @@ impl Component for Input {
                 style.text_color,
             );
         }
-    }
-
-    #[cfg(feature = "ui_bounds")]
-    fn bounds(&self, sink: &mut dyn FnMut(Rect)) {
-        sink(self.area)
     }
 }
 

@@ -126,20 +126,62 @@ class RecoveryFlow:
         yield
         if self.client.model is models.T2B1:
             TR.assert_in(self._text_content(), "recovery__num_of_words")
+            self.debug.press_no()
+            yield
+            TR.assert_in(self._text_content(), "recovery__wanna_cancel_recovery")
+            self.debug.press_right()
+            if confirm:
+                self.debug.press_yes()
+            else:
+                self.debug.press_no()
         elif self.client.model is models.T3T1:
             TR.assert_in(self._text_content(), "recovery__enter_each_word")
+            self.debug.click(buttons.CORNER_BUTTON, wait=True)
+            self.debug.synchronize_at("VerticalMenu")
+            if confirm:
+                self.debug.click(buttons.VERTICAL_MENU[0], wait=True)
+            else:
+                self.debug.click(buttons.CORNER_BUTTON, wait=True)
         else:
             TR.assert_in(self._text_content(), "recovery__enter_any_share")
-        self.debug.press_no()
-
-        yield
-        TR.assert_in(self._text_content(), "recovery__wanna_cancel_recovery")
-        if self.client.model is models.T2B1:
-            self.debug.press_right()
-        if confirm:
-            self.debug.press_yes()
-        else:
             self.debug.press_no()
+            yield
+            TR.assert_in(self._text_content(), "recovery__wanna_cancel_recovery")
+            if confirm:
+                self.debug.press_yes()
+            else:
+                self.debug.press_no()
+
+    def abort_recovery_between_shares(self) -> BRGeneratorType:
+        yield
+        if self.client.model is models.T2B1:
+            TR.assert_template(
+                self._text_content(), "recovery__x_of_y_entered_template"
+            )
+            self.debug.press_no()
+            assert (yield).name == "abort_recovery"
+            TR.assert_in(self._text_content(), "recovery__wanna_cancel_recovery")
+            self.debug.press_right()
+            self.debug.press_yes()
+        elif self.client.model is models.T3T1:
+            TR.assert_template(
+                self._text_content(), "recovery__x_of_y_entered_template"
+            )
+            self.debug.click(buttons.CORNER_BUTTON, wait=True)
+            self.debug.synchronize_at("VerticalMenu")
+            self.debug.click(buttons.VERTICAL_MENU[0], wait=True)
+            self.debug.swipe_up(wait=True)
+            assert (yield).name == "abort_recovery"
+            self.debug.synchronize_at("PromptScreen")
+            self.debug.click(buttons.TAP_TO_CONFIRM)
+        else:
+            TR.assert_template(
+                self._text_content(), "recovery__x_of_y_entered_template"
+            )
+            self.debug.press_no()
+            assert (yield).name == "abort_recovery"
+            TR.assert_in(self._text_content(), "recovery__wanna_cancel_recovery")
+            self.debug.press_yes()
 
     def input_number_of_words(self, num_words: int) -> BRGeneratorType:
         br = yield

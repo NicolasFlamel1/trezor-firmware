@@ -21,6 +21,7 @@
 #include TREZOR_BOARD
 
 #include <stdbool.h>
+#include <stdio.h>
 #include <string.h>
 
 #include "common.h"
@@ -28,6 +29,13 @@
 #include "ft6x36.h"
 #include "i2c.h"
 #include "touch.h"
+
+#ifdef TOUCH_PANEL_LX154A2422CPT23
+#include "panels/lx154a2422cpt23.h"
+#endif
+
+// #define TOUCH_TRACE_REGS
+// #define TOUCH_TRACE_EVENT
 
 typedef struct {
   // Set if the driver is initialized
@@ -39,6 +47,8 @@ typedef struct {
   uint32_t init_ticks;
   // Time (in ticks) when touch_get_event() was called last time
   uint32_t poll_ticks;
+  // Time (in ticks) when the touch registers were read last time
+  uint32_t read_ticks;
   // Set if the touch controller is currently touched
   // (respectively, the we detected a touch event)
   bool pressed;
@@ -222,6 +232,16 @@ static secbool ft6x36_configure(void) {
   return sectrue;
 }
 
+static void ft6x36_panel_correction(uint16_t x, uint16_t y, uint16_t* x_new,
+                                    uint16_t* y_new) {
+#ifdef TOUCH_PANEL_LX154A2422CPT23
+  lx154a2422cpt23_touch_correction(x, y, x_new, y_new);
+#else
+  *x_new = x;
+  *y_new = y;
+#endif
+}
+
 secbool touch_init(void) {
   touch_driver_t* driver = &g_touch_driver;
 
@@ -245,6 +265,7 @@ secbool touch_init(void) {
 
   driver->init_ticks = hal_ticks_ms();
   driver->poll_ticks = driver->init_ticks;
+  driver->read_ticks = driver->init_ticks;
   driver->initialized = sectrue;
 
   return sectrue;
@@ -323,6 +344,57 @@ secbool touch_activity(void) {
   return secfalse;
 }
 
+#ifdef TOUCH_TRACE_REGS
+void trace_regs(uint8_t* regs) {
+  // Extract gesture ID (FT6X63_GESTURE_xxx)
+  uint8_t gesture = regs[FT6X63_REG_GEST_ID];
+
+  // Extract number of touches (0, 1, 2) or 0x0F before
+  // the first touch (tested with FT6206)
+  uint8_t nb_touches = regs[FT6X63_REG_TD_STATUS] & 0x0F;
+
+  // Extract event flags (one of press down, contact, lift up)
+  uint8_t flags = regs[FT6X63_REG_P1_XH] & FT6X63_EVENT_MASK;
+
+  // Extract touch coordinates
+  uint16_t x = ((regs[FT6X63_REG_P1_XH] & 0x0F) << 8) | regs[FT6X63_REG_P1_XL];
+  uint16_t y = ((regs[FT6X63_REG_P1_YH] & 0x0F) << 8) | regs[FT6X63_REG_P1_YL];
+
+  char event;
+
+  if (flags == FT6X63_EVENT_PRESS_DOWN) {
+    event = 'D';
+  } else if (flags == FT6X63_EVENT_CONTACT) {
+    event = 'C';
+  } else if (flags == FT6X63_EVENT_LIFT_UP) {
+    event = 'U';
+  } else {
+    event = '-';
+  }
+
+  uint32_t time = hal_ticks_ms() % 10000;
+
+  printf("%04ld [gesture=%02X, nb_touches=%d, flags=%c, x=%3d, y=%3d]\r\n",
+         time, gesture, nb_touches, event, x, y);
+}
+#endif
+
+#ifdef TOUCH_TRACE_EVENT
+void trace_event(uint32_t event) {
+  char event_type = (event & TOUCH_START)  ? 'D'
+                    : (event & TOUCH_MOVE) ? 'M'
+                    : (event & TOUCH_END)  ? 'U'
+                                           : '-';
+
+  uint16_t x = touch_unpack_x(event);
+  uint16_t y = touch_unpack_y(event);
+
+  uint32_t time = hal_ticks_ms() % 10000;
+
+  printf("%04ld [event=%c, x=%3d, y=%3d]\r\n", time, event_type, x, y);
+}
+#endif
+
 uint32_t touch_get_event(void) {
   touch_driver_t* driver = &g_touch_driver;
 
@@ -347,17 +419,27 @@ uint32_t touch_get_event(void) {
   bool starving = (int32_t)(ticks - driver->poll_ticks) > 300 /* ms */;
   driver->poll_ticks = ticks;
 
+  // Test if the touch controller is polled too frequently
+  // (less than 20ms since the last read)
+  bool toofast = (int32_t)(ticks - driver->read_ticks) < 20 /* ms */;
+
   // Fast track: if there is no new event and the touch controller
   // is not touched, we do not need to read the registers
-  if (!ft6x36_test_and_clear_interrupt() && !driver->pressed) {
+  if (!ft6x36_test_and_clear_interrupt() && (!driver->pressed || toofast)) {
     return 0;
   }
+
+  driver->read_ticks = ticks;
 
   // Read the set of registers containing touch event and coordinates
   if (sectrue != ft6x36_read_regs(0x00, regs, sizeof(regs))) {
     // Failed to read the touch registers
     return 0;
   }
+
+#ifdef TOUCH_TRACE_REGS
+  trace_regs(regs);
+#endif
 
   // Extract gesture ID (FT6X63_GESTURE_xxx)
   uint8_t gesture = regs[FT6X63_REG_GEST_ID];
@@ -376,8 +458,14 @@ uint32_t touch_get_event(void) {
   uint8_t flags = regs[FT6X63_REG_P1_XH] & FT6X63_EVENT_MASK;
 
   // Extract touch coordinates
-  uint16_t x = ((regs[FT6X63_REG_P1_XH] & 0x0F) << 8) | regs[FT6X63_REG_P1_XL];
-  uint16_t y = ((regs[FT6X63_REG_P1_YH] & 0x0F) << 8) | regs[FT6X63_REG_P1_YL];
+  uint16_t x_raw =
+      ((regs[FT6X63_REG_P1_XH] & 0x0F) << 8) | regs[FT6X63_REG_P1_XL];
+  uint16_t y_raw =
+      ((regs[FT6X63_REG_P1_YH] & 0x0F) << 8) | regs[FT6X63_REG_P1_YL];
+
+  uint16_t x, y;
+
+  ft6x36_panel_correction(x_raw, y_raw, &x, &y);
 
   uint32_t event = 0;
 
@@ -418,12 +506,20 @@ uint32_t touch_get_event(void) {
       // Finger was just lifted up
       event = TOUCH_END | xy;
     } else {
-      // 1. Most likely, we have missed the PRESS_DOWN event.
-      //    Touch duration was too short (< 20ms) to be worth reporting.
-      // 2. Finger is still lifted up. Since we have already sent the
-      //    TOUCH_END event => no event needed. This should not happen
-      //    since two consecutive LIFT_UPs are not possible due to
-      //    testing the interrupt line before reading the registers.
+      if (!starving && ((x != driver->last_x) || (y != driver->last_y))) {
+        // We have missed the PRESS_DOWN event.
+        // Report the start event only if the coordinates
+        // have changed and driver is not starving.
+        // This suggest that the previous touch was very short,
+        // or/and the driver is not called very frequently.
+        event = TOUCH_START | xy;
+      } else {
+        // Either the driver is starving or the coordinates
+        // have not changed, which would suggest that the TOUCH_END
+        // is repeated, so no event is needed -this should not happen
+        // since two consecutive LIFT_UPs are not possible due to
+        // testing the interrupt line before reading the registers.
+      }
     }
   }
 
@@ -436,6 +532,10 @@ uint32_t touch_get_event(void) {
 
   driver->last_x = x;
   driver->last_y = y;
+
+#ifdef TOUCH_TRACE_EVENT
+  trace_event(event);
+#endif
 
   return event;
 }

@@ -1,25 +1,31 @@
 use crate::{
     error,
-    micropython::qstr::Qstr,
+    micropython::{map::Map, obj::Obj, qstr::Qstr, util},
     strutil::TString,
     translations::TR,
     ui::{
         button_request::ButtonRequest,
-        component::{ButtonRequestExt, ComponentExt, SwipeDirection},
-        flow::{base::Decision, flow_store, FlowMsg, FlowState, FlowStore, SwipeFlow},
+        component::{swipe_detect::SwipeSettings, ButtonRequestExt, ComponentExt, SwipeDirection},
+        flow::{
+            base::{DecisionBuilder as _, StateChange},
+            FlowMsg, FlowState, SwipeFlow,
+        },
+        layout::obj::LayoutObj,
+        model_mercury::component::SwipeContent,
     },
 };
 
-use super::super::{
-    component::{
-        AddressDetails, Frame, FrameMsg, PromptScreen, VerticalMenu, VerticalMenuChoiceMsg,
+use super::{
+    super::{
+        component::{
+            AddressDetails, Frame, FrameMsg, PromptScreen, VerticalMenu, VerticalMenuChoiceMsg,
+        },
+        theme,
     },
-    theme,
+    util::ConfirmBlobParams,
 };
 
-use super::util::ConfirmBlobParams;
-
-#[derive(Copy, Clone, PartialEq, Eq, ToPrimitive)]
+#[derive(Copy, Clone, PartialEq, Eq)]
 pub enum ConfirmOutput {
     Address,
     Amount,
@@ -30,57 +36,38 @@ pub enum ConfirmOutput {
 }
 
 impl FlowState for ConfirmOutput {
-    fn handle_swipe(&self, direction: SwipeDirection) -> Decision<Self> {
+    #[inline]
+    fn index(&'static self) -> usize {
+        *self as usize
+    }
+
+    fn handle_swipe(&'static self, direction: SwipeDirection) -> StateChange {
         match (self, direction) {
-            (ConfirmOutput::Address | ConfirmOutput::Amount, SwipeDirection::Left) => {
-                Decision::Goto(ConfirmOutput::Menu, direction)
+            (Self::Address | Self::Amount, SwipeDirection::Left) => Self::Menu.swipe(direction),
+            (Self::Address, SwipeDirection::Up) => Self::Amount.swipe(direction),
+            (Self::Amount, SwipeDirection::Up) => self.return_msg(FlowMsg::Confirmed),
+            (Self::Amount, SwipeDirection::Down) => Self::Address.swipe(direction),
+            (Self::Menu, SwipeDirection::Right) => Self::Address.swipe(direction),
+            (Self::Menu, SwipeDirection::Left) => Self::AccountInfo.swipe(direction),
+            (Self::AccountInfo | Self::CancelTap, SwipeDirection::Right) => {
+                Self::Menu.swipe(direction)
             }
-            (ConfirmOutput::Address, SwipeDirection::Up) => {
-                Decision::Goto(ConfirmOutput::Amount, direction)
-            }
-            (ConfirmOutput::Amount, SwipeDirection::Up) => Decision::Return(FlowMsg::Confirmed),
-            (ConfirmOutput::Amount, SwipeDirection::Down) => {
-                Decision::Goto(ConfirmOutput::Address, direction)
-            }
-            (ConfirmOutput::Menu, SwipeDirection::Right) => {
-                Decision::Goto(ConfirmOutput::Address, direction)
-            }
-            (ConfirmOutput::Menu, SwipeDirection::Left) => {
-                Decision::Goto(ConfirmOutput::AccountInfo, direction)
-            }
-            (ConfirmOutput::AccountInfo | ConfirmOutput::CancelTap, SwipeDirection::Right) => {
-                Decision::Goto(ConfirmOutput::Menu, direction)
-            }
-            _ => Decision::Nothing,
+            _ => self.do_nothing(),
         }
     }
 
-    fn handle_event(&self, msg: FlowMsg) -> Decision<Self> {
+    fn handle_event(&'static self, msg: FlowMsg) -> StateChange {
         match (self, msg) {
-            (_, FlowMsg::Info) => Decision::Goto(ConfirmOutput::Menu, SwipeDirection::Left),
-            (ConfirmOutput::Menu, FlowMsg::Choice(0)) => {
-                Decision::Goto(ConfirmOutput::AccountInfo, SwipeDirection::Left)
-            }
-            (ConfirmOutput::Menu, FlowMsg::Choice(1)) => {
-                Decision::Goto(ConfirmOutput::CancelTap, SwipeDirection::Left)
-            }
-            (ConfirmOutput::Menu, FlowMsg::Cancelled) => {
-                Decision::Goto(ConfirmOutput::Address, SwipeDirection::Right)
-            }
-            (ConfirmOutput::CancelTap, FlowMsg::Confirmed) => Decision::Return(FlowMsg::Cancelled),
-            (_, FlowMsg::Cancelled) => Decision::Goto(ConfirmOutput::Menu, SwipeDirection::Right),
-            _ => Decision::Nothing,
+            (_, FlowMsg::Info) => Self::Menu.transit(),
+            (Self::Menu, FlowMsg::Choice(0)) => Self::AccountInfo.transit(),
+            (Self::Menu, FlowMsg::Choice(1)) => Self::CancelTap.swipe_left(),
+            (Self::Menu, FlowMsg::Cancelled) => Self::Address.swipe_right(),
+            (Self::CancelTap, FlowMsg::Confirmed) => self.return_msg(FlowMsg::Cancelled),
+            (_, FlowMsg::Cancelled) => Self::Menu.transit(),
+            _ => self.do_nothing(),
         }
     }
 }
-
-use crate::{
-    micropython::{map::Map, obj::Obj, util},
-    ui::{
-        component::swipe_detect::SwipeSettings, layout::obj::LayoutObj,
-        model_mercury::component::SwipeContent,
-    },
-};
 
 #[allow(clippy::not_unsafe_ptr_arg_deref)]
 pub extern "C" fn new_confirm_output(n_args: usize, args: *const Obj, kwargs: *mut Map) -> Obj {
@@ -95,7 +82,7 @@ impl ConfirmOutput {
         let account: Option<TString> = kwargs.get(Qstr::MP_QSTR_account)?.try_into_option()?;
         let account_path: Option<TString> =
             kwargs.get(Qstr::MP_QSTR_account_path)?.try_into_option()?;
-        let br_type: TString = kwargs.get(Qstr::MP_QSTR_br_type)?.try_into()?;
+        let br_name: TString = kwargs.get(Qstr::MP_QSTR_br_name)?.try_into()?;
         let br_code: u16 = kwargs.get(Qstr::MP_QSTR_br_code)?.try_into()?;
 
         let address: Obj = kwargs.get(Qstr::MP_QSTR_address)?;
@@ -112,7 +99,7 @@ impl ConfirmOutput {
             .with_chunkify(chunkify)
             .with_text_mono(text_mono)
             .into_layout()?
-            .one_button_request(ButtonRequest::from_num(br_code, br_type));
+            .one_button_request(ButtonRequest::from_num(br_code, br_name));
 
         // Amount
         let content_amount = ConfirmBlobParams::new(TR::words__amount.into(), amount, None)
@@ -122,7 +109,7 @@ impl ConfirmOutput {
             .with_text_mono(text_mono)
             .with_swipe_down()
             .into_layout()?
-            .one_button_request(ButtonRequest::from_num(br_code, br_type));
+            .one_button_request(ButtonRequest::from_num(br_code, br_name));
 
         // Menu
         let content_menu = Frame::left_aligned(
@@ -156,13 +143,12 @@ impl ConfirmOutput {
             FrameMsg::Button(_) => Some(FlowMsg::Cancelled),
         });
 
-        let store = flow_store()
-            .add(content_address)?
-            .add(content_amount)?
-            .add(content_menu)?
-            .add(content_account)?
-            .add(content_cancel_tap)?;
-        let res = SwipeFlow::new(ConfirmOutput::Address, store)?;
+        let res = SwipeFlow::new(&ConfirmOutput::Address)?
+            .with_page(&ConfirmOutput::Address, content_address)?
+            .with_page(&ConfirmOutput::Amount, content_amount)?
+            .with_page(&ConfirmOutput::Menu, content_menu)?
+            .with_page(&ConfirmOutput::AccountInfo, content_account)?
+            .with_page(&ConfirmOutput::CancelTap, content_cancel_tap)?;
         Ok(LayoutObj::new(res)?.into())
     }
 }

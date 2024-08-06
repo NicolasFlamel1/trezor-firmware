@@ -22,6 +22,9 @@ uint8_t *FIRMWARE_START = 0;
 
 void set_core_clock(int) {}
 
+// used in fw emulator to raise python exception on exit
+void __attribute__((noreturn)) main_clean_exit() { exit(3); }
+
 int bootloader_main(void);
 
 // assuming storage is single subarea
@@ -62,20 +65,20 @@ bool load_firmware(const char *filename, uint8_t *hash) {
   size_t read = fread(buffer, 1, sizeof(buffer), file);
   fclose(file);
   if (read != sizeof(buffer)) {
-    printf("File '%s' does not contain a valid firmware image.\n");
+    printf("File '%s' does not contain a valid firmware image.\n", filename);
     return false;
   }
 
   // read vendor and image header
   vendor_header vhdr;
   if (sectrue != read_vendor_header(buffer, &vhdr)) {
-    printf("File '%s' does not contain a valid vendor header.\n");
+    printf("File '%s' does not contain a valid vendor header.\n", filename);
     return false;
   }
   const image_header *hdr = read_image_header(
       buffer + vhdr.hdrlen, FIRMWARE_IMAGE_MAGIC, FIRMWARE_IMAGE_MAXSIZE);
   if (hdr != (const image_header *)(buffer + vhdr.hdrlen)) {
-    printf("File '%s' does not contain a valid firmware image.\n");
+    printf("File '%s' does not contain a valid firmware image.\n", filename);
     return false;
   }
 
@@ -164,14 +167,14 @@ __attribute__((noreturn)) int main(int argc, char **argv) {
 
   bootloader_main();
   hal_delay(3000);
-  jump_to(NULL);
+  jump_to(0);
 }
 
 void mpu_config_bootloader(void) {}
 
 void mpu_config_off(void) {}
 
-__attribute__((noreturn)) void jump_to(void *addr) {
+__attribute__((noreturn)) void jump_to(uint32_t address) {
   bool storage_is_erased =
       storage_empty(&STORAGE_AREAS[0]) && storage_empty(&STORAGE_AREAS[1]);
 
