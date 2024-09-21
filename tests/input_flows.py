@@ -1333,10 +1333,6 @@ class InputFlowBip39ResetPIN(InputFlowBase):
 
         yield from self.PIN.setup_new_pin("654")
 
-        br = yield  # Confirm entropy
-        assert br.code == B.ResetDevice
-        self.debug.press_yes()
-
         if self.debug.model is models.T3T1:
             br = yield  # Wallet created
             assert br.code == B.ResetDevice
@@ -1597,7 +1593,7 @@ class InputFlowSlip39BasicResetRecovery(InputFlowBase):
         # Mnemonic phrases
         self.mnemonics = yield from load_N_shares(self.debug, 5)
 
-        br = yield  # safety warning
+        br = yield  # success screen
         assert br.code == B.Success
         self.debug.press_yes()
 
@@ -2339,3 +2335,23 @@ class InputFlowTutorial(InputFlowBase):
             self.debug.swipe_up(wait=True)
             self.debug.click(buttons.TAP_TO_CONFIRM, wait=True)
             self.debug.swipe_up(wait=True)
+
+
+class InputFlowFidoConfirm(InputFlowBase):
+    def __init__(self, client: Client, cancel: bool = False):
+        super().__init__(client)
+        self.cancel = cancel
+
+    def input_flow_tt(self) -> BRGeneratorType:
+        while True:
+            yield
+            self.debug.press_yes()
+
+    def input_flow_tr(self) -> BRGeneratorType:
+        yield from self.input_flow_tt()
+
+    def input_flow_t3t1(self) -> BRGeneratorType:
+        while True:
+            yield
+            self.debug.swipe_up(wait=True)
+            self.debug.click(buttons.TAP_TO_CONFIRM, wait=True)

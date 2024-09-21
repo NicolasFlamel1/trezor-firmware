@@ -35,7 +35,11 @@
 #include "secret.h"
 
 #ifdef USE_DMA2D
+#ifdef NEW_RENDERING
+#include "dma2d_bitblt.h"
+#else
 #include "dma2d.h"
+#endif
 #endif
 #ifdef USE_I2C
 #include "i2c.h"
@@ -65,8 +69,10 @@
 
 #include "bootui.h"
 #include "messages.h"
+#include "monoctr.h"
 #include "rust_ui.h"
 #include "unit_variant.h"
+#include "version_check.h"
 
 #ifdef TREZOR_EMULATOR
 #include "emulator.h"
@@ -216,7 +222,7 @@ static usb_result_t bootloader_usb_loop(const vendor_header *const vhdr,
       case MessageType_MessageType_GetFeatures:
         process_msg_GetFeatures(USB_IFACE_NUM, msg_size, buf, vhdr, hdr);
         break;
-#if defined USE_OPTIGA && !defined STM32U5
+#if defined USE_OPTIGA
       case MessageType_MessageType_UnlockBootloader:
         response = ui_screen_unlock_bootloader_confirm();
         if (INPUT_CANCEL == response) {
@@ -256,34 +262,6 @@ static secbool check_vendor_header_lock(const vendor_header *const vhdr) {
   return sectrue * (0 == memcmp(lock, hash, 32));
 }
 
-// protection against bootloader downgrade
-
-#if PRODUCTION && !defined STM32U5
-
-static void check_bootloader_version(void) {
-  uint8_t bits[FLASH_OTP_BLOCK_SIZE];
-  for (int i = 0; i < FLASH_OTP_BLOCK_SIZE * 8; i++) {
-    if (i < VERSION_MONOTONIC) {
-      bits[i / 8] &= ~(1 << (7 - (i % 8)));
-    } else {
-      bits[i / 8] |= (1 << (7 - (i % 8)));
-    }
-  }
-  ensure(flash_otp_write(FLASH_OTP_BLOCK_BOOTLOADER_VERSION, 0, bits,
-                         FLASH_OTP_BLOCK_SIZE),
-         NULL);
-
-  uint8_t bits2[FLASH_OTP_BLOCK_SIZE];
-  ensure(flash_otp_read(FLASH_OTP_BLOCK_BOOTLOADER_VERSION, 0, bits2,
-                        FLASH_OTP_BLOCK_SIZE),
-         NULL);
-
-  ensure(sectrue * (0 == memcmp(bits, bits2, FLASH_OTP_BLOCK_SIZE)),
-         "Bootloader downgrade protection");
-}
-
-#endif
-
 void failed_jump_to_firmware(void) { error_shutdown("(glitch)"); }
 
 void real_jump_to_firmware(void) {
@@ -310,6 +288,10 @@ void real_jump_to_firmware(void) {
 
   ensure(check_image_header_sig(hdr, vhdr.vsig_m, vhdr.vsig_n, vhdr.vpub),
          "Firmware is corrupted");
+
+  ensure(check_firmware_min_version(hdr->version),
+         "Firmware downgrade protection");
+  ensure_firmware_min_version(hdr->version);
 
   ensure(check_image_contents(hdr, IMAGE_HEADER_SIZE + vhdr.hdrlen,
                               &FIRMWARE_AREA),
@@ -429,6 +411,8 @@ int bootloader_main(void) {
   volatile secbool vhdr_lock_ok = secfalse;
   volatile secbool img_hdr_ok = secfalse;
   volatile secbool model_ok = secfalse;
+  volatile secbool signatures_ok = secfalse;
+  volatile secbool version_ok = secfalse;
   volatile secbool header_present = secfalse;
   volatile secbool firmware_present = secfalse;
   volatile secbool firmware_present_backup = secfalse;
@@ -455,12 +439,22 @@ int bootloader_main(void) {
   if (sectrue == img_hdr_ok) {
     model_ok = check_image_model(hdr);
   }
+
   if (sectrue == model_ok) {
-    header_present =
+    signatures_ok =
         check_image_header_sig(hdr, vhdr.vsig_m, vhdr.vsig_n, vhdr.vpub);
   }
 
+  if (sectrue == signatures_ok) {
+    version_ok = check_firmware_min_version(hdr->monotonic);
+  }
+
+  if (sectrue == version_ok) {
+    header_present = version_ok;
+  }
+
   if (sectrue == header_present) {
+    ensure_firmware_min_version(hdr->monotonic);
     firmware_present = check_image_contents(
         hdr, IMAGE_HEADER_SIZE + vhdr.hdrlen, &FIRMWARE_AREA);
     firmware_present_backup = firmware_present;
@@ -484,12 +478,12 @@ int bootloader_main(void) {
 
 #if PRODUCTION && !defined STM32U5
   // for STM32U5, this check is moved to boardloader
-  check_bootloader_version();
+  ensure_bootloader_min_version();
 #endif
 
   switch (bootargs_get_command()) {
     case BOOT_COMMAND_STOP_AND_WAIT:
-      // firmare requested to stay in bootloader
+      // firmware requested to stay in bootloader
       stay_in_bootloader = sectrue;
       break;
     case BOOT_COMMAND_INSTALL_UPGRADE:

@@ -14,13 +14,12 @@ use crate::{
             FlowMsg, FlowState, SwipeFlow,
         },
         layout::obj::LayoutObj,
-        model_mercury::component::SwipeContent,
     },
 };
 
 use super::super::{
     component::{
-        CancelInfoConfirmMsg, Frame, FrameMsg, PromptScreen, VerticalMenu, VerticalMenuChoiceMsg,
+        Frame, FrameMsg, PromptMsg, PromptScreen, SwipeContent, VerticalMenu, VerticalMenuChoiceMsg,
     },
     theme,
 };
@@ -83,8 +82,9 @@ impl PromptBackup {
             .with_footer(TR::instructions__swipe_up.into(), None)
             .with_swipe(SwipeDirection::Up, SwipeSettings::default())
             .with_swipe(SwipeDirection::Left, SwipeSettings::default())
-            .map(|msg| {
-                matches!(msg, FrameMsg::Button(CancelInfoConfirmMsg::Info)).then_some(FlowMsg::Info)
+            .map(|msg| match msg {
+                FrameMsg::Button(bm) => Some(bm),
+                _ => None,
             });
 
         let content_menu = Frame::left_aligned(
@@ -95,7 +95,7 @@ impl PromptBackup {
         .with_swipe(SwipeDirection::Right, SwipeSettings::immediate())
         .map(|msg| match msg {
             FrameMsg::Content(VerticalMenuChoiceMsg::Selected(i)) => Some(FlowMsg::Choice(i)),
-            FrameMsg::Button(CancelInfoConfirmMsg::Cancelled) => Some(FlowMsg::Cancelled),
+            FrameMsg::Button(FlowMsg::Cancelled) => Some(FlowMsg::Cancelled),
             FrameMsg::Button(_) => None,
         });
 
@@ -119,7 +119,7 @@ impl PromptBackup {
         .with_swipe(SwipeDirection::Up, SwipeSettings::default())
         .with_swipe(SwipeDirection::Right, SwipeSettings::immediate())
         .map(|msg| match msg {
-            FrameMsg::Button(CancelInfoConfirmMsg::Cancelled) => Some(FlowMsg::Cancelled),
+            FrameMsg::Button(FlowMsg::Cancelled) => Some(FlowMsg::Cancelled),
             _ => None,
         });
 
@@ -132,8 +132,8 @@ impl PromptBackup {
         .with_swipe(SwipeDirection::Down, SwipeSettings::default())
         .with_swipe(SwipeDirection::Right, SwipeSettings::immediate())
         .map(|msg| match msg {
-            FrameMsg::Content(()) => Some(FlowMsg::Confirmed),
-            FrameMsg::Button(CancelInfoConfirmMsg::Cancelled) => Some(FlowMsg::Cancelled),
+            FrameMsg::Content(PromptMsg::Confirmed) => Some(FlowMsg::Confirmed),
+            FrameMsg::Button(FlowMsg::Cancelled) => Some(FlowMsg::Cancelled),
             _ => None,
         });
 

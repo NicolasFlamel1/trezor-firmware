@@ -3721,7 +3721,6 @@ class LoadDevice(protobuf.MessageType):
 class ResetDevice(protobuf.MessageType):
     MESSAGE_WIRE_TYPE = 14
     FIELDS = {
-        1: protobuf.Field("display_random", "bool", repeated=False, required=False, default=None),
         2: protobuf.Field("strength", "uint32", repeated=False, required=False, default=256),
         3: protobuf.Field("passphrase_protection", "bool", repeated=False, required=False, default=None),
         4: protobuf.Field("pin_protection", "bool", repeated=False, required=False, default=None),
@@ -3736,7 +3735,6 @@ class ResetDevice(protobuf.MessageType):
     def __init__(
         self,
         *,
-        display_random: Optional["bool"] = None,
         strength: Optional["int"] = 256,
         passphrase_protection: Optional["bool"] = None,
         pin_protection: Optional["bool"] = None,
@@ -3747,7 +3745,6 @@ class ResetDevice(protobuf.MessageType):
         no_backup: Optional["bool"] = None,
         backup_type: Optional["BackupType"] = BackupType.Bip39,
     ) -> None:
-        self.display_random = display_random
         self.strength = strength
         self.passphrase_protection = passphrase_protection
         self.pin_protection = pin_protection

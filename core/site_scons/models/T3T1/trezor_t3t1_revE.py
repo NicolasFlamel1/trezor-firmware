@@ -54,12 +54,12 @@ def configure(
         sources += ["embed/trezorhal/stm32u5/xdisplay/st-7789/display_io.c"]
         sources += ["embed/trezorhal/stm32u5/xdisplay/st-7789/display_panel.c"]
         sources += [
-            "embed/trezorhal/stm32u5/xdisplay/st-7789/panels/lx154a2422.c",
+            "embed/trezorhal/stm32u5/xdisplay/st-7789/panels/lx154a2482.c",
         ]
     else:
         sources += [f"embed/trezorhal/stm32u5/displays/{display}"]
         sources += [
-            "embed/trezorhal/stm32u5/displays/panels/lx154a2422.c",
+            "embed/trezorhal/stm32u5/displays/panels/lx154a2482.c",
         ]
 
     sources += ["embed/trezorhal/stm32u5/backlight_pwm.c"]
@@ -114,8 +114,10 @@ def configure(
 
     if "dma2d" in features_wanted:
         defines += ["USE_DMA2D"]
-        sources += ["embed/trezorhal/stm32u5/dma2d.c"]
-        sources += ["embed/trezorhal/stm32u5/dma2d_bitblt.c"]
+        if "new_rendering" in features_wanted:
+            sources += ["embed/trezorhal/stm32u5/dma2d_bitblt.c"]
+        else:
+            sources += ["embed/trezorhal/stm32u5/dma2d.c"]
         features_available.append("dma2d")
 
     if "optiga" in features_wanted:

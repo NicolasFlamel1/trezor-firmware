@@ -6,7 +6,7 @@ import tools, models
 TREZOR_MODEL = ARGUMENTS.get('TREZOR_MODEL', 'T')
 CMAKELISTS = int(ARGUMENTS.get('CMAKELISTS', 0))
 HW_REVISION = 'emulator'
-NEW_RENDERING = ARGUMENTS.get('NEW_RENDERING', '1') == '1'
+NEW_RENDERING = ARGUMENTS.get('NEW_RENDERING', '1') == '1' or TREZOR_MODEL in ('T3T1',)
 
 if TREZOR_MODEL in ('1', 'DISC1', 'DISC2'):
     # skip bootloader build
@@ -140,6 +140,7 @@ SOURCE_BOOTLOADER = [
     'embed/bootloader/main.c',
     'embed/bootloader/messages.c',
     'embed/bootloader/emulator.c',
+    'embed/bootloader/version_check.c',
     'embed/bootloader/protob/messages.pb.c',
 ]
 
@@ -149,6 +150,7 @@ SOURCE_TREZORHAL = [
     'embed/trezorhal/unix/fault_handlers.c',
     'embed/trezorhal/unix/flash.c',
     'embed/trezorhal/unix/flash_otp.c',
+    'embed/trezorhal/unix/monoctr.c',
     'embed/trezorhal/unix/random_delays.c',
     'embed/trezorhal/unix/rng.c',
     'embed/trezorhal/unix/secret.c',
@@ -158,7 +160,6 @@ SOURCE_TREZORHAL = [
 if NEW_RENDERING:
     SOURCE_TREZORHAL += [
         'embed/trezorhal/unix/display_driver.c',
-        'embed/trezorhal/unix/dma2d_bitblt.c',
         'embed/trezorhal/xdisplay_legacy.c',
     ]
 else:
@@ -256,7 +257,7 @@ cmake_gen = env.Command(
 # Rust library
 #
 
-RUST_TARGET = 'x86_64-unknown-linux-gnu'
+RUST_TARGET = os.popen("rustc -vV | sed -n 's/host: //p'").read().strip()
 RUST_LIB = 'trezor_lib'
 
 if ARGUMENTS.get('TREZOR_EMULATOR_DEBUGGABLE', '0') == '1':
@@ -277,6 +278,9 @@ def cargo_build():
         features = ["model_mercury"]
     else:
         features = ["model_tt"]
+
+    if TREZOR_MODEL in ("R",):
+        features.append("ui_empty_lock")
 
     if NEW_RENDERING:
         features.append('new_rendering')

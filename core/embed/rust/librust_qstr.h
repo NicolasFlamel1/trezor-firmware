@@ -168,6 +168,7 @@ static void _librust_qstrs(void) {
   MP_QSTR_can_go_back;
   MP_QSTR_cancel_arrow;
   MP_QSTR_cancel_cross;
+  MP_QSTR_cancel_text;
   MP_QSTR_case_sensitive;
   MP_QSTR_check_homescreen_format;
   MP_QSTR_chunkify;
@@ -208,6 +209,7 @@ static void _librust_qstrs(void) {
   MP_QSTR_confirm_with_info;
   MP_QSTR_count;
   MP_QSTR_current;
+  MP_QSTR_danger;
   MP_QSTR_data;
   MP_QSTR_data_hash;
   MP_QSTR_data_len;
@@ -248,6 +250,7 @@ static void _librust_qstrs(void) {
   MP_QSTR_flow_get_address;
   MP_QSTR_flow_prompt_backup;
   MP_QSTR_flow_request_number;
+  MP_QSTR_flow_request_passphrase;
   MP_QSTR_flow_show_share_words;
   MP_QSTR_flow_warning_hi_prio;
   MP_QSTR_get_language;
@@ -298,6 +301,7 @@ static void _librust_qstrs(void) {
   MP_QSTR_instructions__learn_more;
   MP_QSTR_instructions__shares_continue_with_x_template;
   MP_QSTR_instructions__shares_start_with_1;
+  MP_QSTR_instructions__swipe_down;
   MP_QSTR_instructions__swipe_horizontally;
   MP_QSTR_instructions__swipe_up;
   MP_QSTR_instructions__tap_to_confirm;
@@ -324,6 +328,7 @@ static void _librust_qstrs(void) {
   MP_QSTR_max_feerate;
   MP_QSTR_max_len;
   MP_QSTR_max_rounds;
+  MP_QSTR_message;
   MP_QSTR_min_count;
   MP_QSTR_misc__decrypt_value;
   MP_QSTR_misc__encrypt_value;
@@ -347,6 +352,7 @@ static void _librust_qstrs(void) {
   MP_QSTR_paint;
   MP_QSTR_passphrase__access_wallet;
   MP_QSTR_passphrase__always_on_device;
+  MP_QSTR_passphrase__continue_with_empty_passphrase;
   MP_QSTR_passphrase__from_host_not_shown;
   MP_QSTR_passphrase__hide;
   MP_QSTR_passphrase__next_screen_will_show_passphrase;
@@ -664,6 +670,10 @@ static void _librust_qstrs(void) {
   MP_QSTR_subprompt;
   MP_QSTR_subtext;
   MP_QSTR_subtitle;
+  MP_QSTR_summary_br_code;
+  MP_QSTR_summary_br_name;
+  MP_QSTR_summary_items;
+  MP_QSTR_summary_title;
   MP_QSTR_text;
   MP_QSTR_text_confirm;
   MP_QSTR_text_info;
@@ -1001,15 +1011,20 @@ static void _librust_qstrs(void) {
   MP_QSTR_fido__does_not_belong;
   MP_QSTR_fido__erase_credentials;
   MP_QSTR_fido__export_credentials;
+  MP_QSTR_fido__more_credentials;
   MP_QSTR_fido__not_registered;
   MP_QSTR_fido__not_registered_with_template;
   MP_QSTR_fido__please_enable_pin_protection;
+  MP_QSTR_fido__select_intro;
   MP_QSTR_fido__title_authenticate;
+  MP_QSTR_fido__title_credential_details;
+  MP_QSTR_fido__title_for_authentication;
   MP_QSTR_fido__title_import_credential;
   MP_QSTR_fido__title_list_credentials;
   MP_QSTR_fido__title_register;
   MP_QSTR_fido__title_remove_credential;
   MP_QSTR_fido__title_reset;
+  MP_QSTR_fido__title_select_credential;
   MP_QSTR_fido__title_u2f_auth;
   MP_QSTR_fido__title_u2f_register;
   MP_QSTR_fido__title_verify_user;

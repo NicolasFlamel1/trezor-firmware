@@ -304,7 +304,7 @@ class RecoveryFlow:
                     if self.client.model is models.T2T1:
                         yield from self.tt_click_info()
                     elif self.client.model is models.T3T1:
-                        self.mercury_click_info()
+                        yield from self.mercury_click_info()
                 yield from self.success_more_shares_needed()
 
     def tt_click_info(
@@ -316,10 +316,19 @@ class RecoveryFlow:
         self.debug.swipe_up()
         self.debug.press_yes()
 
-    def mercury_click_info(self):
+    def mercury_click_info(self) -> BRGeneratorType:
+        # Starting on the homepage, handle the repeated button request
+        br = yield
+        assert br.name == "recovery"
+        assert br.code == B.RecoveryHomepage
+        # Moving through the menu into the show_shares screen
         self.debug.click(buttons.CORNER_BUTTON, wait=True)
         self.debug.synchronize_at("VerticalMenu")
         self.debug.click(buttons.VERTICAL_MENU[0], wait=True)
+        br = yield
+        assert br.name == "show_shares"
+        assert br.code == B.Other
+        # Getting back to the homepage
         self.debug.click(buttons.CORNER_BUTTON, wait=True)
         self.debug.click(buttons.CORNER_BUTTON, wait=True)
 
@@ -379,10 +388,11 @@ class EthereumFlow:
         info: bool = False,
         go_back_from_summary: bool = False,
     ) -> BRGeneratorType:
-        yield
-        TR.assert_equals(self.debug.wait_layout().title(), "words__recipient")
 
-        if self.client.model in (models.T2T1, models.T3T1):
+        yield
+
+        if self.client.model in (models.T2T1,):
+            TR.assert_equals(self.debug.wait_layout().title(), "words__recipient")
             if cancel:
                 self.debug.press_no()
             else:
@@ -409,7 +419,13 @@ class EthereumFlow:
                     )
                     self.debug.press_no(wait=True)
                 self.debug.press_yes()
-        else:
+
+                yield
+        elif self.client.model in (
+            models.T2B1,
+            models.T3B1,
+        ):
+            TR.assert_equals(self.debug.wait_layout().title(), "words__recipient")
             if cancel:
                 self.debug.press_left()
             else:
@@ -436,11 +452,56 @@ class EthereumFlow:
                     self.debug.press_left(wait=True)
                 self.debug.press_middle()
 
+                yield
+        elif self.client.model in (models.T3T1,):
+            TR.assert_equals(
+                self.debug.wait_layout().title().split("\n")[0], "words__address"
+            )
+            TR.assert_equals(
+                self.debug.wait_layout().title().split("\n")[1], "words__recipient"
+            )
+            if cancel:
+                self.debug.press_no()
+            else:
+                self.debug.swipe_up()
+                yield
+                TR.assert_equals(
+                    self.debug.wait_layout().title(), "words__title_summary"
+                )
+                TR.assert_in(
+                    self.debug.wait_layout().text_content(), "send__maximum_fee"
+                )
+                if go_back_from_summary:
+                    self.debug.press_no()
+                    yield
+                    self.debug.press_yes()
+                    yield
+                if info:
+                    self.debug.click(buttons.CORNER_BUTTON, wait=True)
+                    self.debug.synchronize_at("VerticalMenu")
+                    self.debug.click(buttons.VERTICAL_MENU[0], wait=True)
+                    TR.assert_in(
+                        self.debug.wait_layout().text_content(), "ethereum__gas_limit"
+                    )
+                    TR.assert_in(
+                        self.debug.wait_layout().text_content(), "ethereum__gas_price"
+                    )
+                    self.debug.click(buttons.CORNER_BUTTON, wait=True)
+                    self.debug.click(buttons.CORNER_BUTTON, wait=True)
+                self.debug.swipe_up()
+                self.debug.wait_layout()
+                self.debug.click(buttons.TAP_TO_CONFIRM)
+                yield
+        else:
+            raise ValueError("Unknown model!")
+
     def confirm_tx_staking(
         self,
         info: bool = False,
     ) -> BRGeneratorType:
-        yield
+        br = yield
+        assert br.code == B.SignTx
+        assert br.name == "confirm_ethereum_staking_tx"
         TR.assert_equals_multiple(
             self.debug.wait_layout().title(),
             [
@@ -457,7 +518,7 @@ class EthereumFlow:
                 "ethereum__staking_claim_intro",
             ],
         )
-        if self.client.model in (models.T2T1, models.T3T1):
+        if self.client.model in (models.T2T1,):
             # confirm intro
             if info:
                 self.debug.click(buttons.CORNER_BUTTON, wait=True)
@@ -473,7 +534,7 @@ class EthereumFlow:
             yield
 
             # confirm summary
-            if info and self.client.model != models.T3T1:
+            if info:
                 self.debug.press_info(wait=True)
                 TR.assert_in(
                     self.debug.wait_layout().text_content(), "ethereum__gas_limit"
@@ -484,12 +545,56 @@ class EthereumFlow:
                 self.debug.press_no(wait=True)
             self.debug.press_yes()
             yield
-        else:
+
+            self.debug.press_yes()
+        elif self.client.model in (models.T3T1,):
+            # confirm intro
+            if info:
+                self.debug.click(buttons.CORNER_BUTTON, wait=True)
+                self.debug.synchronize_at("VerticalMenu")
+                self.debug.click(buttons.VERTICAL_MENU[0], wait=True)
+                TR.assert_equals_multiple(
+                    self.debug.wait_layout().title(),
+                    [
+                        "ethereum__staking_stake_address",
+                        "ethereum__staking_claim_address",
+                    ],
+                )
+                self.debug.click(buttons.CORNER_BUTTON, wait=True)
+                self.debug.click(buttons.CORNER_BUTTON, wait=True)
+
+            self.debug.swipe_up()
+            br = yield
+            assert br.code == B.SignTx
+            assert br.name == "confirm_total"
+
+            # confirm summary
+            if info:
+                self.debug.click(buttons.CORNER_BUTTON, wait=True)
+                self.debug.synchronize_at("VerticalMenu")
+                self.debug.click(buttons.VERTICAL_MENU[0], wait=True)
+                TR.assert_in(
+                    self.debug.wait_layout().text_content(), "ethereum__gas_limit"
+                )
+                TR.assert_in(
+                    self.debug.wait_layout().text_content(), "ethereum__gas_price"
+                )
+                self.debug.click(buttons.CORNER_BUTTON, wait=True)
+                self.debug.click(buttons.CORNER_BUTTON, wait=True)
+            self.debug.swipe_up()
+            # br = yield  # FIXME: no BR on sign transaction
+
+            self.debug.press_yes()
+
+        elif self.client.model in (
+            models.T2B1,
+            models.T3B1,
+        ):
             # confirm intro
             if info:
                 self.debug.press_right(wait=True)
                 TR.assert_equals_multiple(
-                    self.debug.wait_layout().title(),
+                    self.debug.wait_layout().title().rstrip(":"),
                     [
                         "ethereum__staking_stake_address",
                         "ethereum__staking_claim_address",
@@ -513,3 +618,7 @@ class EthereumFlow:
                 self.debug.press_left(wait=True)
             self.debug.press_middle()
             yield
+
+            self.debug.press_yes()
+        else:
+            raise ValueError("Unknown model!")

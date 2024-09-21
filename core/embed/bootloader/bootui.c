@@ -52,13 +52,15 @@
 #define COLOR_BL_GRAY COLOR_BL_FG
 #endif
 
-#ifndef TREZOR_MODEL_R
+#if !defined TREZOR_MODEL_R && !defined TREZOR_MODEL_T3B1
 #define BOOT_WAIT_HEIGHT 25
 #define BOOT_WAIT_Y_TOP (DISPLAY_RESY - BOOT_WAIT_HEIGHT)
 #else
 #define BOOT_WAIT_HEIGHT 12
 #define BOOT_WAIT_Y_TOP (DISPLAY_RESY - BOOT_WAIT_HEIGHT)
 #endif
+
+#define TOIF_LENGTH(ptr) ((*(uint32_t *)((ptr) + 8)) + 12)
 
 // common shared functions
 
@@ -95,12 +97,12 @@ static void ui_screen_boot_old(const vendor_header *const vhdr,
 
   display_bar(0, 0, DISPLAY_RESX, DISPLAY_RESY, boot_background);
 
-#ifndef TREZOR_MODEL_R
+#if !defined TREZOR_MODEL_R && !defined TREZOR_MODEL_T3B1
   int image_top = show_string ? 30 : (DISPLAY_RESY - 120) / 2;
   // check whether vendor image is 120x120
   if (memcmp(vimg, "TOIF\x78\x00\x78\x00", 8) == 0) {
-    uint32_t datalen = *(uint32_t *)(vimg + 8);
-    display_image((DISPLAY_RESX - 120) / 2, image_top, vimg, datalen + 12);
+    uint32_t datalen = TOIF_LENGTH(vimg);
+    display_image((DISPLAY_RESX - 120) / 2, image_top, vimg, datalen);
   }
 
   if (show_string) {
@@ -115,8 +117,8 @@ static void ui_screen_boot_old(const vendor_header *const vhdr,
 #else
   // check whether vendor image is 24x24
   if (memcmp(vimg, "TOIG\x18\x00\x18\x00", 8) == 0) {
-    uint32_t datalen = *(uint32_t *)(vimg + 8);
-    display_icon((DISPLAY_RESX - 22) / 2, 0, vimg, datalen + 12, COLOR_BL_BG,
+    uint32_t datalen = TOIF_LENGTH(vimg);
+    display_icon((DISPLAY_RESX - 22) / 2, 0, vimg, datalen, COLOR_BL_BG,
                  boot_background);
   }
 
@@ -207,7 +209,7 @@ void ui_screen_boot(const vendor_header *const vhdr,
   const char *vendor_str = show_string ? vhdr->vstr : NULL;
   const size_t vendor_str_len = show_string ? vhdr->vstr_len : 0;
   bool red_screen = ((vhdr->vtrust & VTRUST_NO_RED) == 0);
-  uint32_t vimg_len = *(uint32_t *)(vhdr->vimg + 8);
+  uint32_t vimg_len = TOIF_LENGTH(vhdr->vimg);
 
   screen_boot(red_screen, vendor_str, vendor_str_len, hdr->version, vhdr->vimg,
               vimg_len, wait);
@@ -249,14 +251,17 @@ uint32_t ui_screen_menu(secbool firmware_present) {
 uint32_t ui_screen_install_confirm(const vendor_header *const vhdr,
                                    const image_header *const hdr,
                                    secbool should_keep_seed,
-                                   secbool is_newvendor, int version_cmp) {
+                                   secbool is_newvendor, secbool is_newinstall,
+                                   int version_cmp) {
   uint8_t fingerprint[32];
   char ver_str[64];
   get_image_fingerprint(hdr, fingerprint);
   format_ver("%d.%d.%d", hdr->version, ver_str, sizeof(ver_str));
   return screen_install_confirm(vhdr->vstr, vhdr->vstr_len, ver_str,
                                 fingerprint, should_keep_seed == sectrue,
-                                is_newvendor == sectrue, version_cmp);
+
+                                is_newvendor == sectrue,
+                                is_newinstall == sectrue, version_cmp);
 }
 
 void ui_screen_install_start() {

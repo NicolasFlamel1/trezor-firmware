@@ -394,7 +394,7 @@ def confirm_action(
     reverse: bool = False,
     exc: ExceptionType = ActionCancelled,
     br_code: ButtonRequestType = BR_CODE_OTHER,
-    prompt_screen: bool = False,
+    prompt_screen: bool = False,  # unused on TR
     prompt_title: str | None = None,
 ) -> Awaitable[None]:
     verb = verb or TR.buttons__confirm  # def_arg
@@ -533,6 +533,44 @@ def confirm_homescreen(image: bytes) -> Awaitable[None]:
             "set_homesreen",
             ButtonRequestType.ProtectCall,
         )
+    )
+
+
+def confirm_change_passphrase(use: bool) -> Awaitable[None]:
+    description = TR.passphrase__turn_on if use else TR.passphrase__turn_off
+    verb = TR.buttons__turn_on if use else TR.buttons__turn_off
+
+    return confirm_action(
+        "set_passphrase",
+        TR.passphrase__title_settings,
+        description=description,
+        verb=verb,
+        br_code=ButtonRequestType.ProtectCall,
+    )
+
+
+def confirm_hide_passphrase_from_host() -> Awaitable[None]:
+    return confirm_action(
+        "set_hide_passphrase_from_host",
+        TR.passphrase__title_hide,
+        description=TR.passphrase__hide,
+        br_code=ButtonRequestType.ProtectCall,
+    )
+
+
+def confirm_change_passphrase_source(
+    passphrase_always_on_device: bool,
+) -> Awaitable[None]:
+    description = (
+        TR.passphrase__always_on_device
+        if passphrase_always_on_device
+        else TR.passphrase__revoke_on_device
+    )
+    return confirm_action(
+        "set_passphrase_source",
+        TR.passphrase__title_source,
+        description=description,
+        br_code=ButtonRequestType.ProtectCall,
     )
 
 
@@ -1183,7 +1221,7 @@ if not utils.BITCOIN_ONLY:
             amount_title = verb
             amount_value = ""
         else:
-            amount_title = TR.words__amount + ":"
+            amount_title = f"{TR.words__amount}:"
             amount_value = total_amount
         await raise_if_not_confirmed(
             interact(
@@ -1191,9 +1229,9 @@ if not utils.BITCOIN_ONLY:
                     trezorui2.altcoin_tx_summary(
                         amount_title=amount_title,
                         amount_value=amount_value,
-                        fee_title=TR.send__maximum_fee,
+                        fee_title=f"{TR.send__maximum_fee}:",
                         fee_value=maximum_fee,
-                        items=info_items,
+                        items=[(f"{k}:", v) for (k, v) in info_items],
                         cancel_cross=True,
                     )
                 ),
@@ -1236,7 +1274,7 @@ if not utils.BITCOIN_ONLY:
         recipient: str,
         total_amount: str,
         maximum_fee: str,
-        items: Iterable[tuple[str, str]],
+        fee_info_items: Iterable[tuple[str, str]],
         br_name: str = "confirm_ethereum_tx",
         br_code: ButtonRequestType = ButtonRequestType.SignTx,
         chunkify: bool = False,
@@ -1245,9 +1283,9 @@ if not utils.BITCOIN_ONLY:
             trezorui2.altcoin_tx_summary(
                 amount_title=f"{TR.words__amount}:",
                 amount_value=total_amount,
-                fee_title=TR.send__maximum_fee,
+                fee_title=f"{TR.send__maximum_fee}:",
                 fee_value=maximum_fee,
-                items=items,
+                items=[(f"{k}:", v) for (k, v) in fee_info_items],
             )
         )
 

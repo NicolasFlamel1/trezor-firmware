@@ -5,7 +5,7 @@ use crate::{
     ui::{
         component::{connect::Connect, Label},
         display::{self, Color, Font, Icon},
-        geometry::{Offset, Point, Rect},
+        geometry::{Alignment, Offset, Point, Rect},
         layout::simplified::{run, show},
     },
 };
@@ -37,7 +37,7 @@ use super::theme::BLACK;
 #[cfg(feature = "new_rendering")]
 use crate::ui::{
     display::{toif::Toif, LOADER_MAX},
-    geometry::{Alignment, Alignment2D},
+    geometry::Alignment2D,
     model_mercury::cshape::{render_loader, LoaderRange},
     shape,
     shape::render_on_display,
@@ -233,6 +233,7 @@ impl UIFeaturesBootloader for ModelMercuryFeatures {
         fingerprint: &str,
         should_keep_seed: bool,
         is_newvendor: bool,
+        is_newinstall: bool,
         version_cmp: i32,
     ) -> u32 {
         let mut version_str: BootloaderString = String::new();
@@ -241,7 +242,9 @@ impl UIFeaturesBootloader for ModelMercuryFeatures {
         unwrap!(version_str.push_str("\nby "));
         unwrap!(version_str.push_str(vendor));
 
-        let title_str = if is_newvendor {
+        let title_str = if is_newinstall {
+            "INSTALL FIRMWARE"
+        } else if is_newvendor {
             "CHANGE FW\nVENDOR"
         } else if version_cmp > 0 {
             "UPDATE FIRMWARE"
@@ -258,12 +261,20 @@ impl UIFeaturesBootloader for ModelMercuryFeatures {
         ));
 
         let (left, right) = if should_keep_seed {
-            let l = Button::with_text("CANCEL".into()).styled(button_bld());
-            let r = Button::with_text("INSTALL".into()).styled(button_confirm());
+            let l = Button::with_text("CANCEL".into())
+                .styled(button_bld())
+                .with_text_align(Alignment::Center);
+            let r = Button::with_text("INSTALL".into())
+                .styled(button_confirm())
+                .with_text_align(Alignment::Center);
             (l, r)
         } else {
-            let l = Button::with_icon(Icon::new(X24)).styled(button_bld());
-            let r = Button::with_icon(Icon::new(CHECK24)).styled(button_confirm());
+            let l = Button::with_icon(Icon::new(X24))
+                .styled(button_bld())
+                .with_text_align(Alignment::Center);
+            let r = Button::with_icon(Icon::new(CHECK24))
+                .styled(button_confirm())
+                .with_text_align(Alignment::Center);
             (l, r)
         };
 
@@ -290,8 +301,12 @@ impl UIFeaturesBootloader for ModelMercuryFeatures {
         );
         let alert = Label::centered("SEED AND FIRMWARE\nWILL BE ERASED!".into(), TEXT_WIPE_BOLD);
 
-        let right = Button::with_text("RESET".into()).styled(button_wipe_confirm());
-        let left = Button::with_text("CANCEL".into()).styled(button_wipe_cancel());
+        let right = Button::with_text("RESET".into())
+            .styled(button_wipe_confirm())
+            .with_text_align(Alignment::Center);
+        let left = Button::with_text("CANCEL".into())
+            .styled(button_wipe_cancel())
+            .with_text_align(Alignment::Center);
 
         let mut frame = Confirm::new(BLD_WIPE_COLOR, left, right, ConfirmTitle::Icon(icon), msg)
             .with_alert(alert);
@@ -300,11 +315,32 @@ impl UIFeaturesBootloader for ModelMercuryFeatures {
     }
 
     fn screen_unlock_bootloader_confirm() -> u32 {
-        unimplemented!();
+        let title =
+            Label::left_aligned("UNLOCK BOOTLOADER".into(), TEXT_BOLD).vertically_centered();
+        let msg = Label::centered("This action cannot be undone!".into(), TEXT_NORMAL);
+
+        let right = Button::with_text("UNLOCK".into())
+            .styled(button_confirm())
+            .with_text_align(Alignment::Center);
+        let left = Button::with_text("CANCEL".into())
+            .styled(button_bld())
+            .with_text_align(Alignment::Center);
+
+        let mut frame = Confirm::new(BLD_BG, left, right, ConfirmTitle::Text(title), msg);
+
+        run(&mut frame)
     }
 
     fn screen_unlock_bootloader_success() {
-        unimplemented!();
+        let mut frame = ResultScreen::new(
+            &RESULT_FW_INSTALL,
+            Icon::new(CHECK40),
+            "Bootloader unlocked".into(),
+            Label::centered(RECONNECT_MESSAGE.into(), RESULT_FW_INSTALL.title_style())
+                .vertically_centered(),
+            true,
+        );
+        show(&mut frame, true);
     }
 
     fn screen_menu(firmware_present: secbool) -> u32 {

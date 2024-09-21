@@ -9,6 +9,7 @@
 
 #define SECRET_MONOTONIC_COUNTER_OFFSET 48
 #define SECRET_MONOTONIC_COUNTER_LEN 1024
+#define SECRET_MONOTONIC_COUNTER2_OFFSET (SECRET_MONOTONIC_COUNTER_LEN + 48)
 
 #define SECRET_BHK_OFFSET (1024 * 8)
 #define SECRET_BHK_LEN 32
@@ -51,6 +52,12 @@ secbool secret_optiga_set(const uint8_t secret[SECRET_OPTIGA_KEY_LEN]);
 // provisioned to the firmware (by calling secret_optiga_backup), or the secret
 // was made unavailable by calling secret_optiga_hide
 secbool secret_optiga_get(uint8_t dest[SECRET_OPTIGA_KEY_LEN]);
+
+// Checks if the optiga pairing secret is present in the secret storage
+secbool secret_optiga_present(void);
+
+// Erases optiga pairing secret from the secret storage
+void secret_optiga_erase(void);
 
 // Regenerates the BHK and writes it to the secret storage
 void secret_bhk_regenerate(void);

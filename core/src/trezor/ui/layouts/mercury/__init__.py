@@ -446,6 +446,48 @@ def confirm_homescreen(
     )
 
 
+def confirm_change_passphrase(use: bool) -> Awaitable[None]:
+    description = TR.passphrase__turn_on if use else TR.passphrase__turn_off
+
+    return confirm_action(
+        "set_passphrase",
+        TR.passphrase__title_passphrase,
+        subtitle=TR.words__settings,
+        description=description,
+        br_code=ButtonRequestType.ProtectCall,
+        prompt_screen=True,
+    )
+
+
+def confirm_hide_passphrase_from_host() -> Awaitable[None]:
+    return confirm_action(
+        "set_hide_passphrase_from_host",
+        TR.passphrase__title_passphrase,
+        subtitle=TR.words__settings,
+        description=TR.passphrase__hide,
+        br_code=ButtonRequestType.ProtectCall,
+        prompt_screen=True,
+    )
+
+
+def confirm_change_passphrase_source(
+    passphrase_always_on_device: bool,
+) -> Awaitable[None]:
+    description = (
+        TR.passphrase__always_on_device
+        if passphrase_always_on_device
+        else TR.passphrase__revoke_on_device
+    )
+    return confirm_action(
+        "set_passphrase_source",
+        TR.passphrase__title_passphrase,
+        subtitle=TR.words__settings,
+        description=description,
+        br_code=ButtonRequestType.ProtectCall,
+        prompt_screen=True,
+    )
+
+
 async def show_address(
     address: str,
     *,
@@ -557,6 +599,7 @@ def show_warning(
                     button=subheader or TR.words__continue_anyway,
                     allow_cancel=allow_cancel,
                     text_mono=value_text_mono,
+                    danger=True,
                 )
             ),
             br_name,
@@ -587,7 +630,7 @@ def show_success(
 
 async def confirm_output(
     address: str,
-    amount: str,
+    amount: str | None = None,
     title: str | None = None,
     hold: bool = False,
     br_code: ButtonRequestType = ButtonRequestType.ConfirmOutput,
@@ -596,6 +639,7 @@ async def confirm_output(
     chunkify: bool = False,
     source_account: str | None = None,
     source_account_path: str | None = None,
+    cancel_text: str | None = None,
 ) -> None:
     if address_label is not None:
         title = address_label
@@ -609,14 +653,24 @@ async def confirm_output(
     await raise_if_not_confirmed(
         RustLayout(
             trezorui2.flow_confirm_output(
-                address=address,
+                title=TR.words__address,
+                subtitle=title,
+                message=address,
                 amount=amount,
-                title=title,
                 chunkify=chunkify,
+                text_mono=True,
                 account=source_account,
                 account_path=source_account_path,
+                address=None,
+                address_title=None,
                 br_code=br_code,
                 br_name="confirm_output",
+                summary_items=None,
+                fee_items=None,
+                summary_title=None,
+                summary_br_name=None,
+                summary_br_code=None,
+                cancel_text=cancel_text,
             )
         )
     )
@@ -938,18 +992,21 @@ def confirm_total(
                 account_items=account_items,
                 br_name=br_name,
                 br_code=br_code,
+                cancel_text=TR.send__cancel_sign,
             )
         )
     )
 
 
-def confirm_summary(
-    items: Iterable[tuple[str, str]],
+def _confirm_summary(
+    items: Iterable[tuple[str, str]] | None = None,
     title: str | None = None,
     info_items: Iterable[tuple[str, str]] | None = None,
     info_title: str | None = None,
+    fee_items: Iterable[tuple[str, str]] | None = None,
     br_name: str = "confirm_total",
     br_code: ButtonRequestType = ButtonRequestType.SignTx,
+    cancel_text: str | None = None,
 ) -> Awaitable[None]:
     # TODO: info_title
     title = title or TR.words__title_summary  # def_arg
@@ -959,10 +1016,11 @@ def confirm_summary(
             trezorui2.flow_confirm_summary(
                 title=title,
                 items=items or (),
-                fee_items=(),
+                fee_items=fee_items or (),
                 account_items=info_items or (),
                 br_name=br_name,
                 br_code=br_code,
+                cancel_text=cancel_text,
             )
         )
     )
@@ -974,48 +1032,38 @@ if not utils.BITCOIN_ONLY:
         recipient: str,
         total_amount: str,
         maximum_fee: str,
-        items: Iterable[tuple[str, str]],
+        fee_info_items: Iterable[tuple[str, str]],
         br_name: str = "confirm_ethereum_tx",
         br_code: ButtonRequestType = ButtonRequestType.SignTx,
         chunkify: bool = False,
     ) -> None:
-        info_layout = RustLayout(
-            trezorui2.show_info_with_cancel(
-                title=TR.confirm_total__title_fee,
-                items=items,
+        await raise_if_not_confirmed(
+            RustLayout(
+                trezorui2.flow_confirm_output(
+                    title=TR.words__address,
+                    subtitle=TR.words__recipient,
+                    message=recipient,
+                    amount=None,
+                    chunkify=chunkify,
+                    text_mono=True,
+                    account=None,
+                    account_path=None,
+                    address=None,
+                    address_title=None,
+                    br_code=ButtonRequestType.Other,
+                    br_name="confirm_output",
+                    summary_items=(
+                        (TR.words__amount, total_amount),
+                        (TR.send__maximum_fee, maximum_fee),
+                    ),
+                    fee_items=fee_info_items,
+                    summary_title=TR.words__title_summary,
+                    summary_br_name="confirm_total",
+                    summary_br_code=ButtonRequestType.SignTx,
+                    cancel_text=TR.buttons__cancel,
+                )
             )
         )
-
-        while True:
-            # Allowing going back and forth between recipient and summary/details
-            await confirm_blob(
-                br_name,
-                TR.words__recipient,
-                recipient,
-                verb=TR.buttons__continue,
-                chunkify=chunkify,
-                prompt_screen=False,
-            )
-
-            try:
-                total_layout = RustLayout(
-                    trezorui2.confirm_total(
-                        title=TR.words__title_summary,
-                        items=[
-                            (f"{TR.words__amount}:", total_amount),
-                            (TR.send__maximum_fee, maximum_fee),
-                        ],
-                        info_button=True,
-                        cancel_arrow=True,
-                    )
-                )
-                total_layout.request_complete_repaint()
-                await raise_if_not_confirmed(
-                    with_info(total_layout, info_layout, br_name, br_code)
-                )
-                break
-            except ActionCancelled:
-                continue
 
     async def confirm_ethereum_staking_tx(
         title: str,
@@ -1030,36 +1078,36 @@ if not utils.BITCOIN_ONLY:
         br_name: str = "confirm_ethereum_staking_tx",
         br_code: ButtonRequestType = ButtonRequestType.SignTx,
     ) -> None:
-
-        # intro
-        await confirm_value(
-            title,
-            intro_question,
-            "",
-            br_name,
-            br_code,
-            verb=verb,
-            value_text_mono=False,
-            info_items=(("", address),),
-            info_title=address_title,
-            chunkify_info=chunkify,
-        )
-
-        # confirmation
         if verb == TR.ethereum__staking_claim:
-            items = ((TR.send__maximum_fee, maximum_fee),)
+            summary_items = ((TR.send__maximum_fee, maximum_fee),)
         else:
-            items = (
-                (TR.words__amount + ":", total_amount),
+            summary_items = (
+                (TR.words__amount, total_amount),
                 (TR.send__maximum_fee, maximum_fee),
             )
-        await confirm_summary(
-            items,  # items
-            title=title,
-            info_title=TR.confirm_total__title_fee,
-            info_items=info_items,
-            br_name=br_name,
-            br_code=br_code,
+        await raise_if_not_confirmed(
+            RustLayout(
+                trezorui2.flow_confirm_output(
+                    title=verb,
+                    subtitle=None,
+                    message=intro_question,
+                    amount=None,
+                    chunkify=False,
+                    text_mono=False,
+                    account=None,
+                    account_path=None,
+                    br_code=br_code,
+                    br_name=br_name,
+                    address=address,
+                    address_title=address_title,
+                    summary_items=summary_items,
+                    fee_items=info_items,
+                    summary_title=verb,
+                    summary_br_name="confirm_total",
+                    summary_br_code=ButtonRequestType.SignTx,
+                    cancel_text=TR.buttons__cancel,  # cancel staking
+                )
+            )
         )
 
     def confirm_solana_tx(
@@ -1075,8 +1123,8 @@ if not utils.BITCOIN_ONLY:
             amount_title if amount_title is not None else f"{TR.words__amount}:"
         )  # def_arg
         fee_title = fee_title or TR.words__fee  # def_arg
-        return confirm_summary(
-            ((amount_title, amount), (fee_title, fee)),
+        return _confirm_summary(
+            items=((amount_title, amount), (fee_title, fee)),
             info_items=items,
             br_name=br_name,
             br_code=br_code,
@@ -1084,11 +1132,11 @@ if not utils.BITCOIN_ONLY:
 
 
 def confirm_joint_total(spending_amount: str, total_amount: str) -> Awaitable[None]:
-    return confirm_summary(
-        items=[
+    return _confirm_summary(
+        items=(
             (TR.send__you_are_contributing, spending_amount),
             (TR.send__to_the_total_amount, total_amount),
-        ],
+        ),
         title=TR.send__title_joint_transaction,
         br_name="confirm_joint_total",
         br_code=ButtonRequestType.SignTx,
@@ -1378,7 +1426,7 @@ def show_wait_text(message: str) -> None:
 async def request_passphrase_on_device(max_len: int) -> str:
     result = await interact(
         RustLayout(
-            trezorui2.request_passphrase(
+            trezorui2.flow_request_passphrase(
                 prompt=TR.passphrase__title_enter, max_len=max_len
             )
         ),
@@ -1388,8 +1436,18 @@ async def request_passphrase_on_device(max_len: int) -> str:
     if result is CANCELLED:
         raise ActionCancelled("Passphrase entry cancelled")
 
-    assert isinstance(result, str)
-    return result
+    if __debug__:
+        if not isinstance(result, tuple):
+            # TODO: DebugLink problem, better comment or solution?
+            result = (CONFIRMED, str(result))
+
+    status, value = result
+    if status == CONFIRMED:
+        assert isinstance(value, str)
+        return value
+    else:
+        # flow_request_pin returns either CANCELLED or (CONFIRMED, str) so this branch shouldn't be taken
+        raise ActionCancelled("Passphrase entry cancelled")
 
 
 async def request_pin_on_device(

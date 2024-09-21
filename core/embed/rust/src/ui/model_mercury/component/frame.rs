@@ -1,21 +1,20 @@
-use super::{theme, ButtonStyleSheet, CancelInfoConfirmMsg, Footer, Header};
+use super::{theme, ButtonStyleSheet, Footer, Header};
 use crate::{
     strutil::TString,
     ui::{
         component::{
             swipe_detect::{SwipeConfig, SwipeSettings},
             text::TextStyle,
-            Component, Event,
-            Event::Swipe,
-            EventCtx, SwipeDetect, SwipeDirection,
+            Component,
+            Event::{self, Swipe},
+            EventCtx, FlowMsg, SwipeDetect, SwipeDirection,
         },
         display::{Color, Icon},
         event::SwipeEvent,
         geometry::{Alignment, Insets, Point, Rect},
         lerp::Lerp,
         model_mercury::theme::TITLE_HEIGHT,
-        shape,
-        shape::Renderer,
+        shape::{self, Renderer},
     },
 };
 
@@ -94,7 +93,7 @@ pub struct Frame<T> {
 
 pub enum FrameMsg<T> {
     Content(T),
-    Button(CancelInfoConfirmMsg),
+    Button(FlowMsg),
 }
 
 impl<T> Frame<T>
@@ -142,21 +141,26 @@ where
     }
 
     #[inline(never)]
-    fn with_button(mut self, icon: Icon, msg: CancelInfoConfirmMsg, enabled: bool) -> Self {
+    fn with_button(mut self, icon: Icon, msg: FlowMsg, enabled: bool) -> Self {
         self.header = self.header.with_button(icon, enabled, msg);
         self
     }
 
     pub fn with_cancel_button(self) -> Self {
-        self.with_button(theme::ICON_CLOSE, CancelInfoConfirmMsg::Cancelled, true)
+        self.with_button(theme::ICON_CLOSE, FlowMsg::Cancelled, true)
     }
 
     pub fn with_menu_button(self) -> Self {
-        self.with_button(theme::ICON_MENU, CancelInfoConfirmMsg::Info, true)
+        self.with_button(theme::ICON_MENU, FlowMsg::Info, true)
     }
 
-    pub fn with_warning_button(self) -> Self {
-        self.with_button(theme::ICON_WARNING, CancelInfoConfirmMsg::Info, false)
+    pub fn with_warning_low_icon(self) -> Self {
+        self.with_button(theme::ICON_WARNING, FlowMsg::Info, false)
+            .button_styled(theme::button_warning_low())
+    }
+
+    pub fn with_danger_icon(self) -> Self {
+        self.with_button(theme::ICON_WARNING, FlowMsg::Info, false)
             .button_styled(theme::button_danger())
     }
 
@@ -192,7 +196,24 @@ where
 
     #[inline(never)]
     pub fn with_footer_counter(mut self, instruction: TString<'static>, max_value: u8) -> Self {
-        self.footer = Some(Footer::new(instruction, None).with_page_counter(max_value));
+        self.footer = Some(Footer::with_page_counter(max_value, instruction));
+        self
+    }
+
+    #[inline(never)]
+    pub fn with_footer_page_hint(
+        mut self,
+        description: TString<'static>,
+        description_last: TString<'static>,
+        instruction: TString<'static>,
+        instruction_last: TString<'static>,
+    ) -> Self {
+        self.footer = Some(Footer::with_page_hint(
+            description,
+            description_last,
+            instruction,
+            instruction_last,
+        ));
         self
     }
 
@@ -227,9 +248,14 @@ where
         res
     }
 
-    pub fn update_footer_counter(&mut self, ctx: &mut EventCtx, new_val: u8) {
+    pub fn update_footer_counter(
+        &mut self,
+        ctx: &mut EventCtx,
+        current: usize,
+        max: Option<usize>,
+    ) {
         if let Some(footer) = &mut self.footer {
-            footer.update_page_counter(ctx, new_val);
+            footer.update_page_counter(ctx, current, max);
         }
     }
 
@@ -314,7 +340,7 @@ fn frame_event(
     footer: &mut Option<Footer>,
     ctx: &mut EventCtx,
     event: Event,
-) -> Option<CancelInfoConfirmMsg> {
+) -> Option<FlowMsg> {
     horizontal_swipe.event(event, swipe_config);
 
     footer.event(ctx, event);

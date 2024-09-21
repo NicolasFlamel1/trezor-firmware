@@ -361,7 +361,7 @@ pub enum TranslatedString {
     device_name__change_template = 226,  // "Change device name to {0}?"
     device_name__title = 227,  // "Device name"
     entropy__send = 228,  // "Do you really want to send entropy?"
-    entropy__title = 229,  // "Internal entropy"
+    entropy__title = 229,  // "\"\""
     entropy__title_confirm = 230,  // "Confirm entropy"
     #[cfg(feature = "universal_fw")]
     eos__about_to_sign_template = 231,  // "You are about to sign {0}."
@@ -449,11 +449,11 @@ pub enum TranslatedString {
     #[cfg(feature = "universal_fw")]
     ethereum__data_size_template = 273,  // "Size: {0} bytes"
     #[cfg(feature = "universal_fw")]
-    ethereum__gas_limit = 274,  // "Gas limit:"
+    ethereum__gas_limit = 274,  // "Gas limit"
     #[cfg(feature = "universal_fw")]
-    ethereum__gas_price = 275,  // "Gas price:"
+    ethereum__gas_price = 275,  // "Gas price"
     #[cfg(feature = "universal_fw")]
-    ethereum__max_gas_price = 276,  // "Max gas price:"
+    ethereum__max_gas_price = 276,  // "Max gas price"
     #[cfg(feature = "universal_fw")]
     ethereum__name_and_version = 277,  // "Name and version"
     #[cfg(feature = "universal_fw")]
@@ -461,7 +461,7 @@ pub enum TranslatedString {
     #[cfg(feature = "universal_fw")]
     ethereum__no_message_field = 279,  // "No message field"
     #[cfg(feature = "universal_fw")]
-    ethereum__priority_fee = 280,  // "Priority fee:"
+    ethereum__priority_fee = 280,  // "Priority fee"
     #[cfg(feature = "universal_fw")]
     ethereum__show_full_array = 281,  // "Show full array"
     #[cfg(feature = "universal_fw")]
@@ -931,7 +931,7 @@ pub enum TranslatedString {
     send__confirm_sending = 641,  // "Sending amount"
     send__from_multiple_accounts = 642,  // "Sending from multiple accounts."
     send__including_fee = 643,  // "Including fee:"
-    send__maximum_fee = 644,  // "Maximum fee:"
+    send__maximum_fee = 644,  // "Maximum fee"
     send__receiving_to_multisig = 645,  // "Receiving to a multisig address."
     send__title_confirm_sending = 646,  // "Confirm sending"
     send__title_joint_transaction = 647,  // "Joint transaction"
@@ -1357,6 +1357,18 @@ pub enum TranslatedString {
     words__title_done = 956,  // "Done"
     reset__slip39_checklist_more_info_threshold = 957,  // "The threshold sets the minumum number of shares needed to recover your wallet."
     reset__slip39_checklist_more_info_threshold_example_template = 958,  // "If you set {0} out of {1} shares, you'll need {2} backup shares to recover your wallet."
+    passphrase__continue_with_empty_passphrase = 959,  // "Continue with empty passphrase?"
+    #[cfg(feature = "universal_fw")]
+    fido__more_credentials = 960,  // "More credentials"
+    #[cfg(feature = "universal_fw")]
+    fido__select_intro = 961,  // "Select the credential that you would like to use for authentication."
+    #[cfg(feature = "universal_fw")]
+    fido__title_for_authentication = 962,  // "for authentication"
+    #[cfg(feature = "universal_fw")]
+    fido__title_select_credential = 963,  // "Select credential"
+    instructions__swipe_down = 964,  // "Swipe down"
+    #[cfg(feature = "universal_fw")]
+    fido__title_credential_details = 965,  // "Credential details"
 }
 
 impl TranslatedString {
@@ -1712,7 +1724,7 @@ impl TranslatedString {
             Self::device_name__change_template => "Change device name to {0}?",
             Self::device_name__title => "Device name",
             Self::entropy__send => "Do you really want to send entropy?",
-            Self::entropy__title => "Internal entropy",
+            Self::entropy__title => "\"\"",
             Self::entropy__title_confirm => "Confirm entropy",
             #[cfg(feature = "universal_fw")]
             Self::eos__about_to_sign_template => "You are about to sign {0}.",
@@ -1800,11 +1812,11 @@ impl TranslatedString {
             #[cfg(feature = "universal_fw")]
             Self::ethereum__data_size_template => "Size: {0} bytes",
             #[cfg(feature = "universal_fw")]
-            Self::ethereum__gas_limit => "Gas limit:",
+            Self::ethereum__gas_limit => "Gas limit",
             #[cfg(feature = "universal_fw")]
-            Self::ethereum__gas_price => "Gas price:",
+            Self::ethereum__gas_price => "Gas price",
             #[cfg(feature = "universal_fw")]
-            Self::ethereum__max_gas_price => "Max gas price:",
+            Self::ethereum__max_gas_price => "Max gas price",
             #[cfg(feature = "universal_fw")]
             Self::ethereum__name_and_version => "Name and version",
             #[cfg(feature = "universal_fw")]
@@ -1812,7 +1824,7 @@ impl TranslatedString {
             #[cfg(feature = "universal_fw")]
             Self::ethereum__no_message_field => "No message field",
             #[cfg(feature = "universal_fw")]
-            Self::ethereum__priority_fee => "Priority fee:",
+            Self::ethereum__priority_fee => "Priority fee",
             #[cfg(feature = "universal_fw")]
             Self::ethereum__show_full_array => "Show full array",
             #[cfg(feature = "universal_fw")]
@@ -2282,7 +2294,7 @@ impl TranslatedString {
             Self::send__confirm_sending => "Sending amount",
             Self::send__from_multiple_accounts => "Sending from multiple accounts.",
             Self::send__including_fee => "Including fee:",
-            Self::send__maximum_fee => "Maximum fee:",
+            Self::send__maximum_fee => "Maximum fee",
             Self::send__receiving_to_multisig => "Receiving to a multisig address.",
             Self::send__title_confirm_sending => "Confirm sending",
             Self::send__title_joint_transaction => "Joint transaction",
@@ -2708,6 +2720,18 @@ impl TranslatedString {
             Self::words__title_done => "Done",
             Self::reset__slip39_checklist_more_info_threshold => "The threshold sets the minumum number of shares needed to recover your wallet.",
             Self::reset__slip39_checklist_more_info_threshold_example_template => "If you set {0} out of {1} shares, you'll need {2} backup shares to recover your wallet.",
+            Self::passphrase__continue_with_empty_passphrase => "Continue with empty passphrase?",
+            #[cfg(feature = "universal_fw")]
+            Self::fido__more_credentials => "More credentials",
+            #[cfg(feature = "universal_fw")]
+            Self::fido__select_intro => "Select the credential that you would like to use for authentication.",
+            #[cfg(feature = "universal_fw")]
+            Self::fido__title_for_authentication => "for authentication",
+            #[cfg(feature = "universal_fw")]
+            Self::fido__title_select_credential => "Select credential",
+            Self::instructions__swipe_down => "Swipe down",
+            #[cfg(feature = "universal_fw")]
+            Self::fido__title_credential_details => "Credential details",
         }
     }
 
@@ -4060,6 +4084,18 @@ impl TranslatedString {
             Qstr::MP_QSTR_words__title_done => Some(Self::words__title_done),
             Qstr::MP_QSTR_reset__slip39_checklist_more_info_threshold => Some(Self::reset__slip39_checklist_more_info_threshold),
             Qstr::MP_QSTR_reset__slip39_checklist_more_info_threshold_example_template => Some(Self::reset__slip39_checklist_more_info_threshold_example_template),
+            Qstr::MP_QSTR_passphrase__continue_with_empty_passphrase => Some(Self::passphrase__continue_with_empty_passphrase),
+            #[cfg(feature = "universal_fw")]
+            Qstr::MP_QSTR_fido__more_credentials => Some(Self::fido__more_credentials),
+            #[cfg(feature = "universal_fw")]
+            Qstr::MP_QSTR_fido__select_intro => Some(Self::fido__select_intro),
+            #[cfg(feature = "universal_fw")]
+            Qstr::MP_QSTR_fido__title_for_authentication => Some(Self::fido__title_for_authentication),
+            #[cfg(feature = "universal_fw")]
+            Qstr::MP_QSTR_fido__title_select_credential => Some(Self::fido__title_select_credential),
+            Qstr::MP_QSTR_instructions__swipe_down => Some(Self::instructions__swipe_down),
+            #[cfg(feature = "universal_fw")]
+            Qstr::MP_QSTR_fido__title_credential_details => Some(Self::fido__title_credential_details),
             _ => None,
         }
     }

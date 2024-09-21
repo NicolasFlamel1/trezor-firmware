@@ -2,12 +2,10 @@ use core::{cmp::Ordering, convert::TryInto};
 
 use super::{
     component::{
-        AddressDetails, Bip39Input, Button, CancelConfirmMsg, CancelInfoConfirmMsg,
-        CoinJoinProgress, FidoConfirm, FidoMsg, Frame, FrameMsg, Homescreen, HomescreenMsg,
-        Lockscreen, MnemonicInput, MnemonicKeyboard, MnemonicKeyboardMsg, PassphraseKeyboard,
-        PassphraseKeyboardMsg, PinKeyboard, PinKeyboardMsg, Progress, PromptScreen,
-        SelectWordCount, SelectWordCountMsg, Slip39Input, StatusScreen, SwipeUpScreen,
-        SwipeUpScreenMsg, VerticalMenu, VerticalMenuChoiceMsg,
+        AddressDetails, Bip39Input, CoinJoinProgress, Frame, FrameMsg, Homescreen, HomescreenMsg,
+        Lockscreen, MnemonicInput, MnemonicKeyboard, MnemonicKeyboardMsg, PinKeyboard,
+        PinKeyboardMsg, Progress, PromptScreen, SelectWordCount, SelectWordCountMsg, Slip39Input,
+        StatusScreen, SwipeUpScreen, SwipeUpScreenMsg, VerticalMenu, VerticalMenuChoiceMsg,
     },
     flow, theme,
 };
@@ -15,9 +13,7 @@ use crate::{
     error::{value_error, Error},
     io::BinaryData,
     micropython::{
-        gc::Gc,
         iter::IterBuf,
-        list::List,
         macros::{obj_fn_1, obj_fn_kw, obj_module},
         map::Map,
         module::Module,
@@ -49,7 +45,7 @@ use crate::{
         layout::{
             obj::{ComponentMsgObj, LayoutObj, ATTACH_TYPE_OBJ},
             result::{CANCELLED, CONFIRMED, INFO},
-            util::{upy_disable_animation, ConfirmBlob, PropsList},
+            util::{upy_disable_animation, ConfirmBlob, PropsList, RecoveryType},
         },
         model_mercury::{
             component::{check_homescreen_format, SwipeContent},
@@ -58,29 +54,6 @@ use crate::{
         },
     },
 };
-
-impl TryFrom<CancelConfirmMsg> for Obj {
-    type Error = Error;
-
-    fn try_from(value: CancelConfirmMsg) -> Result<Self, Self::Error> {
-        match value {
-            CancelConfirmMsg::Cancelled => Ok(CANCELLED.as_obj()),
-            CancelConfirmMsg::Confirmed => Ok(CONFIRMED.as_obj()),
-        }
-    }
-}
-
-impl TryFrom<CancelInfoConfirmMsg> for Obj {
-    type Error = Error;
-
-    fn try_from(value: CancelInfoConfirmMsg) -> Result<Self, Self::Error> {
-        match value {
-            CancelInfoConfirmMsg::Cancelled => Ok(CANCELLED.as_obj()),
-            CancelInfoConfirmMsg::Info => Ok(INFO.as_obj()),
-            CancelInfoConfirmMsg::Confirmed => Ok(CONFIRMED.as_obj()),
-        }
-    }
-}
 
 impl TryFrom<SelectWordCountMsg> for Obj {
     type Error = Error;
@@ -102,33 +75,11 @@ impl TryFrom<VerticalMenuChoiceMsg> for Obj {
     }
 }
 
-impl<F, U> ComponentMsgObj for FidoConfirm<F, U>
-where
-    F: Fn(usize) -> TString<'static>,
-    U: Component<Msg = CancelConfirmMsg>,
-{
-    fn msg_try_into_obj(&self, msg: Self::Msg) -> Result<Obj, Error> {
-        match msg {
-            FidoMsg::Confirmed(page) => Ok((page as u8).into()),
-            FidoMsg::Cancelled => Ok(CANCELLED.as_obj()),
-        }
-    }
-}
-
 impl ComponentMsgObj for PinKeyboard<'_> {
     fn msg_try_into_obj(&self, msg: Self::Msg) -> Result<Obj, Error> {
         match msg {
             PinKeyboardMsg::Confirmed => self.pin().try_into(),
             PinKeyboardMsg::Cancelled => Ok(CANCELLED.as_obj()),
-        }
-    }
-}
-
-impl ComponentMsgObj for PassphraseKeyboard {
-    fn msg_try_into_obj(&self, msg: Self::Msg) -> Result<Obj, Error> {
-        match msg {
-            PassphraseKeyboardMsg::Confirmed => self.passphrase().try_into(),
-            PassphraseKeyboardMsg::Cancelled => Ok(CANCELLED.as_obj()),
         }
     }
 }
@@ -726,37 +677,6 @@ extern "C" fn new_show_error(n_args: usize, args: *const Obj, kwargs: *mut Map) 
     unsafe { util::try_with_args_and_kwargs(n_args, args, kwargs, block) }
 }
 
-extern "C" fn new_confirm_fido(n_args: usize, args: *const Obj, kwargs: *mut Map) -> Obj {
-    let block = move |_args: &[Obj], kwargs: &Map| {
-        let title: TString = kwargs.get(Qstr::MP_QSTR_title)?.try_into()?;
-        let app_name: TString = kwargs.get(Qstr::MP_QSTR_app_name)?.try_into()?;
-        let icon: Option<TString> = kwargs.get(Qstr::MP_QSTR_icon_name)?.try_into_option()?;
-        let accounts: Gc<List> = kwargs.get(Qstr::MP_QSTR_accounts)?.try_into()?;
-
-        // Cache the page count so that we can move `accounts` into the closure.
-        let page_count = accounts.len();
-        // Closure to lazy-load the information on given page index.
-        // Done like this to allow arbitrarily many pages without
-        // the need of any allocation here in Rust.
-        let get_page = move |page_index| {
-            let account = unwrap!(accounts.get(page_index));
-            account.try_into().unwrap_or_else(|_| "".into())
-        };
-
-        let controls = Button::cancel_confirm(
-            Button::with_icon(theme::ICON_CANCEL),
-            Button::with_text(TR::buttons__confirm.into()).styled(theme::button_confirm()),
-            true,
-        );
-
-        let fido_page = FidoConfirm::new(app_name, get_page, page_count, icon, controls);
-
-        let obj = LayoutObj::new(Frame::centered(title, fido_page))?;
-        Ok(obj.into())
-    };
-    unsafe { util::try_with_args_and_kwargs(n_args, args, kwargs, block) }
-}
-
 extern "C" fn new_show_warning(n_args: usize, args: *const Obj, kwargs: *mut Map) -> Obj {
     let block = move |_args: &[Obj], kwargs: &Map| {
         let title: TString = kwargs.get(Qstr::MP_QSTR_title)?.try_into()?;
@@ -765,6 +685,7 @@ extern "C" fn new_show_warning(n_args: usize, args: *const Obj, kwargs: *mut Map
         let action: Option<TString> = kwargs.get(Qstr::MP_QSTR_button)?.try_into_option()?;
         let allow_cancel: bool = kwargs.get(Qstr::MP_QSTR_allow_cancel)?.try_into()?;
         let text_mono: bool = kwargs.get_or(Qstr::MP_QSTR_text_mono, false)?;
+        let danger: bool = kwargs.get_or(Qstr::MP_QSTR_danger, false)?;
 
         let content = if text_mono {
             ParagraphVecShort::from_iter([
@@ -779,6 +700,7 @@ extern "C" fn new_show_warning(n_args: usize, args: *const Obj, kwargs: *mut Map
             ])
             .into_paragraphs()
         };
+
         let frame = if allow_cancel {
             Frame::left_aligned(title, SwipeContent::new(content))
                 .with_cancel_button()
@@ -786,11 +708,17 @@ extern "C" fn new_show_warning(n_args: usize, args: *const Obj, kwargs: *mut Map
                 .with_swipe(SwipeDirection::Up, SwipeSettings::default())
         } else {
             Frame::left_aligned(title, SwipeContent::new(content))
-                .with_warning_button()
                 .with_footer(TR::instructions__swipe_up.into(), action)
                 .with_swipe(SwipeDirection::Up, SwipeSettings::default())
         };
-        let obj = LayoutObj::new(SwipeUpScreen::new(frame))?;
+
+        let frame_with_icon = if danger {
+            frame.with_danger_icon()
+        } else {
+            frame.with_warning_low_icon()
+        };
+
+        let obj = LayoutObj::new(SwipeUpScreen::new(frame_with_icon))?;
         Ok(obj.into())
     };
     unsafe { util::try_with_args_and_kwargs(n_args, args, kwargs, block) }
@@ -970,16 +898,6 @@ extern "C" fn new_request_pin(n_args: usize, args: *const Obj, kwargs: *mut Map)
     unsafe { util::try_with_args_and_kwargs(n_args, args, kwargs, block) }
 }
 
-extern "C" fn new_request_passphrase(n_args: usize, args: *const Obj, kwargs: *mut Map) -> Obj {
-    let block = move |_args: &[Obj], kwargs: &Map| {
-        let _prompt: TString = kwargs.get(Qstr::MP_QSTR_prompt)?.try_into()?;
-        let _max_len: u32 = kwargs.get(Qstr::MP_QSTR_max_len)?.try_into()?;
-        let obj = LayoutObj::new(PassphraseKeyboard::new())?;
-        Ok(obj.into())
-    };
-    unsafe { util::try_with_args_and_kwargs(n_args, args, kwargs, block) }
-}
-
 extern "C" fn new_request_bip39(n_args: usize, args: *const Obj, kwargs: *mut Map) -> Obj {
     let block = move |_args: &[Obj], kwargs: &Map| {
         let prompt: TString = kwargs.get(Qstr::MP_QSTR_prompt)?.try_into()?;
@@ -1067,10 +985,16 @@ extern "C" fn new_show_checklist(n_args: usize, args: *const Obj, kwargs: *mut M
 }
 
 extern "C" fn new_select_word_count(n_args: usize, args: *const Obj, kwargs: *mut Map) -> Obj {
-    let block = move |_args: &[Obj], _kwargs: &Map| {
+    let block = move |_args: &[Obj], kwargs: &Map| {
+        let recovery_type: RecoveryType = kwargs.get(Qstr::MP_QSTR_recovery_type)?.try_into()?;
+        let content = if matches!(recovery_type, RecoveryType::UnlockRepeatedBackup) {
+            SelectWordCount::new_multishare()
+        } else {
+            SelectWordCount::new_all()
+        };
         let obj = LayoutObj::new(Frame::left_aligned(
             TR::recovery__num_of_words.into(),
-            SelectWordCount::new(),
+            content,
         ))?;
         Ok(obj.into())
     };
@@ -1101,31 +1025,6 @@ extern "C" fn new_show_group_share_success(
                 .with_swipe(SwipeDirection::Up, SwipeSettings::default()),
         ))?;
 
-        Ok(obj.into())
-    };
-    unsafe { util::try_with_args_and_kwargs(n_args, args, kwargs, block) }
-}
-
-extern "C" fn new_show_remaining_shares(n_args: usize, args: *const Obj, kwargs: *mut Map) -> Obj {
-    let block = move |_args: &[Obj], kwargs: &Map| {
-        let pages_iterable: Obj = kwargs.get(Qstr::MP_QSTR_pages)?;
-
-        let mut paragraphs = ParagraphVecLong::new();
-        for page in IterBuf::new().try_iterate(pages_iterable)? {
-            let [title, description]: [TString; 2] = util::iter_into_array(page)?;
-            paragraphs
-                .add(Paragraph::new(&theme::TEXT_DEMIBOLD, title))
-                .add(Paragraph::new(&theme::TEXT_NORMAL, description).break_after());
-        }
-
-        let obj = LayoutObj::new(SwipeUpScreen::new(
-            Frame::left_aligned(
-                TR::recovery__title_remaining_shares.into(),
-                SwipeContent::new(paragraphs.into_paragraphs()),
-            )
-            .with_footer(TR::instructions__swipe_up.into(), None)
-            .with_swipe(SwipeDirection::Up, SwipeSettings::default()),
-        ))?;
         Ok(obj.into())
     };
     unsafe { util::try_with_args_and_kwargs(n_args, args, kwargs, block) }
@@ -1234,6 +1133,13 @@ extern "C" fn new_show_wait_text(message: Obj) -> Obj {
     };
 
     unsafe { util::try_or_raise(block) }
+}
+
+extern "C" fn new_confirm_fido(n_args: usize, args: *const Obj, kwargs: *mut Map) -> Obj {
+    #[cfg(feature = "universal_fw")]
+    return flow::confirm_fido::new_confirm_fido(n_args, args, kwargs);
+    #[cfg(not(feature = "universal_fw"))]
+    panic!();
 }
 
 #[no_mangle]
@@ -1509,6 +1415,7 @@ pub static mp_module_trezorui2: Module = obj_module! {
     ///     allow_cancel: bool = False,
     ///     text_mono: bool = False,
     ///     time_ms: int = 0,
+    ///     danger: bool = False,
     /// ) -> LayoutObj[UiResult]:
     ///     """Warning modal. No buttons shown when `button` is empty string."""
     Qstr::MP_QSTR_show_warning => obj_fn_kw!(0, new_show_warning).as_obj(),
@@ -1587,13 +1494,13 @@ pub static mp_module_trezorui2: Module = obj_module! {
     ///     """Request pin on device."""
     Qstr::MP_QSTR_request_pin => obj_fn_kw!(0, new_request_pin).as_obj(),
 
-    /// def request_passphrase(
+    /// def flow_request_passphrase(
     ///     *,
     ///     prompt: str,
     ///     max_len: int,
     /// ) -> LayoutObj[str | UiResult]:
     ///     """Passphrase input keyboard."""
-    Qstr::MP_QSTR_request_passphrase => obj_fn_kw!(0, new_request_passphrase).as_obj(),
+    Qstr::MP_QSTR_flow_request_passphrase => obj_fn_kw!(0, flow::request_passphrase::new_request_passphrase).as_obj(),
 
     /// def request_bip39(
     ///     *,
@@ -1680,6 +1587,7 @@ pub static mp_module_trezorui2: Module = obj_module! {
     ///     recovery_type: RecoveryType,
     ///     text: str,
     ///     subtext: str | None = None,
+    ///     pages: Iterable[tuple[str, str]] | None = None,
     /// ) -> LayoutObj[UiResult]:
     ///     """Device recovery homescreen."""
     Qstr::MP_QSTR_flow_continue_recovery => obj_fn_kw!(0, flow::continue_recovery::new_continue_recovery).as_obj(),
@@ -1687,8 +1595,9 @@ pub static mp_module_trezorui2: Module = obj_module! {
     /// def select_word_count(
     ///     *,
     ///     recovery_type: RecoveryType,
-    /// ) -> LayoutObj[int | str]:  # TT returns int
-    ///     """Select mnemonic word count from (12, 18, 20, 24, 33)."""
+    /// ) -> LayoutObj[int | str]:  # merucry returns int
+    ///     """Select a mnemonic word count from the options: 12, 18, 20, 24, or 33.
+    ///     For unlocking a repeated backup, select from 20 or 33."""
     Qstr::MP_QSTR_select_word_count => obj_fn_kw!(0, new_select_word_count).as_obj(),
 
     /// def show_group_share_success(
@@ -1697,13 +1606,6 @@ pub static mp_module_trezorui2: Module = obj_module! {
     /// ) -> LayoutObj[UiResult]:
     ///     """Shown after successfully finishing a group."""
     Qstr::MP_QSTR_show_group_share_success => obj_fn_kw!(0, new_show_group_share_success).as_obj(),
-
-    /// def show_remaining_shares(
-    ///     *,
-    ///     pages: Iterable[tuple[str, str]],
-    /// ) -> LayoutObj[UiResult]:
-    ///     """Shows SLIP39 state after info button is pressed on `confirm_recovery`."""
-    Qstr::MP_QSTR_show_remaining_shares => obj_fn_kw!(0, new_show_remaining_shares).as_obj(),
 
     /// def show_progress(
     ///     *,
@@ -1794,15 +1696,25 @@ pub static mp_module_trezorui2: Module = obj_module! {
     /// def flow_confirm_output(
     ///     *,
     ///     title: str | None,
-    ///     address: str,
-    ///     amount: str,
+    ///     subtitle: str | None,
+    ///     message: str,
+    ///     amount: str | None,
     ///     chunkify: bool,
+    ///     text_mono: bool,
     ///     account: str | None,
     ///     account_path: str | None,
     ///     br_code: ButtonRequestType,
     ///     br_name: str,
+    ///     address: str | None,
+    ///     address_title: str | None,
+    ///     summary_items: Iterable[tuple[str, str]] | None = None,
+    ///     fee_items: Iterable[tuple[str, str]] | None = None,
+    ///     summary_title: str | None = None,
+    ///     summary_br_code: ButtonRequestType | None = None,
+    ///     summary_br_name: str | None = None,
+    ///     cancel_text: str | None = None,
     /// ) -> LayoutObj[UiResult]:
-    ///     """Confirm recipient."""
+    ///     """Confirm the recipient, (optionally) confirm the amount and (optionally) confirm the summary and present a Hold to Sign page."""
     Qstr::MP_QSTR_flow_confirm_output => obj_fn_kw!(0, flow::new_confirm_output).as_obj(),
 
     /// def flow_confirm_summary(
@@ -1813,6 +1725,7 @@ pub static mp_module_trezorui2: Module = obj_module! {
     ///     fee_items: Iterable[tuple[str, str]],
     ///     br_code: ButtonRequestType,
     ///     br_name: str,
+    ///     cancel_text: str | None = None,
     /// ) -> LayoutObj[UiResult]:
     ///     """Total summary and hold to confirm."""
     Qstr::MP_QSTR_flow_confirm_summary => obj_fn_kw!(0, flow::new_confirm_summary).as_obj(),

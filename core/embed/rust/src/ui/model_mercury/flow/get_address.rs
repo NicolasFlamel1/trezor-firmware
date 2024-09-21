@@ -15,13 +15,12 @@ use crate::{
             FlowMsg, FlowState, SwipeFlow, SwipePage,
         },
         layout::{obj::LayoutObj, util::ConfirmBlob},
-        model_mercury::component::SwipeContent,
     },
 };
 
 use super::super::{
     component::{
-        AddressDetails, CancelInfoConfirmMsg, Frame, FrameMsg, PromptScreen, StatusScreen,
+        AddressDetails, Frame, FrameMsg, PromptMsg, PromptScreen, StatusScreen, SwipeContent,
         VerticalMenu, VerticalMenuChoiceMsg,
     },
     theme,
@@ -143,8 +142,9 @@ impl GetAddress {
                 .with_swipe(SwipeDirection::Down, SwipeSettings::default())
                 .with_swipe(SwipeDirection::Left, SwipeSettings::default())
                 .map(|msg| match msg {
-                    FrameMsg::Content(()) => Some(FlowMsg::Confirmed),
+                    FrameMsg::Content(PromptMsg::Confirmed) => Some(FlowMsg::Confirmed),
                     FrameMsg::Button(_) => Some(FlowMsg::Info),
+                    _ => None,
                 });
 
         let content_confirmed = Frame::left_aligned(
@@ -216,8 +216,8 @@ impl GetAddress {
         .with_swipe(SwipeDirection::Down, SwipeSettings::default())
         .with_swipe(SwipeDirection::Right, SwipeSettings::immediate())
         .map(|msg| match msg {
-            FrameMsg::Content(()) => Some(FlowMsg::Confirmed),
-            FrameMsg::Button(CancelInfoConfirmMsg::Cancelled) => Some(FlowMsg::Cancelled),
+            FrameMsg::Content(PromptMsg::Confirmed) => Some(FlowMsg::Confirmed),
+            FrameMsg::Button(FlowMsg::Cancelled) => Some(FlowMsg::Cancelled),
             _ => None,
         });
 

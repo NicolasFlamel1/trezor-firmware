@@ -6848,8 +6848,6 @@ impl ::protobuf::reflect::ProtobufValue for LoadDevice {
 #[derive(PartialEq,Clone,Default,Debug)]
 pub struct ResetDevice {
     // message fields
-    // @@protoc_insertion_point(field:hw.trezor.messages.management.ResetDevice.display_random)
-    pub display_random: ::std::option::Option<bool>,
     // @@protoc_insertion_point(field:hw.trezor.messages.management.ResetDevice.strength)
     pub strength: ::std::option::Option<u32>,
     // @@protoc_insertion_point(field:hw.trezor.messages.management.ResetDevice.passphrase_protection)
@@ -6882,25 +6880,6 @@ impl<'a> ::std::default::Default for &'a ResetDevice {
 impl ResetDevice {
     pub fn new() -> ResetDevice {
         ::std::default::Default::default()
-    }
-
-    // optional bool display_random = 1;
-
-    pub fn display_random(&self) -> bool {
-        self.display_random.unwrap_or(false)
-    }
-
-    pub fn clear_display_random(&mut self) {
-        self.display_random = ::std::option::Option::None;
-    }
-
-    pub fn has_display_random(&self) -> bool {
-        self.display_random.is_some()
-    }
-
-    // Param is passed by value, moved
-    pub fn set_display_random(&mut self, v: bool) {
-        self.display_random = ::std::option::Option::Some(v);
     }
 
     // optional uint32 strength = 2;
@@ -7112,13 +7091,8 @@ impl ResetDevice {
     }
 
     fn generated_message_descriptor_data() -> ::protobuf::reflect::GeneratedMessageDescriptorData {
-        let mut fields = ::std::vec::Vec::with_capacity(10);
+        let mut fields = ::std::vec::Vec::with_capacity(9);
         let mut oneofs = ::std::vec::Vec::with_capacity(0);
-        fields.push(::protobuf::reflect::rt::v2::make_option_accessor::<_, _>(
-            "display_random",
-            |m: &ResetDevice| { &m.display_random },
-            |m: &mut ResetDevice| { &mut m.display_random },
-        ));
         fields.push(::protobuf::reflect::rt::v2::make_option_accessor::<_, _>(
             "strength",
             |m: &ResetDevice| { &m.strength },
@@ -7182,9 +7156,6 @@ impl ::protobuf::Message for ResetDevice {
     fn merge_from(&mut self, is: &mut ::protobuf::CodedInputStream<'_>) -> ::protobuf::Result<()> {
         while let Some(tag) = is.read_raw_tag_or_eof()? {
             match tag {
-                8 => {
-                    self.display_random = ::std::option::Option::Some(is.read_bool()?);
-                },
                 16 => {
                     self.strength = ::std::option::Option::Some(is.read_uint32()?);
                 },
@@ -7224,9 +7195,6 @@ impl ::protobuf::Message for ResetDevice {
     #[allow(unused_variables)]
     fn compute_size(&self) -> u64 {
         let mut my_size = 0;
-        if let Some(v) = self.display_random {
-            my_size += 1 + 1;
-        }
         if let Some(v) = self.strength {
             my_size += ::protobuf::rt::uint32_size(2, v);
         }
@@ -7260,9 +7228,6 @@ impl ::protobuf::Message for ResetDevice {
     }
 
     fn write_to_with_cached_sizes(&self, os: &mut ::protobuf::CodedOutputStream<'_>) -> ::protobuf::Result<()> {
-        if let Some(v) = self.display_random {
-            os.write_bool(1, v)?;
-        }
         if let Some(v) = self.strength {
             os.write_uint32(2, v)?;
         }
@@ -7307,7 +7272,6 @@ impl ::protobuf::Message for ResetDevice {
     }
 
     fn clear(&mut self) {
-        self.display_random = ::std::option::Option::None;
         self.strength = ::std::option::Option::None;
         self.passphrase_protection = ::std::option::Option::None;
         self.pin_protection = ::std::option::Option::None;
@@ -7322,7 +7286,6 @@ impl ::protobuf::Message for ResetDevice {
 
     fn default_instance() -> &'static ResetDevice {
         static instance: ResetDevice = ResetDevice {
-            display_random: ::std::option::Option::None,
             strength: ::std::option::Option::None,
             passphrase_protection: ::std::option::Option::None,
             pin_protection: ::std::option::Option::None,
@@ -11198,6 +11161,7 @@ static file_descriptor_proto_data: &'static [u8] = b"\
     \x0f\x1a\x04\x80\xa6\x1d\x01\x12!\n\x17Capability_ShamirGroups\x10\x10\
     \x1a\x04\x80\xa6\x1d\x01\x12$\n\x1aCapability_PassphraseEntry\x10\x11\
     \x1a\x04\x80\xa6\x1d\x01\x12\x15\n\x11Capability_Solana\x10\x12\x12!\n\
+<<<<<<< HEAD
     \x17Capability_Translations\x10\x13\x1a\x04\x80\xa6\x1d\x01\x12\x20\n\
     \x1bCapability_MimbleWimbleCoin\x10\xc7\x01\x12\x1f\n\x15Capability_Brig\
     htness\x10\x14\x1a\x04\x80\xa6\x1d\x01\x12\x1b\n\x11Capability_Haptic\
@@ -11266,6 +11230,75 @@ static file_descriptor_proto_data: &'static [u8] = b"\
     \x03\x20\x01(\x08R\rpinProtection\x12\x1e\n\x08language\x18\x04\x20\x01(\
     \tR\x08languageB\x02\x18\x01\x12\x14\n\x05label\x18\x05\x20\x01(\tR\x05l\
     abel\x12)\n\x10enforce_wordlist\x18\x06\x20\x01(\x08R\x0fenforceWordlist\
+=======
+    \x17Capability_Translations\x10\x13\x1a\x04\x80\xa6\x1d\x01\x12\x1f\n\
+    \x15Capability_Brightness\x10\x14\x1a\x04\x80\xa6\x1d\x01\x12\x1b\n\x11C\
+    apability_Haptic\x10\x15\x1a\x04\x80\xa6\x1d\x01\x1a\x04\xc8\xf3\x18\x01\
+    \"\x0c\n\nLockDevice\"&\n\x07SetBusy\x12\x1b\n\texpiry_ms\x18\x01\x20\
+    \x01(\rR\x08expiryMs\"\x0c\n\nEndSession\"\xc4\x04\n\rApplySettings\x12\
+    \x1e\n\x08language\x18\x01\x20\x01(\tR\x08languageB\x02\x18\x01\x12\x14\
+    \n\x05label\x18\x02\x20\x01(\tR\x05label\x12%\n\x0euse_passphrase\x18\
+    \x03\x20\x01(\x08R\rusePassphrase\x12\x1e\n\nhomescreen\x18\x04\x20\x01(\
+    \x0cR\nhomescreen\x120\n\x12_passphrase_source\x18\x05\x20\x01(\rR\x10Pa\
+    ssphraseSourceB\x02\x18\x01\x12+\n\x12auto_lock_delay_ms\x18\x06\x20\x01\
+    (\rR\x0fautoLockDelayMs\x12)\n\x10display_rotation\x18\x07\x20\x01(\rR\
+    \x0fdisplayRotation\x12=\n\x1bpassphrase_always_on_device\x18\x08\x20\
+    \x01(\x08R\x18passphraseAlwaysOnDevice\x12T\n\rsafety_checks\x18\t\x20\
+    \x01(\x0e2/.hw.trezor.messages.management.SafetyCheckLevelR\x0csafetyChe\
+    cks\x123\n\x15experimental_features\x18\n\x20\x01(\x08R\x14experimentalF\
+    eatures\x129\n\x19hide_passphrase_from_host\x18\x0b\x20\x01(\x08R\x16hid\
+    ePassphraseFromHost\x12'\n\x0fhaptic_feedback\x18\r\x20\x01(\x08R\x0ehap\
+    ticFeedback\"T\n\x0eChangeLanguage\x12\x1f\n\x0bdata_length\x18\x01\x20\
+    \x02(\rR\ndataLength\x12!\n\x0cshow_display\x18\x02\x20\x01(\x08R\x0bsho\
+    wDisplay\"Z\n\x16TranslationDataRequest\x12\x1f\n\x0bdata_length\x18\x01\
+    \x20\x02(\rR\ndataLength\x12\x1f\n\x0bdata_offset\x18\x02\x20\x02(\rR\nd\
+    ataOffset\"3\n\x12TranslationDataAck\x12\x1d\n\ndata_chunk\x18\x01\x20\
+    \x02(\x0cR\tdataChunk\"\"\n\nApplyFlags\x12\x14\n\x05flags\x18\x01\x20\
+    \x02(\rR\x05flags\"#\n\tChangePin\x12\x16\n\x06remove\x18\x01\x20\x01(\
+    \x08R\x06remove\"(\n\x0eChangeWipeCode\x12\x16\n\x06remove\x18\x01\x20\
+    \x01(\x08R\x06remove\"\xaa\x01\n\tSdProtect\x12]\n\toperation\x18\x01\
+    \x20\x02(\x0e2?.hw.trezor.messages.management.SdProtect.SdProtectOperati\
+    onTypeR\toperation\">\n\x16SdProtectOperationType\x12\x0b\n\x07DISABLE\
+    \x10\0\x12\n\n\x06ENABLE\x10\x01\x12\x0b\n\x07REFRESH\x10\x02\"O\n\x04Pi\
+    ng\x12\x1a\n\x07message\x18\x01\x20\x01(\t:\0R\x07message\x12+\n\x11butt\
+    on_protection\x18\x02\x20\x01(\x08R\x10buttonProtection\"\x08\n\x06Cance\
+    l\"\x20\n\nGetEntropy\x12\x12\n\x04size\x18\x01\x20\x02(\rR\x04size\"#\n\
+    \x07Entropy\x12\x18\n\x07entropy\x18\x01\x20\x02(\x0cR\x07entropy\"/\n\
+    \x0fGetFirmwareHash\x12\x1c\n\tchallenge\x18\x01\x20\x01(\x0cR\tchalleng\
+    e\"\"\n\x0cFirmwareHash\x12\x12\n\x04hash\x18\x01\x20\x02(\x0cR\x04hash\
+    \"2\n\x12AuthenticateDevice\x12\x1c\n\tchallenge\x18\x01\x20\x02(\x0cR\t\
+    challenge\"U\n\x11AuthenticityProof\x12\"\n\x0ccertificates\x18\x01\x20\
+    \x03(\x0cR\x0ccertificates\x12\x1c\n\tsignature\x18\x02\x20\x02(\x0cR\ts\
+    ignature\"\x0c\n\nWipeDevice\"\xad\x02\n\nLoadDevice\x12\x1c\n\tmnemonic\
+    s\x18\x01\x20\x03(\tR\tmnemonics\x12\x10\n\x03pin\x18\x03\x20\x01(\tR\
+    \x03pin\x123\n\x15passphrase_protection\x18\x04\x20\x01(\x08R\x14passphr\
+    aseProtection\x12\x1e\n\x08language\x18\x05\x20\x01(\tR\x08languageB\x02\
+    \x18\x01\x12\x14\n\x05label\x18\x06\x20\x01(\tR\x05label\x12#\n\rskip_ch\
+    ecksum\x18\x07\x20\x01(\x08R\x0cskipChecksum\x12\x1f\n\x0bu2f_counter\
+    \x18\x08\x20\x01(\rR\nu2fCounter\x12!\n\x0cneeds_backup\x18\t\x20\x01(\
+    \x08R\x0bneedsBackup\x12\x1b\n\tno_backup\x18\n\x20\x01(\x08R\x08noBacku\
+    p\"\xf8\x02\n\x0bResetDevice\x12\x1f\n\x08strength\x18\x02\x20\x01(\r:\
+    \x03256R\x08strength\x123\n\x15passphrase_protection\x18\x03\x20\x01(\
+    \x08R\x14passphraseProtection\x12%\n\x0epin_protection\x18\x04\x20\x01(\
+    \x08R\rpinProtection\x12\x1e\n\x08language\x18\x05\x20\x01(\tR\x08langua\
+    geB\x02\x18\x01\x12\x14\n\x05label\x18\x06\x20\x01(\tR\x05label\x12\x1f\
+    \n\x0bu2f_counter\x18\x07\x20\x01(\rR\nu2fCounter\x12\x1f\n\x0bskip_back\
+    up\x18\x08\x20\x01(\x08R\nskipBackup\x12\x1b\n\tno_backup\x18\t\x20\x01(\
+    \x08R\x08noBackup\x12Q\n\x0bbackup_type\x18\n\x20\x01(\x0e2).hw.trezor.m\
+    essages.management.BackupType:\x05Bip39R\nbackupTypeJ\x04\x08\x01\x10\
+    \x02\"\xe5\x01\n\x0cBackupDevice\x12'\n\x0fgroup_threshold\x18\x01\x20\
+    \x01(\rR\x0egroupThreshold\x12O\n\x06groups\x18\x02\x20\x03(\x0b27.hw.tr\
+    ezor.messages.management.BackupDevice.Slip39GroupR\x06groups\x1a[\n\x0bS\
+    lip39Group\x12)\n\x10member_threshold\x18\x01\x20\x02(\rR\x0fmemberThres\
+    hold\x12!\n\x0cmember_count\x18\x02\x20\x02(\rR\x0bmemberCount\"\x10\n\
+    \x0eEntropyRequest\"&\n\nEntropyAck\x12\x18\n\x07entropy\x18\x01\x20\x02\
+    (\x0cR\x07entropy\"\x8d\x04\n\x0eRecoveryDevice\x12\x1d\n\nword_count\
+    \x18\x01\x20\x01(\rR\twordCount\x123\n\x15passphrase_protection\x18\x02\
+    \x20\x01(\x08R\x14passphraseProtection\x12%\n\x0epin_protection\x18\x03\
+    \x20\x01(\x08R\rpinProtection\x12\x1e\n\x08language\x18\x04\x20\x01(\tR\
+    \x08languageB\x02\x18\x01\x12\x14\n\x05label\x18\x05\x20\x01(\tR\x05labe\
+    l\x12)\n\x10enforce_wordlist\x18\x06\x20\x01(\x08R\x0fenforceWordlist\
+>>>>>>> 7f373ae
     \x12j\n\x0cinput_method\x18\x08\x20\x01(\x0e2G.hw.trezor.messages.manage\
     ment.RecoveryDevice.RecoveryDeviceInputMethodR\x0binputMethod\x12\x1f\n\
     \x0bu2f_counter\x18\t\x20\x01(\rR\nu2fCounter\x12O\n\x04type\x18\n\x20\

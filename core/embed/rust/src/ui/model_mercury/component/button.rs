@@ -4,9 +4,7 @@ use crate::{
     strutil::TString,
     time::Duration,
     ui::{
-        component::{
-            Component, ComponentExt, Event, EventCtx, FixedHeightBar, MsgMap, Split, TimerToken,
-        },
+        component::{Component, Event, EventCtx, TimerToken},
         display::{self, toif::Icon, Color, Font},
         event::TouchEvent,
         geometry::{Alignment, Alignment2D, Insets, Offset, Point, Rect},
@@ -69,10 +67,6 @@ impl Button {
 
     pub const fn with_icon_and_text(content: IconText) -> Self {
         Self::new(ButtonContent::IconAndText(content))
-    }
-
-    pub const fn with_icon_blend(bg: Icon, fg: Icon, fg_offset: Offset) -> Self {
-        Self::new(ButtonContent::IconBlend(bg, fg, fg_offset))
     }
 
     pub const fn empty() -> Self {
@@ -143,10 +137,9 @@ impl Button {
         matches!(self.state, State::Disabled)
     }
 
-    pub fn set_content(&mut self, ctx: &mut EventCtx, content: ButtonContent) {
+    pub fn set_content(&mut self, content: ButtonContent) {
         if self.content != content {
-            self.content = content;
-            ctx.request_paint();
+            self.content = content
         }
     }
 
@@ -181,12 +174,7 @@ impl Button {
     }
 
     pub fn paint_background(&self, style: &ButtonStyle) {
-        match &self.content {
-            ButtonContent::IconBlend(_, _, _) => {}
-            _ => {
-                display::rect_fill(self.area, style.button_color);
-            }
-        }
+        display::rect_fill(self.area, style.button_color);
     }
 
     pub fn render_background<'s>(
@@ -195,25 +183,20 @@ impl Button {
         style: &ButtonStyle,
         alpha: u8,
     ) {
-        match &self.content {
-            ButtonContent::IconBlend(_, _, _) => {}
-            _ => {
-                if self.radius.is_some() {
-                    shape::Bar::new(self.area)
-                        .with_bg(style.background_color)
-                        .with_radius(self.radius.unwrap() as i16)
-                        .with_thickness(2)
-                        .with_fg(style.button_color)
-                        .with_alpha(alpha)
-                        .render(target);
-                } else {
-                    shape::Bar::new(self.area)
-                        .with_bg(style.button_color)
-                        .with_fg(style.button_color)
-                        .with_alpha(alpha)
-                        .render(target);
-                }
-            }
+        if self.radius.is_some() {
+            shape::Bar::new(self.area)
+                .with_bg(style.background_color)
+                .with_radius(self.radius.unwrap() as i16)
+                .with_thickness(2)
+                .with_fg(style.button_color)
+                .with_alpha(alpha)
+                .render(target);
+        } else {
+            shape::Bar::new(self.area)
+                .with_bg(style.button_color)
+                .with_fg(style.button_color)
+                .with_alpha(alpha)
+                .render(target);
         }
     }
 
@@ -243,12 +226,6 @@ impl Button {
             ButtonContent::IconAndText(child) => {
                 child.paint(self.area, self.style(), Self::BASELINE_OFFSET);
             }
-            ButtonContent::IconBlend(bg, fg, offset) => display::icon_over_icon(
-                Some(self.area),
-                (*bg, Offset::zero(), style.button_color),
-                (*fg, *offset, style.text_color),
-                style.background_color,
-            ),
         }
     }
 
@@ -293,20 +270,6 @@ impl Button {
                     Self::BASELINE_OFFSET,
                     alpha,
                 );
-            }
-            ButtonContent::IconBlend(bg, fg, offset) => {
-                shape::Bar::new(self.area)
-                    .with_bg(style.background_color)
-                    .with_alpha(alpha)
-                    .render(target);
-                shape::ToifImage::new(self.area.top_left(), bg.toif)
-                    .with_fg(style.button_color)
-                    .with_alpha(alpha)
-                    .render(target);
-                shape::ToifImage::new(self.area.top_left() + *offset, fg.toif)
-                    .with_fg(style.icon_color)
-                    .with_alpha(alpha)
-                    .render(target);
             }
         }
     }
@@ -452,7 +415,6 @@ impl crate::trace::Trace for Button {
                 t.string("text", content.text);
                 t.bool("icon", true);
             }
-            ButtonContent::IconBlend(_, _, _) => t.bool("icon", true),
         }
     }
 }
@@ -471,7 +433,6 @@ pub enum ButtonContent {
     Text(TString<'static>),
     Icon(Icon),
     IconAndText(IconText),
-    IconBlend(Icon, Icon, Offset),
 }
 
 #[derive(PartialEq, Eq, Clone, Copy)]
@@ -488,48 +449,6 @@ pub struct ButtonStyle {
     pub button_color: Color,
     pub icon_color: Color,
     pub background_color: Color,
-}
-
-impl Button {
-    pub fn cancel_confirm(
-        left: Button,
-        right: Button,
-        left_is_small: bool,
-    ) -> CancelConfirm<
-        impl Fn(ButtonMsg) -> Option<CancelConfirmMsg>,
-        impl Fn(ButtonMsg) -> Option<CancelConfirmMsg>,
-    > {
-        let width = if left_is_small {
-            theme::BUTTON_WIDTH
-        } else {
-            0
-        };
-        theme::button_bar(Split::left(
-            width,
-            theme::BUTTON_SPACING,
-            left.map(|msg| {
-                (matches!(msg, ButtonMsg::Clicked)).then(|| CancelConfirmMsg::Cancelled)
-            }),
-            right.map(|msg| {
-                (matches!(msg, ButtonMsg::Clicked)).then(|| CancelConfirmMsg::Confirmed)
-            }),
-        ))
-    }
-}
-
-#[derive(Copy, Clone)]
-pub enum CancelConfirmMsg {
-    Cancelled,
-    Confirmed,
-}
-
-type CancelConfirm<F0, F1> = FixedHeightBar<Split<MsgMap<Button, F0>, MsgMap<Button, F1>>>;
-
-#[derive(Clone, Copy)]
-pub enum CancelInfoConfirmMsg {
-    Cancelled,
-    Info,
-    Confirmed,
 }
 
 #[derive(PartialEq, Eq, Clone)]

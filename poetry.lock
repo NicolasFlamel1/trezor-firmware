@@ -1377,17 +1377,14 @@ files = [
 
 [[package]]
 name = "scons"
-version = "4.3.0"
+version = "4.8.0"
 description = "Open Source next-generation build tool."
 optional = false
-python-versions = ">=3.5"
+python-versions = ">=3.6"
 files = [
-    {file = "SCons-4.3.0-py3-none-any.whl", hash = "sha256:8c13911a2aa40552553488f7d625af4c0768fc8cdedab4a858d8ce42c8c3664d"},
-    {file = "SCons-4.3.0.tar.gz", hash = "sha256:d47081587e3675cc168f1f54f0d74a69b328a2fc90ec4feb85f728677419b879"},
+    {file = "SCons-4.8.0-py3-none-any.whl", hash = "sha256:760fbfd05e459113e9a1362ab2b00e12ea4195607e820a127d30e6275c8436a1"},
+    {file = "scons-4.8.0.tar.gz", hash = "sha256:2c7377ff6a22ca136c795ae3dc3d0824696e5478d1e4940f2af75659b0d45454"},
 ]
-
-[package.dependencies]
-setuptools = "*"
 
 [[package]]
 name = "setuptools"
@@ -1553,10 +1550,10 @@ testing = ["flaky (>=3.4.0)", "freezegun (>=0.3.11)", "pathlib2 (>=2.3.3)", "psu
 
 [[package]]
 name = "trezor"
-version = "0.13.9"
+version = "0.13.10"
 description = "Python library for communicating with Trezor Hardware Wallet"
 optional = false
-python-versions = ">=3.6"
+python-versions = ">=3.8"
 files = []
 develop = true
 
@@ -1568,12 +1565,13 @@ ecdsa = ">=0.9"
 libusb1 = ">=1.6.4"
 mnemonic = ">=0.20"
 requests = ">=2.4.0"
-typing_extensions = ">=3.10"
+typing_extensions = ">=4.7.1"
 
 [package.extras]
-ethereum = ["rlp (>=1.1.0)", "web3 (>=5)"]
+authentication = ["cryptography (>=41)"]
+ethereum = ["web3 (>=5)"]
 extra = ["Pillow (>=10)"]
-full = ["Pillow (>=10)", "PyQt5", "hidapi (>=0.7.99.post20)", "rlp (>=1.1.0)", "stellar-sdk (>=6)", "web3 (>=5)"]
+full = ["Pillow (>=10)", "PyQt5", "cryptography (>=41)", "hidapi (>=0.7.99.post20)", "stellar-sdk (>=6)", "web3 (>=5)"]
 hidapi = ["hidapi (>=0.7.99.post20)"]
 qt-widgets = ["PyQt5"]
 stellar = ["stellar-sdk (>=6)"]
@@ -1581,6 +1579,22 @@ stellar = ["stellar-sdk (>=6)"]
 [package.source]
 type = "directory"
 url = "python"
+
+[[package]]
+name = "trezor-core-tools"
+version = "0.1.0"
+description = "Collection of CLI tools for trezor-core development"
+optional = false
+python-versions = "^3.8"
+files = []
+develop = true
+
+[package.dependencies]
+trezor = "^0.13.9"
+
+[package.source]
+type = "directory"
+url = "core/tools"
 
 [[package]]
 name = "trezor-pylint-plugin"
@@ -1767,20 +1781,20 @@ setuptools = "*"
 
 [[package]]
 name = "zipp"
-version = "3.7.0"
+version = "3.19.1"
 description = "Backport of pathlib-compatible object wrapper for zip files"
 optional = false
-python-versions = ">=3.7"
+python-versions = ">=3.8"
 files = [
-    {file = "zipp-3.7.0-py3-none-any.whl", hash = "sha256:b47250dd24f92b7dd6a0a8fc5244da14608f3ca90a5efcd37a3b1642fac9a375"},
-    {file = "zipp-3.7.0.tar.gz", hash = "sha256:9f50f446828eb9d45b267433fd3e9da8d801f614129124863f9c51ebceafb87d"},
+    {file = "zipp-3.19.1-py3-none-any.whl", hash = "sha256:2828e64edb5386ea6a52e7ba7cdb17bb30a73a858f5eb6eb93d8d36f5ea26091"},
+    {file = "zipp-3.19.1.tar.gz", hash = "sha256:35427f6d5594f4acf82d25541438348c26736fa9b3afa2754bcd63cdb99d8e8f"},
 ]
 
 [package.extras]
-docs = ["jaraco.packaging (>=8.2)", "rst.linker (>=1.9)", "sphinx"]
-testing = ["func-timeout", "jaraco.itertools", "pytest (>=6)", "pytest-black (>=0.3.7)", "pytest-checkdocs (>=2.4)", "pytest-cov", "pytest-enabler (>=1.0.1)", "pytest-flake8", "pytest-mypy"]
+doc = ["furo", "jaraco.packaging (>=9.3)", "jaraco.tidelift (>=1.4)", "rst.linker (>=1.9)", "sphinx (>=3.5)", "sphinx-lint"]
+test = ["big-O", "jaraco.functools", "jaraco.itertools", "jaraco.test", "more-itertools", "pytest (>=6,!=8.1.*)", "pytest-checkdocs (>=2.4)", "pytest-cov", "pytest-enabler (>=2.2)", "pytest-ignore-flaky", "pytest-mypy", "pytest-ruff (>=0.2.1)"]
 
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.8.1"
-content-hash = "08f0edb51d2d41a2e333b7f8b5ae0a06730f9aa362136c49fd262d823ed5d59a"
+content-hash = "6e63e1ae52fbff76a8e45b5c4bc58938a5537bce7b0eee7993bb55342e47b74a"

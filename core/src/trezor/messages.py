@@ -2477,7 +2477,6 @@ if TYPE_CHECKING:
             return isinstance(msg, cls)
 
     class ResetDevice(protobuf.MessageType):
-        display_random: "bool | None"
         strength: "int"
         passphrase_protection: "bool | None"
         pin_protection: "bool | None"
@@ -2490,7 +2489,6 @@ if TYPE_CHECKING:
         def __init__(
             self,
             *,
-            display_random: "bool | None" = None,
             strength: "int | None" = None,
             passphrase_protection: "bool | None" = None,
             pin_protection: "bool | None" = None,

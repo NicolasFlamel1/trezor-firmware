@@ -183,11 +183,12 @@ if FEATURE_FLAGS["SECP256K1_ZKP"]:
         'USE_EXTERNAL_ASM',
         'USE_EXTERNAL_DEFAULT_CALLBACKS',
         ('ECMULT_GEN_PREC_BITS', '2'),
-        ('ECMULT_WINDOW_SIZE', '8'),
+        ('ECMULT_WINDOW_SIZE', '2'),
         'ENABLE_MODULE_GENERATOR',
         'ENABLE_MODULE_RECOVERY',
         'ENABLE_MODULE_SCHNORRSIG',
         'ENABLE_MODULE_EXTRAKEYS',
+        'ENABLE_MODULE_ECDH',
     ]
     SOURCE_MOD_SECP256K1_ZKP = [
         'vendor/secp256k1-zkp/src/secp256k1.c',
@@ -537,7 +538,7 @@ env.Replace(
     )
 
 env.Replace(
-    HEADERTOOL='tools/headertool.py',
+    HEADERTOOL='headertool',
     PYTHON='python',
     MAKEQSTRDATA='$PYTHON vendor/micropython/py/makeqstrdata.py',
     MAKEVERSIONHDR='$PYTHON vendor/micropython/py/makeversionhdr.py',
@@ -850,6 +851,7 @@ def cargo_build():
 
     if NEW_RENDERING and TREZOR_MODEL in ('T3T1', 'DISC2'):
         features.append('ui_image_buffer')
+        features.append('ui_overlay')
 
     features.extend(FEATURES_AVAILABLE)
 
@@ -915,7 +917,7 @@ if TREZOR_MODEL not in ('DISC1', 'DISC2'):
             env,
             'bootloader',
             'embed/firmware/bootloaders/bootloader.o',
-            f'embed/firmware/bootloaders/bootloader_{BOOTLOADER_SUFFIX}.bin',
+            f'embed/models/{MODEL_IDENTIFIER}/bootloaders/bootloader_{BOOTLOADER_SUFFIX}.bin',
             )
 
 

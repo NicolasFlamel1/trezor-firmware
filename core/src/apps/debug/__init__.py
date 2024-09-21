@@ -127,10 +127,13 @@ if __debug__:
 
         return content
 
-    async def return_layout_change() -> None:
+    async def return_layout_change() -> None:  # type: ignore [Return type of async generator]
         content_tokens = await get_layout_change_content()
 
-        assert isinstance(DEBUG_CONTEXT, context.Context)
+        # spin for a bit until DEBUG_CONTEXT becomes available
+        while not isinstance(DEBUG_CONTEXT, context.Context):
+            yield  # type: ignore [Return type of async generator]
+
         if storage.layout_watcher is LAYOUT_WATCHER_LAYOUT:
             await DEBUG_CONTEXT.write(DebugLinkLayout(tokens=content_tokens))
         else:
@@ -175,11 +178,16 @@ if __debug__:
         if (
             x is not None
             and y is not None
-            and utils.INTERNAL_MODEL in ("T2T1", "T3T1", "D001")
+            and utils.INTERNAL_MODEL  # pylint: disable=internal-model-tuple-comparison
+            in ("T2T1", "T3T1", "D001")
         ):
             click_chan.publish((debug_events.last_event, x, y, msg.hold_ms))
         # Button devices press specific button
-        elif msg.physical_button is not None and utils.INTERNAL_MODEL in ("T2B1",):
+        elif (
+            msg.physical_button is not None
+            and utils.INTERNAL_MODEL  # pylint: disable=internal-model-tuple-comparison
+            in ("T2B1", "T3B1")
+        ):
             button_chan.publish(
                 (debug_events.last_event, msg.physical_button, msg.hold_ms)
             )

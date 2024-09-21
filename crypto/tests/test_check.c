@@ -2014,34 +2014,6 @@ START_TEST(test_bip32_compare) {
 }
 END_TEST
 
-START_TEST(test_bip32_optimized) {
-  HDNode root;
-  hdnode_from_seed((uint8_t *)"NothingToSeeHere", 16, SECP256K1_NAME, &root);
-  ck_assert_int_eq(hdnode_fill_public_key(&root), 0);
-
-  curve_point pub;
-  ecdsa_read_pubkey(&secp256k1, root.public_key, &pub);
-
-  HDNode node;
-  char addr1[MAX_ADDR_SIZE], addr2[MAX_ADDR_SIZE];
-
-  for (int i = 0; i < 40; i++) {
-    // unoptimized
-    memcpy(&node, &root, sizeof(HDNode));
-    hdnode_public_ckd(&node, i);
-    ck_assert_int_eq(hdnode_fill_public_key(&node), 0);
-    ecdsa_get_address(node.public_key, 0, HASHER_SHA2_RIPEMD, HASHER_SHA2D,
-                      addr1, sizeof(addr1));
-    // optimized
-    hdnode_public_ckd_address_optimized(&pub, root.chain_code, i, 0,
-                                        HASHER_SHA2_RIPEMD, HASHER_SHA2D, addr2,
-                                        sizeof(addr2), 0);
-    // check
-    ck_assert_str_eq(addr1, addr2);
-  }
-}
-END_TEST
-
 START_TEST(test_bip32_cache_1) {
   HDNode node1, node2;
   int i, r;
@@ -2633,9 +2605,11 @@ START_TEST(test_bip32_nist_repeat) {
 }
 END_TEST
 
-// test vector 1 from https://en.bitcoin.it/wiki/BIP_0032_TestVectors
+// https://github.com/satoshilabs/slips/blob/master/slip-0010.md#test-vector-1-for-ed25519
 START_TEST(test_bip32_ed25519_vector_1) {
   HDNode node;
+  uint32_t fingerprint;
+  int r;
 
   // init m
   hdnode_from_seed(fromhex("000102030405060708090a0b0c0d0e0f"), 16,
@@ -2656,11 +2630,14 @@ START_TEST(test_bip32_ed25519_vector_1) {
   ck_assert_mem_eq(
       node.public_key,
       fromhex(
-          "01a4b2856bfec510abab89753fac1ac0e1112364e7d250545963f135f2a33188ed"),
+          "00a4b2856bfec510abab89753fac1ac0e1112364e7d250545963f135f2a33188ed"),
       33);
 
   // [Chain m/0']
-  hdnode_private_ckd_prime(&node, 0);
+  fingerprint = hdnode_fingerprint(&node);
+  ck_assert_uint_eq(fingerprint, 0xddebc675);
+  r = hdnode_private_ckd_prime(&node, 0);
+  ck_assert_int_eq(r, 1);
   ck_assert_mem_eq(
       node.chain_code,
       fromhex(
@@ -2675,11 +2652,14 @@ START_TEST(test_bip32_ed25519_vector_1) {
   ck_assert_mem_eq(
       node.public_key,
       fromhex(
-          "018c8a13df77a28f3445213a0f432fde644acaa215fc72dcdf300d5efaa85d350c"),
+          "008c8a13df77a28f3445213a0f432fde644acaa215fc72dcdf300d5efaa85d350c"),
       33);
 
   // [Chain m/0'/1']
-  hdnode_private_ckd_prime(&node, 1);
+  fingerprint = hdnode_fingerprint(&node);
+  ck_assert_uint_eq(fingerprint, 0x13dab143);
+  r = hdnode_private_ckd_prime(&node, 1);
+  ck_assert_int_eq(r, 1);
   ck_assert_mem_eq(
       node.chain_code,
       fromhex(
@@ -2694,11 +2674,14 @@ START_TEST(test_bip32_ed25519_vector_1) {
   ck_assert_mem_eq(
       node.public_key,
       fromhex(
-          "011932a5270f335bed617d5b935c80aedb1a35bd9fc1e31acafd5372c30f5c1187"),
+          "001932a5270f335bed617d5b935c80aedb1a35bd9fc1e31acafd5372c30f5c1187"),
       33);
 
   // [Chain m/0'/1'/2']
-  hdnode_private_ckd_prime(&node, 2);
+  fingerprint = hdnode_fingerprint(&node);
+  ck_assert_uint_eq(fingerprint, 0xebe4cb29);
+  r = hdnode_private_ckd_prime(&node, 2);
+  ck_assert_int_eq(r, 1);
   ck_assert_mem_eq(
       node.chain_code,
       fromhex(
@@ -2713,11 +2696,14 @@ START_TEST(test_bip32_ed25519_vector_1) {
   ck_assert_mem_eq(
       node.public_key,
       fromhex(
-          "01ae98736566d30ed0e9d2f4486a64bc95740d89c7db33f52121f8ea8f76ff0fc1"),
+          "00ae98736566d30ed0e9d2f4486a64bc95740d89c7db33f52121f8ea8f76ff0fc1"),
       33);
 
   // [Chain m/0'/1'/2'/2']
-  hdnode_private_ckd_prime(&node, 2);
+  fingerprint = hdnode_fingerprint(&node);
+  ck_assert_uint_eq(fingerprint, 0x316ec1c6);
+  r = hdnode_private_ckd_prime(&node, 2);
+  ck_assert_int_eq(r, 1);
   ck_assert_mem_eq(
       node.chain_code,
       fromhex(
@@ -2732,11 +2718,14 @@ START_TEST(test_bip32_ed25519_vector_1) {
   ck_assert_mem_eq(
       node.public_key,
       fromhex(
-          "018abae2d66361c879b900d204ad2cc4984fa2aa344dd7ddc46007329ac76c429c"),
+          "008abae2d66361c879b900d204ad2cc4984fa2aa344dd7ddc46007329ac76c429c"),
       33);
 
   // [Chain m/0'/1'/2'/2'/1000000000']
-  hdnode_private_ckd_prime(&node, 1000000000);
+  fingerprint = hdnode_fingerprint(&node);
+  ck_assert_uint_eq(fingerprint, 0xd6322ccd);
+  r = hdnode_private_ckd_prime(&node, 1000000000);
+  ck_assert_int_eq(r, 1);
   ck_assert_mem_eq(
       node.chain_code,
       fromhex(
@@ -2751,14 +2740,15 @@ START_TEST(test_bip32_ed25519_vector_1) {
   ck_assert_mem_eq(
       node.public_key,
       fromhex(
-          "013c24da049451555d51a7014a37337aa4e12d41e485abccfa46b47dfb2af54b7a"),
+          "003c24da049451555d51a7014a37337aa4e12d41e485abccfa46b47dfb2af54b7a"),
       33);
 }
 END_TEST
 
-// test vector 2 from https://en.bitcoin.it/wiki/BIP_0032_TestVectors
+// https://github.com/satoshilabs/slips/blob/master/slip-0010.md#test-vector-2-for-ed25519
 START_TEST(test_bip32_ed25519_vector_2) {
   HDNode node;
+  uint32_t fingerprint;
   int r;
 
   // init m
@@ -2783,10 +2773,12 @@ START_TEST(test_bip32_ed25519_vector_2) {
   ck_assert_mem_eq(
       node.public_key,
       fromhex(
-          "018fe9693f8fa62a4305a140b9764c5ee01e455963744fe18204b4fb948249308a"),
+          "008fe9693f8fa62a4305a140b9764c5ee01e455963744fe18204b4fb948249308a"),
       33);
 
   // [Chain m/0']
+  fingerprint = hdnode_fingerprint(&node);
+  ck_assert_uint_eq(fingerprint, 0x31981b50);
   r = hdnode_private_ckd_prime(&node, 0);
   ck_assert_int_eq(r, 1);
   ck_assert_mem_eq(
@@ -2803,10 +2795,12 @@ START_TEST(test_bip32_ed25519_vector_2) {
   ck_assert_mem_eq(
       node.public_key,
       fromhex(
-          "0186fab68dcb57aa196c77c5f264f215a112c22a912c10d123b0d03c3c28ef1037"),
+          "0086fab68dcb57aa196c77c5f264f215a112c22a912c10d123b0d03c3c28ef1037"),
       33);
 
   // [Chain m/0'/2147483647']
+  fingerprint = hdnode_fingerprint(&node);
+  ck_assert_uint_eq(fingerprint, 0x1e9411b1);
   r = hdnode_private_ckd_prime(&node, 2147483647);
   ck_assert_int_eq(r, 1);
   ck_assert_mem_eq(
@@ -2823,10 +2817,12 @@ START_TEST(test_bip32_ed25519_vector_2) {
   ck_assert_mem_eq(
       node.public_key,
       fromhex(
-          "015ba3b9ac6e90e83effcd25ac4e58a1365a9e35a3d3ae5eb07b9e4d90bcf7506d"),
+          "005ba3b9ac6e90e83effcd25ac4e58a1365a9e35a3d3ae5eb07b9e4d90bcf7506d"),
       33);
 
   // [Chain m/0'/2147483647'/1']
+  fingerprint = hdnode_fingerprint(&node);
+  ck_assert_uint_eq(fingerprint, 0xfcadf38c);
   r = hdnode_private_ckd_prime(&node, 1);
   ck_assert_int_eq(r, 1);
   ck_assert_mem_eq(
@@ -2843,10 +2839,12 @@ START_TEST(test_bip32_ed25519_vector_2) {
   ck_assert_mem_eq(
       node.public_key,
       fromhex(
-          "012e66aa57069c86cc18249aecf5cb5a9cebbfd6fadeab056254763874a9352b45"),
+          "002e66aa57069c86cc18249aecf5cb5a9cebbfd6fadeab056254763874a9352b45"),
       33);
 
   // [Chain m/0'/2147483647'/1'/2147483646']
+  fingerprint = hdnode_fingerprint(&node);
+  ck_assert_uint_eq(fingerprint, 0xaca70953);
   r = hdnode_private_ckd_prime(&node, 2147483646);
   ck_assert_int_eq(r, 1);
   ck_assert_mem_eq(
@@ -2863,10 +2861,12 @@ START_TEST(test_bip32_ed25519_vector_2) {
   ck_assert_mem_eq(
       node.public_key,
       fromhex(
-          "01e33c0f7d81d843c572275f287498e8d408654fdf0d1e065b84e2e6f157aab09b"),
+          "00e33c0f7d81d843c572275f287498e8d408654fdf0d1e065b84e2e6f157aab09b"),
       33);
 
   // [Chain m/0'/2147483647'/1'/2147483646'/2']
+  fingerprint = hdnode_fingerprint(&node);
+  ck_assert_uint_eq(fingerprint, 0x422c654b);
   r = hdnode_private_ckd_prime(&node, 2);
   ck_assert_int_eq(r, 1);
   ck_assert_mem_eq(
@@ -2883,7 +2883,290 @@ START_TEST(test_bip32_ed25519_vector_2) {
   ck_assert_mem_eq(
       node.public_key,
       fromhex(
-          "0147150c75db263559a70d5778bf36abbab30fb061ad69f69ece61a72b0cfa4fc0"),
+          "0047150c75db263559a70d5778bf36abbab30fb061ad69f69ece61a72b0cfa4fc0"),
+      33);
+}
+END_TEST
+
+// https://github.com/satoshilabs/slips/blob/master/slip-0010.md#test-vector-1-for-curve25519
+START_TEST(test_bip32_curve25519_vector_1) {
+  HDNode node;
+  uint32_t fingerprint;
+  int r;
+
+  // init m
+  hdnode_from_seed(fromhex("000102030405060708090a0b0c0d0e0f"), 16,
+                   CURVE25519_NAME, &node);
+
+  // [Chain m]
+  ck_assert_mem_eq(
+      node.chain_code,
+      fromhex(
+          "77997ca3588a1a34f3589279ea2962247abfe5277d52770a44c706378c710768"),
+      32);
+  ck_assert_mem_eq(
+      node.private_key,
+      fromhex(
+          "d70a59c2e68b836cc4bbe8bcae425169b9e2384f3905091e3d60b890e90cd92c"),
+      32);
+  ck_assert_int_eq(hdnode_fill_public_key(&node), 0);
+  ck_assert_mem_eq(
+      node.public_key,
+      fromhex(
+          "005c7289dc9f7f3ea1c8c2de7323b9fb0781f69c9ecd6de4f095ac89a02dc80577"),
+      33);
+
+  // [Chain m/0']
+  fingerprint = hdnode_fingerprint(&node);
+  ck_assert_uint_eq(fingerprint, 0x6f5a9c0d);
+  r = hdnode_private_ckd_prime(&node, 0);
+  ck_assert_int_eq(r, 1);
+  ck_assert_mem_eq(
+      node.chain_code,
+      fromhex(
+          "349a3973aad771c628bf1f1b4d5e071f18eff2e492e4aa7972a7e43895d6597f"),
+      32);
+  ck_assert_mem_eq(
+      node.private_key,
+      fromhex(
+          "cd7630d7513cbe80515f7317cdb9a47ad4a56b63c3f1dc29583ab8d4cc25a9b2"),
+      32);
+  ck_assert_int_eq(hdnode_fill_public_key(&node), 0);
+  ck_assert_mem_eq(
+      node.public_key,
+      fromhex(
+          "00cb8be6b256ce509008b43ae0dccd69960ad4f7ff2e2868c1fbc9e19ec3ad544b"),
+      33);
+
+  // [Chain m/0'/1']
+  fingerprint = hdnode_fingerprint(&node);
+  ck_assert_uint_eq(fingerprint, 0xfde474d7);
+  r = hdnode_private_ckd_prime(&node, 1);
+  ck_assert_int_eq(r, 1);
+  ck_assert_mem_eq(
+      node.chain_code,
+      fromhex(
+          "2ee5ba14faf2fe9d7ab532451c2be3a0a5375c5e8c44fb31d9ad7edc25cda000"),
+      32);
+  ck_assert_mem_eq(
+      node.private_key,
+      fromhex(
+          "a95f97cfc1a61dd833b882c89d36a78a030ea6b2fbe3ae2a70e4f1fc9008d6b1"),
+      32);
+  ck_assert_int_eq(hdnode_fill_public_key(&node), 0);
+  ck_assert_mem_eq(
+      node.public_key,
+      fromhex(
+          "00e9506455dce2526df42e5e4eb5585eaef712e5f9c6a28bf9fb175d96595ea872"),
+      33);
+
+  // [Chain m/0'/1'/2']
+  fingerprint = hdnode_fingerprint(&node);
+  ck_assert_uint_eq(fingerprint, 0x6569dde7);
+  r = hdnode_private_ckd_prime(&node, 2);
+  ck_assert_int_eq(r, 1);
+  ck_assert_mem_eq(
+      node.chain_code,
+      fromhex(
+          "e1897d5a96459ce2a3d294cb2a6a59050ee61255818c50e03ac4263ef17af084"),
+      32);
+  ck_assert_mem_eq(
+      node.private_key,
+      fromhex(
+          "3d6cce04a9175929da907a90b02176077b9ae050dcef9b959fed978bb2200cdc"),
+      32);
+  ck_assert_int_eq(hdnode_fill_public_key(&node), 0);
+  ck_assert_mem_eq(
+      node.public_key,
+      fromhex(
+          "0018f008fcbc6d1cd8b4fe7a9eba00f6570a9da02a9b0005028cb2731b12ee4118"),
+      33);
+
+  // [Chain m/0'/1'/2'/2']
+  fingerprint = hdnode_fingerprint(&node);
+  ck_assert_uint_eq(fingerprint, 0x1b7cce71);
+  r = hdnode_private_ckd_prime(&node, 2);
+  ck_assert_int_eq(r, 1);
+  ck_assert_mem_eq(
+      node.chain_code,
+      fromhex(
+          "1cccc84e2737cfe81b51fbe4c97bbdb000f6a76eddffb9ed03108fbff3ff7e4f"),
+      32);
+  ck_assert_mem_eq(
+      node.private_key,
+      fromhex(
+          "7ae7437efe0a3018999e6f00d72e810ebc50578dbf6728bfa1c7fe73501081a7"),
+      32);
+  ck_assert_int_eq(hdnode_fill_public_key(&node), 0);
+  ck_assert_mem_eq(
+      node.public_key,
+      fromhex(
+          "00512e288a8ef4d869620dc4b06bb06ad2524b350dee5a39fcfeb708dbac65c25c"),
+      33);
+
+  // [Chain m/0'/1'/2'/2'/1000000000']
+  fingerprint = hdnode_fingerprint(&node);
+  ck_assert_uint_eq(fingerprint, 0xde5dcb65);
+  r = hdnode_private_ckd_prime(&node, 1000000000);
+  ck_assert_int_eq(r, 1);
+  ck_assert_mem_eq(
+      node.chain_code,
+      fromhex(
+          "8ccf15d55b1dda246b0c1bf3e979a471a82524c1bd0c1eaecccf00dde72168bb"),
+      32);
+  ck_assert_mem_eq(
+      node.private_key,
+      fromhex(
+          "7a59954d387abde3bc703f531f67d659ec2b8a12597ae82824547d7e27991e26"),
+      32);
+  ck_assert_int_eq(hdnode_fill_public_key(&node), 0);
+  ck_assert_mem_eq(
+      node.public_key,
+      fromhex(
+          "00a077fcf5af53d210257d44a86eb2031233ac7237da220434ac01a0bebccc1919"),
+      33);
+}
+END_TEST
+
+// https://github.com/satoshilabs/slips/blob/master/slip-0010.md#test-vector-2-for-curve25519
+START_TEST(test_bip32_curve25519_vector_2) {
+  HDNode node;
+  uint32_t fingerprint;
+  int r;
+
+  // init m
+  hdnode_from_seed(
+      fromhex(
+          "fffcf9f6f3f0edeae7e4e1dedbd8d5d2cfccc9c6c3c0bdbab7b4b1aeaba8a5a29f9c"
+          "999693908d8a8784817e7b7875726f6c696663605d5a5754514e4b484542"),
+      64, CURVE25519_NAME, &node);
+
+  // [Chain m]
+  ck_assert_mem_eq(
+      node.chain_code,
+      fromhex(
+          "b62c0c81a80a0ee16b977abb3677eb47549d0eef090f7a6c2b2010e739875e34"),
+      32);
+  ck_assert_mem_eq(
+      node.private_key,
+      fromhex(
+          "088491f5b4dfafbe956de471f3db10e02d784bc76050ee3b7c3f11b9706d3730"),
+      32);
+  ck_assert_int_eq(hdnode_fill_public_key(&node), 0);
+  ck_assert_mem_eq(
+      node.public_key,
+      fromhex(
+          "0060cc3b40567729af08757e1efe62536dc864a57ec582f98b96f484201a260c7a"),
+      33);
+
+  // [Chain m/0']
+  fingerprint = hdnode_fingerprint(&node);
+  ck_assert_uint_eq(fingerprint, 0x75edaf13);
+  r = hdnode_private_ckd_prime(&node, 0);
+  ck_assert_int_eq(r, 1);
+  ck_assert_mem_eq(
+      node.chain_code,
+      fromhex(
+          "341f386e571229e8adc52b82e824532817a31a35ba49ae334424e7228d020eed"),
+      32);
+  ck_assert_mem_eq(
+      node.private_key,
+      fromhex(
+          "8e73218a1ba5c7b95e94b6e7cf7b37fb6240fb3b2ecd801402a4439da7067ee2"),
+      32);
+  ck_assert_int_eq(hdnode_fill_public_key(&node), 0);
+  ck_assert_mem_eq(
+      node.public_key,
+      fromhex(
+          "007992b3f270ef15f266785fffb73246ad7f40d1fe8679b737fed0970d92cc5f39"),
+      33);
+
+  // [Chain m/0'/2147483647']
+  fingerprint = hdnode_fingerprint(&node);
+  ck_assert_uint_eq(fingerprint, 0x5b26da66);
+  r = hdnode_private_ckd_prime(&node, 2147483647);
+  ck_assert_int_eq(r, 1);
+  ck_assert_mem_eq(
+      node.chain_code,
+      fromhex(
+          "942cbec088b4ae92e8db9336025e9185fec0985a3da89d7a408bc2a4e18a8134"),
+      32);
+  ck_assert_mem_eq(
+      node.private_key,
+      fromhex(
+          "29262b215c961bae20274588b33955c36f265c1f626df9feebb51034ce63c19d"),
+      32);
+  ck_assert_int_eq(hdnode_fill_public_key(&node), 0);
+  ck_assert_mem_eq(
+      node.public_key,
+      fromhex(
+          "002372feac417c38b833e1aba75f2420278122d698605b995cafc2fed7bb453d41"),
+      33);
+
+  // [Chain m/0'/2147483647'/1']
+  fingerprint = hdnode_fingerprint(&node);
+  ck_assert_uint_eq(fingerprint, 0xf701c832);
+  r = hdnode_private_ckd_prime(&node, 1);
+  ck_assert_int_eq(r, 1);
+  ck_assert_mem_eq(
+      node.chain_code,
+      fromhex(
+          "fe02397ae2ca71efe455f470fb23928baf026360a9e9090e21958f6fba9efc30"),
+      32);
+  ck_assert_mem_eq(
+      node.private_key,
+      fromhex(
+          "a4d2474bd98c5e9ff416f536697b89949627d6d2c384b81a86d29f1136f4c2d1"),
+      32);
+  ck_assert_int_eq(hdnode_fill_public_key(&node), 0);
+  ck_assert_mem_eq(
+      node.public_key,
+      fromhex(
+          "00eca4fd0458d3f729b6218eda871b350fa8870a744caf6d30cd84dad2b9dd9c2d"),
+      33);
+
+  // [Chain m/0'/2147483647'/1'/2147483646']
+  fingerprint = hdnode_fingerprint(&node);
+  ck_assert_uint_eq(fingerprint, 0x6063347b);
+  r = hdnode_private_ckd_prime(&node, 2147483646);
+  ck_assert_int_eq(r, 1);
+  ck_assert_mem_eq(
+      node.chain_code,
+      fromhex(
+          "b3b49d550e732ee629f4aeb4bf7213c3ae0f239fd10add513253cddbb8efb868"),
+      32);
+  ck_assert_mem_eq(
+      node.private_key,
+      fromhex(
+          "d3500d9b30529c51d92497eded1d68d29f60c630c45c61a481c185e574c6e5cf"),
+      32);
+  ck_assert_int_eq(hdnode_fill_public_key(&node), 0);
+  ck_assert_mem_eq(
+      node.public_key,
+      fromhex(
+          "00edaa3d381a2b02f40a80d69b2ce7ba7c3c4a9421744808857cd48c50d29b5868"),
+      33);
+
+  // [Chain m/0'/2147483647'/1'/2147483646'/2']
+  fingerprint = hdnode_fingerprint(&node);
+  ck_assert_uint_eq(fingerprint, 0x86bf4fed);
+  r = hdnode_private_ckd_prime(&node, 2);
+  ck_assert_int_eq(r, 1);
+  ck_assert_mem_eq(
+      node.chain_code,
+      fromhex(
+          "f6ded904046e9758b9388dbf95ea5db837ab98b03b00e4db7009a8e3ac077685"),
+      32);
+  ck_assert_mem_eq(
+      node.private_key,
+      fromhex(
+          "e20fecd59312b63b37eee27714465aae1caa1c87840abd0d685ea88b3d598fdf"),
+      32);
+  ck_assert_int_eq(hdnode_fill_public_key(&node), 0);
+  ck_assert_mem_eq(
+      node.public_key,
+      fromhex(
+          "00aa705de68066e9534a238af35ea77c48016462a8aff358d22eaa6c7d5b034354"),
       33);
 }
 END_TEST
@@ -4112,6 +4395,165 @@ START_TEST(test_aes) {
     plainp += 2;
     cipherp += 2;
   }
+}
+END_TEST
+
+static void test_ecdh_multiply_helper(
+    int (*ecdh_multiply_fn)(const ecdsa_curve *curve, const uint8_t *priv_key,
+                            const uint8_t *pub_key, uint8_t *session_key)) {
+  static struct {
+    const char *priv_key;
+    const char *pub_key;
+    int res;
+    const char *session_key;
+  } tests[] = {
+      // Compressed public key
+      {"1618cc490a4a5b38d9f877759a2c312026fe9f459edb9ba49e91b6de4a237cad",
+       "0322c16706cd0d80dbb4e314799ba1323420e7ffa859a0cf0c82a444192bb6c997", 0,
+       "047b27ebb15e8197c9a560afc1bd45e2a78b864829fc1257333a1a2d7d30d79eed17889"
+       "8ad4960f756cf155cf46d22f2e3b21df10ee5bad560c467ae0d79427a70"},
+      // Uncompressed public key
+      {"55b57f9ffc79d206eaa2b25dd5fe5a0be2d9d880ddfa777a3a0f9c0b2d3a191e",
+       "04816c5bb10c97b96a0b02382b8f8c1a8876218af04396976dace353a139752c6baef57"
+       "449121650cefca54cf9ac4e304890ada667512b5d98171b54a5a8347b09",
+       0,
+       "049b3ab299d119eb89b632ff63ed0b3790508a0020fd729bbc35f39d221101ac5edc3be"
+       "e252886ea8f68c835ed410b715d41e967d0bd10a01a4b01eaa2320a7f4d"},
+      // Invalid compressed public key
+      {"d2ffd4daa78a7fb253edb315e27f5841df00a581ab2c3330ffded22be98b7c96",
+       "026a575a9f3d4e945366a78e7961b312018451df8485ee1210767a0575225c2764", 1,
+       ""},
+      // Invalid uncompressed public key
+      {"7da05844e870b1674c14a9a80b45ef36d221680707b727a7b6c70b2a25e99717",
+       "71ebf221ab355d070a570525e4c4bff94b27ca97e67fcdfb993f6546e7e1ead0ea09ed1"
+       "f7e55282f2787c7fc54cc5815660641cd95148a4b56f15818a04c7f72",
+       1, ""},
+      // Invalid compressed public key - the point at infinity
+      {"6753537e70935a9c85b0bad5b2aa54fb565b50bcf086acc7836a94318bc442d4",
+       "000000000000000000000000000000000000000000000000000000000000000000", 1,
+       ""},
+      // Invalid uncompressed public key - the point at infinity
+      {"6753537e70935a9c85b0bad5b2aa54fb565b50bcf086acc7836a94318bc442d4",
+       "0000000000000000000000000000000000000000000000000000000000000000000000"
+       "0"
+       "00000000000000000000000000000000000000000000000000000000000",
+       1, ""},
+      // Invalid private key - the group order
+      {"fffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141",
+       "02e38ad3515c21358659ef113864b26e6caaa6bb780ce02daaf1c13f4fe24bb632", 2,
+       ""},
+      // Invalid private key - zero
+      {"0000000000000000000000000000000000000000000000000000000000000000",
+       "038325242a489e883afdc86da5a714e4ffc86530e1b6660ac87ffb87c0045e486c", 2,
+       ""},
+  };
+
+  const ecdsa_curve *curve = &secp256k1;
+  uint8_t priv_key[32] = {0};
+  uint8_t pub_key[65] = {0};
+  uint8_t session_key[65] = {0};
+  uint8_t expected_session_key[65] = {0};
+  int expected_res = 0;
+  int res = 0;
+
+  for (size_t i = 0; i < sizeof(tests) / sizeof(*tests); i++) {
+    memcpy(priv_key, fromhex(tests[i].priv_key), 32);
+    memcpy(pub_key, fromhex(tests[i].pub_key), 65);
+    expected_res = tests[i].res;
+    if (expected_res == 0) {
+      memcpy(expected_session_key, fromhex(tests[i].session_key), 65);
+    }
+
+    res = ecdh_multiply_fn(curve, priv_key, pub_key, session_key);
+    ck_assert_int_eq(expected_res, res);
+    if (expected_res == 0) {
+      ck_assert_mem_eq(expected_session_key, session_key, 65);
+    }
+  }
+}
+
+START_TEST(test_tc_ecdh_multiply) {
+  test_ecdh_multiply_helper(tc_ecdh_multiply);
+}
+END_TEST
+
+START_TEST(test_zkp_ecdh_multiply) {
+  test_ecdh_multiply_helper(zkp_ecdh_multiply);
+}
+END_TEST
+
+static void test_ecdsa_tweak_pubkey_helper(ecdsa_tweak_pubkey_result (
+    *ecdsa_tweak_pubkey_fn)(const ecdsa_curve *curve, const uint8_t *pub_key,
+                            const uint8_t *priv_tweak,
+                            uint8_t *tweaked_pub_key)) {
+  static struct {
+    const char *pub_key;
+    const char *tweak;
+    ecdsa_tweak_pubkey_result res;
+    const char *tweaked_pub_key;
+  } tests[] = {
+      {"03062c585e0bf279a06f1741a481e1fc5d6f85fe98c66ba4535b80e72b8cff459e",
+       "ca3f9fcb28ca7a6819ad4d233a26b2d4cda78dea15278b162428bbb88c36b7f9",
+       ECDSA_TWEAK_PUBKEY_SUCCESS,
+       "03375d82263d6a01f13be81210d0c20cafd4b15f1896a9e4acb8bb9c4ee2e524e2"},
+      // Zero private tweak
+      {"03a61dfafced7279cda56dd9535d639b9eb1fde842ffb5c1741efb7a5de61f1784",
+       "0000000000000000000000000000000000000000000000000000000000000000",
+       ECDSA_TWEAK_PUBKEY_SUCCESS,
+       "03a61dfafced7279cda56dd9535d639b9eb1fde842ffb5c1741efb7a5de61f1784"},
+      // Invalid public key - uncompressed format
+      {"0480622d89bb56d2752861db0f0d95ab90dbd962030655d85ab5fc8072ca43e1b0f8e1b"
+       "63f0949ab0803c471d09a279c93cd85161d35c8efc2acfd21dd4a77e8d3",
+       "5862cd69aabb8a6804656b4adea447ea89bf384875dfb3a19591ec910e29dae9",
+       ECDSA_TWEAK_PUBKEY_INVALID_PUBKEY_ERR, ""},
+      // Invalid public key - the point at infinity
+      {"0000000000000000000000000000000000000000000000000000000000000000",
+       "89406ab5f3e2be503dbbbaf4e63e0154ddedeea6793494296f42d4f88c9ae814",
+       ECDSA_TWEAK_PUBKEY_INVALID_PUBKEY_ERR, ""},
+      // Invalid public key - the point doesn't lie on the curve
+      {"025b685000eabe640bdb1fd714d6dea837d76e16a6dbd3f0c839ea18328091def9",
+       "9180a64d35e5b47b6c4eb296a0936334c0499fa27439b5d507372ee8af8c67bd",
+       ECDSA_TWEAK_PUBKEY_INVALID_PUBKEY_ERR, ""},
+      // Invalid private tweak - the group order
+      {"02b3303f7bc64cef5894f265a6f0412260359850bf5b57e6fd931791e21abcd1ff",
+       "fffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141",
+       ECDSA_TWEAK_PUBKEY_INVALID_TWEAK_OR_RESULT_ERR, ""},
+      // Invalid tweaked public key - the point at infinity
+      {"023c0429e944048c61cdad02e73f3277806eaabfa92b3326f834f7a363f126a355",
+       "7b30f9ed2f8ec13ecbd77788815c53773ace8b2f6900f2b386c96e2c440bce02",
+       ECDSA_TWEAK_PUBKEY_INVALID_TWEAK_OR_RESULT_ERR, ""}};
+
+  const ecdsa_curve *curve = &secp256k1;
+  uint8_t pub_key[33] = {0};
+  uint8_t tweak[32] = {0};
+  uint8_t tweaked_pub_key[33] = {0};
+  uint8_t expected_tweaked_pub_key[33] = {0};
+  ecdsa_tweak_pubkey_result expected_res = 0;
+  ecdsa_tweak_pubkey_result res = 0;
+
+  for (size_t i = 0; i < sizeof(tests) / sizeof(*tests); i++) {
+    memcpy(pub_key, fromhex(tests[i].pub_key), 33);
+    memcpy(tweak, fromhex(tests[i].tweak), 32);
+    expected_res = tests[i].res;
+    if (expected_res == ECDSA_TWEAK_PUBKEY_SUCCESS) {
+      memcpy(expected_tweaked_pub_key, fromhex(tests[i].tweaked_pub_key), 33);
+    }
+
+    res = ecdsa_tweak_pubkey_fn(curve, pub_key, tweak, tweaked_pub_key);
+    ck_assert_int_eq(expected_res, res);
+    if (expected_res == ECDSA_TWEAK_PUBKEY_SUCCESS) {
+      ck_assert_mem_eq(expected_tweaked_pub_key, tweaked_pub_key, 33);
+    }
+  }
+}
+
+START_TEST(test_tc_ecdsa_tweak_pubkey) {
+  test_ecdsa_tweak_pubkey_helper(tc_ecdsa_tweak_pubkey);
+}
+END_TEST
+
+START_TEST(test_zkp_ecdsa_tweak_pubkey) {
+  test_ecdsa_tweak_pubkey_helper(zkp_ecdsa_tweak_pubkey);
 }
 END_TEST
 
@@ -7074,6 +7516,7 @@ START_TEST(test_ecdsa_der) {
 }
 END_TEST
 
+#if USE_PRECOMPUTED_CP
 static void test_codepoints_curve(const ecdsa_curve *curve) {
   int i, j;
   bignum256 a;
@@ -7111,6 +7554,7 @@ START_TEST(test_codepoints_secp256k1) { test_codepoints_curve(&secp256k1); }
 END_TEST
 START_TEST(test_codepoints_nist256p1) { test_codepoints_curve(&nist256p1); }
 END_TEST
+#endif
 
 static void test_mult_border_cases_curve(const ecdsa_curve *curve) {
   bignum256 a;
@@ -7924,7 +8368,7 @@ static void test_bip32_ecdh_init_node(HDNode *node, const char *seed_str,
   hdnode_from_seed((const uint8_t *)seed_str, strlen(seed_str), curve_name,
                    node);
   ck_assert_int_eq(hdnode_fill_public_key(node), 0);
-  if (node->public_key[0] == 1) {
+  if (node->public_key[0] == 0) {
     node->public_key[0] = 0x40;  // Curve25519 public keys start with 0x40 byte
   }
 }
@@ -10999,7 +11443,6 @@ Suite *test_suite(void) {
   tcase_add_test(tc, test_bip32_vector_3);
   tcase_add_test(tc, test_bip32_vector_4);
   tcase_add_test(tc, test_bip32_compare);
-  tcase_add_test(tc, test_bip32_optimized);
   tcase_add_test(tc, test_bip32_cache_1);
   tcase_add_test(tc, test_bip32_cache_2);
   suite_add_tcase(s, tc);
@@ -11015,6 +11458,11 @@ Suite *test_suite(void) {
   tc = tcase_create("bip32-ed25519");
   tcase_add_test(tc, test_bip32_ed25519_vector_1);
   tcase_add_test(tc, test_bip32_ed25519_vector_2);
+  suite_add_tcase(s, tc);
+
+  tc = tcase_create("bip32-curve25519");
+  tcase_add_test(tc, test_bip32_curve25519_vector_1);
+  tcase_add_test(tc, test_bip32_curve25519_vector_2);
   suite_add_tcase(s, tc);
 
   tc = tcase_create("bip32-ecdh");
@@ -11033,10 +11481,14 @@ Suite *test_suite(void) {
   tcase_add_test(tc, test_tc_ecdsa_get_public_key65);
   tcase_add_test(tc, test_tc_ecdsa_recover_pub_from_sig);
   tcase_add_test(tc, test_tc_ecdsa_verify_digest);
+  tcase_add_test(tc, test_tc_ecdh_multiply);
+  tcase_add_test(tc, test_tc_ecdsa_tweak_pubkey);
   tcase_add_test(tc, test_zkp_ecdsa_get_public_key33);
   tcase_add_test(tc, test_zkp_ecdsa_get_public_key65);
   tcase_add_test(tc, test_zkp_ecdsa_recover_pub_from_sig);
   tcase_add_test(tc, test_zkp_ecdsa_verify_digest);
+  tcase_add_test(tc, test_zkp_ecdh_multiply);
+  tcase_add_test(tc, test_zkp_ecdsa_tweak_pubkey);
 #if USE_RFC6979
   tcase_add_test(tc, test_tc_ecdsa_sign_digest_deterministic);
   tcase_add_test(tc, test_zkp_ecdsa_sign_digest_deterministic);
@@ -11150,10 +11602,12 @@ Suite *test_suite(void) {
   tcase_add_test(tc, test_pubkey_uncompress);
   suite_add_tcase(s, tc);
 
+#if USE_PRECOMPUTED_CP
   tc = tcase_create("codepoints");
   tcase_add_test(tc, test_codepoints_secp256k1);
   tcase_add_test(tc, test_codepoints_nist256p1);
   suite_add_tcase(s, tc);
+#endif
 
   tc = tcase_create("mult_border_cases");
   tcase_add_test(tc, test_mult_border_cases_secp256k1);

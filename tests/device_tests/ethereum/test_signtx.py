@@ -125,6 +125,7 @@ def test_signtx_fee_info(client: Client):
 
 
 @pytest.mark.skip_t1b1("T1 does not support input flows")
+@pytest.mark.skip_t3t1("Cancel on Summary means Cancel Sign. No going back here!")
 def test_signtx_go_back_from_summary(client: Client):
     input_flow = InputFlowEthereumSignTxGoBackFromSummary(client).get()
     _do_test_signtx(
@@ -458,7 +459,6 @@ def test_signtx_data_pagination(client: Client, flow):
         _sign_tx_call()
 
 
-@pytest.mark.skip_t3t1(reason="Not yet implemented in new UI")
 @pytest.mark.skip_t1b1("T1 does not support Everstake")
 @parametrize_using_common_fixtures("ethereum/sign_tx_staking.json")
 @pytest.mark.parametrize("chunkify", (True, False))

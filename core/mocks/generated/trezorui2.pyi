@@ -263,6 +263,7 @@ def show_warning(
     allow_cancel: bool = False,
     text_mono: bool = False,
     time_ms: int = 0,
+    danger: bool = False,
 ) -> LayoutObj[UiResult]:
     """Warning modal. No buttons shown when `button` is empty string."""
 
@@ -350,7 +351,7 @@ def request_pin(
 
 
 # rust/src/ui/model_mercury/layout.rs
-def request_passphrase(
+def flow_request_passphrase(
     *,
     prompt: str,
     max_len: int,
@@ -452,6 +453,7 @@ def flow_continue_recovery(
     recovery_type: RecoveryType,
     text: str,
     subtext: str | None = None,
+    pages: Iterable[tuple[str, str]] | None = None,
 ) -> LayoutObj[UiResult]:
     """Device recovery homescreen."""
 
@@ -460,8 +462,9 @@ def flow_continue_recovery(
 def select_word_count(
     *,
     recovery_type: RecoveryType,
-) -> LayoutObj[int | str]:  # TT returns int
-    """Select mnemonic word count from (12, 18, 20, 24, 33)."""
+) -> LayoutObj[int | str]:  # merucry returns int
+    """Select a mnemonic word count from the options: 12, 18, 20, 24, or 33.
+    For unlocking a repeated backup, select from 20 or 33."""
 
 
 # rust/src/ui/model_mercury/layout.rs
@@ -470,14 +473,6 @@ def show_group_share_success(
     lines: Iterable[str]
 ) -> LayoutObj[UiResult]:
     """Shown after successfully finishing a group."""
-
-
-# rust/src/ui/model_mercury/layout.rs
-def show_remaining_shares(
-    *,
-    pages: Iterable[tuple[str, str]],
-) -> LayoutObj[UiResult]:
-    """Shows SLIP39 state after info button is pressed on `confirm_recovery`."""
 
 
 # rust/src/ui/model_mercury/layout.rs
@@ -579,15 +574,25 @@ def flow_warning_hi_prio(
 def flow_confirm_output(
     *,
     title: str | None,
-    address: str,
-    amount: str,
+    subtitle: str | None,
+    message: str,
+    amount: str | None,
     chunkify: bool,
+    text_mono: bool,
     account: str | None,
     account_path: str | None,
     br_code: ButtonRequestType,
     br_name: str,
+    address: str | None,
+    address_title: str | None,
+    summary_items: Iterable[tuple[str, str]] | None = None,
+    fee_items: Iterable[tuple[str, str]] | None = None,
+    summary_title: str | None = None,
+    summary_br_code: ButtonRequestType | None = None,
+    summary_br_name: str | None = None,
+    cancel_text: str | None = None,
 ) -> LayoutObj[UiResult]:
-    """Confirm recipient."""
+    """Confirm the recipient, (optionally) confirm the amount and (optionally) confirm the summary and present a Hold to Sign page."""
 
 
 # rust/src/ui/model_mercury/layout.rs
@@ -599,6 +604,7 @@ def flow_confirm_summary(
     fee_items: Iterable[tuple[str, str]],
     br_code: ButtonRequestType,
     br_name: str,
+    cancel_text: str | None = None,
 ) -> LayoutObj[UiResult]:
     """Total summary and hold to confirm."""
 
@@ -1010,9 +1016,10 @@ def confirm_recovery(
 # rust/src/ui/model_tr/layout.rs
 def select_word_count(
     *,
-    recovery_type: RecoveryType,  # unused on TR
-) -> LayoutObj[int | str]:
-   """Select mnemonic word count from (12, 18, 20, 24, 33)."""
+    recovery_type: RecoveryType,
+) -> LayoutObj[int | str]:  # TR returns str
+    """Select a mnemonic word count from the options: 12, 18, 20, 24, or 33.
+    For unlocking a repeated backup, select from 20 or 33."""
 
 
 # rust/src/ui/model_tr/layout.rs
@@ -1377,6 +1384,7 @@ def show_warning(
     description: str = "",
     allow_cancel: bool = False,
     time_ms: int = 0,
+    danger: bool = False,  # unused on TT
 ) -> LayoutObj[UiResult]:
     """Warning modal. No buttons shown when `button` is empty string."""
 
@@ -1561,7 +1569,8 @@ def select_word_count(
     *,
     recovery_type: RecoveryType,
 ) -> LayoutObj[int | str]:  # TT returns int
-    """Select mnemonic word count from (12, 18, 20, 24, 33)."""
+    """Select a mnemonic word count from the options: 12, 18, 20, 24, or 33.
+    For unlocking a repeated backup, select from 20 or 33."""
 
 
 # rust/src/ui/model_tt/layout.rs

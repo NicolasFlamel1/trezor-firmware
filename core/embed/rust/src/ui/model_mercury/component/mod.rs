@@ -1,7 +1,11 @@
 #[cfg(feature = "translations")]
 mod address_details;
+#[cfg(feature = "ui_overlay")]
+mod binary_selection;
 pub mod bl_confirm;
 mod button;
+#[cfg(feature = "universal_fw")]
+mod choose_credential;
 #[cfg(feature = "translations")]
 mod coinjoin_progress;
 mod fido;
@@ -41,14 +45,15 @@ mod welcome_screen;
 
 #[cfg(feature = "translations")]
 pub use address_details::AddressDetails;
-pub use button::{
-    Button, ButtonContent, ButtonMsg, ButtonStyle, ButtonStyleSheet, CancelConfirmMsg,
-    CancelInfoConfirmMsg, IconText,
-};
+#[cfg(feature = "ui_overlay")]
+pub use binary_selection::{BinarySelection, BinarySelectionMsg};
+pub use button::{Button, ButtonContent, ButtonMsg, ButtonStyle, ButtonStyleSheet, IconText};
+#[cfg(feature = "universal_fw")]
+pub use choose_credential::ChooseCredential;
 #[cfg(feature = "translations")]
 pub use coinjoin_progress::CoinJoinProgress;
 pub use error::ErrorScreen;
-pub use fido::{FidoConfirm, FidoMsg};
+pub use fido::FidoCredential;
 pub use footer::Footer;
 pub use frame::{Frame, FrameMsg};
 pub use header::Header;
@@ -72,7 +77,7 @@ pub use number_input::{NumberInputDialog, NumberInputDialogMsg};
 pub use number_input_slider::NumberInputSliderDialog;
 pub use progress::Progress;
 #[cfg(feature = "translations")]
-pub use prompt_screen::PromptScreen;
+pub use prompt_screen::{PromptMsg, PromptScreen};
 pub use result::{ResultFooter, ResultScreen, ResultStyle};
 pub use scroll::ScrollBar;
 #[cfg(feature = "translations")]
@@ -84,7 +89,7 @@ pub use swipe_up_screen::{SwipeUpScreen, SwipeUpScreenMsg};
 #[cfg(feature = "translations")]
 pub use tap_to_confirm::TapToConfirm;
 pub use updatable_more_info::UpdatableMoreInfo;
-pub use vertical_menu::{VerticalMenu, VerticalMenuChoiceMsg};
+pub use vertical_menu::{PagedVerticalMenu, VerticalMenu, VerticalMenuChoiceMsg};
 pub use welcome_screen::WelcomeScreen;
 
 use super::{constant, theme};

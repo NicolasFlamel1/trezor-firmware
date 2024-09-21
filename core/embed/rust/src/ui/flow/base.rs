@@ -1,26 +1,15 @@
 use crate::ui::component::{base::AttachType, swipe_detect::SwipeConfig, SwipeDirection};
 
+pub use crate::ui::component::FlowMsg;
+
 pub trait Swipable {
     fn get_swipe_config(&self) -> SwipeConfig;
 
     fn get_internal_page_count(&self) -> usize;
 }
 
-/// Component::Msg for component parts of a flow. Converting results of
-/// different screens to a shared type makes things easier to work with.
-///
-/// Also currently the type for message emitted by Flow::event to
-/// micropython. They don't need to be the same.
-#[derive(Copy, Clone)]
-pub enum FlowMsg {
-    Confirmed,
-    Cancelled,
-    Info,
-    Choice(usize),
-}
-
 /// Composable event handler result.
-#[derive(Copy, Clone)]
+#[derive(Clone)]
 pub enum Decision {
     /// Do nothing, continue with processing next handler.
     Nothing,
