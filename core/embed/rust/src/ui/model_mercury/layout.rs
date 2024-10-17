@@ -701,18 +701,13 @@ extern "C" fn new_show_warning(n_args: usize, args: *const Obj, kwargs: *mut Map
             .into_paragraphs()
         };
 
-        let frame = if allow_cancel {
-            Frame::left_aligned(title, SwipeContent::new(content))
-                .with_cancel_button()
-                .with_footer(TR::instructions__swipe_up.into(), action)
-                .with_swipe(SwipeDirection::Up, SwipeSettings::default())
-        } else {
-            Frame::left_aligned(title, SwipeContent::new(content))
-                .with_footer(TR::instructions__swipe_up.into(), action)
-                .with_swipe(SwipeDirection::Up, SwipeSettings::default())
-        };
+        let frame = Frame::left_aligned(title, SwipeContent::new(content))
+            .with_footer(TR::instructions__swipe_up.into(), action)
+            .with_swipe(SwipeDirection::Up, SwipeSettings::default());
 
-        let frame_with_icon = if danger {
+        let frame_with_icon = if allow_cancel {
+            frame.with_cancel_button()
+        } else if danger {
             frame.with_danger_icon()
         } else {
             frame.with_warning_low_icon()
