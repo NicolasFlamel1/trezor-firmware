@@ -429,14 +429,6 @@ extern "C" fn new_confirm_properties(n_args: usize, args: *const Obj, kwargs: *m
     unsafe { util::try_with_args_and_kwargs(n_args, args, kwargs, block) }
 }
 
-title: TString<'static>,
-    content: T,
-    verb: TString<'static>,
-    verb_cancel: Option<TString<'static>>,
-    info: bool,
-    hold: bool,
-    page_limit: Option<usize>,
-
 extern "C" fn new_confirm_homescreen(n_args: usize, args: *const Obj, kwargs: *mut Map) -> Obj {
     let block = move |_args: &[Obj], kwargs: &Map| {
         let title: TString = kwargs.get(Qstr::MP_QSTR_title)?.try_into()?;

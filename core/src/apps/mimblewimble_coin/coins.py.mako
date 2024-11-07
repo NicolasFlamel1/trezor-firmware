@@ -188,9 +188,36 @@ def getCoinInfo(coinType: MimbleWimbleCoinCoinType, networkType: MimbleWimbleCoi
 			)
 % endfor
 	
-	# Otherwise check if model is Trezor Safe TBA (TODO waiting for official name)
+	# Otherwise check if model is Trezor model T3B1 (TODO waiting for official name)
 	elif INTERNAL_MODEL == "T3B1":
 % for c in supported_on("T3B1", mimblewimble_coin):
+
+		# Check if coin info is requested
+		if coinType == MimbleWimbleCoinCoinType.${c.coin_type.upper()} and networkType == MimbleWimbleCoinNetworkType.${"TESTNET" if c.is_testnet else "MAINNET"}:
+		
+			# Return coin info
+			return CoinInfo(
+				"${c.name}",
+				${c.slip44},
+				${c.fractional_digits},
+				${c.enable_mqs_address},
+				${c.enable_tor_address},
+				${c.enable_slatepack_address},
+				${c.enable_no_recent_duplicate_kernels},
+				[${",".join(map(lambda x: str(x), c.mqs_version))}],
+				"${c.slatepack_address_human_readable_part}",
+				${"0xFFFFFFFFFFFFFFFF" if c.maximum_fee == "UINT64_MAX" else c.maximum_fee},
+				AddressDerivationType.${c.address_derivation_type}_ADDRESS_DERIVATION,
+				PaymentProofMessageType.${c.payment_proof_message_type}_PAYMENT_PROOF_MESSAGE,
+				${"|".join(map(lambda x: "PaymentProofAddressType." + x + "_PAYMENT_PROOF_ADDRESS", c.payment_proof_address_types))},
+				${"|".join(map(lambda x: "SlateEncryptionType." + x + "_SLATE_ENCRYPTION", c.slate_encryption_types))},
+				"${c.mqs_name}",
+			)
+% endfor
+	
+	# Otherwise check if model is Trezor model T3W1 (TODO waiting for official name)
+	elif INTERNAL_MODEL == "T3W1":
+% for c in supported_on("T3W1", mimblewimble_coin):
 
 		# Check if coin info is requested
 		if coinType == MimbleWimbleCoinCoinType.${c.coin_type.upper()} and networkType == MimbleWimbleCoinNetworkType.${"TESTNET" if c.is_testnet else "MAINNET"}:
