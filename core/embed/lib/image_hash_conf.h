@@ -7,9 +7,9 @@
 #ifdef IMAGE_HASH_SHA256
 #include "sha2.h"
 #define IMAGE_HASH_DIGEST_LENGTH SHA256_DIGEST_LENGTH
-#ifdef USE_HASH_PROCESSOR
+#if defined(USE_HASH_PROCESSOR) && defined(KERNEL_MODE)
 #include "hash_processor.h"
-#define IMAGE_HASH_CTX hash_sha265_context_t
+#define IMAGE_HASH_CTX hash_sha256_context_t
 #define IMAGE_HASH_INIT(ctx) hash_processor_sha256_init(ctx)
 #define IMAGE_HASH_UPDATE(ctx, data, len) \
   hash_processor_sha256_update(ctx, data, len)

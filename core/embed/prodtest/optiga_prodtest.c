@@ -33,6 +33,7 @@
 #include "secret.h"
 #include "sha2.h"
 
+#include STM32_HAL_H
 #include TREZOR_BOARD
 
 #ifdef STM32U5
@@ -143,6 +144,12 @@ void pair_optiga(void) {
   uint8_t secret[SECRET_OPTIGA_KEY_LEN] = {0};
 
   if (secret_optiga_get(secret) != sectrue) {
+    if (secret_optiga_writable() != sectrue) {
+      // optiga pairing secret is unwritable, so fail
+      optiga_pairing_state = OPTIGA_PAIRING_ERR_WRITE_FLASH;
+      return;
+    }
+
     // Generate the pairing secret.
     if (OPTIGA_SUCCESS != optiga_get_random(secret, sizeof(secret))) {
       optiga_pairing_state = OPTIGA_PAIRING_ERR_RNG;

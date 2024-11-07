@@ -9,6 +9,7 @@ pub mod theme;
 #[cfg(feature = "backlight")]
 use crate::ui::model_tt::theme::backlight;
 
+pub mod cshape;
 #[cfg(feature = "micropython")]
 pub mod layout;
 
@@ -26,7 +27,7 @@ impl UIFeaturesCommon for ModelTTFeatures {
     }
     #[cfg(feature = "backlight")]
     fn fadeout() {
-        crate::ui::display::fade_backlight_duration(backlight::get_backlight_normal(), 150);
+        crate::ui::display::fade_backlight_duration(backlight::get_backlight_dim(), 150);
     }
     #[cfg(feature = "backlight")]
     fn backlight_on() {

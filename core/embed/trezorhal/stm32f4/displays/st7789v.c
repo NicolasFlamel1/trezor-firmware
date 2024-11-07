@@ -26,7 +26,6 @@
 #include "irq.h"
 #include "memzero.h"
 #include "st7789v.h"
-#include "supervise.h"
 #include STM32_HAL_H
 
 #ifdef TREZOR_MODEL_T
@@ -253,6 +252,12 @@ int display_orientation(int degrees) {
 
 int display_get_orientation(void) { return DISPLAY_ORIENTATION; }
 
+static inline uint32_t is_mode_handler(void) {
+  uint32_t r0;
+  __asm__ volatile("mrs %0, ipsr" : "=r"(r0));
+  return (r0 & 0x1FF) != 0;
+}
+
 int display_backlight(int val) {
 #ifdef FRAMEBUFFER
 #ifndef BOARDLOADER
@@ -384,12 +389,12 @@ void display_setup_te_interrupt(void) {
   HAL_EXTI_SetConfigLine(&EXTI_Handle, &EXTI_Config);
 
   // setup interrupt for tearing effect pin
-  HAL_NVIC_SetPriority(DISPLAY_TE_INTERRUPT_NUM, IRQ_PRI_DMA, 0);
+  NVIC_SetPriority(DISPLAY_TE_INTERRUPT_NUM, IRQ_PRI_NORMAL);
 #endif
 }
 #endif
 
-void display_init(void) {
+void display_init_all(void) {
   // init peripherals
   __HAL_RCC_GPIOE_CLK_ENABLE();
   __HAL_RCC_GPIOA_CLK_ENABLE();
@@ -564,7 +569,7 @@ void display_sync(void) {}
 
 #ifndef BOARDLOADER
 void DISPLAY_TE_INTERRUPT_HANDLER(void) {
-  HAL_NVIC_DisableIRQ(DISPLAY_TE_INTERRUPT_NUM);
+  NVIC_DisableIRQ(DISPLAY_TE_INTERRUPT_NUM);
 
   if (act_frame_buffer == 1) {
     bg_copy_start_const_out_8((uint8_t *)PhysFrameBuffer1,
@@ -624,14 +629,14 @@ static void switch_fb_in_backround(void) {
 
     pending_fb_switch = true;
     __HAL_GPIO_EXTI_CLEAR_FLAG(DISPLAY_TE_PIN);
-    svc_enableIRQ(DISPLAY_TE_INTERRUPT_NUM);
+    NVIC_EnableIRQ(DISPLAY_TE_INTERRUPT_NUM);
   } else {
     act_frame_buffer = 0;
     memcpy(PhysFrameBuffer1, PhysFrameBuffer0, sizeof(PhysFrameBuffer1));
 
     pending_fb_switch = true;
     __HAL_GPIO_EXTI_CLEAR_FLAG(DISPLAY_TE_PIN);
-    svc_enableIRQ(DISPLAY_TE_INTERRUPT_NUM);
+    NVIC_EnableIRQ(DISPLAY_TE_INTERRUPT_NUM);
   }
 }
 #endif
@@ -723,6 +728,7 @@ void display_finish_actions(void) {
 #ifndef BOARDLOADER
   bg_copy_wait();
 #endif
+  backlight_pwm_deinit(BACKLIGHT_RETAIN);
 }
 #else
 //  NOT FRAMEBUFFER
@@ -755,6 +761,11 @@ uint16_t display_get_window_offset(void) { return 0; }
 
 void display_shift_window(uint16_t pixels) {}
 
-void display_finish_actions(void) {}
+void display_finish_actions(void) {
+  backlight_pwm_deinit(BACKLIGHT_RETAIN);
+#ifdef TREZOR_MODEL_T
+  display_set_big_endian();
+#endif
+}
 
 #endif

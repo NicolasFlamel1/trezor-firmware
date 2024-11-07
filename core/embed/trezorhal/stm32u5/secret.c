@@ -1,12 +1,19 @@
+#include STM32_HAL_H
+
 #include "secret.h"
 #include <stdbool.h>
 #include <string.h>
+#include "bootutils.h"
 #include "common.h"
 #include "flash.h"
+#include "flash_utils.h"
 #include "memzero.h"
 #include "model.h"
+#include "mpu.h"
 #include "rng.h"
 #include "secure_aes.h"
+
+#ifdef KERNEL_MODE
 
 static secbool bootloader_locked = secfalse;
 
@@ -18,17 +25,21 @@ secbool secret_verify_header(void) {
     return secfalse;
   }
 
+  mpu_mode_t mpu_mode = mpu_reconfig(MPU_MODE_SECRET);
+
   bootloader_locked =
       memcmp(addr, SECRET_HEADER_MAGIC, sizeof(SECRET_HEADER_MAGIC)) == 0
           ? sectrue
           : secfalse;
+
+  mpu_restore(mpu_mode);
+
   return bootloader_locked;
 }
 
-secbool secret_ensure_initialized(void) {
+static secbool secret_ensure_initialized(void) {
   if (sectrue != secret_verify_header()) {
-    ensure(flash_area_erase_bulk(STORAGE_AREAS, STORAGE_AREAS_COUNT, NULL),
-           "erase storage failed");
+    ensure(erase_storage(NULL), "erase storage failed");
     secret_erase();
     secret_write_header();
     return secfalse;
@@ -37,10 +48,16 @@ secbool secret_ensure_initialized(void) {
 }
 
 secbool secret_bootloader_locked(void) {
-#ifdef FIRMWARE
-  return (TAMP->BKP8R != 0) * sectrue;
+#if defined BOOTLOADER || defined BOARDLOADER
+  return secret_optiga_present();
 #else
-  return sectrue;
+  const volatile uint32_t *reg1 = &TAMP->BKP8R;
+  for (int i = 0; i < 8; i++) {
+    if (reg1[i] != 0) {
+      return sectrue;
+    }
+  }
+  return secfalse;
 #endif
 }
 
@@ -51,6 +68,7 @@ void secret_write_header(void) {
 }
 
 void secret_write(const uint8_t *data, uint32_t offset, uint32_t len) {
+  mpu_mode_t mpu_mode = mpu_reconfig(MPU_MODE_SECRET);
   ensure(flash_unlock_write(), "secret write");
   for (int i = 0; i < len / 16; i++) {
     ensure(flash_area_write_quadword(&SECRET_AREA, offset + (i * 16),
@@ -58,6 +76,7 @@ void secret_write(const uint8_t *data, uint32_t offset, uint32_t len) {
            "secret write");
   }
   ensure(flash_lock_write(), "secret write");
+  mpu_restore(mpu_mode);
 }
 
 secbool secret_read(uint8_t *data, uint32_t offset, uint32_t len) {
@@ -69,7 +88,10 @@ secbool secret_read(uint8_t *data, uint32_t offset, uint32_t len) {
   if (addr == NULL) {
     return secfalse;
   }
+
+  mpu_mode_t mpu_mode = mpu_reconfig(MPU_MODE_SECRET);
   memcpy(data, addr, len);
+  mpu_restore(mpu_mode);
 
   return sectrue;
 }
@@ -99,6 +121,8 @@ static secbool secret_present(uint32_t offset, uint32_t len) {
     return secfalse;
   }
 
+  mpu_mode_t mpu_mode = mpu_reconfig(MPU_MODE_SECRET);
+
   int secret_empty_bytes = 0;
 
   for (int i = 0; i < len; i++) {
@@ -108,6 +132,9 @@ static secbool secret_present(uint32_t offset, uint32_t len) {
       secret_empty_bytes++;
     }
   }
+
+  mpu_restore(mpu_mode);
+
   return sectrue * (secret_empty_bytes != len);
 }
 
@@ -116,8 +143,7 @@ static secbool secret_present(uint32_t offset, uint32_t len) {
 // read access to it.
 static void secret_bhk_load(void) {
   if (sectrue == secret_bhk_locked()) {
-    delete_secrets();
-    NVIC_SystemReset();
+    reboot_device();
   }
 
   uint32_t secret[SECRET_BHK_LEN / sizeof(uint32_t)] = {0};
@@ -146,6 +172,8 @@ static void secret_bhk_load(void) {
 }
 
 void secret_bhk_regenerate(void) {
+  mpu_mode_t mpu_mode = mpu_reconfig(MPU_MODE_SECRET);
+
   ensure(flash_area_erase(&BHK_AREA, NULL), "Failed regenerating BHK");
   ensure(flash_unlock_write(), "Failed regenerating BHK");
   for (int i = 0; i < 2; i++) {
@@ -158,6 +186,9 @@ void secret_bhk_regenerate(void) {
     memzero(val, sizeof(val));
     ensure(res, "Failed regenerating BHK");
   }
+
+  mpu_restore(mpu_mode);
+
   ensure(flash_lock_write(), "Failed regenerating BHK");
 }
 
@@ -168,6 +199,34 @@ void secret_bhk_regenerate(void) {
 // secret_hide.
 secbool secret_optiga_present(void) {
   return secret_present(SECRET_OPTIGA_KEY_OFFSET, SECRET_OPTIGA_KEY_LEN);
+}
+
+secbool secret_optiga_writable(void) {
+  const uint32_t offset = SECRET_OPTIGA_KEY_OFFSET;
+  const uint32_t len = SECRET_OPTIGA_KEY_LEN;
+
+  const uint8_t *const secret =
+      (uint8_t *)flash_area_get_address(&SECRET_AREA, offset, len);
+
+  if (secret == NULL) {
+    return secfalse;
+  }
+
+  mpu_mode_t mpu_mode = mpu_reconfig(MPU_MODE_SECRET);
+
+  int secret_empty_bytes = 0;
+
+  for (int i = 0; i < len; i++) {
+    // 0xFF being the default value of the flash memory (before any write)
+    // 0x00 being the value of the flash memory after manual erase
+    if (secret[i] == 0xFF) {
+      secret_empty_bytes++;
+    }
+  }
+
+  mpu_restore(mpu_mode);
+
+  return sectrue * (secret_empty_bytes == len);
 }
 
 // Backs up the optiga pairing secret from the secret storage to the backup
@@ -195,7 +254,8 @@ static void secret_optiga_cache(void) {
 secbool secret_optiga_set(const uint8_t secret[SECRET_OPTIGA_KEY_LEN]) {
   uint8_t secret_enc[SECRET_OPTIGA_KEY_LEN] = {0};
   if (sectrue != secure_aes_ecb_encrypt_hw(secret, sizeof(secret_enc),
-                                           secret_enc, SECURE_AES_KEY_DHUK)) {
+                                           secret_enc,
+                                           SECURE_AES_KEY_DHUK_SP)) {
     return secfalse;
   }
   secret_write(secret_enc, SECRET_OPTIGA_KEY_OFFSET, SECRET_OPTIGA_KEY_LEN);
@@ -222,7 +282,7 @@ secbool secret_optiga_get(uint8_t dest[SECRET_OPTIGA_KEY_LEN]) {
   }
 
   secbool res = secure_aes_ecb_decrypt_hw(
-      (uint8_t *)secret, SECRET_OPTIGA_KEY_LEN, dest, SECURE_AES_KEY_DHUK);
+      (uint8_t *)secret, SECRET_OPTIGA_KEY_LEN, dest, SECURE_AES_KEY_DHUK_SP);
 
   memzero(secret, sizeof(secret));
   return res;
@@ -243,7 +303,9 @@ void secret_optiga_erase(void) {
 }
 
 void secret_erase(void) {
+  mpu_mode_t mpu_mode = mpu_reconfig(MPU_MODE_SECRET);
   ensure(flash_area_erase(&SECRET_AREA, NULL), "secret erase");
+  mpu_restore(mpu_mode);
 }
 
 void secret_prepare_fw(secbool allow_run_with_secret, secbool trust_all) {
@@ -264,16 +326,25 @@ void secret_prepare_fw(secbool allow_run_with_secret, secbool trust_all) {
   secret_bhk_lock();
 #ifdef USE_OPTIGA
   secret_optiga_uncache();
-  if (sectrue == allow_run_with_secret) {
-    if (secfalse != secret_optiga_present()) {
-      secret_optiga_cache();
-      secret_disable_access();
-    }
-  } else {
-    if (secfalse != secret_optiga_present()) {
-      show_install_restricted_screen();
-    }
-    secret_disable_access();
+  secbool optiga_secret_present = secret_optiga_present();
+  secbool optiga_secret_writable = secret_optiga_writable();
+  if (sectrue == trust_all && sectrue == allow_run_with_secret &&
+      sectrue == optiga_secret_writable && secfalse == optiga_secret_present) {
+    // Secret is not present and the secret sector is writable.
+    // This means the U5 chip is unprovisioned.
+    // Allow trusted firmware (prodtest presumably) to access the secret sector,
+    // early return here.
+    return;
+  }
+  if (sectrue == allow_run_with_secret && sectrue == optiga_secret_present) {
+    // Firmware is trusted and the Optiga secret is present, make it available.
+    secret_optiga_cache();
+  }
+  // Disable access unconditionally.
+  secret_disable_access();
+  if (sectrue != trust_all && sectrue == optiga_secret_present) {
+    // Untrusted firmware, locked bootloader. Show the restricted screen.
+    show_install_restricted_screen();
   }
 #else
   secret_disable_access();
@@ -283,3 +354,13 @@ void secret_prepare_fw(secbool allow_run_with_secret, secbool trust_all) {
     secret_disable_access();
   }
 }
+
+void secret_init(void) {
+  if (secret_bhk_locked() == sectrue) {
+    reboot_device();
+  }
+
+  secret_ensure_initialized();
+}
+
+#endif  // KERNEL_MODE

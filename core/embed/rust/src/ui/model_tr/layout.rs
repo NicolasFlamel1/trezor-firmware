@@ -94,6 +94,7 @@ where
         match msg {
             PageMsg::Confirmed => Ok(CONFIRMED.as_obj()),
             PageMsg::Cancelled => Ok(CANCELLED.as_obj()),
+            PageMsg::Info => Ok(INFO.as_obj()),
             _ => Err(Error::TypeError),
         }
     }
@@ -243,7 +244,9 @@ fn content_in_button_page<T: Component + Paginate + MaybeTrace + 'static>(
     content: T,
     verb: TString<'static>,
     verb_cancel: Option<TString<'static>>,
+    info: bool,
     hold: bool,
+    page_limit: Option<usize>,
 ) -> Result<Obj, Error> {
     // Left button - icon, text or nothing.
     let cancel_btn = verb_cancel.map(ButtonDetails::from_text_possible_icon);
@@ -259,9 +262,14 @@ fn content_in_button_page<T: Component + Paginate + MaybeTrace + 'static>(
         confirm_btn = confirm_btn.map(|btn| btn.with_default_duration());
     }
 
-    let content = ButtonPage::new(content, theme::BG)
+    let mut content = ButtonPage::new(content, theme::BG)
         .with_cancel_btn(cancel_btn)
+        .with_page_limit(page_limit)
         .with_confirm_btn(confirm_btn);
+
+    if info {
+        content = content.with_armed_confirm_plus_info();
+    }
 
     let mut frame = ScrollableFrame::new(content);
     if !title.is_empty() {
@@ -303,7 +311,7 @@ extern "C" fn new_confirm_action(n_args: usize, args: *const Obj, kwargs: *mut M
             paragraphs.into_paragraphs()
         };
 
-        content_in_button_page(title, paragraphs, verb, verb_cancel, hold)
+        content_in_button_page(title, paragraphs, verb, verb_cancel, false, hold, None)
     };
     unsafe { util::try_with_args_and_kwargs(n_args, args, kwargs, block) }
 }
@@ -314,15 +322,25 @@ extern "C" fn new_confirm_blob(n_args: usize, args: *const Obj, kwargs: *mut Map
         let data: Obj = kwargs.get(Qstr::MP_QSTR_data)?;
         let description: Option<TString> =
             kwargs.get(Qstr::MP_QSTR_description)?.try_into_option()?;
-        let extra: Option<TString> = kwargs.get(Qstr::MP_QSTR_extra)?.try_into_option()?;
-        let verb: TString<'static> =
-            kwargs.get_or(Qstr::MP_QSTR_verb, TR::buttons__confirm.into())?;
-        let verb_cancel: Option<TString<'static>> = kwargs
+        let extra: Option<TString> = kwargs
+            .get(Qstr::MP_QSTR_extra)
+            .unwrap_or_else(|_| Obj::const_none())
+            .try_into_option()?;
+        let verb: Option<TString> = kwargs
+            .get(Qstr::MP_QSTR_verb)
+            .unwrap_or_else(|_| Obj::const_none())
+            .try_into_option()?;
+        let verb_cancel: Option<TString> = kwargs
             .get(Qstr::MP_QSTR_verb_cancel)
             .unwrap_or_else(|_| Obj::const_none())
             .try_into_option()?;
+        let info: bool = kwargs.get_or(Qstr::MP_QSTR_info, false)?;
         let hold: bool = kwargs.get_or(Qstr::MP_QSTR_hold, false)?;
         let chunkify: bool = kwargs.get_or(Qstr::MP_QSTR_chunkify, false)?;
+        let page_limit: Option<usize> = kwargs
+            .get(Qstr::MP_QSTR_page_limit)
+            .unwrap_or_else(|_| Obj::const_none())
+            .try_into_option()?;
 
         let style = if chunkify {
             // Chunkifying the address into smaller pieces when requested
@@ -341,7 +359,15 @@ extern "C" fn new_confirm_blob(n_args: usize, args: *const Obj, kwargs: *mut Map
         }
         .into_paragraphs();
 
-        content_in_button_page(title, paragraphs, verb, verb_cancel, hold)
+        content_in_button_page(
+            title,
+            paragraphs,
+            verb.unwrap_or(TR::buttons__confirm.into()),
+            verb_cancel,
+            info,
+            hold,
+            page_limit,
+        )
     };
     unsafe { util::try_with_args_and_kwargs(n_args, args, kwargs, block) }
 }
@@ -384,17 +410,32 @@ extern "C" fn new_confirm_properties(n_args: usize, args: *const Obj, kwargs: *m
                 paragraphs.add(Paragraph::new(style, value));
             }
         }
+        let button_text = if hold {
+            TR::buttons__hold_to_confirm.into()
+        } else {
+            verb
+        };
 
         content_in_button_page(
             title,
             paragraphs.into_paragraphs(),
-            verb,
-            None,
+            button_text,
+            Some("".into()),
+            false,
             hold,
+            None,
         )
     };
     unsafe { util::try_with_args_and_kwargs(n_args, args, kwargs, block) }
 }
+
+title: TString<'static>,
+    content: T,
+    verb: TString<'static>,
+    verb_cancel: Option<TString<'static>>,
+    info: bool,
+    hold: bool,
+    page_limit: Option<usize>,
 
 extern "C" fn new_confirm_homescreen(n_args: usize, args: *const Obj, kwargs: *mut Map) -> Obj {
     let block = move |_args: &[Obj], kwargs: &Map| {
@@ -420,7 +461,15 @@ extern "C" fn new_confirm_reset_device(n_args: usize, args: *const Obj, kwargs: 
             .text_bold(TR::reset__tos_link);
         let formatted = FormattedText::new(ops).vertically_centered();
 
-        content_in_button_page(title, formatted, button, Some("".into()), false)
+        content_in_button_page(
+            title,
+            formatted,
+            button,
+            Some("".into()),
+            false,
+            false,
+            None,
+        )
     };
     unsafe { util::try_with_args_and_kwargs(n_args, args, kwargs, block) }
 }
@@ -502,7 +551,9 @@ extern "C" fn new_confirm_value(n_args: usize, args: *const Obj, kwargs: *mut Ma
             paragraphs,
             verb.unwrap_or(TR::buttons__confirm.into()),
             Some("".into()),
+            false,
             hold,
+            None,
         )
     };
     unsafe { util::try_with_args_and_kwargs(n_args, args, kwargs, block) }
@@ -525,7 +576,9 @@ extern "C" fn new_confirm_joint_total(n_args: usize, args: *const Obj, kwargs: *
             paragraphs,
             TR::buttons__hold_to_confirm.into(),
             Some("".into()),
+            false,
             true,
+            None,
         )
     };
     unsafe { util::try_with_args_and_kwargs(n_args, args, kwargs, block) }
@@ -556,6 +609,8 @@ extern "C" fn new_confirm_modify_output(n_args: usize, args: *const Obj, kwargs:
             TR::buttons__confirm.into(),
             Some("".into()),
             false,
+            false,
+            None,
         )
     };
     unsafe { util::try_with_args_and_kwargs(n_args, args, kwargs, block) }
@@ -712,8 +767,9 @@ extern "C" fn new_altcoin_tx_summary(n_args: usize, args: *const Obj, kwargs: *m
         let amount_value: TString = kwargs.get(Qstr::MP_QSTR_amount_value)?.try_into()?;
         let fee_title: TString = kwargs.get(Qstr::MP_QSTR_fee_title)?.try_into()?;
         let fee_value: TString = kwargs.get(Qstr::MP_QSTR_fee_value)?.try_into()?;
-        let cancel_cross: bool = kwargs.get_or(Qstr::MP_QSTR_cancel_cross, false)?;
+        let items_title: TString = kwargs.get(Qstr::MP_QSTR_items_title)?.try_into()?;
         let items: Obj = kwargs.get(Qstr::MP_QSTR_items)?;
+        let cancel_cross: bool = kwargs.get_or(Qstr::MP_QSTR_cancel_cross, false)?;
 
         let get_page = move |page_index| {
             match page_index {
@@ -760,7 +816,7 @@ extern "C" fn new_altcoin_tx_summary(n_args: usize, args: *const Obj, kwargs: *m
 
                     let formatted = FormattedText::new(ops).vertically_centered();
                     Page::new(btn_layout, btn_actions, formatted)
-                        .with_title(TR::confirm_total__title_fee.into())
+                        .with_title(items_title)
                         .with_slim_arrows()
                 }
                 _ => unreachable!(),
@@ -928,6 +984,8 @@ extern "C" fn new_confirm_modify_fee(n_args: usize, args: *const Obj, kwargs: *m
             TR::buttons__confirm.into(),
             Some("".into()),
             false,
+            false,
+            None,
         )
     };
     unsafe { util::try_with_args_and_kwargs(n_args, args, kwargs, block) }
@@ -1066,7 +1124,10 @@ extern "C" fn new_show_warning(n_args: usize, args: *const Obj, kwargs: *mut Map
             let mut ops = OpTextLayout::new(theme::TEXT_NORMAL);
             ops = ops.alignment(geometry::Alignment::Center);
             if !warning.is_empty() {
-                ops = ops.text_bold_upper(warning).newline();
+                ops = ops.text_bold_upper(warning);
+                if !description.is_empty() {
+                    ops = ops.newline();
+                }
             }
             if !description.is_empty() {
                 ops = ops.text_normal(description);
@@ -1211,6 +1272,8 @@ extern "C" fn new_confirm_more(n_args: usize, args: *const Obj, kwargs: *mut Map
             button,
             Some("<".into()),
             false,
+            false,
+            None,
         )
     };
     unsafe { util::try_with_args_and_kwargs(n_args, args, kwargs, block) }
@@ -1236,7 +1299,9 @@ extern "C" fn new_confirm_coinjoin(n_args: usize, args: *const Obj, kwargs: *mut
             paragraphs,
             TR::buttons__hold_to_confirm.into(),
             None,
+            false,
             true,
+            None,
         )
     };
     unsafe { util::try_with_args_and_kwargs(n_args, args, kwargs, block) }
@@ -1432,6 +1497,8 @@ extern "C" fn new_confirm_recovery(n_args: usize, args: *const Obj, kwargs: *mut
             button,
             Some("".into()),
             false,
+            false,
+            None,
         )
     };
     unsafe { util::try_with_args_and_kwargs(n_args, args, kwargs, block) }
@@ -1484,6 +1551,8 @@ extern "C" fn new_show_group_share_success(
             TR::buttons__continue.into(),
             None,
             false,
+            false,
+            None,
         )
     };
     unsafe { util::try_with_args_and_kwargs(n_args, args, kwargs, block) }
@@ -1681,12 +1750,19 @@ pub static mp_module_trezorui2: Module = obj_module! {
     ///     title: str,
     ///     data: str | bytes,
     ///     description: str | None,
-    ///     extra: str | None,
+    ///     description_font_green: bool = False,
+    ///     text_mono: bool = True,
+    ///     extra: str | None = None,
+    ///     subtitle: str | None = None,
     ///     verb: str = "CONFIRM",
     ///     verb_cancel: str | None = None,
+    ///     verb_info: str | None = None,
+    ///     info: bool = True,
     ///     hold: bool = False,
     ///     chunkify: bool = False,
     ///     prompt_screen: bool = False,
+    ///     default_cancel: bool = False,
+    ///     page_limit: int | None = None,
     /// ) -> LayoutObj[UiResult]:
     ///     """Confirm byte sequence data."""
     Qstr::MP_QSTR_confirm_blob => obj_fn_kw!(0, new_confirm_blob).as_obj(),
@@ -1803,6 +1879,7 @@ pub static mp_module_trezorui2: Module = obj_module! {
     ///     amount_value: str,
     ///     fee_title: str,
     ///     fee_value: str,
+    ///     items_title: str,
     ///     items: Iterable[Tuple[str, str]],
     ///     cancel_cross: bool = False,
     /// ) -> LayoutObj[UiResult]:

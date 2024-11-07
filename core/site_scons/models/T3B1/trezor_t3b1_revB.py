@@ -23,7 +23,7 @@ def configure(
         features_available.append("display_mono")
 
     mcu = "STM32U585xx"
-    linker_script = "stm32u58"
+    linker_script = """embed/trezorhal/stm32u5/linker/u58/{target}.ld"""
 
     stm32u5_common_files(env, defines, sources, paths)
 
@@ -39,9 +39,6 @@ def configure(
     defines += [f'TREZOR_BOARD=\\"{board}\\"']
     defines += [f"HW_MODEL={hw_model}"]
     defines += [f"HW_REVISION={ord(hw_revision)}"]
-    sources += [
-        "embed/models/T3B1/model_T3B1_layout.c",
-    ]
 
     if "new_rendering" in features_wanted:
         sources += ["embed/trezorhal/xdisplay_legacy.c"]
@@ -73,7 +70,7 @@ def configure(
 
     if "optiga" in features_wanted:
         defines += ["USE_OPTIGA=1"]
-        sources += ["embed/trezorhal/stm32u5/i2c.c"]
+        sources += ["embed/trezorhal/stm32u5/i2c_bus.c"]
         sources += ["embed/trezorhal/stm32u5/optiga_hal.c"]
         sources += ["embed/trezorhal/optiga/optiga.c"]
         sources += ["embed/trezorhal/optiga/optiga_commands.c"]

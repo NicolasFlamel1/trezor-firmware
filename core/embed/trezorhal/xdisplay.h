@@ -32,7 +32,7 @@
 // Currently, following displays displays are supported
 //
 // VG-2864KSWEG01  - OLED Mono / 128x64 pixels  / SPI
-//                 - Model T1B1 / Model T2B1
+//                 - Model T2B1
 //
 // UG-2828SWIG01   - OLED Mono / 128x128 pixels / Parallel
 //                 - Early revisions of T2B1
@@ -46,18 +46,32 @@
 // MIPI            -
 //                 - STM32U5A9J-DK Discovery Board
 
-// Fully initializes the display controller.
-void display_init(void);
+#ifdef KERNEL_MODE
 
-// Called in application or bootloader to reinitialize an already initialized
-// display controller without any distrubing visible effect (blinking, etc.).
-void display_reinit(void);
+// Specifies how display content should be handled during
+// initialization or deinitialization.
+typedef enum {
+  // Clear the display content
+  DISPLAY_RESET_CONTENT,
+  // Retain the display content
+  DISPLAY_RETAIN_CONTENT
+} display_content_mode_t;
 
-// Waits for any backround operations (such as DMA copying) and returns.
+// Initializes the display controller.
 //
-// The function provides a barrier when jumping between
-// boardloader/bootloader and firmware.
-void display_finish_actions(void);
+// If `mode` is `DISPLAY_RETAIN_CONTENT`, ensure the driver was previously
+// initialized and `display_deinit(DISPLAY_RETAIN_CONTENT)` was called.
+void display_init(display_content_mode_t mode);
+
+// Deinitializes the display controller.
+//
+// If `mode` is `DISPLAY_RETAIN_CONTENT`, the function waits for
+// background operations to complete and disables interrupts, so the
+//  application can safely proceed to the next boot stage and call
+// `display_init(DISPLAY_RETAIN_CONTENT)`.
+void display_deinit(display_content_mode_t mode);
+
+#endif  // KERNEL_MODE
 
 // Sets display backlight level ranging from 0 (off)..255 (maximum).
 //
@@ -100,7 +114,9 @@ typedef struct {
 //
 // If framebuffer is not available yet due to display refreshing etc.,
 // the function may block until the buffer is ready to write.
-display_fb_info_t display_get_frame_buffer(void);
+//
+// Return `false` if the framebuffer is not available.
+bool display_get_frame_buffer(display_fb_info_t *fb);
 
 #else  // XFRAMEBUFFER
 
@@ -117,12 +133,7 @@ void display_wait_for_sync(void);
 // swaps the active (currently displayed) and the inactive frame buffers.
 void display_refresh(void);
 
-// Sets display to the mode compatible with the legacy bootloader code.
-//
-// This is used when switching between the firmware and the bootloader.
-void display_set_compatible_settings(void);
-
-// Following function define display's bitblt interface.
+// Following functions define display's bitblt interface.
 //
 // These functions draw directly to to display or to the
 // currently inactive framebuffer.

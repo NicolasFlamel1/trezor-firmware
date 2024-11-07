@@ -1,4 +1,5 @@
-from trezorlib import messages, models
+from trezorlib import messages
+from trezorlib.debuglink import LayoutType
 from trezorlib.debuglink import TrezorClientDebugLink as Client
 
 from . import buttons
@@ -19,7 +20,7 @@ class PinFlow:
         yield  # Enter PIN
         assert "PinKeyboard" in self.debug.wait_layout().all_components()
         self.debug.input(pin)
-        if self.client.model is models.T2B1:
+        if self.client.layout_type is LayoutType.TR:
             yield  # Reenter PIN
             TR.assert_in(
                 self.debug.wait_layout().text_content(), "pin__reenter_to_confirm"
@@ -41,7 +42,7 @@ class BackupFlow:
     def confirm_new_wallet(self) -> BRGeneratorType:
         yield
         TR.assert_in(self.debug.wait_layout().text_content(), "reset__by_continuing")
-        if self.client.model is models.T2B1:
+        if self.client.layout_type is LayoutType.TR:
             self.debug.press_right()
         self.debug.press_yes()
 
@@ -58,7 +59,7 @@ class RecoveryFlow:
     def confirm_recovery(self) -> BRGeneratorType:
         yield
         TR.assert_in(self._text_content(), "reset__by_continuing")
-        if self.client.model is models.T2B1:
+        if self.client.layout_type is LayoutType.TR:
             self.debug.press_right()
         self.debug.press_yes()
 
@@ -68,19 +69,19 @@ class RecoveryFlow:
         self.debug.press_yes()
 
     def setup_slip39_recovery(self, num_words: int) -> BRGeneratorType:
-        if self.client.model is models.T2B1:
+        if self.client.layout_type is LayoutType.TR:
             yield from self.tr_recovery_homescreen()
         yield from self.input_number_of_words(num_words)
         yield from self.enter_any_share()
 
     def setup_repeated_backup_recovery(self, num_words: int) -> BRGeneratorType:
-        if self.client.model is models.T2B1:
+        if self.client.layout_type is LayoutType.TR:
             yield from self.tr_recovery_homescreen()
         yield from self.input_number_of_words(num_words)
         yield from self.enter_your_backup()
 
     def setup_bip39_recovery(self, num_words: int) -> BRGeneratorType:
-        if self.client.model is models.T2B1:
+        if self.client.layout_type is LayoutType.TR:
             yield from self.tr_recovery_homescreen()
         yield from self.input_number_of_words(num_words)
         yield from self.enter_your_backup()
@@ -92,7 +93,7 @@ class RecoveryFlow:
 
     def enter_your_backup(self) -> BRGeneratorType:
         yield
-        if self.debug.model is models.T3T1:
+        if self.debug.layout_type is LayoutType.Mercury:
             TR.assert_in(self._text_content(), "recovery__enter_each_word")
         else:
             TR.assert_in(self._text_content(), "recovery__enter_backup")
@@ -100,7 +101,7 @@ class RecoveryFlow:
             title in self.debug.wait_layout().title().lower()
             for title in TR.translate("recovery__title_dry_run", lower=True)
         )
-        if self.client.model is models.T2B1 and not is_dry_run:
+        if self.client.layout_type is LayoutType.TR and not is_dry_run:
             # Normal recovery has extra info (not dry run)
             self.debug.press_right(wait=True)
             self.debug.press_right(wait=True)
@@ -116,7 +117,7 @@ class RecoveryFlow:
             title in self.debug.wait_layout().title().lower()
             for title in TR.translate("recovery__title_dry_run", lower=True)
         )
-        if self.client.model is models.T2B1 and not is_dry_run:
+        if self.client.layout_type is LayoutType.TR and not is_dry_run:
             # Normal recovery has extra info (not dry run)
             self.debug.press_right(wait=True)
             self.debug.press_right(wait=True)
@@ -124,7 +125,7 @@ class RecoveryFlow:
 
     def abort_recovery(self, confirm: bool) -> BRGeneratorType:
         yield
-        if self.client.model is models.T2B1:
+        if self.client.layout_type is LayoutType.TR:
             TR.assert_in(self._text_content(), "recovery__num_of_words")
             self.debug.press_no()
             yield
@@ -134,7 +135,7 @@ class RecoveryFlow:
                 self.debug.press_yes()
             else:
                 self.debug.press_no()
-        elif self.client.model is models.T3T1:
+        elif self.client.layout_type is LayoutType.Mercury:
             TR.assert_in(self._text_content(), "recovery__enter_each_word")
             self.debug.click(buttons.CORNER_BUTTON, wait=True)
             self.debug.synchronize_at("VerticalMenu")
@@ -154,7 +155,7 @@ class RecoveryFlow:
 
     def abort_recovery_between_shares(self) -> BRGeneratorType:
         yield
-        if self.client.model is models.T2B1:
+        if self.client.layout_type is LayoutType.TR:
             TR.assert_template(
                 self._text_content(), "recovery__x_of_y_entered_template"
             )
@@ -163,7 +164,7 @@ class RecoveryFlow:
             TR.assert_in(self._text_content(), "recovery__wanna_cancel_recovery")
             self.debug.press_right()
             self.debug.press_yes()
-        elif self.client.model is models.T3T1:
+        elif self.client.layout_type is LayoutType.Mercury:
             TR.assert_template(
                 self._text_content(), "recovery__x_of_y_entered_template"
             )
@@ -186,7 +187,7 @@ class RecoveryFlow:
     def input_number_of_words(self, num_words: int) -> BRGeneratorType:
         br = yield
         assert br.code == B.MnemonicWordCount
-        if self.client.model is models.T2B1:
+        if self.client.layout_type is LayoutType.TR:
             TR.assert_in(self.debug.wait_layout().title(), "word_count__title")
         else:
             TR.assert_in(self._text_content(), "recovery__num_of_words")
@@ -240,7 +241,7 @@ class RecoveryFlow:
         assert br.code == B.Success
         text = get_text_possible_pagination(self.debug, br)
         # TODO: make sure the translations fit on one page
-        if self.client.model not in (models.T2T1, models.T3T1):
+        if self.client.layout_type not in (LayoutType.TT, LayoutType.Mercury):
             TR.assert_in(text, "recovery__dry_run_bip39_valid_match")
         self.debug.press_yes()
 
@@ -249,7 +250,7 @@ class RecoveryFlow:
         assert br.code == B.Success
         text = get_text_possible_pagination(self.debug, br)
         # TODO: make sure the translations fit on one page
-        if self.client.model not in (models.T2T1, models.T3T1):
+        if self.client.layout_type not in (LayoutType.TT, LayoutType.Mercury):
             TR.assert_in(text, "recovery__dry_run_slip39_valid_match")
         self.debug.press_yes()
 
@@ -258,7 +259,7 @@ class RecoveryFlow:
         assert br.code == B.Warning
         text = get_text_possible_pagination(self.debug, br)
         # TODO: make sure the translations fit on one page on TT
-        if self.client.model not in (models.T2T1, models.T3T1):
+        if self.client.layout_type not in (LayoutType.TT, LayoutType.Mercury):
             TR.assert_in(text, "recovery__dry_run_slip39_valid_mismatch")
         self.debug.press_yes()
 
@@ -267,7 +268,7 @@ class RecoveryFlow:
         assert br.code == B.Warning
         text = get_text_possible_pagination(self.debug, br)
         # TODO: make sure the translations fit on one page
-        if self.client.model not in (models.T2T1, models.T3T1):
+        if self.client.layout_type not in (LayoutType.TT, LayoutType.Mercury):
             TR.assert_in(text, "recovery__dry_run_bip39_valid_mismatch")
         self.debug.press_yes()
 
@@ -301,9 +302,9 @@ class RecoveryFlow:
                 if has_groups:
                     yield from self.success_share_group_entered()
                 if click_info:
-                    if self.client.model is models.T2T1:
+                    if self.client.layout_type is LayoutType.TT:
                         yield from self.tt_click_info()
-                    elif self.client.model is models.T3T1:
+                    elif self.client.layout_type is LayoutType.Mercury:
                         yield from self.mercury_click_info()
                 yield from self.success_more_shares_needed()
 
@@ -342,9 +343,7 @@ class EthereumFlow:
 
     def confirm_data(self, info: bool = False, cancel: bool = False) -> BRGeneratorType:
         yield
-        TR.assert_equals(
-            self.debug.wait_layout().title(), "ethereum__title_confirm_data"
-        )
+        TR.assert_equals(self.debug.wait_layout().title(), "ethereum__title_input_data")
         if info:
             self.debug.press_info()
         elif cancel:
@@ -354,33 +353,35 @@ class EthereumFlow:
 
     def paginate_data(self) -> BRGeneratorType:
         br = yield
-        TR.assert_equals(
-            self.debug.wait_layout().title(), "ethereum__title_confirm_data"
-        )
+        TR.assert_equals(self.debug.wait_layout().title(), "ethereum__title_input_data")
         assert br.pages is not None
-        for i in range(br.pages):
-            self.debug.wait_layout()
-            if i < br.pages - 1:
-                self.debug.swipe_up()
-        self.debug.press_yes()
+        if self.client.layout_type is LayoutType.TR:
+            for i in range(br.pages):
+                if i < br.pages - 1:
+                    self.debug.press_right()
+        else:
+            for i in range(br.pages):
+                self.debug.wait_layout()
+                if i < br.pages - 1:
+                    self.debug.click(buttons.OK)
 
     def paginate_data_go_back(self) -> BRGeneratorType:
         br = yield
-        TR.assert_equals(
-            self.debug.wait_layout().title(), "ethereum__title_confirm_data"
-        )
+        TR.assert_equals(self.debug.wait_layout().title(), "ethereum__title_input_data")
         assert br.pages is not None
         assert br.pages > 2
-        if self.client.model in (models.T2T1, models.T3T1):
+        if self.client.layout_type is LayoutType.TR:
+            self.debug.press_right()
+            self.debug.press_right()
+            self.debug.press_left()
+            self.debug.press_left()
+            self.debug.press_left()
+        elif self.client.layout_type in (LayoutType.TT, LayoutType.Mercury):
             self.debug.swipe_up(wait=True)
             self.debug.swipe_up(wait=True)
             self.debug.click(self.GO_BACK)
         else:
-            self.debug.press_right()
-            self.debug.press_right()
-            self.debug.press_left()
-            self.debug.press_left()
-            self.debug.press_left()
+            raise ValueError(f"Unknown layout: {self.client.layout_type}")
 
     def confirm_tx(
         self,
@@ -391,8 +392,8 @@ class EthereumFlow:
 
         yield
 
-        if self.client.model in (models.T2T1,):
-            TR.assert_equals(self.debug.wait_layout().title(), "words__recipient")
+        if self.client.layout_type is LayoutType.TT:
+            TR.assert_equals(self.debug.wait_layout().title(), "words__address")
             if cancel:
                 self.debug.press_no()
             else:
@@ -421,11 +422,11 @@ class EthereumFlow:
                 self.debug.press_yes()
 
                 yield
-        elif self.client.model in (
-            models.T2B1,
-            models.T3B1,
-        ):
-            TR.assert_equals(self.debug.wait_layout().title(), "words__recipient")
+        elif self.client.layout_type is LayoutType.TR:
+            TR.assert_in_multiple(
+                self.debug.wait_layout().title(),
+                ["ethereum__interaction_contract", "words__recipient"],
+            )
             if cancel:
                 self.debug.press_left()
             else:
@@ -453,7 +454,7 @@ class EthereumFlow:
                 self.debug.press_middle()
 
                 yield
-        elif self.client.model in (models.T3T1,):
+        elif self.client.layout_type is LayoutType.Mercury:
             TR.assert_equals(
                 self.debug.wait_layout().title().split("\n")[0], "words__address"
             )
@@ -518,7 +519,7 @@ class EthereumFlow:
                 "ethereum__staking_claim_intro",
             ],
         )
-        if self.client.model in (models.T2T1,):
+        if self.client.layout_type is LayoutType.TT:
             # confirm intro
             if info:
                 self.debug.click(buttons.CORNER_BUTTON, wait=True)
@@ -547,7 +548,8 @@ class EthereumFlow:
             yield
 
             self.debug.press_yes()
-        elif self.client.model in (models.T3T1,):
+
+        elif self.client.layout_type is LayoutType.Mercury:
             # confirm intro
             if info:
                 self.debug.click(buttons.CORNER_BUTTON, wait=True)
@@ -586,10 +588,7 @@ class EthereumFlow:
 
             self.debug.press_yes()
 
-        elif self.client.model in (
-            models.T2B1,
-            models.T3B1,
-        ):
+        elif self.client.layout_type is LayoutType.TR:
             # confirm intro
             if info:
                 self.debug.press_right(wait=True)
@@ -620,5 +619,6 @@ class EthereumFlow:
             yield
 
             self.debug.press_yes()
+
         else:
             raise ValueError("Unknown model!")

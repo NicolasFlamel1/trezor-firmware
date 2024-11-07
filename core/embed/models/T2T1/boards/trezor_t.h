@@ -10,6 +10,7 @@
 #define USE_RGB_COLORS 1
 #define USE_BACKLIGHT 1
 #define USE_DISP_I8080_8BIT_DW 1
+#define USE_PVD 1
 
 #define DISPLAY_RESX 240
 #define DISPLAY_RESY 240
@@ -42,7 +43,13 @@
 #define I2C_INSTANCE_0_SCL_PORT GPIOB
 #define I2C_INSTANCE_0_SCL_PIN GPIO_PIN_6
 #define I2C_INSTANCE_0_SCL_CLK_EN __HAL_RCC_GPIOB_CLK_ENABLE
-#define I2C_INSTANCE_0_RESET_FLG RCC_APB1RSTR_I2C1RST
+#define I2C_INSTANCE_0_RESET_REG &RCC->APB1RSTR
+#define I2C_INSTANCE_0_RESET_BIT RCC_APB1RSTR_I2C1RST
+#define I2C_INSTANCE_0_EV_IRQHandler I2C1_EV_IRQHandler
+#define I2C_INSTANCE_0_ER_IRQHandler I2C1_ER_IRQHandler
+#define I2C_INSTANCE_0_EV_IRQn I2C1_EV_IRQn
+#define I2C_INSTANCE_0_ER_IRQn I2C1_ER_IRQn
+#define I2C_INSTANCE_0_GUARD_TIME 0
 
 #define TOUCH_SENSITIVITY 0x06
 #define TOUCH_I2C_INSTANCE 0
@@ -57,5 +64,12 @@
 #define SD_DETECT_PIN GPIO_PIN_13
 #define SD_ENABLE_PORT GPIOC
 #define SD_ENABLE_PIN GPIO_PIN_0
+
+// Ensure compatible hardware settings before jumping to
+// the different booting stage. This function is used to
+// ensure backward compatibility with older versions of
+// released bootloaders and firmware.
+#define ENSURE_COMPATIBLE_SETTINGS
+extern void ensure_compatible_settings(void);
 
 #endif  //_TREZOR_T_H

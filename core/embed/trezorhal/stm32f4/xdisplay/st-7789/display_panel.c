@@ -31,8 +31,21 @@
 #include "panels/lx154a2422.h"
 #include "panels/tf15411a.h"
 #else
+#ifdef DISPLAY_PANEL_LX154A2482
 #include "panels/lx154a2482.h"
+#define PANEL_INIT_SEQ lx154a2482_init_seq
+#define PANEL_ROTATE lx154a2482_rotate
+#elif defined(DISPLAY_PANEL_LHS200KB_IF21)
+#include "panels/lhs200kb-if21.h"
+#define PANEL_INIT_SEQ lhs200kb_if21_init_seq
+#define PANEL_ROTATE lhs200kb_if21_rotate
+#else
+#error "No display panel defined"
 #endif
+
+#endif
+
+#ifdef KERNEL_MODE
 
 // using const volatile instead of #define results in binaries that change
 // only in 1-byte when the flag changes.
@@ -212,7 +225,7 @@ void display_panel_init(void) {
     _154a_init_seq();
   }
 #else
-  lx154a2482_init_seq();
+  PANEL_INIT_SEQ();
 #endif
 
   display_panel_unsleep();
@@ -230,7 +243,7 @@ void display_panel_reinit(void) {
   } else if (id == DISPLAY_ID_ST7789V) {
     lx154a2411_gamma();
   }
-#else
+#elif defined TREZOR_MODEL_T3T1
   // reduced touch-display interference in T3T1
   lx154a2482_init_seq();
 #endif
@@ -245,6 +258,8 @@ void display_panel_rotate(int angle) {
     lx154a2422_rotate(angle, &g_window_padding);
   }
 #else
-  lx154a2482_rotate(angle, &g_window_padding);
+  PANEL_ROTATE(angle, &g_window_padding);
 #endif
 }
+
+#endif  // KERNEL_MODE

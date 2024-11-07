@@ -7,13 +7,12 @@ use crate::{
     translations::TR,
     ui::{
         button_request::ButtonRequest,
-        component::{
-            swipe_detect::SwipeSettings, ButtonRequestExt, ComponentExt, MsgMap, SwipeDirection,
-        },
+        component::{swipe_detect::SwipeSettings, ButtonRequestExt, ComponentExt, MsgMap},
         flow::{
-            base::{DecisionBuilder as _, StateChange},
-            FlowMsg, FlowState, SwipeFlow,
+            base::{Decision, DecisionBuilder as _},
+            FlowController, FlowMsg, SwipeFlow,
         },
+        geometry::Direction,
         layout::obj::LayoutObj,
     },
 };
@@ -42,33 +41,31 @@ pub enum ConfirmOutput {
     CancelTap,
 }
 
-impl FlowState for ConfirmOutput {
+impl FlowController for ConfirmOutput {
     #[inline]
     fn index(&'static self) -> usize {
         *self as usize
     }
 
-    fn handle_swipe(&'static self, direction: SwipeDirection) -> StateChange {
+    fn handle_swipe(&'static self, direction: Direction) -> Decision {
         match (self, direction) {
-            (Self::Address, SwipeDirection::Left) => Self::Menu.swipe(direction),
-            (Self::Address, SwipeDirection::Up) => self.return_msg(FlowMsg::Confirmed),
-            (Self::Menu, SwipeDirection::Right) => Self::Address.swipe(direction),
-            (Self::Menu, SwipeDirection::Left) => Self::AccountInfo.swipe(direction),
-            (Self::AccountInfo | Self::CancelTap, SwipeDirection::Right) => {
-                Self::Menu.swipe(direction)
-            }
+            (Self::Address, Direction::Left) => Self::Menu.swipe(direction),
+            (Self::Address, Direction::Up) => self.return_msg(FlowMsg::Confirmed),
+            (Self::Menu, Direction::Right) => Self::Address.swipe(direction),
+            (Self::Menu, Direction::Left) => Self::AccountInfo.swipe(direction),
+            (Self::AccountInfo | Self::CancelTap, Direction::Right) => Self::Menu.swipe(direction),
             _ => self.do_nothing(),
         }
     }
 
-    fn handle_event(&'static self, msg: FlowMsg) -> StateChange {
+    fn handle_event(&'static self, msg: FlowMsg) -> Decision {
         match (self, msg) {
-            (_, FlowMsg::Info) => Self::Menu.transit(),
+            (_, FlowMsg::Info) => Self::Menu.goto(),
             (Self::Menu, FlowMsg::Choice(MENU_ITEM_CANCEL)) => Self::CancelTap.swipe_left(),
-            (Self::Menu, FlowMsg::Choice(MENU_ITEM_ACCOUNT_INFO)) => Self::AccountInfo.transit(),
+            (Self::Menu, FlowMsg::Choice(MENU_ITEM_ACCOUNT_INFO)) => Self::AccountInfo.goto(),
             (Self::Menu, FlowMsg::Cancelled) => Self::Address.swipe_right(),
             (Self::CancelTap, FlowMsg::Confirmed) => self.return_msg(FlowMsg::Cancelled),
-            (_, FlowMsg::Cancelled) => Self::Menu.transit(),
+            (_, FlowMsg::Cancelled) => Self::Menu.goto(),
             _ => self.do_nothing(),
         }
     }
@@ -83,34 +80,32 @@ pub enum ConfirmOutputWithAmount {
     CancelTap,
 }
 
-impl FlowState for ConfirmOutputWithAmount {
+impl FlowController for ConfirmOutputWithAmount {
     #[inline]
     fn index(&'static self) -> usize {
         *self as usize
     }
 
-    fn handle_swipe(&'static self, direction: SwipeDirection) -> StateChange {
+    fn handle_swipe(&'static self, direction: Direction) -> Decision {
         match (self, direction) {
-            (Self::Address | Self::Amount, SwipeDirection::Left) => Self::Menu.swipe(direction),
-            (Self::Address, SwipeDirection::Up) => Self::Amount.swipe(direction),
-            (Self::Amount, SwipeDirection::Up) => self.return_msg(FlowMsg::Confirmed),
-            (Self::Amount, SwipeDirection::Down) => Self::Address.swipe(direction),
-            (Self::Menu, SwipeDirection::Right) => Self::Address.swipe(direction),
-            (Self::AccountInfo | Self::CancelTap, SwipeDirection::Right) => {
-                Self::Menu.swipe(direction)
-            }
+            (Self::Address | Self::Amount, Direction::Left) => Self::Menu.swipe(direction),
+            (Self::Address, Direction::Up) => Self::Amount.swipe(direction),
+            (Self::Amount, Direction::Up) => self.return_msg(FlowMsg::Confirmed),
+            (Self::Amount, Direction::Down) => Self::Address.swipe(direction),
+            (Self::Menu, Direction::Right) => Self::Address.swipe(direction),
+            (Self::AccountInfo | Self::CancelTap, Direction::Right) => Self::Menu.swipe(direction),
             _ => self.do_nothing(),
         }
     }
 
-    fn handle_event(&'static self, msg: FlowMsg) -> StateChange {
+    fn handle_event(&'static self, msg: FlowMsg) -> Decision {
         match (self, msg) {
-            (_, FlowMsg::Info) => Self::Menu.transit(),
+            (_, FlowMsg::Info) => Self::Menu.goto(),
             (Self::Menu, FlowMsg::Choice(MENU_ITEM_CANCEL)) => Self::CancelTap.swipe_left(),
-            (Self::Menu, FlowMsg::Choice(MENU_ITEM_ACCOUNT_INFO)) => Self::AccountInfo.transit(),
+            (Self::Menu, FlowMsg::Choice(MENU_ITEM_ACCOUNT_INFO)) => Self::AccountInfo.goto(),
             (Self::Menu, FlowMsg::Cancelled) => Self::Address.swipe_right(),
             (Self::CancelTap, FlowMsg::Confirmed) => self.return_msg(FlowMsg::Cancelled),
-            (_, FlowMsg::Cancelled) => Self::Menu.transit(),
+            (_, FlowMsg::Cancelled) => Self::Menu.goto(),
             _ => self.do_nothing(),
         }
     }
@@ -132,42 +127,46 @@ pub enum ConfirmOutputWithSummary {
     AccountInfo,
 }
 
-impl FlowState for ConfirmOutputWithSummary {
+impl FlowController for ConfirmOutputWithSummary {
     #[inline]
     fn index(&'static self) -> usize {
         *self as usize
     }
 
-    fn handle_swipe(&'static self, direction: SwipeDirection) -> StateChange {
+    fn handle_swipe(&'static self, direction: Direction) -> Decision {
         match (self, direction) {
-            (Self::Main, SwipeDirection::Left) => Self::MainMenu.swipe(direction),
-            (Self::Main, SwipeDirection::Up) => Self::Summary.swipe(direction),
-            (Self::AddressInfo, SwipeDirection::Right) => Self::MainMenu.swipe(direction),
-            (Self::AccountInfo, SwipeDirection::Right) => Self::MainMenu.swipe(direction),
-            (Self::Summary, SwipeDirection::Left) => Self::SummaryMenu.swipe(direction),
-            (Self::Summary, SwipeDirection::Up) => Self::Hold.swipe(direction),
-            (Self::Summary, SwipeDirection::Down) => Self::Main.swipe(direction),
-            (Self::FeeInfo, SwipeDirection::Right) => Self::SummaryMenu.swipe(direction),
-            (Self::Hold, SwipeDirection::Left) => Self::HoldMenu.swipe(direction),
-            (Self::Hold, SwipeDirection::Down) => Self::Summary.swipe(direction),
+            (Self::Main, Direction::Left) => Self::MainMenu.swipe(direction),
+            (Self::Main, Direction::Up) => Self::Summary.swipe(direction),
+            (Self::MainMenu, Direction::Right) => Self::Main.swipe(direction),
+            (Self::AddressInfo, Direction::Right) => Self::MainMenu.swipe(direction),
+            (Self::AccountInfo, Direction::Right) => Self::MainMenu.swipe(direction),
+            (Self::Summary, Direction::Left) => Self::SummaryMenu.swipe(direction),
+            (Self::Summary, Direction::Up) => Self::Hold.swipe(direction),
+            (Self::Summary, Direction::Down) => Self::Main.swipe(direction),
+            (Self::SummaryMenu, Direction::Right) => Self::Summary.swipe(direction),
+            (Self::FeeInfo, Direction::Right) => Self::SummaryMenu.swipe(direction),
+            (Self::Hold, Direction::Left) => Self::HoldMenu.swipe(direction),
+            (Self::Hold, Direction::Down) => Self::Summary.swipe(direction),
+            (Self::HoldMenu, Direction::Right) => Self::Hold.swipe(direction),
             _ => self.do_nothing(),
         }
     }
 
-    fn handle_event(&'static self, msg: FlowMsg) -> StateChange {
+    fn handle_event(&'static self, msg: FlowMsg) -> Decision {
         match (self, msg) {
-            (Self::Main, FlowMsg::Info) => Self::MainMenu.transit(),
+            (Self::Main, FlowMsg::Info) => Self::MainMenu.goto(),
             (Self::MainMenu, FlowMsg::Choice(MENU_ITEM_CANCEL)) => {
                 Self::MainMenuCancel.swipe_left()
             }
+            (Self::AccountInfo, FlowMsg::Cancelled) => Self::MainMenu.swipe_right(),
             (Self::MainMenuCancel, FlowMsg::Cancelled) => Self::MainMenu.swipe_right(),
-            (Self::AddressInfo, FlowMsg::Info) => Self::MainMenu.transit(),
-            (Self::Summary, FlowMsg::Info) => Self::SummaryMenu.transit(),
+            (Self::AddressInfo, FlowMsg::Info) => Self::MainMenu.goto(),
+            (Self::Summary, FlowMsg::Info) => Self::SummaryMenu.goto(),
             (Self::SummaryMenu, FlowMsg::Choice(MENU_ITEM_CANCEL)) => {
                 Self::SummaryMenuCancel.swipe_left()
             }
             (Self::SummaryMenuCancel, FlowMsg::Cancelled) => Self::SummaryMenu.swipe_right(),
-            (Self::Hold, FlowMsg::Info) => Self::HoldMenu.transit(),
+            (Self::Hold, FlowMsg::Info) => Self::HoldMenu.goto(),
             (Self::HoldMenu, FlowMsg::Choice(MENU_ITEM_CANCEL)) => {
                 Self::HoldMenuCancel.swipe_left()
             }
@@ -187,9 +186,9 @@ impl FlowState for ConfirmOutputWithSummary {
                 Self::MainMenuCancel | Self::SummaryMenuCancel | Self::HoldMenuCancel,
                 FlowMsg::Confirmed,
             ) => self.return_msg(FlowMsg::Cancelled),
-            (Self::Main, FlowMsg::Cancelled) => Self::MainMenu.transit(),
-            (Self::Summary, FlowMsg::Cancelled) => Self::SummaryMenu.transit(),
-            (Self::Hold, FlowMsg::Cancelled) => Self::HoldMenu.transit(),
+            (Self::Main, FlowMsg::Cancelled) => Self::MainMenu.goto(),
+            (Self::Summary, FlowMsg::Cancelled) => Self::SummaryMenu.goto(),
+            (Self::Hold, FlowMsg::Cancelled) => Self::HoldMenu.goto(),
             (Self::Hold, FlowMsg::Confirmed) => self.return_msg(FlowMsg::Confirmed),
             _ => self.do_nothing(),
         }
@@ -204,8 +203,8 @@ fn get_cancel_page(
     )
     .with_cancel_button()
     .with_footer(TR::instructions__tap_to_confirm.into(), None)
-    .with_swipe(SwipeDirection::Down, SwipeSettings::default())
-    .with_swipe(SwipeDirection::Left, SwipeSettings::default())
+    .with_swipe(Direction::Down, SwipeSettings::default())
+    .with_swipe(Direction::Left, SwipeSettings::default())
     .map(|msg| match msg {
         FrameMsg::Content(PromptMsg::Confirmed) => Some(FlowMsg::Confirmed),
         FrameMsg::Button(_) => Some(FlowMsg::Cancelled),
@@ -260,6 +259,7 @@ fn new_confirm_output_obj(_args: &[Obj], kwargs: &Map) -> Result<Obj, error::Err
         .with_footer(TR::instructions__swipe_up.into(), None)
         .with_chunkify(chunkify)
         .with_text_mono(text_mono)
+        .with_swipe_up()
         .into_layout()?
         .one_button_request(ButtonRequest::from_num(br_code, br_name));
 
@@ -287,7 +287,7 @@ fn new_confirm_output_obj(_args: &[Obj], kwargs: &Map) -> Result<Obj, error::Err
     unwrap!(main_menu_items.push(MENU_ITEM_CANCEL));
     let content_main_menu = Frame::left_aligned(TString::empty(), main_menu)
         .with_cancel_button()
-        .with_swipe(SwipeDirection::Right, SwipeSettings::immediate())
+        .with_swipe(Direction::Right, SwipeSettings::immediate())
         .map(move |msg| match msg {
             FrameMsg::Content(VerticalMenuChoiceMsg::Selected(i)) => {
                 let selected_item = main_menu_items[i];
@@ -307,6 +307,7 @@ fn new_confirm_output_obj(_args: &[Obj], kwargs: &Map) -> Result<Obj, error::Err
                 .with_menu_button()
                 .with_footer(TR::instructions__swipe_up.into(), None)
                 .with_text_mono(text_mono)
+                .with_swipe_up()
                 .with_swipe_down()
                 .into_layout()?
                 .one_button_request(ButtonRequest::from_num(br_code, br_name));
@@ -344,8 +345,8 @@ fn new_confirm_output_obj(_args: &[Obj], kwargs: &Map) -> Result<Obj, error::Err
         )
         .with_menu_button()
         .with_footer(TR::instructions__hold_to_sign.into(), None)
-        .with_swipe(SwipeDirection::Down, SwipeSettings::default())
-        .with_swipe(SwipeDirection::Left, SwipeSettings::default())
+        .with_swipe(Direction::Down, SwipeSettings::default())
+        .with_swipe(Direction::Left, SwipeSettings::default())
         .map(|msg| match msg {
             FrameMsg::Content(PromptMsg::Confirmed) => Some(FlowMsg::Confirmed),
             FrameMsg::Button(_) => Some(FlowMsg::Info),
@@ -381,7 +382,7 @@ fn new_confirm_output_obj(_args: &[Obj], kwargs: &Map) -> Result<Obj, error::Err
         unwrap!(summary_menu_items.push(MENU_ITEM_CANCEL));
         let content_summary_menu = Frame::left_aligned(TString::empty(), summary_menu)
             .with_cancel_button()
-            .with_swipe(SwipeDirection::Right, SwipeSettings::immediate())
+            .with_swipe(Direction::Right, SwipeSettings::immediate())
             .map(move |msg| match msg {
                 FrameMsg::Content(VerticalMenuChoiceMsg::Selected(i)) => {
                     let selected_item = summary_menu_items[i];
@@ -397,7 +398,7 @@ fn new_confirm_output_obj(_args: &[Obj], kwargs: &Map) -> Result<Obj, error::Err
         );
         let content_hold_menu = Frame::left_aligned(TString::empty(), hold_menu)
             .with_cancel_button()
-            .with_swipe(SwipeDirection::Right, SwipeSettings::immediate())
+            .with_swipe(Direction::Right, SwipeSettings::immediate())
             .map(move |msg| match msg {
                 FrameMsg::Content(VerticalMenuChoiceMsg::Selected(_)) => {
                     Some(FlowMsg::Choice(MENU_ITEM_CANCEL))
@@ -418,6 +419,7 @@ fn new_confirm_output_obj(_args: &[Obj], kwargs: &Map) -> Result<Obj, error::Err
             .with_cancel_button()
             .with_chunkify(true)
             .with_text_mono(true)
+            .with_swipe_right()
             .into_layout()?;
             flow = flow.with_page(&ConfirmOutputWithSummary::AddressInfo, address_content)?;
         } else {

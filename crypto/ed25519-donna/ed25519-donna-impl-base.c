@@ -1,6 +1,7 @@
 #include <assert.h>
 #include "ed25519-donna.h"
 #include "memzero.h"
+#include "options.h"
 
 /* sqrt(x) is such an integer y that 0 <= y <= p - 1, y % 2 = 0, and y^2 = x (mod p). */
 /* d = -121665 / 121666 */
@@ -102,22 +103,33 @@ void ge25519_nielsadd2_p1p1(ge25519_p1p1 *r, const ge25519 *p, const ge25519_nie
 #endif
 
 void ge25519_pnielsadd_p1p1(ge25519_p1p1 *r, const ge25519 *p, const ge25519_pniels *q, unsigned char signbit) {
-	const bignum25519 *qb = (const bignum25519 *)q;
-	bignum25519 *rb = (bignum25519 *)r;
+	bignum25519 q1, q2 = {0};
 	bignum25519 a = {0}, b = {0}, c = {0};
 
 	curve25519_sub(a, p->y, p->x);
 	curve25519_add(b, p->y, p->x);
-	curve25519_mul(a, a, qb[signbit]); /* ysubx for +, xaddy for - */
-	curve25519_mul(r->x, b, qb[signbit^1]); /* xaddy for +, ysubx for - */
+
+	// a = a * ysubx, r->x = b * xaddy for signbit = 0
+	// a = a * xaddy, r->x = b * ysubx for signbit = 1
+	curve25519_copy(q1, q->ysubx);
+	curve25519_copy(q2, q->xaddy);
+	curve25519_swap_conditional(q1, q2, signbit);
+	curve25519_mul(a, a, q1);
+	curve25519_mul(r->x, b, q2);
+
 	curve25519_add(r->y, r->x, a);
 	curve25519_sub(r->x, r->x, a);
 	curve25519_mul(c, p->t, q->t2d);
 	curve25519_mul(r->t, p->z, q->z);
 	curve25519_add_reduce(r->t, r->t, r->t);
 	curve25519_copy(r->z, r->t);
-	curve25519_add(rb[2+signbit], rb[2+signbit], c); /* z for +, t for - */
-	curve25519_sub(rb[2+(signbit^1)], rb[2+(signbit^1)], c); /* t for +, z for - */
+
+	// r->z = r->z + c, r->t = r->t - c for signbit == 0
+	// r->z = r->z - c, r->t = r->t + c for signbit == 1
+	curve25519_swap_conditional(r->z, r->t, signbit);
+	curve25519_add(r->z, r->z, c);
+	curve25519_sub(r->t, r->t, c);
+	curve25519_swap_conditional(r->z, r->t, signbit);
 }
 
 void ge25519_double_partial(ge25519 *r, const ge25519 *p) {
@@ -726,5 +738,9 @@ int ge25519_unpack_vartime(ge25519 *r, const unsigned char *s){
 }
 
 void ge25519_scalarmult_base_wrapper(ge25519 *r, const bignum256modm s){
+#if OPTIMIZE_SIZE_ED25519
+        ge25519_scalarmult(r, &ge25519_basepoint, s);
+#else
 	ge25519_scalarmult_base_niels(r, ge25519_niels_base_multiples, s);
+#endif
 }

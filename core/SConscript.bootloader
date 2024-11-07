@@ -1,7 +1,7 @@
 # pylint: disable=E0602
 
 import os
-import tools, models
+import tools, models, ui
 
 TREZOR_MODEL = ARGUMENTS.get('TREZOR_MODEL', 'T')
 CMAKELISTS = int(ARGUMENTS.get('CMAKELISTS', 0))
@@ -9,18 +9,7 @@ BOOTLOADER_QA = ARGUMENTS.get('BOOTLOADER_QA', '0') == '1'
 PRODUCTION = 0 if BOOTLOADER_QA else ARGUMENTS.get('PRODUCTION', '0') == '1'
 HW_REVISION = ARGUMENTS.get('HW_REVISION', None)
 NEW_RENDERING = ARGUMENTS.get('NEW_RENDERING', '1') == '1' or TREZOR_MODEL in ('T3T1',)
-
-if TREZOR_MODEL in ('1', ):
-    # skip bootloader build
-    env = Environment()
-    def build_bootloader(target,source,env):
-        print(f'Bootloader: nothing to build for Model {TREZOR_MODEL}')
-    program_bin = env.Command(
-                 target='bootloader.bin',
-                 source=None,
-                 action=build_bootloader
-             )
-    Return()
+MODEL_IDENTIFIER = models.get_model_identifier(TREZOR_MODEL)
 
 FEATURES_WANTED = ["input", "rgb_led", "consumption_mask", "usb", "optiga", "dma2d"]
 
@@ -35,34 +24,7 @@ SOURCE_MOD_CRYPTO = []
 CPPDEFINES_HAL = []
 SOURCE_HAL = []
 PATH_HAL = []
-
-if TREZOR_MODEL in ('R', 'T3B1'):
-    FONT_NORMAL='Font_PixelOperator_Regular_8'
-    FONT_DEMIBOLD='Font_PixelOperator_Regular_8'
-    FONT_BOLD='Font_PixelOperator_Bold_8'
-    FONT_MONO='Font_PixelOperator_Regular_8'
-    FONT_BIG='Font_PixelOperator_Regular_8'
-    FONT_NORMAL_UPPER='Font_PixelOperator_Regular_8_upper'
-    FONT_BOLD_UPPER=None
-    FONT_SUB=None
-elif TREZOR_MODEL in ('T', 'DISC1', 'DISC2'):
-    FONT_NORMAL='Font_TTHoves_Regular_21'
-    FONT_DEMIBOLD='Font_TTHoves_Regular_21'
-    FONT_BOLD='Font_TTHoves_Bold_17_upper'
-    FONT_MONO='Font_TTHoves_Regular_21'
-    FONT_BIG=None
-    FONT_NORMAL_UPPER=None
-    FONT_BOLD_UPPER='Font_TTHoves_Bold_17_upper'
-    FONT_SUB=None
-elif TREZOR_MODEL in ('T3T1',):
-    FONT_NORMAL='Font_TTSatoshi_DemiBold_21'
-    FONT_DEMIBOLD='Font_TTSatoshi_DemiBold_21'
-    FONT_BOLD='Font_TTHoves_Bold_17_upper'
-    FONT_MONO='Font_TTSatoshi_DemiBold_21'
-    FONT_BIG=None
-    FONT_NORMAL_UPPER=None
-    FONT_BOLD_UPPER='Font_TTHoves_Bold_17_upper'
-    FONT_SUB=None
+RUST_UI_FEATURES = []
 
 # modtrezorcrypto
 CCFLAGS_MOD += '-Wno-sequence-point '
@@ -71,11 +33,11 @@ CPPPATH_MOD += [
     'vendor/trezor-storage',
 ]
 CPPDEFINES_MOD += [
+    'KERNEL_MODE',
     'AES_128',
     'AES_192',
     'USE_KECCAK',
     'ED25519_NO_PRECOMP',
-    'TREZOR_UI2',
     'FANCY_FATAL_ERROR',
 ]
 
@@ -108,6 +70,7 @@ SOURCE_MOD += [
     'embed/lib/colors.c',
     'embed/lib/display_utils.c',
     'embed/lib/error_handling.c',
+    'embed/lib/flash_utils.c',
     'embed/lib/fonts/font_bitmap.c',
     'embed/lib/fonts/fonts.c',
     'embed/lib/gfx_color.c',
@@ -116,8 +79,8 @@ SOURCE_MOD += [
     'embed/lib/gfx_bitblt_rgba8888.c',
     'embed/lib/image.c',
     'embed/lib/mini_printf.c',
+    'embed/lib/rsod.c',
     'embed/lib/terminal.c',
-    'embed/lib/unit_variant.c',
     'vendor/micropython/lib/uzlib/adler32.c',
     'vendor/micropython/lib/uzlib/crc32.c',
     'vendor/micropython/lib/uzlib/tinflate.c',
@@ -140,15 +103,7 @@ SOURCE_NANOPB = [
     'vendor/nanopb/pb_encode.c',
 ]
 
-# fonts
-tools.add_font('NORMAL', FONT_NORMAL, CPPDEFINES_MOD, SOURCE_MOD)
-tools.add_font('BOLD', FONT_BOLD, CPPDEFINES_MOD, SOURCE_MOD)
-tools.add_font('DEMIBOLD', FONT_DEMIBOLD, CPPDEFINES_MOD, SOURCE_MOD)
-tools.add_font('MONO', FONT_MONO, CPPDEFINES_MOD, SOURCE_MOD)
-tools.add_font('BIG', FONT_BIG, CPPDEFINES_MOD, SOURCE_MOD)
-tools.add_font('NORMAL_UPPER', FONT_NORMAL_UPPER, CPPDEFINES_MOD, SOURCE_MOD)
-tools.add_font('BOLD_UPPER', FONT_BOLD_UPPER, CPPDEFINES_MOD, SOURCE_MOD)
-tools.add_font('SUB', FONT_SUB, CPPDEFINES_MOD, SOURCE_MOD)
+ui.init_ui(TREZOR_MODEL, "bootloader", CPPDEFINES_MOD, SOURCE_MOD, RUST_UI_FEATURES)
 
 env = Environment(
     ENV=os.environ,
@@ -159,10 +114,9 @@ env = Environment(
 FEATURES_AVAILABLE = models.configure_board(TREZOR_MODEL, HW_REVISION, FEATURES_WANTED, env, CPPDEFINES_HAL, SOURCE_HAL, PATH_HAL)
 
 FILE_SUFFIX= env.get('ENV')['SUFFIX']
-LINKER_SCRIPT_SUFFIX= env.get('ENV')['LINKER_SCRIPT']
 
 SOURCE_BOOTLOADER = [
-    f'embed/bootloader/startup_{FILE_SUFFIX}.s',
+    f'embed/trezorhal/{FILE_SUFFIX}/startup_stage_1.s',
     'embed/bootloader/header.S',
     'embed/bootloader/bootui.c',
     'embed/bootloader/main.c',
@@ -173,6 +127,7 @@ SOURCE_BOOTLOADER = [
 
 
 env.Replace(
+    CAT='cat',
     CP='cp',
     AS='arm-none-eabi-as',
     AR='arm-none-eabi-ar',
@@ -210,7 +165,7 @@ env.Replace(
     '-fstack-protector-strong '
     +  env.get('ENV')["CPU_CCFLAGS"] + CCFLAGS_MOD,
     CCFLAGS_QSTR='-DNO_QSTR -DN_X64 -DN_X86 -DN_THUMB',
-    LINKFLAGS=f'-T embed/bootloader/memory_{LINKER_SCRIPT_SUFFIX}.ld -Wl,--gc-sections -Wl,-Map=build/bootloader/bootloader.map -Wl,--warn-common -Wl,--print-memory-usage',
+    LINKFLAGS='-T build/bootloader/memory.ld -Wl,--gc-sections -Wl,-Map=build/bootloader/bootloader.map -Wl,--warn-common -Wl,--print-memory-usage',
     CPPPATH=ALLPATHS,
     CPPDEFINES=[
         'BOOTLOADER',
@@ -254,18 +209,9 @@ def cargo_build():
         profile = '--release'
     else:
         profile = ''
-    if TREZOR_MODEL in ("1",):
-        features = ["model_t1"]
-    elif TREZOR_MODEL in ("R", "T3B1"):
-        features = ["model_tr"]
-    elif TREZOR_MODEL in ("T3T1",):
-        features = ["model_mercury"]
-    else:
-        features = ["model_tt"]
 
-    if TREZOR_MODEL in ("R",):
-        features.append("ui_empty_lock")
-
+    features = []
+    features.extend(RUST_UI_FEATURES)
     features.append("ui")
     features.append("bootloader")
     features.extend(FEATURES_AVAILABLE)
@@ -283,8 +229,9 @@ def cargo_build():
     ]
 
     bindgen_macros = tools.get_bindgen_defines(env.get("CPPDEFINES"), ALLPATHS)
+    build_dir = str(Dir('.').abspath)
 
-    return f'export BINDGEN_MACROS=\'{bindgen_macros}\'; cd embed/rust; cargo build {profile} ' + ' '.join(cargo_opts)
+    return f'export BINDGEN_MACROS=\'{bindgen_macros}\'; export BUILD_DIR=\'{build_dir}\'; cd embed/rust; cargo build {profile} ' + ' '.join(cargo_opts)
 
 rust = env.Command(
     target=RUST_LIBPATH,
@@ -306,6 +253,12 @@ obj_program += env.Object(source=SOURCE_NANOPB)
 obj_program += env.Object(source=SOURCE_HAL)
 
 
+linkerscript_gen = env.Command(
+    target='memory.ld',
+    source=[f'embed/models/{MODEL_IDENTIFIER}/memory.ld', env.get('ENV')['LINKER_SCRIPT'].format(target='bootloader')],
+    action='$CAT $SOURCES > $TARGET',
+)
+
 program_elf = env.Command(
     target='bootloader.elf',
     source=obj_program,
@@ -313,6 +266,7 @@ program_elf = env.Command(
     '$LINK -o $TARGET $CCFLAGS $CFLAGS $SOURCES $LINKFLAGS -lc_nano -lm -lgcc',
 )
 
+env.Depends(program_elf, linkerscript_gen)
 env.Depends(program_elf, rust)
 
 SUFFIX = '_qa' if BOOTLOADER_QA else ''

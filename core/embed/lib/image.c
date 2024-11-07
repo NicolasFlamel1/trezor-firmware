@@ -26,7 +26,9 @@
 #include "image.h"
 #include "model.h"
 
-_Static_assert(VENDOR_HEADER_MAX_SIZE + IMAGE_HEADER_SIZE <= IMAGE_CHUNK_SIZE);
+_Static_assert(VENDOR_HEADER_MAX_SIZE + IMAGE_HEADER_SIZE <= IMAGE_CHUNK_SIZE,
+               "The size of the firmware headers must be less than or equal to "
+               "IMAGE_CHUNK_SIZE");
 
 const uint8_t BOOTLOADER_KEY_M = 2;
 const uint8_t BOOTLOADER_KEY_N = 3;
@@ -363,7 +365,7 @@ secbool check_firmware_header(const uint8_t *header, size_t header_size,
   // parse and check image header
   const image_header *ihdr;
   if ((ihdr = read_image_header(header + vhdr.hdrlen, FIRMWARE_IMAGE_MAGIC,
-                                FIRMWARE_IMAGE_MAXSIZE)) == NULL) {
+                                FIRMWARE_MAXSIZE)) == NULL) {
     return secfalse;
   }
   if (sectrue !=

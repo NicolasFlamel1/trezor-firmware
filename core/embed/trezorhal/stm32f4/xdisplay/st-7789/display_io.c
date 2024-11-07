@@ -22,13 +22,15 @@
 
 #include "display_io.h"
 #include "irq.h"
-#include "supervise.h"
+#include "mpu.h"
 
 __IO DISP_MEM_TYPE *const DISPLAY_CMD_ADDRESS =
     (__IO DISP_MEM_TYPE *const)((uint32_t)DISPLAY_MEMORY_BASE);
 __IO DISP_MEM_TYPE *const DISPLAY_DATA_ADDRESS =
     (__IO DISP_MEM_TYPE *const)((uint32_t)DISPLAY_MEMORY_BASE |
                                 (DISPLAY_ADDR_SHIFT << DISPLAY_MEMORY_PIN));
+
+#ifdef KERNEL_MODE
 
 void display_io_init_gpio(void) {
   // init peripherals
@@ -128,7 +130,9 @@ void display_io_init_fmc(void) {
   normal_mode_timing.DataLatency = 2;            // don't care
   normal_mode_timing.AccessMode = FMC_ACCESS_MODE_A;
 
+  mpu_mode_t mpu_mode = mpu_reconfig(MPU_MODE_FSMC_REGS);
   HAL_SRAM_Init(&external_display_data_sram, &normal_mode_timing, NULL);
+  mpu_restore(mpu_mode);
 }
 
 #ifdef DISPLAY_TE_INTERRUPT_HANDLER
@@ -142,7 +146,9 @@ void display_io_init_te_interrupt(void) {
   HAL_EXTI_SetConfigLine(&EXTI_Handle, &EXTI_Config);
 
   // setup interrupt for tearing effect pin
-  HAL_NVIC_SetPriority(DISPLAY_TE_INTERRUPT_NUM, IRQ_PRI_DMA, 0);
-  svc_enableIRQ(DISPLAY_TE_INTERRUPT_NUM);
+  NVIC_SetPriority(DISPLAY_TE_INTERRUPT_NUM, IRQ_PRI_NORMAL);
+  NVIC_EnableIRQ(DISPLAY_TE_INTERRUPT_NUM);
 }
 #endif
+
+#endif  // KERNEL_MODE

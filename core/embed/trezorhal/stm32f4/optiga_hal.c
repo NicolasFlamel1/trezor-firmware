@@ -1,6 +1,9 @@
 #include "optiga_hal.h"
 #include "common.h"
 #include TREZOR_BOARD
+#include STM32_HAL_H
+
+#ifdef KERNEL_MODE
 
 void optiga_hal_init(void) {
   OPTIGA_RST_CLK_EN();
@@ -27,3 +30,5 @@ void optiga_reset(void) {
   // warm reset startup time min 15ms
   hal_delay(20);
 }
+
+#endif  // KERNEL_MODE

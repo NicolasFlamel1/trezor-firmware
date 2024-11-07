@@ -20,6 +20,7 @@
 #include <string.h>
 #include <sys/types.h>
 
+#include "bootutils.h"
 #include "common.h"
 #include "display.h"
 #include "display_draw.h"
@@ -30,7 +31,9 @@
 #include "mpu.h"
 #include "random_delays.h"
 #include "rng.h"
+#include "rsod.h"
 #include "secbool.h"
+#include "system.h"
 #ifdef USE_TOUCH
 #include "touch.h"
 #endif
@@ -40,6 +43,7 @@
 #include "bootui.h"
 #include "messages.h"
 #include "model.h"
+#include "version_check.h"
 
 #ifdef USE_HASH_PROCESSOR
 #include "hash_processor.h"
@@ -174,35 +178,9 @@ static secbool check_vendor_header_lock(const vendor_header *const vhdr) {
   return sectrue * (0 == memcmp(lock, hash, 32));
 }
 
-// protection against bootloader downgrade
-
-#if PRODUCTION
-
-static void check_bootloader_version(void) {
-  uint8_t bits[FLASH_OTP_BLOCK_SIZE];
-  for (int i = 0; i < FLASH_OTP_BLOCK_SIZE * 8; i++) {
-    if (i < VERSION_MONOTONIC) {
-      bits[i / 8] &= ~(1 << (7 - (i % 8)));
-    } else {
-      bits[i / 8] |= (1 << (7 - (i % 8)));
-    }
-  }
-  ensure(flash_otp_write(FLASH_OTP_BLOCK_BOOTLOADER_VERSION, 0, bits,
-                         FLASH_OTP_BLOCK_SIZE),
-         NULL);
-
-  uint8_t bits2[FLASH_OTP_BLOCK_SIZE];
-  ensure(flash_otp_read(FLASH_OTP_BLOCK_BOOTLOADER_VERSION, 0, bits2,
-                        FLASH_OTP_BLOCK_SIZE),
-         NULL);
-
-  ensure(sectrue * (0 == memcmp(bits, bits2, FLASH_OTP_BLOCK_SIZE)),
-         "Bootloader downgraded");
-}
-
-#endif
-
 int main(void) {
+  system_init(&rsod_panic_handler);
+
   random_delays_init();
 #ifdef USE_TOUCH
   touch_init();
@@ -212,10 +190,9 @@ int main(void) {
   hash_processor_init();
 #endif
 
-  mpu_config_bootloader();
-
-#if PRODUCTION
-  check_bootloader_version();
+#if PRODUCTION && !defined STM32U5
+  // for STM32U5, this check is moved to boardloader
+  ensure_bootloader_min_version();
 #endif
 
   display_clear();
@@ -239,7 +216,7 @@ int main(void) {
 
   if (sectrue == firmware_present) {
     hdr = read_image_header((const uint8_t *)(FIRMWARE_START + vhdr.hdrlen),
-                            FIRMWARE_IMAGE_MAGIC, FIRMWARE_IMAGE_MAXSIZE);
+                            FIRMWARE_IMAGE_MAGIC, FIRMWARE_MAXSIZE);
     if (hdr != (const image_header *)(FIRMWARE_START + vhdr.hdrlen)) {
       firmware_present = secfalse;
     }
@@ -276,7 +253,7 @@ int main(void) {
   ensure(check_vendor_header_lock(&vhdr), "unauthorized vendor keys");
 
   hdr = read_image_header((const uint8_t *)(FIRMWARE_START + vhdr.hdrlen),
-                          FIRMWARE_IMAGE_MAGIC, FIRMWARE_IMAGE_MAXSIZE);
+                          FIRMWARE_IMAGE_MAGIC, FIRMWARE_MAXSIZE);
 
   ensure(hdr == (const image_header *)(FIRMWARE_START + vhdr.hdrlen) ? sectrue
                                                                      : secfalse,
@@ -293,7 +270,8 @@ int main(void) {
 
   // do not check any trust flags on header, proceed
 
-  mpu_config_off();
+  mpu_reconfig(MPU_MODE_DISABLED);
+
   jump_to(IMAGE_CODE_ALIGN(FIRMWARE_START + vhdr.hdrlen + IMAGE_HEADER_SIZE));
 
   return 0;

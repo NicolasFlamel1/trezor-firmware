@@ -7,10 +7,10 @@ use num_traits::{FromPrimitive, ToPrimitive};
 
 #[cfg(feature = "button")]
 use crate::ui::event::ButtonEvent;
-#[cfg(feature = "touch")]
-use crate::ui::{component::SwipeDirection, event::TouchEvent};
 #[cfg(feature = "new_rendering")]
 use crate::ui::{display::Color, shape::render_on_display};
+#[cfg(feature = "touch")]
+use crate::ui::{event::TouchEvent, geometry::Direction};
 use crate::{
     error::Error,
     maybe_trace::MaybeTrace,
@@ -55,7 +55,7 @@ impl AttachType {
             1 => Ok(Self::Resume),
             #[cfg(feature = "touch")]
             2..=5 => Ok(Self::Swipe(
-                SwipeDirection::from_u8(val - 2).ok_or(Error::TypeError)?,
+                Direction::from_u8(val - 2).ok_or(Error::TypeError)?,
             )),
             _ => Err(Error::TypeError),
         }
@@ -173,7 +173,7 @@ impl LayoutObjInner {
     }
 
     /// Timer callback is expected to be a callable object of the following
-    /// form: `def timer(token: int, deadline_in_ms: int)`.
+    /// form: `def timer(token: int, duration_ms: int)`.
     fn obj_set_timer_fn(&mut self, timer_fn: Obj) {
         self.timer_fn = timer_fn;
     }
@@ -226,13 +226,13 @@ impl LayoutObjInner {
         // painting by now, and we're prepared for a paint pass.
 
         // Drain any pending timers into the callback.
-        while let Some((token, deadline)) = self.event_ctx.pop_timer() {
+        while let Some((token, duration)) = self.event_ctx.pop_timer() {
             let token = token.try_into();
-            let deadline = deadline.try_into();
-            if let (Ok(token), Ok(deadline)) = (token, deadline) {
-                self.timer_fn.call_with_n_args(&[token, deadline])?;
+            let duration = duration.try_into();
+            if let (Ok(token), Ok(duration)) = (token, duration) {
+                self.timer_fn.call_with_n_args(&[token, duration])?;
             } else {
-                // Failed to convert token or deadline into `Obj`, skip.
+                // Failed to convert token or duration into `Obj`, skip.
             }
         }
 

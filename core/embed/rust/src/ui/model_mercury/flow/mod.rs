@@ -6,6 +6,7 @@ pub mod confirm_output;
 pub mod confirm_reset;
 pub mod confirm_set_new_pin;
 pub mod confirm_summary;
+pub mod confirm_with_info;
 pub mod continue_recovery;
 pub mod get_address;
 pub mod prompt_backup;
@@ -18,7 +19,10 @@ pub mod warning_hi_prio;
 
 mod util;
 
-pub use confirm_action::{new_confirm_action, new_confirm_action_simple};
+pub use confirm_action::{
+    new_confirm_action, new_confirm_action_simple, new_confirm_action_simple_default_cancel,
+    ConfirmActionMenu, ConfirmActionStrings,
+};
 #[cfg(feature = "universal_fw")]
 pub use confirm_fido::new_confirm_fido;
 pub use confirm_firmware_update::new_confirm_firmware_update;
@@ -26,6 +30,7 @@ pub use confirm_output::new_confirm_output;
 pub use confirm_reset::new_confirm_reset;
 pub use confirm_set_new_pin::SetNewPin;
 pub use confirm_summary::new_confirm_summary;
+pub use confirm_with_info::new_confirm_with_info;
 pub use continue_recovery::new_continue_recovery;
 pub use get_address::GetAddress;
 pub use prompt_backup::PromptBackup;

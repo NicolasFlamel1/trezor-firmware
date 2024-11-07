@@ -273,8 +273,8 @@ def authorization_fields(auth: EosAuthorization) -> list[PropertyType]:
         _key = public_key_to_wif(bytes(key.key))
         _weight = str(key.weight)
 
-        header = "Key #" + str(i) + ":"
-        w_header = "Key #" + str(i) + " Weight:"
+        header = f"Key #{i}:"
+        w_header = f"Key #{i} Weight:"
 
         append((header, _key))
         append((w_header, _weight))
@@ -285,9 +285,9 @@ def authorization_fields(auth: EosAuthorization) -> list[PropertyType]:
 
         i = str(i)
         # TODO: handle translation
-        a_header = "Account #" + i + ":"
-        p_header = "Acc Permission #" + i + ":"
-        w_header = "Account #" + i + " weight:"
+        a_header = f"Account #{i}:"
+        p_header = f"Acc Permission #{i}:"
+        w_header = f"Account #{i} weight:"
 
         append((a_header, _account))
         append((p_header, _permission))
@@ -297,9 +297,9 @@ def authorization_fields(auth: EosAuthorization) -> list[PropertyType]:
         _wait = str(wait.wait_sec)
         _weight = str(wait.weight)
 
-        header = "Delay #" + str(i)
-        w_header = header + " weight:"
-        append((header, _wait + " sec"))
+        header = f"Delay #{i}"
+        w_header = f"{header} weight:"
+        append((f"{header}:", _wait + " sec"))
         append((w_header, _weight))
 
     return fields

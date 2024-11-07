@@ -17,6 +17,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#ifdef KERNEL_MODE
+
 #include STM32_HAL_H
 
 #include "usb.h"
@@ -642,7 +644,7 @@ static uint8_t usb_class_data_in(USBD_HandleTypeDef *dev, uint8_t ep_num) {
   usb_driver_t *drv = &g_usb_driver;
 
 #ifdef RDI
-  rdi_refresh_session_delay();
+  random_delays_refresh_rdi();
 #endif
 
   for (int i = 0; i < USBD_MAX_NUM_INTERFACES; i++) {
@@ -662,7 +664,7 @@ static uint8_t usb_class_data_out(USBD_HandleTypeDef *dev, uint8_t ep_num) {
   usb_driver_t *drv = &g_usb_driver;
 
 #ifdef RDI
-  rdi_refresh_session_delay();
+  random_delays_refresh_rdi();
 #endif
 
   for (int i = 0; i < USBD_MAX_NUM_INTERFACES; i++) {
@@ -736,3 +738,5 @@ static const USBD_ClassTypeDef usb_class = {
     .GetDeviceQualifierDescriptor = NULL,
     .GetUsrStrDescriptor = usb_class_get_usrstr_desc,
 };
+
+#endif  // KERNEL_MODE

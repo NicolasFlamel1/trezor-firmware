@@ -43,16 +43,12 @@ uint32_t last_touch_sample_time = 0;
   }
 
 // clang-format off
-#include "modtrezorio-flash.h"
 #include "modtrezorio-hid.h"
 #include "modtrezorio-poll.h"
 #include "modtrezorio-vcp.h"
 #include "modtrezorio-webusb.h"
 #include "modtrezorio-usb.h"
 // clang-format on
-#ifdef USE_SBU
-#include "modtrezorio-sbu.h"
-#endif
 #ifdef USE_SD_CARD
 #include "modtrezorio-fatfs.h"
 #include "modtrezorio-sdcard.h"
@@ -85,10 +81,6 @@ uint32_t last_touch_sample_time = 0;
 STATIC const mp_rom_map_elem_t mp_module_trezorio_globals_table[] = {
     {MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR_trezorio)},
 
-#ifdef USE_SBU
-    {MP_ROM_QSTR(MP_QSTR_SBU), MP_ROM_PTR(&mod_trezorio_SBU_type)},
-#endif
-
 #ifdef USE_SD_CARD
     {MP_ROM_QSTR(MP_QSTR_fatfs), MP_ROM_PTR(&mod_trezorio_fatfs_module)},
     {MP_ROM_QSTR(MP_QSTR_sdcard), MP_ROM_PTR(&mod_trezorio_sdcard_module)},
@@ -113,8 +105,6 @@ STATIC const mp_rom_map_elem_t mp_module_trezorio_globals_table[] = {
     {MP_ROM_QSTR(MP_QSTR_BUTTON_LEFT), MP_ROM_INT(BTN_LEFT)},
     {MP_ROM_QSTR(MP_QSTR_BUTTON_RIGHT), MP_ROM_INT(BTN_RIGHT)},
 #endif
-
-    {MP_ROM_QSTR(MP_QSTR_FlashOTP), MP_ROM_PTR(&mod_trezorio_FlashOTP_type)},
 
     {MP_ROM_QSTR(MP_QSTR_USB), MP_ROM_PTR(&mod_trezorio_USB_type)},
     {MP_ROM_QSTR(MP_QSTR_HID), MP_ROM_PTR(&mod_trezorio_HID_type)},

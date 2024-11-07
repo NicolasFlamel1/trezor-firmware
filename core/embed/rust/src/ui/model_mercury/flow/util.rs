@@ -12,9 +12,10 @@ use crate::{
             base::ComponentExt,
             swipe_detect::SwipeSettings,
             text::paragraphs::{Paragraph, ParagraphSource, ParagraphVecShort, VecExt},
-            Component, SwipeDirection,
+            Component,
         },
         flow::{FlowMsg, Swipable, SwipePage},
+        geometry::Direction,
         layout::util::{ConfirmBlob, StrOrBytes},
         model_mercury::component::SwipeContent,
     },
@@ -33,7 +34,9 @@ pub struct ConfirmBlobParams {
     cancel_button: bool,
     chunkify: bool,
     text_mono: bool,
+    swipe_up: bool,
     swipe_down: bool,
+    swipe_right: bool,
 }
 
 impl ConfirmBlobParams {
@@ -54,7 +57,9 @@ impl ConfirmBlobParams {
             cancel_button: false,
             chunkify: false,
             text_mono: true,
+            swipe_up: false,
             swipe_down: false,
+            swipe_right: false,
         }
     }
 
@@ -78,8 +83,18 @@ impl ConfirmBlobParams {
         self
     }
 
+    pub const fn with_swipe_up(mut self) -> Self {
+        self.swipe_up = true;
+        self
+    }
+
     pub const fn with_swipe_down(mut self) -> Self {
         self.swipe_down = true;
+        self
+    }
+
+    pub const fn with_swipe_right(mut self) -> Self {
+        self.swipe_right = true;
         self
     }
 
@@ -140,14 +155,21 @@ impl ConfirmBlobParams {
         }
         if let Some(instruction) = self.footer_instruction {
             frame = frame.with_footer(instruction, self.footer_description);
-            frame = frame.with_swipe(SwipeDirection::Left, SwipeSettings::default());
+            frame = frame.with_swipe(Direction::Left, SwipeSettings::default());
+        }
+
+        if self.swipe_up {
+            frame = frame.with_swipe(Direction::Up, SwipeSettings::default());
         }
 
         if self.swipe_down {
-            frame = frame.with_swipe(SwipeDirection::Down, SwipeSettings::default());
+            frame = frame.with_swipe(Direction::Down, SwipeSettings::default());
         }
 
-        frame = frame.with_swipe(SwipeDirection::Up, SwipeSettings::default());
+        if self.swipe_right {
+            frame = frame.with_swipe(Direction::Right, SwipeSettings::default());
+        }
+
         frame = frame.with_vertical_pages();
 
         Ok(frame.map(|msg| matches!(msg, FrameMsg::Button(_)).then_some(FlowMsg::Info)))
@@ -271,22 +293,22 @@ impl ShowInfoParams {
         if self.cancel_button {
             frame = frame
                 .with_cancel_button()
-                .with_swipe(SwipeDirection::Right, SwipeSettings::immediate());
+                .with_swipe(Direction::Right, SwipeSettings::immediate());
         } else if self.menu_button {
             frame = frame
                 .with_menu_button()
-                .with_swipe(SwipeDirection::Left, SwipeSettings::default());
+                .with_swipe(Direction::Left, SwipeSettings::default());
         }
         if let Some(instruction) = self.footer_instruction {
             frame = frame.with_footer(instruction, self.footer_description);
         }
 
         if self.swipe_up {
-            frame = frame.with_swipe(SwipeDirection::Up, SwipeSettings::default());
+            frame = frame.with_swipe(Direction::Up, SwipeSettings::default());
         }
 
         if self.swipe_down {
-            frame = frame.with_swipe(SwipeDirection::Down, SwipeSettings::default());
+            frame = frame.with_swipe(Direction::Down, SwipeSettings::default());
         }
 
         frame = frame.with_vertical_pages();

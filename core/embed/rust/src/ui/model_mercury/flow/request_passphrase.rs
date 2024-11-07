@@ -4,11 +4,12 @@ use crate::{
     strutil::{ShortString, TString},
     translations::TR,
     ui::{
-        component::{ComponentExt, SwipeDirection},
+        component::ComponentExt,
         flow::{
-            base::{DecisionBuilder as _, StateChange},
-            FlowMsg, FlowState, SwipeFlow,
+            base::{Decision, DecisionBuilder as _},
+            FlowController, FlowMsg, SwipeFlow,
         },
+        geometry::Direction,
         layout::obj::LayoutObj,
     },
 };
@@ -23,27 +24,27 @@ pub enum RequestPassphrase {
     ConfirmEmpty,
 }
 
-impl FlowState for RequestPassphrase {
+impl FlowController for RequestPassphrase {
     #[inline]
     fn index(&'static self) -> usize {
         *self as usize
     }
 
-    fn handle_swipe(&'static self, _direction: SwipeDirection) -> StateChange {
+    fn handle_swipe(&'static self, _direction: Direction) -> Decision {
         self.do_nothing()
     }
 
-    fn handle_event(&'static self, msg: FlowMsg) -> StateChange {
+    fn handle_event(&'static self, msg: FlowMsg) -> Decision {
         match (self, msg) {
             (Self::Keypad, FlowMsg::Text(s)) => {
                 if s.is_empty() {
-                    Self::ConfirmEmpty.transit()
+                    Self::ConfirmEmpty.goto()
                 } else {
                     self.return_msg(FlowMsg::Text(s))
                 }
             }
             (Self::Keypad, FlowMsg::Cancelled) => self.return_msg(FlowMsg::Cancelled),
-            (Self::ConfirmEmpty, FlowMsg::Cancelled) => Self::Keypad.transit(),
+            (Self::ConfirmEmpty, FlowMsg::Cancelled) => Self::Keypad.goto(),
             (Self::ConfirmEmpty, FlowMsg::Confirmed) => {
                 self.return_msg(FlowMsg::Text(ShortString::new()))
             }

@@ -17,15 +17,17 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "terminal.h"
+#include TREZOR_BOARD
+
 #include <stdarg.h>
 #include <stdint.h>
 #include <string.h>
-#include "display.h"
-#include TREZOR_BOARD
 
+#include "display.h"
 #include "fonts/fonts.h"
 #include "gfx_draw.h"
+#include "mini_printf.h"
+#include "terminal.h"
 
 #define TERMINAL_COLS (DISPLAY_RESX / 6)
 #define TERMINAL_ROWS (DISPLAY_RESY / 8)
@@ -81,8 +83,8 @@ static void term_redraw_rows(int start_row, int row_count) {
       .src_x = 0,
       .src_y = 0,
       .src_stride = 8,
-      .src_fg = terminal_fgcolor,
-      .src_bg = terminal_bgcolor,
+      .src_fg = gfx_color16_to_color(terminal_fgcolor),
+      .src_bg = gfx_color16_to_color(terminal_bgcolor),
   };
 
   for (int y = start_row; y < start_row + row_count; y++) {
@@ -159,9 +161,9 @@ void term_print(const char *text, int textlen) {
     }
     const uint8_t *g = Font_Bitmap + (5 * (c - ' '));
     if (k < 5 && (g[k] & (1 << j))) {
-      PIXELDATA(terminal_fgcolor);
+      PIXELDATA(gfx_color16_to_color(terminal_fgcolor));
     } else {
-      PIXELDATA(terminal_bgcolor);
+      PIXELDATA(gfx_color16_to_color(terminal_bgcolor));
     }
   }
   display_pixeldata_dirty();
@@ -169,29 +171,16 @@ void term_print(const char *text, int textlen) {
 #endif
 }
 
-#ifdef TREZOR_EMULATOR
-#define mini_vsnprintf vsnprintf
-#include <stdio.h>
-#else
-#include "mini_printf.h"
-#endif
-
 // variadic term_print
 void term_printf(const char *fmt, ...) {
   if (!strchr(fmt, '%')) {
     term_print(fmt, strlen(fmt));
-#ifdef TREZOR_EMULATOR
-    printf("%s", fmt);
-#endif
   } else {
     va_list va;
     va_start(va, fmt);
     char buf[256] = {0};
     int len = mini_vsnprintf(buf, sizeof(buf), fmt, va);
     term_print(buf, len);
-#ifdef TREZOR_EMULATOR
-    vprintf(fmt, va);
-#endif
     va_end(va);
   }
 }

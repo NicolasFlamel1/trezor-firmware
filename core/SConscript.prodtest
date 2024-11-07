@@ -1,7 +1,7 @@
 # pylint: disable=E0602
 
 import os
-import tools, models
+import tools, models, ui
 
 TREZOR_MODEL = ARGUMENTS.get('TREZOR_MODEL', 'T')
 CMAKELISTS = int(ARGUMENTS.get('CMAKELISTS', 0))
@@ -9,17 +9,6 @@ PRODUCTION = ARGUMENTS.get('PRODUCTION', '0') == '1'
 BOOTLOADER_DEVEL = ARGUMENTS.get('BOOTLOADER_DEVEL', '0') == '1'
 HW_REVISION = ARGUMENTS.get('HW_REVISION', None)
 NEW_RENDERING = ARGUMENTS.get('NEW_RENDERING', '1') == '1'
-
-if TREZOR_MODEL in ('DISC1', 'DISC2'):
-    # skip prodtest build
-    env = Environment()
-    def build_prodtest(target,source,env):
-        print(f'Prodtest: nothing to build for Model {TREZOR_MODEL}')
-    program_bin = env.Command(
-                 target='prodtest.bin',
-                 source=None,
-                 action=build_prodtest)
-    Return()
 
 FEATURES_WANTED = ["input", "sbu", "sd_card", "rdb_led", "usb", "consumption_mask", "optiga", "haptic"]
 
@@ -29,6 +18,7 @@ if NEW_RENDERING:
 CCFLAGS_MOD = ''
 CPPPATH_MOD = []
 CPPDEFINES_MOD = [
+    'KERNEL_MODE',
     'AES_128',
     'USE_INSECURE_PRNG',
 ]
@@ -37,34 +27,7 @@ SOURCE_MOD_CRYPTO = []
 CPPDEFINES_HAL = []
 SOURCE_HAL = []
 PATH_HAL = []
-
-if TREZOR_MODEL in ('1', 'R', 'T3B1'):
-    FONT_NORMAL=None
-    FONT_DEMIBOLD=None
-    FONT_BOLD='Font_PixelOperator_Bold_8'
-    FONT_MONO=None
-    FONT_BIG=None
-    FONT_NORMAL_UPPER=None
-    FONT_BOLD_UPPER=None
-    FONT_SUB=None
-elif TREZOR_MODEL in ('T',):
-    FONT_NORMAL=None
-    FONT_DEMIBOLD=None
-    FONT_BOLD='Font_Roboto_Bold_20'
-    FONT_MONO=None
-    FONT_BIG=None
-    FONT_NORMAL_UPPER=None
-    FONT_BOLD_UPPER=None
-    FONT_SUB=None
-elif TREZOR_MODEL in ('T3T1',):
-    FONT_NORMAL='Font_TTSatoshi_DemiBold_21'
-    FONT_DEMIBOLD=None
-    FONT_BOLD='Font_TTSatoshi_DemiBold_21'
-    FONT_MONO='Font_RobotoMono_Medium_21'
-    FONT_BIG=None
-    FONT_NORMAL_UPPER=None
-    FONT_BOLD_UPPER=None
-    FONT_SUB=None
+RUST_UI_FEATURES = []
 
 # modtrezorcrypto
 CPPPATH_MOD += [
@@ -114,6 +77,7 @@ SOURCE_MOD += [
     'embed/lib/gfx_bitblt_mono8.c',
     'embed/lib/image.c',
     'embed/lib/mini_printf.c',
+    'embed/lib/rsod.c',
     'embed/lib/qr-code-generator/qrcodegen.c',
     'embed/lib/terminal.c',
     'vendor/micropython/lib/uzlib/adler32.c',
@@ -132,16 +96,7 @@ else:
         'embed/lib/display_draw.c',
     ]
 
-
-# fonts
-tools.add_font('NORMAL', FONT_NORMAL, CPPDEFINES_MOD, SOURCE_MOD)
-tools.add_font('BOLD', FONT_BOLD, CPPDEFINES_MOD, SOURCE_MOD)
-tools.add_font('DEMIBOLD', FONT_DEMIBOLD, CPPDEFINES_MOD, SOURCE_MOD)
-tools.add_font('MONO', FONT_MONO, CPPDEFINES_MOD, SOURCE_MOD)
-tools.add_font('BIG', FONT_BIG, CPPDEFINES_MOD, SOURCE_MOD)
-tools.add_font('NORMAL_UPPER', FONT_NORMAL_UPPER, CPPDEFINES_MOD, SOURCE_MOD)
-tools.add_font('BOLD_UPPER', FONT_BOLD_UPPER, CPPDEFINES_MOD, SOURCE_MOD)
-tools.add_font('SUB', FONT_SUB, CPPDEFINES_MOD, SOURCE_MOD)
+ui.init_ui(TREZOR_MODEL, "prodtest", CPPDEFINES_MOD, SOURCE_MOD, RUST_UI_FEATURES)
 
 env = Environment(
     ENV=os.environ,
@@ -151,11 +106,10 @@ env = Environment(
 FEATURES_AVAILABLE = models.configure_board(TREZOR_MODEL, HW_REVISION, FEATURES_WANTED, env, CPPDEFINES_HAL, SOURCE_HAL, PATH_HAL)
 
 FILE_SUFFIX= env.get('ENV')['SUFFIX']
-LINKER_SCRIPT_SUFFIX= env.get('ENV')['LINKER_SCRIPT']
 
 
 SOURCE_PRODTEST = [
-    f'embed/prodtest/startup_{FILE_SUFFIX}.s',
+    f'embed/trezorhal/{FILE_SUFFIX}/startup_stage_2.s',
     'embed/prodtest/header.S',
     'embed/prodtest/main.c',
     'embed/prodtest/prodtest_common.c',
@@ -167,6 +121,7 @@ if 'optiga' in FEATURES_AVAILABLE:
     ]
 
 env.Replace(
+    CAT='cat',
     CP='cp',
     AS='arm-none-eabi-as',
     AR='arm-none-eabi-ar',
@@ -192,7 +147,7 @@ env.Replace(
     '-fstack-protector-all '
     +  env.get('ENV')["CPU_CCFLAGS"] + CCFLAGS_MOD,
     CCFLAGS_QSTR='-DNO_QSTR -DN_X64 -DN_X86 -DN_THUMB',
-    LINKFLAGS=f'-T embed/prodtest/memory_{LINKER_SCRIPT_SUFFIX}.ld -Wl,--gc-sections -Wl,-Map=build/prodtest/prodtest.map -Wl,--warn-common',
+    LINKFLAGS=f'-T build/prodtest/memory.ld -Wl,--gc-sections -Wl,-Map=build/prodtest/prodtest.map -Wl,--warn-common',
     CPPPATH=[
         'embed/prodtest',
         'embed/lib',
@@ -255,14 +210,19 @@ else:
     VENDORHEADER = f'embed/models/{MODEL_IDENTIFIER}/vendorheader/vendorheader_unsafe_signed_prod.bin'
 
 
+tools.embed_raw_binary(
+        obj_program,
+        env,
+        'vendorheader',
+        'embed/firmware/vendorheader.o',
+        VENDORHEADER,
+        )
 
-obj_program.extend(
-    env.Command(
-        target='embed/prodtest/vendorheader.o',
-        source=VENDORHEADER,
-        action='$OBJCOPY -I binary -O elf32-littlearm -B arm'
-        ' --rename-section .data=.vendorheader,alloc,load,readonly,contents'
-        ' $SOURCE $TARGET', ))
+linkerscript_gen = env.Command(
+    target='memory.ld',
+    source=[f'embed/models/{MODEL_IDENTIFIER}/memory.ld', env.get('ENV')['LINKER_SCRIPT'].format(target='prodtest')],
+    action='$CAT $SOURCES > $TARGET',
+)
 
 program_elf = env.Command(
     target='prodtest.elf',
@@ -270,6 +230,8 @@ program_elf = env.Command(
     action=
     '$LINK -o $TARGET $CCFLAGS $CFLAGS $LINKFLAGS $SOURCES -lc_nano -lgcc',
 )
+
+env.Depends(program_elf, linkerscript_gen)
 
 BINARY_NAME = f"build/prodtest/prodtest-{models.get_model_identifier(TREZOR_MODEL)}"
 BINARY_NAME += "-" + tools.get_version('embed/prodtest/version.h')

@@ -24,9 +24,7 @@ def configure_board(
 
 
 def get_model_identifier(model: str) -> str:
-    if model == "1":
-        return "T1B1"
-    elif model == "T":
+    if model == "T":
         return "T2T1"
     elif model == "R":
         return "T2B1"
@@ -40,3 +38,18 @@ def get_model_identifier(model: str) -> str:
         return "D002"
     else:
         return model
+
+
+def has_emulator(model: str) -> bool:
+    imported_module = importlib.import_module("models." + get_model_identifier(model))
+    return hasattr(imported_module, "emulator")
+
+
+def get_model_ui(model: str) -> str:
+    imported_module = importlib.import_module("models." + get_model_identifier(model))
+    return imported_module.get_model_ui()
+
+
+def get_model_ui_conf(model: str) -> str:
+    imported_module = importlib.import_module("models." + get_model_identifier(model))
+    return imported_module.get_model_ui_conf()

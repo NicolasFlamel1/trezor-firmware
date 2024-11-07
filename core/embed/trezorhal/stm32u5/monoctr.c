@@ -20,7 +20,10 @@
 #include "monoctr.h"
 #include "flash_area.h"
 #include "model.h"
+#include "mpu.h"
 #include "secret.h"
+
+#ifdef KERNEL_MODE
 
 static int32_t get_offset(monoctr_type_t type) {
   switch (type) {
@@ -80,6 +83,8 @@ secbool monoctr_read(monoctr_type_t type, uint8_t *value) {
     return secfalse;
   }
 
+  mpu_mode_t mpu_mode = mpu_reconfig(MPU_MODE_SECRET);
+
   int counter = 0;
 
   int i = 0;
@@ -111,9 +116,12 @@ secbool monoctr_read(monoctr_type_t type, uint8_t *value) {
 
     if (not_cleared != sectrue) {
       // monotonic counter is not valid
+      mpu_restore(mpu_mode);
       return secfalse;
     }
   }
+
+  mpu_restore(mpu_mode);
 
   if (value != NULL) {
     *value = counter;
@@ -123,3 +131,5 @@ secbool monoctr_read(monoctr_type_t type, uint8_t *value) {
 
   return sectrue;
 }
+
+#endif  // KERNEL_MODE

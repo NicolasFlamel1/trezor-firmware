@@ -85,7 +85,9 @@ pub fn text_baseline(font: i32) -> i16 {
     feature = "disp_i8080_16bit_dw",
     not(feature = "disp_i8080_8bit_dw")
 ))]
+#[allow(unused_variables)]
 pub fn pixeldata(c: u16) {
+    #[cfg(not(feature = "new_rendering"))]
     unsafe {
         ffi::DISPLAY_DATA_ADDRESS.write_volatile(c);
     }
@@ -183,7 +185,12 @@ pub fn clear() {
 
 #[cfg(feature = "xframebuffer")]
 pub fn get_frame_buffer() -> (&'static mut [u8], usize) {
-    let fb_info = unsafe { ffi::display_get_frame_buffer() };
+    let mut fb_info = ffi::display_fb_info_t {
+        ptr: ptr::null_mut(),
+        stride: 0,
+    };
+
+    unsafe { ffi::display_get_frame_buffer(&mut fb_info) };
 
     let fb = unsafe {
         core::slice::from_raw_parts_mut(

@@ -33,9 +33,6 @@ def configure(
     defines += [f'TREZOR_BOARD=\\"{board}\\"']
     defines += [f"HW_MODEL={hw_model}"]
     defines += [f"HW_REVISION={hw_revision}"]
-    sources += [
-        "embed/models/D001/model_D001_layout.c",
-    ]
 
     if "new_rendering" in features_wanted:
         sources += [
@@ -72,7 +69,7 @@ def configure(
         features_available.append("display_rgb565")
 
     if "input" in features_wanted:
-        sources += ["embed/trezorhal/stm32f4/i2c.c"]
+        sources += ["embed/trezorhal/stm32f4/i2c_bus.c"]
         sources += ["embed/trezorhal/stm32f4/touch/stmpe811.c"]
         features_available.append("touch")
 

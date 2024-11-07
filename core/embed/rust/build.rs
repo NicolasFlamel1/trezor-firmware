@@ -3,6 +3,7 @@ use std::ffi::OsStr;
 use std::{env, path::PathBuf, process::Command};
 
 fn main() {
+    println!("cargo:rustc-env=BUILD_DIR={}", build_dir());
     #[cfg(feature = "micropython")]
     generate_qstr_bindings();
     #[cfg(feature = "micropython")]
@@ -12,6 +13,16 @@ fn main() {
     generate_crypto_bindings();
     #[cfg(feature = "test")]
     link_core_objects();
+}
+
+fn build_dir() -> String {
+    let build_dir_str = env::var("BUILD_DIR").unwrap_or(String::from("../../build/unix"));
+    PathBuf::from(build_dir_str)
+        .canonicalize()
+        .unwrap()
+        .to_str()
+        .unwrap()
+        .to_string()
 }
 
 const DEFAULT_BINDGEN_MACROS_COMMON: &[&str] = &[
@@ -94,14 +105,7 @@ fn generate_qstr_bindings() {
             is_global: false,
         })
         // Pass in correct include paths.
-        .clang_args(&[
-            "-I",
-            if is_firmware() {
-                "../../build/firmware"
-            } else {
-                "../../build/unix"
-            },
-        ])
+        .clang_args(&["-I", &build_dir()])
         // Customize the standard types.
         .use_core()
         .ctypes_prefix("cty")
@@ -127,6 +131,8 @@ fn generate_qstr_bindings() {
 fn prepare_bindings() -> bindgen::Builder {
     let mut bindings = bindgen::Builder::default();
 
+    let build_dir_include = format!("-I{}", build_dir());
+
     let mut clang_args: Vec<&str> = Vec::new();
 
     let bindgen_macros_env = env::var("BINDGEN_MACROS").ok();
@@ -142,11 +148,11 @@ fn prepare_bindings() -> bindgen::Builder {
         bindings = bindings.clang_args(["-DNEW_RENDERING"]);
     }
 
+    clang_args.push(&build_dir_include);
+
     // Pass in correct include paths and defines.
     if is_firmware() {
         clang_args.push("-nostdinc");
-
-        clang_args.push("-I../../build/firmware");
 
         // Append gcc-arm-none-eabi's include paths.
         let cc_output = Command::new("arm-none-eabi-gcc")
@@ -168,8 +174,6 @@ fn prepare_bindings() -> bindgen::Builder {
             .map(|s| format!("-I{}", s.trim()));
 
         bindings = bindings.clang_args(include_args);
-    } else {
-        clang_args.push("-I../../build/unix");
     }
 
     bindings = bindings.clang_args(&clang_args);
@@ -306,8 +310,9 @@ fn generate_trezorhal_bindings() {
         // model
         .allowlist_var("MODEL_INTERNAL_NAME")
         .allowlist_var("MODEL_FULL_NAME")
-        // common
-        .allowlist_var("HW_ENTROPY_DATA")
+        // entropy
+        .allowlist_var("HW_ENTROPY_LEN")
+        .allowlist_function("entropy_get")
         // secbool
         .allowlist_type("secbool")
         .must_use_type("secbool")
@@ -401,9 +406,9 @@ fn generate_trezorhal_bindings() {
         .allowlist_function("random_uniform")
         // rgb led
         .allowlist_function("rgb_led_set_color")
-        // time
-        .allowlist_function("hal_delay")
-        .allowlist_function("hal_ticks_ms")
+        // systick
+        .allowlist_function("systick_delay_ms")
+        .allowlist_function("systick_ms")
         // toif
         .allowlist_type("toif_format_t")
         // dma2d

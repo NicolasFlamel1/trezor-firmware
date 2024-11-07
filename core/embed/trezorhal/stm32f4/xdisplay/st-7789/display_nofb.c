@@ -24,6 +24,8 @@
 #include "display_io.h"
 #include "display_panel.h"
 
+#ifdef KERNEL_MODE
+
 void display_refresh(void) {
   // If the framebuffer is not used the, we do not need
   // to refresh the display explicitly as we write the data
@@ -118,3 +120,5 @@ void display_copy_mono4(const gfx_bitblt_t* bb) {
     src_row += bb->src_stride / sizeof(*src_row);
   }
 }
+
+#endif  // KERNEL_MODE

@@ -72,6 +72,56 @@ if TYPE_CHECKING:
     from trezor.enums import TezosContractType  # noqa: F401
     from trezor.enums import WordRequestType  # noqa: F401
 
+    class BenchmarkListNames(protobuf.MessageType):
+
+        @classmethod
+        def is_type_of(cls, msg: Any) -> TypeGuard["BenchmarkListNames"]:
+            return isinstance(msg, cls)
+
+    class BenchmarkNames(protobuf.MessageType):
+        names: "list[str]"
+
+        def __init__(
+            self,
+            *,
+            names: "list[str] | None" = None,
+        ) -> None:
+            pass
+
+        @classmethod
+        def is_type_of(cls, msg: Any) -> TypeGuard["BenchmarkNames"]:
+            return isinstance(msg, cls)
+
+    class BenchmarkRun(protobuf.MessageType):
+        name: "str | None"
+
+        def __init__(
+            self,
+            *,
+            name: "str | None" = None,
+        ) -> None:
+            pass
+
+        @classmethod
+        def is_type_of(cls, msg: Any) -> TypeGuard["BenchmarkRun"]:
+            return isinstance(msg, cls)
+
+    class BenchmarkResult(protobuf.MessageType):
+        value: "str | None"
+        unit: "str | None"
+
+        def __init__(
+            self,
+            *,
+            value: "str | None" = None,
+            unit: "str | None" = None,
+        ) -> None:
+            pass
+
+        @classmethod
+        def is_type_of(cls, msg: Any) -> TypeGuard["BenchmarkResult"]:
+            return isinstance(msg, cls)
+
     class BinanceGetAddress(protobuf.MessageType):
         address_n: "list[int]"
         show_display: "bool | None"
@@ -6792,6 +6842,52 @@ if TYPE_CHECKING:
 
         @classmethod
         def is_type_of(cls, msg: Any) -> TypeGuard["TezosManagerTransfer"]:
+            return isinstance(msg, cls)
+
+    class ThpCredentialMetadata(protobuf.MessageType):
+        host_name: "str | None"
+
+        def __init__(
+            self,
+            *,
+            host_name: "str | None" = None,
+        ) -> None:
+            pass
+
+        @classmethod
+        def is_type_of(cls, msg: Any) -> TypeGuard["ThpCredentialMetadata"]:
+            return isinstance(msg, cls)
+
+    class ThpPairingCredential(protobuf.MessageType):
+        cred_metadata: "ThpCredentialMetadata | None"
+        mac: "bytes | None"
+
+        def __init__(
+            self,
+            *,
+            cred_metadata: "ThpCredentialMetadata | None" = None,
+            mac: "bytes | None" = None,
+        ) -> None:
+            pass
+
+        @classmethod
+        def is_type_of(cls, msg: Any) -> TypeGuard["ThpPairingCredential"]:
+            return isinstance(msg, cls)
+
+    class ThpAuthenticatedCredentialData(protobuf.MessageType):
+        host_static_pubkey: "bytes | None"
+        cred_metadata: "ThpCredentialMetadata | None"
+
+        def __init__(
+            self,
+            *,
+            host_static_pubkey: "bytes | None" = None,
+            cred_metadata: "ThpCredentialMetadata | None" = None,
+        ) -> None:
+            pass
+
+        @classmethod
+        def is_type_of(cls, msg: Any) -> TypeGuard["ThpAuthenticatedCredentialData"]:
             return isinstance(msg, cls)
 
     class WebAuthnListResidentCredentials(protobuf.MessageType):

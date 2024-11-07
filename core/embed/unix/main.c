@@ -24,6 +24,8 @@
  * THE SOFTWARE.
  */
 
+#include <SDL.h>
+
 #include <ctype.h>
 #include <errno.h>
 #include <signal.h>
@@ -37,6 +39,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#include "common.h"
 #include "display.h"
 #include "extmod/misc.h"
 #include "extmod/vfs_posix.h"
@@ -44,6 +47,12 @@
 #include "flash_otp.h"
 #include "genhdr/mpversion.h"
 #include "input.h"
+#include "rsod.h"
+#include "system.h"
+#include "systimer.h"
+#include "touch.h"
+#include "unit_properties.h"
+
 #include "py/builtin.h"
 #include "py/compile.h"
 #include "py/gc.h"
@@ -53,9 +62,6 @@
 #include "py/repl.h"
 #include "py/runtime.h"
 #include "py/stackctrl.h"
-#include "touch.h"
-
-#include "common.h"
 
 // Command line options, with their defaults
 STATIC bool compile_only = false;
@@ -410,7 +416,7 @@ STATIC void set_sys_argv(char *argv[], int argc, int start_arg) {
 
 // Inject SystemExit exception. This is primarily needed by prof.py to run the
 // atexit() handler.
-void __attribute__((noreturn)) main_clean_exit() {
+static void __attribute__((noreturn)) main_clean_exit() {
   const int status = 3;
   fflush(stdout);
   fflush(stderr);
@@ -467,6 +473,28 @@ reimport:
   return 0;
 }
 
+static int sdl_event_filter(void *userdata, SDL_Event *event) {
+  switch (event->type) {
+    case SDL_QUIT:
+      main_clean_exit();
+      return 0;
+    case SDL_KEYUP:
+      if (event->key.repeat) {
+        return 0;
+      }
+      switch (event->key.keysym.sym) {
+        case SDLK_ESCAPE:
+          main_clean_exit();
+          return 0;
+        case SDLK_p:
+          display_save("emu");
+          return 0;
+      }
+      break;
+  }
+  return 1;
+}
+
 MP_NOINLINE int main_(int argc, char **argv) {
 #ifdef SIGPIPE
   // Do not raise SIGPIPE, instead return EPIPE. Otherwise, e.g. writing
@@ -486,7 +514,11 @@ MP_NOINLINE int main_(int argc, char **argv) {
 
   pre_process_options(argc, argv);
 
-  display_init();
+  system_init(&rsod_panic_handler);
+
+  SDL_SetEventFilter(sdl_event_filter, NULL);
+
+  display_init(DISPLAY_RESET_CONTENT);
 
 #if USE_TOUCH
   touch_init();
@@ -495,6 +527,8 @@ MP_NOINLINE int main_(int argc, char **argv) {
   // Map trezor.flash to memory.
   flash_init();
   flash_otp_init();
+
+  unit_properties_init();
 
 #if MICROPY_ENABLE_GC
   char *heap = malloc(heap_size);

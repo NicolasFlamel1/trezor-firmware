@@ -7,11 +7,11 @@ use crate::{
             text::TextStyle,
             Component,
             Event::{self, Swipe},
-            EventCtx, FlowMsg, SwipeDetect, SwipeDirection,
+            EventCtx, FlowMsg, SwipeDetect,
         },
         display::{Color, Icon},
         event::SwipeEvent,
-        geometry::{Alignment, Insets, Point, Rect},
+        geometry::{Alignment, Direction, Insets, Point, Rect},
         lerp::Lerp,
         model_mercury::theme::TITLE_HEIGHT,
         shape::{self, Renderer},
@@ -21,14 +21,14 @@ use crate::{
 #[derive(Clone)]
 pub struct HorizontalSwipe {
     progress: i16,
-    dir: SwipeDirection,
+    dir: Direction,
 }
 
 impl HorizontalSwipe {
     const fn new() -> Self {
         Self {
             progress: 0,
-            dir: SwipeDirection::Up,
+            dir: Direction::Up,
         }
     }
 
@@ -40,7 +40,7 @@ impl HorizontalSwipe {
         if let Swipe(SwipeEvent::Move(dir, progress)) = event {
             if swipe.is_allowed(dir) {
                 match dir {
-                    SwipeDirection::Left | SwipeDirection::Right => {
+                    Direction::Left | Direction::Right => {
                         self.progress = progress;
                         self.dir = dir;
                     }
@@ -53,7 +53,7 @@ impl HorizontalSwipe {
     fn render_swipe_cover<'s>(&self, target: &mut impl Renderer<'s>, bounds: Rect) {
         if self.progress > 0 {
             match self.dir {
-                SwipeDirection::Left => {
+                Direction::Left => {
                     let shift = pareen::constant(0.0).seq_ease_out(
                         0.0,
                         easer::functions::Circ,
@@ -72,7 +72,7 @@ impl HorizontalSwipe {
                         .with_bg(theme::BLACK)
                         .render(target);
                 }
-                SwipeDirection::Right => {}
+                Direction::Right => {}
                 _ => {}
             }
         }
@@ -81,11 +81,12 @@ impl HorizontalSwipe {
 
 #[derive(Clone)]
 pub struct Frame<T> {
-    border: Insets,
     bounds: Rect,
     content: T,
     header: Header,
+    header_update_fn: Option<fn(&T, &mut EventCtx, &mut Header)>,
     footer: Option<Footer<'static>>,
+    footer_update_fn: Option<fn(&T, &mut EventCtx, &mut Footer)>,
     swipe: SwipeConfig,
     internal_page_cnt: usize,
     horizontal_swipe: HorizontalSwipe,
@@ -103,10 +104,11 @@ where
     pub const fn new(alignment: Alignment, title: TString<'static>, content: T) -> Self {
         Self {
             bounds: Rect::zero(),
-            border: theme::borders(),
             content,
             header: Header::new(alignment, title),
+            header_update_fn: None,
             footer: None,
+            footer_update_fn: None,
             swipe: SwipeConfig::new(),
             internal_page_cnt: 1,
             horizontal_swipe: HorizontalSwipe::new(),
@@ -129,12 +131,6 @@ where
     }
 
     #[inline(never)]
-    pub const fn with_border(mut self, border: Insets) -> Self {
-        self.border = border;
-        self
-    }
-
-    #[inline(never)]
     pub fn with_subtitle(mut self, subtitle: TString<'static>) -> Self {
         self.header = self.header.with_subtitle(subtitle);
         self
@@ -152,6 +148,11 @@ where
 
     pub fn with_menu_button(self) -> Self {
         self.with_button(theme::ICON_MENU, FlowMsg::Info, true)
+    }
+
+    pub fn with_danger_menu_button(self) -> Self {
+        self.with_button(theme::ICON_MENU, FlowMsg::Info, true)
+            .button_styled(theme::button_warning_high())
     }
 
     pub fn with_warning_low_icon(self) -> Self {
@@ -217,6 +218,16 @@ where
         self
     }
 
+    pub fn register_header_update_fn(mut self, f: fn(&T, &mut EventCtx, &mut Header)) -> Self {
+        self.header_update_fn = Some(f);
+        self
+    }
+
+    pub fn register_footer_update_fn(mut self, f: fn(&T, &mut EventCtx, &mut Footer)) -> Self {
+        self.footer_update_fn = Some(f);
+        self
+    }
+
     pub fn with_danger(self) -> Self {
         self.button_styled(theme::button_danger())
             .title_styled(theme::label_title_danger())
@@ -230,15 +241,6 @@ where
         self.header.update_title(ctx, new_title);
     }
 
-    pub fn update_subtitle(
-        &mut self,
-        ctx: &mut EventCtx,
-        new_subtitle: TString<'static>,
-        new_style: Option<TextStyle>,
-    ) {
-        self.header.update_subtitle(ctx, new_subtitle, new_style);
-    }
-
     pub fn update_content<F, R>(&mut self, ctx: &mut EventCtx, update_fn: F) -> R
     where
         F: Fn(&mut EventCtx, &mut T) -> R,
@@ -248,19 +250,8 @@ where
         res
     }
 
-    pub fn update_footer_counter(
-        &mut self,
-        ctx: &mut EventCtx,
-        current: usize,
-        max: Option<usize>,
-    ) {
-        if let Some(footer) = &mut self.footer {
-            footer.update_page_counter(ctx, current, max);
-        }
-    }
-
     #[inline(never)]
-    pub fn with_swipe(mut self, dir: SwipeDirection, settings: SwipeSettings) -> Self {
+    pub fn with_swipe(mut self, dir: Direction, settings: SwipeSettings) -> Self {
         self.footer = self.footer.map(|f| f.with_swipe(dir));
         self.swipe = self.swipe.with_swipe(dir, settings);
         self
@@ -316,6 +307,16 @@ where
             return msg;
         }
 
+        if let Some(header_update_fn) = self.header_update_fn {
+            header_update_fn(&self.content, ctx, &mut self.header);
+        }
+
+        if let Some(footer_update_fn) = self.footer_update_fn {
+            if let Some(footer) = &mut self.footer {
+                footer_update_fn(&self.content, ctx, footer);
+            }
+        }
+
         None
     }
 
@@ -333,6 +334,7 @@ where
             .render_swipe_cover(target, self.bounds);
     }
 }
+
 fn frame_event(
     horizontal_swipe: &mut HorizontalSwipe,
     swipe_config: SwipeConfig,
@@ -341,12 +343,16 @@ fn frame_event(
     ctx: &mut EventCtx,
     event: Event,
 ) -> Option<FlowMsg> {
+    // horizontal_swipe does not return any message
     horizontal_swipe.event(event, swipe_config);
+    // msg type of footer is Never, so this should never return a value
+    let none = footer.event(ctx, event);
+    debug_assert!(none.is_none());
 
-    footer.event(ctx, event);
-
+    // msg type of header is FlowMsg, which will be the return value
     header.event(ctx, event)
 }
+
 fn frame_place(header: &mut Header, footer: &mut Option<Footer>, bounds: Rect) -> Rect {
     let (mut header_area, mut content_area) = bounds.split_top(TITLE_HEIGHT);
     content_area = content_area.inset(Insets::top(theme::SPACING));

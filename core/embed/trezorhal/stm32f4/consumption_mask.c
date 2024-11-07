@@ -18,7 +18,10 @@
  */
 
 #include STM32_HAL_H
+#include "mpu.h"
 #include "rng.h"
+
+#ifdef KERNEL_MODE
 
 #define SAMPLES 110
 #define TIMER_PERIOD 16640  // cca 10 KHz @ 180MHz
@@ -27,15 +30,16 @@
 #error Not implemented for boardloader!
 #endif
 
-#if defined BOOTLOADER
-__attribute__((section(".buf")))
-#endif
-uint32_t pwm_data[SAMPLES] = {0};
+__attribute__((section(".buf"))) uint32_t pwm_data[SAMPLES] = {0};
 
 void consumption_mask_randomize() {
+  mpu_mode_t mpu_mode = mpu_reconfig(MPU_MODE_KERNEL_SRAM);
+
   for (int i = 0; i < SAMPLES; i++) {
     pwm_data[i] = rng_get() % TIMER_PERIOD;
   }
+
+  mpu_restore(mpu_mode);
 }
 
 void consumption_mask_init(void) {
@@ -106,3 +110,5 @@ void consumption_mask_init(void) {
   HAL_TIM_Base_Start(&TIM8_Handle);
   HAL_TIM_PWM_Start(&TIM8_Handle, TIM_CHANNEL_1);
 }
+
+#endif  // KERNEL_MODE

@@ -25,23 +25,26 @@
 #include STM32_HAL_H
 
 #include "board_capabilities.h"
+#include "bootutils.h"
 #include "button.h"
 #include "common.h"
 #include "display.h"
 #include "display_draw.h"
 #include "display_utils.h"
-#include "fault_handlers.h"
 #include "flash.h"
 #include "flash_otp.h"
-#include "i2c.h"
+#include "fwutils.h"
+#include "image.h"
 #include "model.h"
 #include "mpu.h"
 #include "prodtest_common.h"
 #include "random_delays.h"
+#include "rsod.h"
 #include "sbu.h"
 #include "sdcard.h"
 #include "secbool.h"
-#include "supervise.h"
+#include "system.h"
+#include "systimer.h"
 #include "touch.h"
 #include "usb.h"
 #include "version.h"
@@ -495,6 +498,38 @@ static void test_touch_idle(const char *args) {
   touch_deinit();
 }
 
+static void test_touch_power(const char *args) {
+  static const int expected_params = 1;
+  int num_params = 0;
+
+  int params[expected_params];
+
+  extract_params(args, params, &num_params, expected_params);
+
+  if (num_params != expected_params) {
+    vcp_println("ERROR PARAM");
+    return;
+  }
+
+  int timeout = params[0];
+
+  display_clear();
+  display_text_center(DISPLAY_RESX / 2, DISPLAY_RESY / 2, "MEASURING", -1,
+                      FONT_BOLD, COLOR_WHITE, COLOR_BLACK);
+  display_refresh();
+
+  touch_power_set(true);
+
+  systick_delay_ms(timeout * 1000);
+
+  vcp_println("OK");
+
+  touch_power_set(false);
+
+  display_clear();
+  display_refresh();
+}
+
 static void test_sensitivity(const char *args) {
   int v = atoi(args);
 
@@ -593,14 +628,19 @@ static void test_firmware_version(void) {
 }
 
 static uint32_t read_bootloader_version(void) {
-  const image_header *header = read_image_header(
-      (const uint8_t *)BOOTLOADER_START, BOOTLOADER_IMAGE_MAGIC, 0xffffffff);
+  uint32_t version = 0;
 
-  if (secfalse == header) {
-    return 0;
+  mpu_mode_t mpu_mode = mpu_reconfig(MPU_MODE_BOOTUPDATE);
+
+  const image_header *header = read_image_header(
+      (const uint8_t *)BOOTLOADER_START, BOOTLOADER_MAXSIZE, 0xffffffff);
+
+  if (header != NULL) {
+    version = header->version;
   }
 
-  return header->version;
+  mpu_restore(mpu_mode);
+  return version;
 }
 
 static void test_bootloader_version(uint32_t version) {
@@ -619,7 +659,7 @@ static void test_boardloader_version(const boardloader_version_t *version) {
 }
 
 static void test_wipe(void) {
-  invalidate_firmware();
+  firmware_invalidate_header();
   display_clear();
   display_text_center(DISPLAY_RESX / 2, DISPLAY_RESY / 2 + 10, "WIPED", -1,
                       FONT_BOLD, COLOR_WHITE, COLOR_BLACK);
@@ -761,13 +801,17 @@ static void test_otp_write_device_variant(const char *args) {
   vcp_println("OK");
 }
 
-static void test_reboot(void) { svc_reboot(); }
+static void test_reboot(void) { reboot_device(); }
 
 void cpuid_read(void) {
+  mpu_mode_t mpu_mode = mpu_reconfig(MPU_MODE_OTP);
+
   uint32_t cpuid[3];
   cpuid[0] = LL_GetUID_Word0();
   cpuid[1] = LL_GetUID_Word1();
   cpuid[2] = LL_GetUID_Word2();
+
+  mpu_restore(mpu_mode);
 
   vcp_print("OK ");
   vcp_println_hex((uint8_t *)cpuid, sizeof(cpuid));
@@ -776,9 +820,10 @@ void cpuid_read(void) {
 #define BACKLIGHT_NORMAL 150
 
 int main(void) {
-  display_reinit();
-  display_orientation(0);
-  random_delays_init();
+  system_init(&rsod_panic_handler);
+
+  display_init(DISPLAY_JUMP_BEHAVIOR);
+
 #ifdef STM32U5
   secure_aes_init();
 #endif
@@ -790,9 +835,6 @@ int main(void) {
 #endif
 #ifdef USE_BUTTON
   button_init();
-#endif
-#ifdef USE_I2C
-  i2c_init();
 #endif
 #ifdef USE_TOUCH
   touch_init();
@@ -808,18 +850,11 @@ int main(void) {
   uint32_t bootloader_version = read_bootloader_version();
   const boardloader_version_t *boardloader_version = read_boardloader_version();
 
-  mpu_config_prodtest_initial();
-
 #ifdef USE_OPTIGA
   optiga_init();
   optiga_open_application();
   pair_optiga();
 #endif
-
-  mpu_config_prodtest();
-  fault_handlers_init();
-
-  drop_privileges();
 
   display_clear();
   draw_welcome_screen();
@@ -869,6 +904,9 @@ int main(void) {
 
     } else if (startswith(line, "TOUCH_IDLE ")) {
       test_touch_idle(line + 11);
+
+    } else if (startswith(line, "TOUCH_POWER ")) {
+      test_touch_power(line + 12);
 
     } else if (startswith(line, "SENS ")) {
       test_sensitivity(line + 5);

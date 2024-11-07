@@ -1,8 +1,10 @@
 #include <stdio.h>
 #include <unistd.h>
 
+#include <SDL.h>
+
 #include TREZOR_BOARD
-#include "boot_args.h"
+#include "bootargs.h"
 #include "bootui.h"
 #include "common.h"
 #include "display.h"
@@ -19,11 +21,6 @@
 #undef FIRMWARE_START
 
 uint8_t *FIRMWARE_START = 0;
-
-void set_core_clock(int) {}
-
-// used in fw emulator to raise python exception on exit
-void __attribute__((noreturn)) main_clean_exit() { exit(3); }
 
 int bootloader_main(void);
 
@@ -76,7 +73,7 @@ bool load_firmware(const char *filename, uint8_t *hash) {
     return false;
   }
   const image_header *hdr = read_image_header(
-      buffer + vhdr.hdrlen, FIRMWARE_IMAGE_MAGIC, FIRMWARE_IMAGE_MAXSIZE);
+      buffer + vhdr.hdrlen, FIRMWARE_IMAGE_MAGIC, FIRMWARE_MAXSIZE);
   if (hdr != (const image_header *)(buffer + vhdr.hdrlen)) {
     printf("File '%s' does not contain a valid firmware image.\n", filename);
     return false;
@@ -91,8 +88,32 @@ bool load_firmware(const char *filename, uint8_t *hash) {
   return true;
 }
 
+static int sdl_event_filter(void *userdata, SDL_Event *event) {
+  switch (event->type) {
+    case SDL_QUIT:
+      exit(3);
+      return 0;
+    case SDL_KEYUP:
+      if (event->key.repeat) {
+        return 0;
+      }
+      switch (event->key.keysym.sym) {
+        case SDLK_ESCAPE:
+          exit(3);
+          return 0;
+        case SDLK_p:
+          display_save("emu");
+          return 0;
+      }
+      break;
+  }
+  return 1;
+}
+
 __attribute__((noreturn)) int main(int argc, char **argv) {
-  display_init();
+  SDL_SetEventFilter(sdl_event_filter, NULL);
+
+  display_init(DISPLAY_RESET_CONTENT);
   flash_init();
   flash_otp_init();
 
@@ -125,13 +146,13 @@ __attribute__((noreturn)) int main(int argc, char **argv) {
         set_variant = 1;
         bitcoin_only = atoi(optarg);
         break;
-      case 'f':
+      case 'f': {
         uint8_t hash[BLAKE2S_DIGEST_LENGTH];
         if (!load_firmware(optarg, hash)) {
           exit(1);
         }
         bootargs_set(BOOT_COMMAND_INSTALL_UPGRADE, hash, sizeof(hash));
-        break;
+      } break;
 #ifdef USE_OPTIGA
       case 'l':
         // write bootloader-lock secret
@@ -170,11 +191,7 @@ __attribute__((noreturn)) int main(int argc, char **argv) {
   jump_to(0);
 }
 
-void mpu_config_bootloader(void) {}
-
-void mpu_config_off(void) {}
-
-__attribute__((noreturn)) void jump_to(uint32_t address) {
+void jump_to(uint32_t address) {
   bool storage_is_erased =
       storage_empty(&STORAGE_AREAS[0]) && storage_empty(&STORAGE_AREAS[1]);
 
@@ -188,5 +205,3 @@ __attribute__((noreturn)) void jump_to(uint32_t address) {
                       "STORAGE WAS RETAINED");
   }
 }
-
-void ensure_compatible_settings(void) {}

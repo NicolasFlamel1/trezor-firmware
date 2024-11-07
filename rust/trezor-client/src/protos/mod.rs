@@ -21,6 +21,8 @@ mod generated {
         messages_crypto
         messages_debug
         messages_management
+        messages_benchmark
+        options
 
         "bitcoin" => messages_bitcoin
         "ethereum" => messages_ethereum

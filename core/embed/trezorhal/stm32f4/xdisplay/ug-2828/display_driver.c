@@ -23,6 +23,7 @@
 #include TREZOR_BOARD
 #include STM32_HAL_H
 
+#include "mpu.h"
 #include "xdisplay.h"
 
 #if (DISPLAY_RESX != 128) || (DISPLAY_RESY != 128)
@@ -35,10 +36,16 @@
 // This type of displayed was used on some preliminary dev kits for T3T1 (Trezor
 // TS3)
 
+#define FRAME_BUFFER_SIZE (DISPLAY_RESX * DISPLAY_RESY)
+
+__attribute__((section(".fb1"))) uint8_t g_framebuf[FRAME_BUFFER_SIZE];
+
 // Display driver context.
 typedef struct {
+  // Set if the driver is initialized
+  bool initialized;
   // Frame buffer (8-bit Mono)
-  uint8_t framebuf[DISPLAY_RESX * DISPLAY_RESY];
+  uint8_t *framebuf;
   // Current display orientation (0 or 180)
   int orientation_angle;
   // Current backlight level ranging from 0 to 255
@@ -46,7 +53,9 @@ typedef struct {
 } display_driver_t;
 
 // Display driver instance
-static display_driver_t g_display_driver;
+static display_driver_t g_display_driver = {
+    .initialized = false,
+};
 
 // Macros to access display parallel interface
 
@@ -179,6 +188,10 @@ static void display_set_page_and_col(uint8_t page, uint8_t col) {
 static void display_sync_with_fb(void) {
   display_driver_t *drv = &g_display_driver;
 
+  if (!drv->initialized) {
+    return NULL;
+  }
+
   for (int y = 0; y < DISPLAY_RESY / 8; y++) {
     display_set_page_and_col(y, 0);
     uint8_t *src = &drv->framebuf[y * DISPLAY_RESX * 8];
@@ -291,29 +304,40 @@ static void display_init_interface(void) {
   HAL_SRAM_Init(&display_sram, &normal_mode_timing, NULL);
 }
 
-void display_init(void) {
+void display_init(display_content_mode_t mode) {
   display_driver_t *drv = &g_display_driver;
-  memset(drv, 0, sizeof(display_driver_t));
 
-  // Initialize GPIO & FSMC controller
-  display_init_interface();
-  // Initialize display controller
-  display_init_controller();
+  if (drv->initialized) {
+    return;
+  }
+
+  memset(drv, 0, sizeof(display_driver_t));
+  drv->framebuf = g_framebuf;
+
+  if (mode == DISPLAY_RESET_CONTENT) {
+    // Initialize GPIO & FSMC controller
+    display_init_interface();
+    // Initialize display controller
+    display_init_controller();
+  }
+
+  drv->initialized = true;
 }
 
-void display_reinit(void) {
+void display_deinit(display_content_mode_t mode) {
   display_driver_t *drv = &g_display_driver;
-  memset(drv, 0, sizeof(display_driver_t));
 
-  // !@# TODO backlight level??
-}
+  mpu_set_unpriv_fb(NULL, 0);
 
-void display_finish_actions(void) {
-  /// Not used and intentionally left empty
+  drv->initialized = false;
 }
 
 int display_set_backlight(int level) {
   display_driver_t *drv = &g_display_driver;
+
+  if (!drv->initialized) {
+    return 0;
+  }
 
   if (level != drv->backlight_level) {
     if (level >= 0 && level <= 255) {
@@ -330,11 +354,19 @@ int display_set_backlight(int level) {
 int display_get_backlight(void) {
   display_driver_t *drv = &g_display_driver;
 
+  if (!drv->initialized) {
+    return 0;
+  }
+
   return drv->backlight_level;
 }
 
 int display_set_orientation(int angle) {
   display_driver_t *drv = &g_display_driver;
+
+  if (!drv->initialized) {
+    return 0;
+  }
 
   if (angle != drv->orientation_angle) {
     if (angle == 0 || angle == 180) {
@@ -359,26 +391,49 @@ int display_set_orientation(int angle) {
 int display_get_orientation(void) {
   display_driver_t *drv = &g_display_driver;
 
+  if (!drv->initialized) {
+    return 0;
+  }
+
   return drv->orientation_angle;
 }
 
-display_fb_info_t display_get_frame_buffer(void) {
+bool display_get_frame_buffer(display_fb_info_t *fb) {
   display_driver_t *drv = &g_display_driver;
 
-  display_fb_info_t fb = {
-      .ptr = &drv->framebuf[0],
-      .stride = DISPLAY_RESX,
-  };
-
-  return fb;
+  if (!drv->initialized) {
+    fb->ptr = NULL;
+    fb->stride = 0;
+    return false;
+  } else {
+    fb->ptr = &drv->framebuf[0];
+    fb->stride = DISPLAY_RESX;
+    // Enable access to the frame buffer from the unprivileged code
+    mpu_set_unpriv_fb(fb->ptr, FRAME_BUFFER_SIZE);
+    return true;
+  }
 }
 
-void display_refresh(void) { display_sync_with_fb(); }
+void display_refresh(void) {
+  display_driver_t *drv = &g_display_driver;
 
-void display_set_compatible_settings() {}
+  if (!drv->initialized) {
+    return NULL;
+  }
+
+  // Disable access to the frame buffer from the unprivileged code
+  mpu_set_unpriv_fb(NULL, 0);
+
+  // Copy the frame buffer to the display
+  display_sync_with_fb();
+}
 
 void display_fill(const gfx_bitblt_t *bb) {
   display_driver_t *drv = &g_display_driver;
+
+  if (!drv->initialized) {
+    return NULL;
+  }
 
   gfx_bitblt_t bb_new = *bb;
   bb_new.dst_row = &drv->framebuf[DISPLAY_RESX * bb_new.dst_y];
@@ -389,6 +444,10 @@ void display_fill(const gfx_bitblt_t *bb) {
 
 void display_copy_mono1p(const gfx_bitblt_t *bb) {
   display_driver_t *drv = &g_display_driver;
+
+  if (!drv->initialized) {
+    return NULL;
+  }
 
   gfx_bitblt_t bb_new = *bb;
   bb_new.dst_row = &drv->framebuf[DISPLAY_RESX * bb_new.dst_y];

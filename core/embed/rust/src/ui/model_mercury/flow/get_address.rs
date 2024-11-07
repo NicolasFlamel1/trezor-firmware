@@ -8,12 +8,13 @@ use crate::{
         component::{
             swipe_detect::SwipeSettings,
             text::paragraphs::{Paragraph, ParagraphSource, Paragraphs},
-            ButtonRequestExt, ComponentExt, Qr, SwipeDirection,
+            ButtonRequestExt, ComponentExt, Qr,
         },
         flow::{
-            base::{DecisionBuilder as _, StateChange},
-            FlowMsg, FlowState, SwipeFlow, SwipePage,
+            base::{Decision, DecisionBuilder as _},
+            FlowController, FlowMsg, SwipeFlow, SwipePage,
         },
+        geometry::Direction,
         layout::{obj::LayoutObj, util::ConfirmBlob},
     },
 };
@@ -40,32 +41,32 @@ pub enum GetAddress {
     CancelTap,
 }
 
-impl FlowState for GetAddress {
+impl FlowController for GetAddress {
     #[inline]
     fn index(&'static self) -> usize {
         *self as usize
     }
 
-    fn handle_swipe(&'static self, direction: SwipeDirection) -> StateChange {
+    fn handle_swipe(&'static self, direction: Direction) -> Decision {
         match (self, direction) {
-            (Self::Address, SwipeDirection::Left) => Self::Menu.swipe(direction),
-            (Self::Address, SwipeDirection::Up) => Self::Tap.swipe(direction),
-            (Self::Tap, SwipeDirection::Down) => Self::Address.swipe(direction),
-            (Self::Tap, SwipeDirection::Left) => Self::Menu.swipe(direction),
-            (Self::Menu, SwipeDirection::Right) => Self::Address.swipe(direction),
-            (Self::QrCode, SwipeDirection::Right) => Self::Menu.swipe(direction),
-            (Self::AccountInfo, SwipeDirection::Right) => Self::Menu.swipe_right(),
-            (Self::Cancel, SwipeDirection::Up) => Self::CancelTap.swipe(direction),
-            (Self::Cancel, SwipeDirection::Right) => Self::Menu.swipe(direction),
-            (Self::CancelTap, SwipeDirection::Down) => Self::Cancel.swipe(direction),
-            (Self::CancelTap, SwipeDirection::Right) => Self::Menu.swipe(direction),
+            (Self::Address, Direction::Left) => Self::Menu.swipe(direction),
+            (Self::Address, Direction::Up) => Self::Tap.swipe(direction),
+            (Self::Tap, Direction::Down) => Self::Address.swipe(direction),
+            (Self::Tap, Direction::Left) => Self::Menu.swipe(direction),
+            (Self::Menu, Direction::Right) => Self::Address.swipe(direction),
+            (Self::QrCode, Direction::Right) => Self::Menu.swipe(direction),
+            (Self::AccountInfo, Direction::Right) => Self::Menu.swipe_right(),
+            (Self::Cancel, Direction::Up) => Self::CancelTap.swipe(direction),
+            (Self::Cancel, Direction::Right) => Self::Menu.swipe(direction),
+            (Self::CancelTap, Direction::Down) => Self::Cancel.swipe(direction),
+            (Self::CancelTap, Direction::Right) => Self::Menu.swipe(direction),
             _ => self.do_nothing(),
         }
     }
 
-    fn handle_event(&'static self, msg: FlowMsg) -> StateChange {
+    fn handle_event(&'static self, msg: FlowMsg) -> Decision {
         match (self, msg) {
-            (Self::Address, FlowMsg::Info) => Self::Menu.transit(),
+            (Self::Address, FlowMsg::Info) => Self::Menu.goto(),
             (Self::Tap, FlowMsg::Confirmed) => Self::Confirmed.swipe_up(),
             (Self::Tap, FlowMsg::Info) => Self::Menu.swipe_left(),
             (Self::Confirmed, _) => self.return_msg(FlowMsg::Confirmed),
@@ -73,11 +74,11 @@ impl FlowState for GetAddress {
             (Self::Menu, FlowMsg::Choice(1)) => Self::AccountInfo.swipe_left(),
             (Self::Menu, FlowMsg::Choice(2)) => Self::Cancel.swipe_left(),
             (Self::Menu, FlowMsg::Cancelled) => Self::Address.swipe_right(),
-            (Self::QrCode, FlowMsg::Cancelled) => Self::Menu.transit(),
-            (Self::AccountInfo, FlowMsg::Cancelled) => Self::Menu.transit(),
-            (Self::Cancel, FlowMsg::Cancelled) => Self::Menu.transit(),
+            (Self::QrCode, FlowMsg::Cancelled) => Self::Menu.goto(),
+            (Self::AccountInfo, FlowMsg::Cancelled) => Self::Menu.goto(),
+            (Self::Cancel, FlowMsg::Cancelled) => Self::Menu.goto(),
             (Self::CancelTap, FlowMsg::Confirmed) => self.return_msg(FlowMsg::Cancelled),
-            (Self::CancelTap, FlowMsg::Cancelled) => Self::Menu.transit(),
+            (Self::CancelTap, FlowMsg::Cancelled) => Self::Menu.goto(),
             _ => self.do_nothing(),
         }
     }
@@ -104,6 +105,8 @@ impl GetAddress {
         let path: Option<TString> = kwargs.get(Qstr::MP_QSTR_path)?.try_into_option()?;
         let xpubs: Obj = kwargs.get(Qstr::MP_QSTR_xpubs)?;
 
+        let title_success: TString = kwargs.get(Qstr::MP_QSTR_title_success)?.try_into()?;
+
         let br_name: TString = kwargs.get(Qstr::MP_QSTR_br_name)?.try_into()?;
         let br_code: u16 = kwargs.get(Qstr::MP_QSTR_br_code)?.try_into()?;
 
@@ -127,8 +130,8 @@ impl GetAddress {
             Frame::left_aligned(title, SwipeContent::new(SwipePage::vertical(paragraphs)))
                 .with_menu_button()
                 .with_footer(TR::instructions__swipe_up.into(), None)
-                .with_swipe(SwipeDirection::Up, SwipeSettings::default())
-                .with_swipe(SwipeDirection::Left, SwipeSettings::default())
+                .with_swipe(Direction::Up, SwipeSettings::default())
+                .with_swipe(Direction::Left, SwipeSettings::default())
                 .with_vertical_pages()
                 .map(|msg| matches!(msg, FrameMsg::Button(_)).then_some(FlowMsg::Info))
                 .one_button_request(ButtonRequest::from_num(br_code, br_name))
@@ -139,8 +142,8 @@ impl GetAddress {
         let content_tap =
             Frame::left_aligned(title, SwipeContent::new(PromptScreen::new_tap_to_confirm()))
                 .with_footer(TR::instructions__tap_to_confirm.into(), None)
-                .with_swipe(SwipeDirection::Down, SwipeSettings::default())
-                .with_swipe(SwipeDirection::Left, SwipeSettings::default())
+                .with_swipe(Direction::Down, SwipeSettings::default())
+                .with_swipe(Direction::Left, SwipeSettings::default())
                 .map(|msg| match msg {
                     FrameMsg::Content(PromptMsg::Confirmed) => Some(FlowMsg::Confirmed),
                     FrameMsg::Button(_) => Some(FlowMsg::Info),
@@ -149,7 +152,7 @@ impl GetAddress {
 
         let content_confirmed = Frame::left_aligned(
             TR::words__title_success.into(),
-            StatusScreen::new_success_timeout(TR::address__confirmed.into()),
+            StatusScreen::new_success_timeout(title_success),
         )
         .with_footer(TR::instructions__continue_in_app.into(), None)
         .with_result_icon(theme::ICON_BULLET_CHECKMARK, theme::GREEN_LIGHT)
@@ -167,7 +170,7 @@ impl GetAddress {
                 .danger(theme::ICON_CANCEL, TR::address__cancel_receive.into()),
         )
         .with_cancel_button()
-        .with_swipe(SwipeDirection::Right, SwipeSettings::immediate())
+        .with_swipe(Direction::Right, SwipeSettings::immediate())
         .map(|msg| match msg {
             FrameMsg::Content(VerticalMenuChoiceMsg::Selected(i)) => Some(FlowMsg::Choice(i)),
             FrameMsg::Button(_) => Some(FlowMsg::Cancelled),
@@ -181,7 +184,7 @@ impl GetAddress {
                 .with_border(QR_BORDER),
         )
         .with_cancel_button()
-        .with_swipe(SwipeDirection::Right, SwipeSettings::immediate())
+        .with_swipe(Direction::Right, SwipeSettings::immediate())
         .map(|msg| matches!(msg, FrameMsg::Button(_)).then_some(FlowMsg::Cancelled));
 
         // AccountInfo
@@ -202,8 +205,8 @@ impl GetAddress {
         )
         .with_cancel_button()
         .with_footer(TR::instructions__swipe_up.into(), None)
-        .with_swipe(SwipeDirection::Up, SwipeSettings::default())
-        .with_swipe(SwipeDirection::Right, SwipeSettings::immediate())
+        .with_swipe(Direction::Up, SwipeSettings::default())
+        .with_swipe(Direction::Right, SwipeSettings::immediate())
         .map(|msg| matches!(msg, FrameMsg::Button(_)).then_some(FlowMsg::Cancelled));
 
         // CancelTap
@@ -213,8 +216,8 @@ impl GetAddress {
         )
         .with_cancel_button()
         .with_footer(TR::instructions__tap_to_confirm.into(), None)
-        .with_swipe(SwipeDirection::Down, SwipeSettings::default())
-        .with_swipe(SwipeDirection::Right, SwipeSettings::immediate())
+        .with_swipe(Direction::Down, SwipeSettings::default())
+        .with_swipe(Direction::Right, SwipeSettings::immediate())
         .map(|msg| match msg {
             FrameMsg::Content(PromptMsg::Confirmed) => Some(FlowMsg::Confirmed),
             FrameMsg::Button(FlowMsg::Cancelled) => Some(FlowMsg::Cancelled),

@@ -1,6 +1,10 @@
+#ifndef TREZORHAL_SECRET_H
+#define TREZORHAL_SECRET_H
 
 #include <stdint.h>
 #include "secbool.h"
+
+#ifdef KERNEL_MODE
 
 #define SECRET_HEADER_MAGIC "TRZS"
 #define SECRET_HEADER_LEN 16
@@ -14,11 +18,6 @@
 #define SECRET_BHK_OFFSET (1024 * 8)
 #define SECRET_BHK_LEN 32
 
-// Checks if bootloader is locked, that is the secret storage contains optiga
-// pairing secret on platforms where access to the secret storage cannot be
-// restricted for unofficial firmware
-secbool secret_bootloader_locked(void);
-
 // Writes data to the secret storage
 void secret_write(const uint8_t* data, uint32_t offset, uint32_t len);
 
@@ -30,9 +29,6 @@ secbool secret_wiped(void);
 
 // Verifies that the secret storage has correct header
 secbool secret_verify_header(void);
-
-// Checks that the secret storage is initialized and initializes it if not
-secbool secret_ensure_initialized(void);
 
 // Erases the entire secret storage
 void secret_erase(void);
@@ -56,6 +52,9 @@ secbool secret_optiga_get(uint8_t dest[SECRET_OPTIGA_KEY_LEN]);
 // Checks if the optiga pairing secret is present in the secret storage
 secbool secret_optiga_present(void);
 
+// Checks if the optiga pairing secret can be written to the secret storage
+secbool secret_optiga_writable(void);
+
 // Erases optiga pairing secret from the secret storage
 void secret_optiga_erase(void);
 
@@ -67,3 +66,17 @@ void secret_bhk_regenerate(void);
 // Disables access to the secret storage until next reset, if possible
 // This function is called by the bootloader before starting the firmware
 void secret_prepare_fw(secbool allow_run_with_secret, secbool trust_all);
+
+// Prepares the secret storage for running the boardloader and next stages
+// Ensures that secret storage access is enabled
+// This function is called by the boardloader
+void secret_init(void);
+
+#endif  // KERNEL_MODE
+
+// Checks if bootloader is locked, that is the secret storage contains optiga
+// pairing secret on platforms where access to the secret storage cannot be
+// restricted for unofficial firmware
+secbool secret_bootloader_locked(void);
+
+#endif  // TREZORHAL_SECRET_H

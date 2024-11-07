@@ -16,9 +16,12 @@
  *
  ******************************************************************************
  */
+#ifdef KERNEL_MODE
 
 /* Includes ------------------------------------------------------------------*/
 #include "sdram.h"
+#include "irq.h"
+#include "mpu.h"
 
 /** @addtogroup BSP
  * @{
@@ -89,6 +92,8 @@ void BSP_SDRAM_MspInit(SDRAM_HandleTypeDef *hsdram, void *Params);
 void sdram_init(void) {
   static uint8_t sdramstatus = SDRAM_ERROR;
 
+  mpu_mode_t mode = mpu_reconfig(MPU_MODE_FSMC_REGS);
+
   /* SDRAM device configuration */
   SdramHandle.Instance = FMC_SDRAM_DEVICE;
 
@@ -135,6 +140,8 @@ void sdram_init(void) {
 
   /* SDRAM initialization sequence */
   BSP_SDRAM_Initialization_sequence(REFRESH_COUNT);
+
+  mpu_restore(mode);
 
   (void)sdramstatus;
 }
@@ -397,8 +404,8 @@ void BSP_SDRAM_MspInit(SDRAM_HandleTypeDef *hsdram, void *Params) {
     HAL_DMA_Init(&dmaHandle);
 
     /* NVIC configuration for DMA transfer complete interrupt */
-    HAL_NVIC_SetPriority(SDRAM_DMAx_IRQn, 0x0F, 0);
-    HAL_NVIC_EnableIRQ(SDRAM_DMAx_IRQn);
+    NVIC_SetPriority(SDRAM_DMAx_IRQn, IRQ_PRI_NORMAL);
+    NVIC_EnableIRQ(SDRAM_DMAx_IRQn);
   } /* of if(hsdram != (SDRAM_HandleTypeDef  *)NULL) */
 }
 
@@ -413,7 +420,7 @@ void BSP_SDRAM_MspDeInit(SDRAM_HandleTypeDef *hsdram, void *Params) {
 
   if (hsdram != (SDRAM_HandleTypeDef *)NULL) {
     /* Disable NVIC configuration for DMA interrupt */
-    HAL_NVIC_DisableIRQ(SDRAM_DMAx_IRQn);
+    NVIC_DisableIRQ(SDRAM_DMAx_IRQn);
 
     /* Deinitialize the stream for new transfer */
     dma_handle.Instance = SDRAM_DMAx_STREAM;
@@ -443,3 +450,5 @@ void BSP_SDRAM_MspDeInit(SDRAM_HandleTypeDef *hsdram, void *Params) {
 /**
  * @}
  */
+
+#endif

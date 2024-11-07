@@ -171,7 +171,7 @@ pub enum TranslatedString {
     #[cfg(feature = "universal_fw")]
     cardano__collateral_return = 124,  // "Collateral return"
     #[cfg(feature = "universal_fw")]
-    cardano__confirm = 125,  // "Confirm:"
+    cardano__confirm = 125,  // "\"\""
     #[cfg(feature = "universal_fw")]
     cardano__confirm_signing_stake_pool = 126,  // "Confirm signing the stake pool registration as an owner."
     #[cfg(feature = "universal_fw")]
@@ -457,7 +457,7 @@ pub enum TranslatedString {
     #[cfg(feature = "universal_fw")]
     ethereum__name_and_version = 277,  // "Name and version"
     #[cfg(feature = "universal_fw")]
-    ethereum__new_contract = 278,  // "new contract?"
+    ethereum__new_contract = 278,  // "New contract will be deployed"
     #[cfg(feature = "universal_fw")]
     ethereum__no_message_field = 279,  // "No message field"
     #[cfg(feature = "universal_fw")]
@@ -473,7 +473,7 @@ pub enum TranslatedString {
     #[cfg(feature = "universal_fw")]
     ethereum__sign_eip712 = 285,  // "Really sign EIP-712 typed data?"
     #[cfg(feature = "universal_fw")]
-    ethereum__title_confirm_data = 286,  // "Confirm data"
+    ethereum__title_input_data = 286,  // "Input data"
     #[cfg(feature = "universal_fw")]
     ethereum__title_confirm_domain = 287,  // "Confirm domain"
     #[cfg(feature = "universal_fw")]
@@ -940,7 +940,7 @@ pub enum TranslatedString {
     send__title_sending_amount = 650,  // "Sending amount"
     send__title_sending_to = 651,  // "Sending to"
     send__to_the_total_amount = 652,  // "To the total amount:"
-    send__total_amount_colon = 653,  // "Total amount:"
+    send__total_amount_colon = 653,  // "\"\""
     send__transaction_id = 654,  // "Transaction ID:"
     send__you_are_contributing = 655,  // "You are contributing:"
     share_words__words_in_order = 656,  // " words in order."
@@ -1187,7 +1187,7 @@ pub enum TranslatedString {
     words__confirm = 800,  // "Confirm"
     words__confirm_fee = 801,  // "Confirm fee"
     words__contains = 802,  // "Contains"
-    words__continue_anyway = 803,  // "Continue anyway?"
+    words__continue_anyway_question = 803,  // "Continue anyway?"
     words__continue_with = 804,  // "Continue with"
     words__error = 805,  // "Error"
     words__fee = 806,  // "Fee"
@@ -1369,6 +1369,16 @@ pub enum TranslatedString {
     instructions__swipe_down = 964,  // "Swipe down"
     #[cfg(feature = "universal_fw")]
     fido__title_credential_details = 965,  // "Credential details"
+    address__public_key_confirmed = 966,  // "Public key confirmed"
+    words__continue_anyway = 967,  // "Continue anyway"
+    #[cfg(feature = "universal_fw")]
+    ethereum__unknown_contract_address = 968,  // "Unknown contract address. Continue only if you know what you are doing."
+    #[cfg(feature = "universal_fw")]
+    ethereum__token_contract = 969,  // "Token contract"
+    buttons__view_all_data = 970,  // "View all data"
+    instructions__view_all_data = 971,  // "View all data in the menu."
+    #[cfg(feature = "universal_fw")]
+    ethereum__interaction_contract = 972,  // "Interaction contract"
 }
 
 impl TranslatedString {
@@ -1534,7 +1544,7 @@ impl TranslatedString {
             #[cfg(feature = "universal_fw")]
             Self::cardano__collateral_return => "Collateral return",
             #[cfg(feature = "universal_fw")]
-            Self::cardano__confirm => "Confirm:",
+            Self::cardano__confirm => "\"\"",
             #[cfg(feature = "universal_fw")]
             Self::cardano__confirm_signing_stake_pool => "Confirm signing the stake pool registration as an owner.",
             #[cfg(feature = "universal_fw")]
@@ -1820,7 +1830,7 @@ impl TranslatedString {
             #[cfg(feature = "universal_fw")]
             Self::ethereum__name_and_version => "Name and version",
             #[cfg(feature = "universal_fw")]
-            Self::ethereum__new_contract => "new contract?",
+            Self::ethereum__new_contract => "New contract will be deployed",
             #[cfg(feature = "universal_fw")]
             Self::ethereum__no_message_field => "No message field",
             #[cfg(feature = "universal_fw")]
@@ -1836,7 +1846,7 @@ impl TranslatedString {
             #[cfg(feature = "universal_fw")]
             Self::ethereum__sign_eip712 => "Really sign EIP-712 typed data?",
             #[cfg(feature = "universal_fw")]
-            Self::ethereum__title_confirm_data => "Confirm data",
+            Self::ethereum__title_input_data => "Input data",
             #[cfg(feature = "universal_fw")]
             Self::ethereum__title_confirm_domain => "Confirm domain",
             #[cfg(feature = "universal_fw")]
@@ -2303,7 +2313,7 @@ impl TranslatedString {
             Self::send__title_sending_amount => "Sending amount",
             Self::send__title_sending_to => "Sending to",
             Self::send__to_the_total_amount => "To the total amount:",
-            Self::send__total_amount_colon => "Total amount:",
+            Self::send__total_amount_colon => "\"\"",
             Self::send__transaction_id => "Transaction ID:",
             Self::send__you_are_contributing => "You are contributing:",
             Self::share_words__words_in_order => " words in order.",
@@ -2550,7 +2560,7 @@ impl TranslatedString {
             Self::words__confirm => "Confirm",
             Self::words__confirm_fee => "Confirm fee",
             Self::words__contains => "Contains",
-            Self::words__continue_anyway => "Continue anyway?",
+            Self::words__continue_anyway_question => "Continue anyway?",
             Self::words__continue_with => "Continue with",
             Self::words__error => "Error",
             Self::words__fee => "Fee",
@@ -2732,6 +2742,16 @@ impl TranslatedString {
             Self::instructions__swipe_down => "Swipe down",
             #[cfg(feature = "universal_fw")]
             Self::fido__title_credential_details => "Credential details",
+            Self::address__public_key_confirmed => "Public key confirmed",
+            Self::words__continue_anyway => "Continue anyway",
+            #[cfg(feature = "universal_fw")]
+            Self::ethereum__unknown_contract_address => "Unknown contract address. Continue only if you know what you are doing.",
+            #[cfg(feature = "universal_fw")]
+            Self::ethereum__token_contract => "Token contract",
+            Self::buttons__view_all_data => "View all data",
+            Self::instructions__view_all_data => "View all data in the menu.",
+            #[cfg(feature = "universal_fw")]
+            Self::ethereum__interaction_contract => "Interaction contract",
         }
     }
 
@@ -3200,7 +3220,7 @@ impl TranslatedString {
             #[cfg(feature = "universal_fw")]
             Qstr::MP_QSTR_ethereum__sign_eip712 => Some(Self::ethereum__sign_eip712),
             #[cfg(feature = "universal_fw")]
-            Qstr::MP_QSTR_ethereum__title_confirm_data => Some(Self::ethereum__title_confirm_data),
+            Qstr::MP_QSTR_ethereum__title_input_data => Some(Self::ethereum__title_input_data),
             #[cfg(feature = "universal_fw")]
             Qstr::MP_QSTR_ethereum__title_confirm_domain => Some(Self::ethereum__title_confirm_domain),
             #[cfg(feature = "universal_fw")]
@@ -3914,7 +3934,7 @@ impl TranslatedString {
             Qstr::MP_QSTR_words__confirm => Some(Self::words__confirm),
             Qstr::MP_QSTR_words__confirm_fee => Some(Self::words__confirm_fee),
             Qstr::MP_QSTR_words__contains => Some(Self::words__contains),
-            Qstr::MP_QSTR_words__continue_anyway => Some(Self::words__continue_anyway),
+            Qstr::MP_QSTR_words__continue_anyway_question => Some(Self::words__continue_anyway_question),
             Qstr::MP_QSTR_words__continue_with => Some(Self::words__continue_with),
             Qstr::MP_QSTR_words__error => Some(Self::words__error),
             Qstr::MP_QSTR_words__fee => Some(Self::words__fee),
@@ -4096,6 +4116,16 @@ impl TranslatedString {
             Qstr::MP_QSTR_instructions__swipe_down => Some(Self::instructions__swipe_down),
             #[cfg(feature = "universal_fw")]
             Qstr::MP_QSTR_fido__title_credential_details => Some(Self::fido__title_credential_details),
+            Qstr::MP_QSTR_address__public_key_confirmed => Some(Self::address__public_key_confirmed),
+            Qstr::MP_QSTR_words__continue_anyway => Some(Self::words__continue_anyway),
+            #[cfg(feature = "universal_fw")]
+            Qstr::MP_QSTR_ethereum__unknown_contract_address => Some(Self::ethereum__unknown_contract_address),
+            #[cfg(feature = "universal_fw")]
+            Qstr::MP_QSTR_ethereum__token_contract => Some(Self::ethereum__token_contract),
+            Qstr::MP_QSTR_buttons__view_all_data => Some(Self::buttons__view_all_data),
+            Qstr::MP_QSTR_instructions__view_all_data => Some(Self::instructions__view_all_data),
+            #[cfg(feature = "universal_fw")]
+            Qstr::MP_QSTR_ethereum__interaction_contract => Some(Self::ethereum__interaction_contract),
             _ => None,
         }
     }

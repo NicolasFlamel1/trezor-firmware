@@ -24,13 +24,14 @@
 #include <pb_encode.h>
 #include "messages.pb.h"
 
-#include "boot_args.h"
+#include "bootargs.h"
 #include "common.h"
 #include "flash.h"
+#include "flash_utils.h"
 #include "image.h"
 #include "secbool.h"
 #include "secret.h"
-#include "unit_variant.h"
+#include "unit_properties.h"
 #include "usb.h"
 #include "version.h"
 
@@ -314,10 +315,14 @@ static void send_msg_features(uint8_t iface_num,
   } else {
     MSG_SEND_ASSIGN_VALUE(firmware_present, false);
   }
-  if (unit_variant_present()) {
-    MSG_SEND_ASSIGN_VALUE(unit_color, unit_variant_get_color());
-    MSG_SEND_ASSIGN_VALUE(unit_packaging, unit_variant_get_packaging());
-    MSG_SEND_ASSIGN_VALUE(unit_btconly, unit_variant_get_btconly());
+  if (unit_properties()->color_is_valid) {
+    MSG_SEND_ASSIGN_VALUE(unit_color, unit_properties()->color);
+  }
+  if (unit_properties()->packaging_is_valid) {
+    MSG_SEND_ASSIGN_VALUE(unit_packaging, unit_properties()->packaging);
+  }
+  if (unit_properties()->btconly_is_valid) {
+    MSG_SEND_ASSIGN_VALUE(unit_btconly, unit_properties()->btconly);
   }
 
 #if USE_OPTIGA
@@ -370,7 +375,7 @@ void process_msg_FirmwareErase(uint8_t iface_num, uint32_t msg_size,
   firmware_remaining = msg_recv.has_length ? msg_recv.length : 0;
   if ((firmware_remaining > 0) &&
       ((firmware_remaining % sizeof(uint32_t)) == 0) &&
-      (firmware_remaining <= FIRMWARE_IMAGE_MAXSIZE)) {
+      (firmware_remaining <= FIRMWARE_MAXSIZE)) {
     // request new firmware
     chunk_requested = (firmware_remaining > IMAGE_INIT_CHUNK_SIZE)
                           ? IMAGE_INIT_CHUNK_SIZE
@@ -390,7 +395,10 @@ void process_msg_FirmwareErase(uint8_t iface_num, uint32_t msg_size,
 
 static uint32_t chunk_size = 0;
 
-__attribute__((section(".buf"))) uint32_t chunk_buffer[IMAGE_CHUNK_SIZE / 4];
+#ifndef TREZOR_EMULATOR
+__attribute__((section(".buf")))
+#endif
+uint32_t chunk_buffer[IMAGE_CHUNK_SIZE / 4];
 
 #define CHUNK_BUFFER_PTR ((const uint8_t *const)&chunk_buffer)
 
@@ -551,7 +559,7 @@ int process_msg_FirmwareUpload(uint8_t iface_num, uint32_t msg_size,
 
       const image_header *received_hdr =
           read_image_header(CHUNK_BUFFER_PTR + vhdr.hdrlen,
-                            FIRMWARE_IMAGE_MAGIC, FIRMWARE_IMAGE_MAXSIZE);
+                            FIRMWARE_IMAGE_MAGIC, FIRMWARE_MAXSIZE);
 
       if (received_hdr !=
           (const image_header *)(CHUNK_BUFFER_PTR + vhdr.hdrlen)) {
@@ -618,7 +626,7 @@ int process_msg_FirmwareUpload(uint8_t iface_num, uint32_t msg_size,
       if (is_new == secfalse) {
         current_hdr = read_image_header(
             (const uint8_t *)FIRMWARE_START + current_vhdr.hdrlen,
-            FIRMWARE_IMAGE_MAGIC, FIRMWARE_IMAGE_MAXSIZE);
+            FIRMWARE_IMAGE_MAGIC, FIRMWARE_MAXSIZE);
 
         if (current_hdr !=
             (const image_header *)(FIRMWARE_START + current_vhdr.hdrlen)) {
@@ -715,8 +723,7 @@ int process_msg_FirmwareUpload(uint8_t iface_num, uint32_t msg_size,
 #ifdef STM32U5
         secret_bhk_regenerate();
 #endif
-        ensure(flash_area_erase_bulk(STORAGE_AREAS, STORAGE_AREAS_COUNT, NULL),
-               NULL);
+        ensure(erase_storage(NULL), NULL);
       }
 
       headers_offset = IMAGE_CODE_ALIGN(IMAGE_HEADER_SIZE + vhdr.hdrlen);
@@ -840,7 +847,7 @@ int process_msg_FirmwareUpload(uint8_t iface_num, uint32_t msg_size,
 }
 
 secbool bootloader_WipeDevice(void) {
-  return flash_area_erase(&WIPE_AREA, ui_screen_wipe_progress);
+  return erase_device(ui_screen_wipe_progress);
 }
 
 int process_msg_WipeDevice(uint8_t iface_num, uint32_t msg_size, uint8_t *buf) {

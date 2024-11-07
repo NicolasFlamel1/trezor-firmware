@@ -7,11 +7,12 @@ use crate::{
     translations::TR,
     ui::{
         button_request::ButtonRequest,
-        component::{swipe_detect::SwipeSettings, ButtonRequestExt, ComponentExt, SwipeDirection},
+        component::{swipe_detect::SwipeSettings, ButtonRequestExt, ComponentExt},
         flow::{
-            base::{DecisionBuilder as _, StateChange},
-            FlowMsg, FlowState, SwipeFlow,
+            base::{Decision, DecisionBuilder as _},
+            FlowController, FlowMsg, SwipeFlow,
         },
+        geometry::Direction,
         layout::obj::LayoutObj,
         model_mercury::component::SwipeContent,
     },
@@ -41,35 +42,35 @@ pub enum ConfirmSummary {
     CancelTap,
 }
 
-impl FlowState for ConfirmSummary {
+impl FlowController for ConfirmSummary {
     #[inline]
     fn index(&'static self) -> usize {
         *self as usize
     }
 
-    fn handle_swipe(&'static self, direction: SwipeDirection) -> StateChange {
+    fn handle_swipe(&'static self, direction: Direction) -> Decision {
         match (self, direction) {
-            (Self::Summary | Self::Hold, SwipeDirection::Left) => Self::Menu.swipe(direction),
-            (Self::Summary, SwipeDirection::Up) => Self::Hold.swipe(direction),
-            (Self::Hold, SwipeDirection::Down) => Self::Summary.swipe(direction),
-            (Self::Menu, SwipeDirection::Right) => Self::Summary.swipe(direction),
-            (Self::AccountInfo | Self::FeeInfo | Self::CancelTap, SwipeDirection::Right) => {
+            (Self::Summary | Self::Hold, Direction::Left) => Self::Menu.swipe(direction),
+            (Self::Summary, Direction::Up) => Self::Hold.swipe(direction),
+            (Self::Hold, Direction::Down) => Self::Summary.swipe(direction),
+            (Self::Menu, Direction::Right) => Self::Summary.swipe(direction),
+            (Self::AccountInfo | Self::FeeInfo | Self::CancelTap, Direction::Right) => {
                 Self::Menu.swipe(direction)
             }
             _ => self.do_nothing(),
         }
     }
 
-    fn handle_event(&'static self, msg: FlowMsg) -> StateChange {
+    fn handle_event(&'static self, msg: FlowMsg) -> Decision {
         match (self, msg) {
-            (_, FlowMsg::Info) => Self::Menu.transit(),
+            (_, FlowMsg::Info) => Self::Menu.goto(),
             (Self::Hold, FlowMsg::Confirmed) => self.return_msg(FlowMsg::Confirmed),
             (Self::Menu, FlowMsg::Choice(MENU_ITEM_CANCEL)) => Self::CancelTap.swipe_left(),
             (Self::Menu, FlowMsg::Choice(MENU_ITEM_FEE_INFO)) => Self::FeeInfo.swipe_left(),
             (Self::Menu, FlowMsg::Choice(MENU_ITEM_ACCOUNT_INFO)) => Self::AccountInfo.swipe_left(),
             (Self::Menu, FlowMsg::Cancelled) => Self::Summary.swipe_right(),
             (Self::CancelTap, FlowMsg::Confirmed) => self.return_msg(FlowMsg::Cancelled),
-            (_, FlowMsg::Cancelled) => Self::Menu.transit(),
+            (_, FlowMsg::Cancelled) => Self::Menu.goto(),
             _ => self.do_nothing(),
         }
     }
@@ -85,6 +86,10 @@ impl ConfirmSummary {
         let title: TString = kwargs.get(Qstr::MP_QSTR_title)?.try_into()?;
         let items: Obj = kwargs.get(Qstr::MP_QSTR_items)?;
         let account_items: Obj = kwargs.get(Qstr::MP_QSTR_account_items)?;
+        let account_items_title: Option<TString> = kwargs
+            .get(Qstr::MP_QSTR_account_items_title)
+            .unwrap_or(Obj::const_none())
+            .try_into_option()?;
         let fee_items: Obj = kwargs.get(Qstr::MP_QSTR_fee_items)?;
         let br_name: TString = kwargs.get(Qstr::MP_QSTR_br_name)?.try_into()?;
         let br_code: u16 = kwargs.get(Qstr::MP_QSTR_br_code)?.try_into()?;
@@ -113,8 +118,8 @@ impl ConfirmSummary {
         )
         .with_menu_button()
         .with_footer(TR::instructions__hold_to_sign.into(), None)
-        .with_swipe(SwipeDirection::Down, SwipeSettings::default())
-        .with_swipe(SwipeDirection::Left, SwipeSettings::default())
+        .with_swipe(Direction::Down, SwipeSettings::default())
+        .with_swipe(Direction::Left, SwipeSettings::default())
         .map(|msg| match msg {
             FrameMsg::Content(PromptMsg::Confirmed) => Some(FlowMsg::Confirmed),
             FrameMsg::Button(_) => Some(FlowMsg::Info),
@@ -133,7 +138,9 @@ impl ConfirmSummary {
 
         // AccountInfo
         let mut has_account_info = false;
-        let mut account = ShowInfoParams::new(TR::send__send_from.into()).with_cancel_button();
+        let mut account =
+            ShowInfoParams::new(account_items_title.unwrap_or(TR::send__send_from.into()))
+                .with_cancel_button();
         for pair in IterBuf::new().try_iterate(account_items)? {
             let [label, value]: [TString; 2] = util::iter_into_array(pair)?;
             account = unwrap!(account.add(label, value));
@@ -154,7 +161,7 @@ impl ConfirmSummary {
         if has_account_info {
             menu = menu.item(
                 theme::ICON_CHEVRON_RIGHT,
-                TR::address_details__account_info.into(),
+                account_items_title.unwrap_or(TR::address_details__account_info.into()),
             );
             unwrap!(menu_items.push(MENU_ITEM_ACCOUNT_INFO));
         }
@@ -165,7 +172,7 @@ impl ConfirmSummary {
         unwrap!(menu_items.push(MENU_ITEM_CANCEL));
         let content_menu = Frame::left_aligned(TString::empty(), menu)
             .with_cancel_button()
-            .with_swipe(SwipeDirection::Right, SwipeSettings::immediate())
+            .with_swipe(Direction::Right, SwipeSettings::immediate())
             .map(move |msg| match msg {
                 FrameMsg::Content(VerticalMenuChoiceMsg::Selected(i)) => {
                     let selected_item = menu_items[i];
@@ -181,7 +188,7 @@ impl ConfirmSummary {
         )
         .with_cancel_button()
         .with_footer(TR::instructions__tap_to_confirm.into(), None)
-        .with_swipe(SwipeDirection::Right, SwipeSettings::immediate())
+        .with_swipe(Direction::Right, SwipeSettings::immediate())
         .map(|msg| match msg {
             FrameMsg::Content(PromptMsg::Confirmed) => Some(FlowMsg::Confirmed),
             FrameMsg::Button(_) => Some(FlowMsg::Cancelled),

@@ -19,9 +19,6 @@
 
 #include "py/objstr.h"
 #include "py/runtime.h"
-#ifndef TREZOR_EMULATOR
-#include "supervise.h"
-#endif
 
 #include "image.h"
 #include "version.h"
@@ -33,25 +30,21 @@
 
 #include <string.h>
 #include "blake2s.h"
-#include "common.h"
-#include "flash.h"
-#include "unit_variant.h"
+#include "bootutils.h"
+#include "error_handling.h"
+#include "fwutils.h"
+#include "unit_properties.h"
 #include "usb.h"
 #include TREZOR_BOARD
 #include "model.h"
-
-#ifndef TREZOR_EMULATOR
-#include "image.h"
-#endif
 
 #if USE_OPTIGA && !defined(TREZOR_EMULATOR)
 #include "secret.h"
 #endif
 
-#define FW_HASHING_CHUNK_SIZE 1024
+static void ui_progress(void *context, uint32_t current, uint32_t total) {
+  mp_obj_t ui_wait_callback = (mp_obj_t)context;
 
-static void ui_progress(mp_obj_t ui_wait_callback, uint32_t current,
-                        uint32_t total) {
   if (mp_obj_is_callable(ui_wait_callback)) {
     mp_call_function_2_protected(ui_wait_callback, mp_obj_new_int(current),
                                  mp_obj_new_int(total));
@@ -155,18 +148,9 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(mod_trezorutils_halt_obj, 0, 1,
 ///     """
 STATIC mp_obj_t mod_trezorutils_firmware_hash(size_t n_args,
                                               const mp_obj_t *args) {
-  BLAKE2S_CTX ctx;
   mp_buffer_info_t chal = {0};
   if (n_args > 0 && args[0] != mp_const_none) {
     mp_get_buffer_raise(args[0], &chal, MP_BUFFER_READ);
-  }
-
-  if (chal.len != 0) {
-    if (blake2s_InitKey(&ctx, BLAKE2S_DIGEST_LENGTH, chal.buf, chal.len) != 0) {
-      mp_raise_msg(&mp_type_ValueError, "Invalid challenge.");
-    }
-  } else {
-    blake2s_Init(&ctx, BLAKE2S_DIGEST_LENGTH);
   }
 
   mp_obj_t ui_wait_callback = mp_const_none;
@@ -174,32 +158,13 @@ STATIC mp_obj_t mod_trezorutils_firmware_hash(size_t n_args,
     ui_wait_callback = args[1];
   }
 
-  uint32_t firmware_size = flash_area_get_size(&FIRMWARE_AREA);
-  uint32_t chunks = firmware_size / FW_HASHING_CHUNK_SIZE;
-
-  ensure((firmware_size % FW_HASHING_CHUNK_SIZE == 0) * sectrue,
-         "Cannot compute FW hash.");
-
-  ui_progress(ui_wait_callback, 0, chunks);
-  for (int i = 0; i < chunks; i++) {
-    const void *data = flash_area_get_address(
-        &FIRMWARE_AREA, i * FW_HASHING_CHUNK_SIZE, FW_HASHING_CHUNK_SIZE);
-    if (data == NULL) {
-      mp_raise_msg(&mp_type_RuntimeError, "Failed to read firmware.");
-    }
-    blake2s_Update(&ctx, data, FW_HASHING_CHUNK_SIZE);
-    if (i % 128 == 0) {
-      ui_progress(ui_wait_callback, i + 1, chunks);
-    }
-  }
-
-  ui_progress(ui_wait_callback, chunks, chunks);
-
   vstr_t vstr = {0};
   vstr_init_len(&vstr, BLAKE2S_DIGEST_LENGTH);
-  if (blake2s_Final(&ctx, vstr.buf, vstr.len) != 0) {
+
+  if (sectrue != firmware_calc_hash(chal.buf, chal.len, (uint8_t *)vstr.buf,
+                                    vstr.len, ui_progress, ui_wait_callback)) {
     vstr_clear(&vstr);
-    mp_raise_msg(&mp_type_RuntimeError, "Failed to finalize firmware hash.");
+    mp_raise_msg(&mp_type_RuntimeError, "Failed to calculate firmware hash.");
   }
 
   return mp_obj_new_str_from_vstr(&mp_type_bytes, &vstr);
@@ -215,13 +180,11 @@ STATIC mp_obj_t mod_trezorutils_firmware_vendor(void) {
 #ifdef TREZOR_EMULATOR
   return mp_obj_new_str_copy(&mp_type_str, (const uint8_t *)"EMULATOR", 8);
 #else
-  vendor_header vhdr = {0};
-  const void *data = flash_area_get_address(&FIRMWARE_AREA, 0, 0);
-  if (data == NULL || sectrue != read_vendor_header(data, &vhdr)) {
+  char vendor[64] = {0};
+  if (sectrue != firmware_get_vendor(vendor, sizeof(vendor))) {
     mp_raise_msg(&mp_type_RuntimeError, "Failed to read vendor header.");
   }
-  return mp_obj_new_str_copy(&mp_type_str, (const uint8_t *)vhdr.vstr,
-                             vhdr.vstr_len);
+  return mp_obj_new_str_copy(&mp_type_str, (byte *)vendor, strlen(vendor));
 #endif
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_0(mod_trezorutils_firmware_vendor_obj,
@@ -232,10 +195,10 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_0(mod_trezorutils_firmware_vendor_obj,
 ///     Returns the color of the unit.
 ///     """
 STATIC mp_obj_t mod_trezorutils_unit_color(void) {
-  if (!unit_variant_present()) {
+  if (!unit_properties()->color_is_valid) {
     return mp_const_none;
   }
-  return mp_obj_new_int(unit_variant_get_color());
+  return mp_obj_new_int(unit_properties()->color);
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_0(mod_trezorutils_unit_color_obj,
                                  mod_trezorutils_unit_color);
@@ -245,10 +208,10 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_0(mod_trezorutils_unit_color_obj,
 ///     Returns True if the unit is BTConly.
 ///     """
 STATIC mp_obj_t mod_trezorutils_unit_btconly(void) {
-  if (!unit_variant_present()) {
+  if (!unit_properties()->btconly_is_valid) {
     return mp_const_none;
   }
-  return unit_variant_get_btconly() ? mp_const_true : mp_const_false;
+  return unit_properties()->btconly ? mp_const_true : mp_const_false;
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_0(mod_trezorutils_unit_btconly_obj,
                                  mod_trezorutils_unit_btconly);
@@ -258,10 +221,10 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_0(mod_trezorutils_unit_btconly_obj,
 ///     Returns the packaging version of the unit.
 ///     """
 STATIC mp_obj_t mod_trezorutils_unit_packaging(void) {
-  if (!unit_variant_present()) {
+  if (!unit_properties()->packaging_is_valid) {
     return mp_const_none;
   }
-  return mp_obj_new_int(unit_variant_get_packaging());
+  return mp_obj_new_int(unit_properties()->packaging);
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_0(mod_trezorutils_unit_packaging_obj,
                                  mod_trezorutils_unit_packaging);
@@ -271,7 +234,7 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_0(mod_trezorutils_unit_packaging_obj,
 ///     Returns True if SD card hot swapping is enabled
 ///     """
 STATIC mp_obj_t mod_trezorutils_sd_hotswap_enabled(void) {
-  return unit_variant_is_sd_hotswap_enabled() ? mp_const_true : mp_const_false;
+  return unit_properties()->sd_hotswap_enabled ? mp_const_true : mp_const_false;
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_0(mod_trezorutils_sd_hotswap_enabled_obj,
                                  mod_trezorutils_sd_hotswap_enabled);
@@ -286,31 +249,37 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_0(mod_trezorutils_sd_hotswap_enabled_obj,
 STATIC mp_obj_t mod_trezorutils_reboot_to_bootloader(size_t n_args,
                                                      const mp_obj_t *args) {
 #ifndef TREZOR_EMULATOR
-  boot_command_t boot_command = BOOT_COMMAND_NONE;
-  mp_buffer_info_t boot_args = {0};
-
   if (n_args > 0 && args[0] != mp_const_none) {
     mp_int_t value = mp_obj_get_int(args[0]);
 
     switch (value) {
       case 0:
-        boot_command = BOOT_COMMAND_STOP_AND_WAIT;
+        // Reboot and stay in bootloader
+        reboot_to_bootloader();
         break;
       case 1:
-        boot_command = BOOT_COMMAND_INSTALL_UPGRADE;
+        // Reboot and continue with the firmware upgrade
+        mp_buffer_info_t hash = {0};
+
+        if (n_args > 1 && args[1] != mp_const_none) {
+          mp_get_buffer_raise(args[1], &hash, MP_BUFFER_READ);
+        }
+
+        if (hash.len != 32) {
+          mp_raise_ValueError("Invalid value.");
+        }
+
+        reboot_and_upgrade((uint8_t *)hash.buf);
         break;
       default:
         mp_raise_ValueError("Invalid value.");
         break;
     }
+  } else {
+    // Just reboot and go through the normal boot sequence
+    reboot_device();
   }
 
-  if (n_args > 1 && args[1] != mp_const_none) {
-    mp_get_buffer_raise(args[1], &boot_args, MP_BUFFER_READ);
-  }
-
-  bootargs_set(boot_command, boot_args.buf, boot_args.len);
-  svc_reboot_to_bootloader();
 #endif
   return mp_const_none;
 }

@@ -10,20 +10,6 @@ HERE = Path(__file__).parent.resolve()
 PROJECT_ROOT = HERE.parent.resolve()
 
 
-def add_font(
-    font_name: str, font: str | None, defines: list[str], sources: list[str]
-) -> None:
-    if font is not None:
-        font_filename = font.replace("_upper", "").lower()
-        defines += [
-            "TREZOR_FONT_" + font_name + "_ENABLE=" + font,
-            "TREZOR_FONT_" + font_name + '_INCLUDE=\\"' + font_filename + '.h\\"',
-        ]
-        sourcefile = "embed/lib/fonts/" + font_filename + ".c"
-        if sourcefile not in sources:
-            sources.append(sourcefile)
-
-
 def get_version(file: str) -> str:
     major = 0
     minor = 0
@@ -99,12 +85,12 @@ def get_bindgen_defines(
     return ",".join(rest_defs)
 
 
-def embed_binary(obj_program, env, section, target_, file):
+def embed_compressed_binary(obj_program, env, section, target_, file, build):
     _in = f"embedded_{section}.bin.deflated"
 
     def redefine_sym(name):
         src = (
-            "_binary_build_firmware_"
+            f"_binary_build_{build}_"
             + _in.replace("/", "_").replace(".", "_")
             + "_"
             + name
@@ -140,3 +126,14 @@ def embed_binary(obj_program, env, section, target_, file):
     )
 
     env.Depends(obj_program, compress)
+
+
+def embed_raw_binary(obj_program, env, section, target_, file):
+    obj_program.extend(
+        env.Command(
+            target=target_,
+            source=file,
+            action="$OBJCOPY -I binary -O elf32-littlearm -B arm"
+            f" --rename-section .data=.{section}" + " $SOURCE $TARGET",
+        )
+    )

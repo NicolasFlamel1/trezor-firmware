@@ -15,7 +15,7 @@ def configure(
     board = "T3T1/boards/t3t1-unix.h"
     hw_model = get_hw_model_as_number("T3T1")
     hw_revision = 0
-    mcu = "STM32FU585xx"
+    mcu = "STM32U585xx"
 
     if "new_rendering" in features_wanted:
         defines += ["XFRAMEBUFFER", "DISPLAY_RGB565"]
@@ -65,6 +65,6 @@ def configure(
 
     features_available.append("backlight")
 
-    sources += ["embed/models/T3T1/model_T3T1_layout.c"]
+    sources += ["embed/trezorhal/stm32u5/layout.c"]
 
     return features_available

@@ -1,31 +1,30 @@
 mod ffi {
     extern "C" {
-        // trezorhal/common.c
-        pub fn trezor_shutdown() -> !;
+        // system.h
+        pub fn system_exit_error_ex(
+            title: *const cty::c_char,
+            title_len: usize,
+            message: *const cty::c_char,
+            message_len: usize,
+            footer: *const cty::c_char,
+            footer_len: usize,
+        ) -> !;
     }
 }
 
-use crate::ui::{
-    shape,
-    ui_features::{ModelUI, UIFeaturesCommon},
-};
-
-fn shutdown() -> ! {
-    unsafe { ffi::trezor_shutdown() }
-}
-
-/// Shows an error message and shuts down the device.
-pub fn error_shutdown(title: &str, msg: &str, footer: &str) -> ! {
-    // SAFETY:
-    // This is the only situation we are allowed use this function
-    // to allow nested calls to `run_with_bumps`/`render_on_display`,
-    // because after the error message is displayed, the application will
-    // shut down.
-    unsafe { shape::unlock_bumps_on_failure() };
-
-    ModelUI::screen_fatal_error(title, msg, footer);
-    ModelUI::backlight_on();
-    shutdown()
+pub fn error_shutdown(msg: &str) -> ! {
+    unsafe {
+        // SAFETY: we pass a valid string to the C function
+        // and the function does not return.
+        ffi::system_exit_error_ex(
+            core::ptr::null(),
+            0,
+            msg.as_ptr() as *const cty::c_char,
+            msg.len(),
+            core::ptr::null(),
+            0,
+        );
+    }
 }
 
 /// Shows an error message on the screen and shuts down the device.
@@ -46,7 +45,7 @@ pub fn __fatal_error(msg: &str, _file: &str, _line: u32) -> ! {
         dbg_println!("===");
     }
 
-    error_shutdown("INTERNAL_ERROR", msg, "PLEASE VISIT\nTREZOR.IO/RSOD");
+    error_shutdown(msg);
 }
 
 pub trait UnwrapOrFatalError<T> {

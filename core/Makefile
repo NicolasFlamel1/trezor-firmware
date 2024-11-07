@@ -18,6 +18,7 @@ BOOTLOADER_CI_BUILD_DIR   = $(BUILD_DIR)/bootloader_ci
 BOOTLOADER_EMU_BUILD_DIR  = $(BUILD_DIR)/bootloader_emu
 PRODTEST_BUILD_DIR    = $(BUILD_DIR)/prodtest
 REFLASH_BUILD_DIR     = $(BUILD_DIR)/reflash
+KERNEL_BUILD_DIR      = $(BUILD_DIR)/kernel
 FIRMWARE_BUILD_DIR    = $(BUILD_DIR)/firmware
 UNIX_BUILD_DIR        = $(BUILD_DIR)/unix
 RUST_BUILD_DIR        = $(BUILD_DIR)/rust
@@ -37,17 +38,16 @@ ADDRESS_SANITIZER ?= 0
 CMAKELISTS ?= 0
 PYTEST_TIMEOUT ?= 500
 TEST_LANG ?= "en"
+NEW_RENDERING ?= 1
 THP ?= 0
+BENCHMARK ?= 0
 
 # OpenOCD interface default. Alternative: ftdi/olimex-arm-usb-tiny-h
 OPENOCD_INTERFACE ?= stlink
 # OpenOCD transport default. Alternative: jtag
 OPENOCD_TRANSPORT ?= hla_swd
 
-ifeq ($(TREZOR_MODEL), 1)
-MCU = STM32F2
-OPENOCD_TARGET = target/stm32f2x.cfg
-else ifeq ($(TREZOR_MODEL),$(filter $(TREZOR_MODEL),T))
+ifeq ($(TREZOR_MODEL),$(filter $(TREZOR_MODEL),T))
 MCU = STM32F4
 OPENOCD_TARGET = target/stm32f4x.cfg
 MODEL_FEATURE = model_tt
@@ -63,6 +63,10 @@ else ifeq ($(TREZOR_MODEL),$(filter $(TREZOR_MODEL),T3B1))
 MCU = STM32U5
 OPENOCD_TARGET = target/stm32u5x.cfg
 MODEL_FEATURE = model_tr
+else ifeq ($(TREZOR_MODEL),$(filter $(TREZOR_MODEL),T3W1))
+MCU = STM32F4
+OPENOCD_TARGET = target/stm32f4x.cfg
+MODEL_FEATURE = model_tt
 else ifeq ($(TREZOR_MODEL),$(filter $(TREZOR_MODEL),DISC1))
 MCU = STM32F4
 OPENOCD_TARGET = target/stm32f4x.cfg
@@ -74,31 +78,38 @@ $(error Unknown TREZOR_MODEL: $(TREZOR_MODEL))
 endif
 
 
-FLASH_START              = $(shell layout_parser ${TREZOR_MODEL} FLASH_START)
+FLASH_START		         = $(shell layout_parser ${TREZOR_MODEL} FLASH_START)
 BOARDLOADER_START        = $(shell layout_parser ${TREZOR_MODEL} BOARDLOADER_START)
 BOOTLOADER_START         = $(shell layout_parser ${TREZOR_MODEL} BOOTLOADER_START)
+KERNEL_START             = $(shell layout_parser ${TREZOR_MODEL} KERNEL_START)
 FIRMWARE_START           = $(shell layout_parser ${TREZOR_MODEL} FIRMWARE_START)
 FIRMWARE_P2_START        = $(shell layout_parser ${TREZOR_MODEL} FIRMWARE_P2_START)
-STORAGE_1_OFFSET         = $(shell layout_parser ${TREZOR_MODEL} STORAGE_1_OFFSET)
-STORAGE_2_OFFSET         = $(shell layout_parser ${TREZOR_MODEL} STORAGE_2_OFFSET)
+STORAGE_1_START          = $(shell layout_parser ${TREZOR_MODEL} STORAGE_1_START)
+STORAGE_2_START	         = $(shell layout_parser ${TREZOR_MODEL} STORAGE_2_START)
 STORAGE_SIZE             = $(shell layout_parser ${TREZOR_MODEL} NORCOW_SECTOR_SIZE)
-BOARDLOADER_MAXSIZE      = $(shell layout_parser ${TREZOR_MODEL} BOARDLOADER_IMAGE_MAXSIZE)
-BOOTLOADER_MAXSIZE       = $(shell layout_parser ${TREZOR_MODEL} BOOTLOADER_IMAGE_MAXSIZE)
-FIRMWARE_MAXSIZE         = $(shell layout_parser ${TREZOR_MODEL} FIRMWARE_IMAGE_MAXSIZE)
-FIRMWARE_P1_MAXSIZE      = $(shell layout_parser ${TREZOR_MODEL} FIRMWARE_P1_IMAGE_MAXSIZE)
-FIRMWARE_P2_MAXSIZE      = $(shell layout_parser ${TREZOR_MODEL} FIRMWARE_P2_IMAGE_MAXSIZE)
+BOARDLOADER_MAXSIZE      = $(shell layout_parser ${TREZOR_MODEL} BOARDLOADER_MAXSIZE)
+BOOTLOADER_MAXSIZE       = $(shell layout_parser ${TREZOR_MODEL} BOOTLOADER_MAXSIZE)
+FIRMWARE_MAXSIZE         = $(shell layout_parser ${TREZOR_MODEL} FIRMWARE_MAXSIZE)
+FIRMWARE_P1_MAXSIZE      = $(shell layout_parser ${TREZOR_MODEL} FIRMWARE_P1_MAXSIZE)
+FIRMWARE_P2_MAXSIZE      = $(shell layout_parser ${TREZOR_MODEL} FIRMWARE_P2_MAXSIZE)
 BOARDLOADER_SECTOR_START = $(shell layout_parser ${TREZOR_MODEL} BOARDLOADER_SECTOR_START)
 BOARDLOADER_SECTOR_END   = $(shell layout_parser ${TREZOR_MODEL} BOARDLOADER_SECTOR_END)
 BOOTLOADER_SECTOR_START  = $(shell layout_parser ${TREZOR_MODEL} BOOTLOADER_SECTOR_START)
 BOOTLOADER_SECTOR_END    = $(shell layout_parser ${TREZOR_MODEL} BOOTLOADER_SECTOR_END)
 FIRMWARE_SECTOR_START    = $(shell layout_parser ${TREZOR_MODEL} FIRMWARE_SECTOR_START)
 FIRMWARE_SECTOR_END      = $(shell layout_parser ${TREZOR_MODEL} FIRMWARE_SECTOR_END)
+FIRMWARE_P1_SECTOR_START = $(shell layout_parser ${TREZOR_MODEL} FIRMWARE_P1_SECTOR_START)
+FIRMWARE_P1_SECTOR_END   = $(shell layout_parser ${TREZOR_MODEL} FIRMWARE_P1_SECTOR_END)
 FIRMWARE_P2_SECTOR_START = $(shell layout_parser ${TREZOR_MODEL} FIRMWARE_P2_SECTOR_START)
 FIRMWARE_P2_SECTOR_END   = $(shell layout_parser ${TREZOR_MODEL} FIRMWARE_P2_SECTOR_END)
 STORAGE_1_SECTOR_START   = $(shell layout_parser ${TREZOR_MODEL} STORAGE_1_SECTOR_START)
 STORAGE_1_SECTOR_END     = $(shell layout_parser ${TREZOR_MODEL} STORAGE_1_SECTOR_END)
 STORAGE_2_SECTOR_START   = $(shell layout_parser ${TREZOR_MODEL} STORAGE_2_SECTOR_START)
 STORAGE_2_SECTOR_END     = $(shell layout_parser ${TREZOR_MODEL} STORAGE_2_SECTOR_END)
+
+
+STORAGE_1_OFFSET := $(shell expr $(STORAGE_1_START) - $(FLASH_START))
+STORAGE_2_OFFSET := $(shell expr $(STORAGE_2_START) - $(FLASH_START))
 
 OPENOCD = openocd -f interface/$(OPENOCD_INTERFACE).cfg -c "transport select $(OPENOCD_TRANSPORT)" -f $(OPENOCD_TARGET)
 
@@ -142,6 +153,7 @@ test: ## run unit tests
 	cd tests ; ./run_tests.sh $(TESTOPTS)
 
 test_rust: ## run rs unit tests
+	export BUILD_DIR=$(abspath $(UNIX_BUILD_DIR)) ; \
 	cd embed/rust ; cargo test $(TESTOPTS) --target=$(RUST_TARGET) \
 		--no-default-features --features $(MODEL_FEATURE),test \
 		-- --test-threads=1 --nocapture
@@ -211,6 +223,7 @@ pyright:
 	python ../tools/pyright_tool.py
 
 clippy:
+	export BUILD_DIR=$(abspath $(UNIX_BUILD_DIR)) ; \
 	cd embed/rust ; cargo clippy $(TESTOPTS) --all-features --target=$(RUST_TARGET)
 
 ## code generation:
@@ -267,31 +280,38 @@ build_reflash: ## build reflash firmware + reflash image
 	dd if=build/boardloader/boardloader.bin of=$(REFLASH_BUILD_DIR)/sdimage.bin bs=1 seek=0
 	dd if=build/bootloader/bootloader.bin of=$(REFLASH_BUILD_DIR)/sdimage.bin bs=1 seek=49152
 
-build_firmware: templates build_cross ## build firmware with frozen modules
+build_kernel: ## build kernel image
+	$(SCONS) CFLAGS="$(CFLAGS)" PRODUCTION="$(PRODUCTION)" \
+		TREZOR_MODEL="$(TREZOR_MODEL)"  CMAKELISTS="$(CMAKELISTS)" \
+		BOOTLOADER_QA="$(BOOTLOADER_QA)" BOOTLOADER_DEVEL="$(BOOTLOADER_DEVEL)" \
+		$(KERNEL_BUILD_DIR)/kernel.bin
+
+build_firmware: templates build_cross build_kernel ## build firmware with frozen modules
 	$(SCONS) CFLAGS="$(CFLAGS)" PRODUCTION="$(PRODUCTION)" \
 		TREZOR_MODEL="$(TREZOR_MODEL)" CMAKELISTS="$(CMAKELISTS)" \
 		PYOPT="$(PYOPT)" BITCOIN_ONLY="$(BITCOIN_ONLY)" \
 		BOOTLOADER_QA="$(BOOTLOADER_QA)" BOOTLOADER_DEVEL="$(BOOTLOADER_DEVEL)" \
 		DISABLE_OPTIGA="$(DISABLE_OPTIGA)" THP="$(THP)" NEW_RENDERING="$(NEW_RENDERING)" \
-		$(FIRMWARE_BUILD_DIR)/firmware.bin
+		BENCHMARK="$(BENCHMARK)" $(FIRMWARE_BUILD_DIR)/firmware.bin
 
 build_unix: templates ## build unix port
 	$(SCONS) CFLAGS="$(CFLAGS)" $(UNIX_BUILD_DIR)/trezor-emu-core $(UNIX_PORT_OPTS) \
 		TREZOR_MODEL="$(TREZOR_MODEL)" CMAKELISTS="$(CMAKELISTS)" THP="$(THP)" \
 		PYOPT="0" BITCOIN_ONLY="$(BITCOIN_ONLY)" TREZOR_EMULATOR_ASAN="$(ADDRESS_SANITIZER)" \
-		NEW_RENDERING="$(NEW_RENDERING)"
+		NEW_RENDERING="$(NEW_RENDERING)" BENCHMARK="$(BENCHMARK)"
 
 build_unix_frozen: templates build_cross ## build unix port with frozen modules
 	$(SCONS) CFLAGS="$(CFLAGS)" $(UNIX_BUILD_DIR)/trezor-emu-core $(UNIX_PORT_OPTS) \
 		TREZOR_MODEL="$(TREZOR_MODEL)" CMAKELISTS="$(CMAKELISTS)" \
 		PYOPT="$(PYOPT)" BITCOIN_ONLY="$(BITCOIN_ONLY)" TREZOR_EMULATOR_ASAN="$(ADDRESS_SANITIZER)" \
-		TREZOR_MEMPERF="$(TREZOR_MEMPERF)" TREZOR_EMULATOR_FROZEN=1 NEW_RENDERING="$(NEW_RENDERING)"
+		TREZOR_MEMPERF="$(TREZOR_MEMPERF)" TREZOR_EMULATOR_FROZEN=1 NEW_RENDERING="$(NEW_RENDERING)" \
+		BENCHMARK="$(BENCHMARK)"
 
 build_unix_debug: templates ## build unix port
 	$(SCONS) --max-drift=1 CFLAGS="$(CFLAGS)" $(UNIX_BUILD_DIR)/trezor-emu-core $(UNIX_PORT_OPTS) \
 		TREZOR_MODEL="$(TREZOR_MODEL)" CMAKELISTS="$(CMAKELISTS)" \
 		BITCOIN_ONLY="$(BITCOIN_ONLY)" TREZOR_EMULATOR_ASAN=1 TREZOR_EMULATOR_DEBUGGABLE=1 \
-		NEW_RENDERING="$(NEW_RENDERING)"
+		NEW_RENDERING="$(NEW_RENDERING)" BENCHMARK="$(BENCHMARK)"
 
 build_cross: ## build mpy-cross port
 	$(MAKE) -C vendor/micropython/mpy-cross $(CROSS_PORT_OPTS)
@@ -318,6 +338,9 @@ clean_prodtest: ## clean prodtest build
 
 clean_reflash: ## clean reflash build
 	rm -rf $(REFLASH_BUILD_DIR)
+
+clean_kernel: ## clean kernel build
+	rm -rf $(KERNEL_BUILD_DIR)
 
 clean_firmware: ## clean firmware build
 	rm -rf $(FIRMWARE_BUILD_DIR) $(RUST_BUILD_DIR)
@@ -363,7 +386,7 @@ flash_erase_bootloader: ## erase bootloader
 
 flash_erase_firmware: ## erase bootloader
 ifeq ($(MCU),$(filter $(MCU),STM32F4))
-	$(OPENOCD) -c "init; reset halt; flash info 0; flash erase_sector 0 $(FIRMWARE_SECTOR_START) $(FIRMWARE_SECTOR_END);  flash erase_sector 0 $(FIRMWARE_P2_SECTOR_START) $(FIRMWARE_P2_SECTOR_END); exit"
+	$(OPENOCD) -c "init; reset halt; flash info 0; flash erase_sector 0 $(FIRMWARE_P1_SECTOR_START) $(FIRMWARE_P1_SECTOR_END);  flash erase_sector 0 $(FIRMWARE_P2_SECTOR_START) $(FIRMWARE_P2_SECTOR_END); exit"
 
 else
 	$(OPENOCD) -c "init; reset halt; flash info 0; flash erase_sector 0 $(FIRMWARE_SECTOR_START) $(FIRMWARE_SECTOR_END); exit"
@@ -388,9 +411,6 @@ flash_firmware_jlink: $(FIRMWARE_BUILD_DIR)/firmware.bin ## flash firmware using
 	## read&compare in flashing will avoid erasing unmodified sectors
 	truncate -s $(FIRMWARE_P2_MAXSIZE) $<.p2.bin
 	JLinkExe -nogui 1 -commanderscript embed/firmware/firmware_flash.jlink
-
-flash_firmware_t1_jlink: $(FIRMWARE_BUILD_DIR)/firmware.bin ## flash T1 core port via JLink
-	JLinkExe -nogui 1 -commanderscript embed/firmware/firmware_flash_t1.jlink
 
 ## openocd debug commands:
 

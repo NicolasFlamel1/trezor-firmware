@@ -56,7 +56,7 @@ async def sign_tx(
         raise DataError("Fee overflow")
     check_common_fields(msg)
 
-    # have a user confirm signing
+    # have the user confirm signing
     await paths.validate_path(keychain, msg.address_n)
     address_bytes = bytes_from_address(msg.to)
     gas_price = int.from_bytes(msg.gas_price, "big")
@@ -130,19 +130,23 @@ async def confirm_tx_data(
         return
 
     # Handle ERC-20, currently only 'transfer' function
-    token, recipient, value = await handle_erc20_transfer(msg, defs, address_bytes)
+    token, recipient, value = await _handle_erc20_transfer(msg, defs, address_bytes)
 
-    if token is None and data_total_len > 0:
+    is_contract_interaction = token is None and data_total_len > 0
+
+    if is_contract_interaction:
         await require_confirm_other_data(msg.data_initial_chunk, data_total_len)
 
     await require_confirm_tx(
         recipient,
         value,
+        msg.address_n,
         maximum_fee,
         fee_items,
         defs.network,
         token,
-        bool(msg.chunkify),
+        is_contract_interaction=is_contract_interaction,
+        chunkify=bool(msg.chunkify),
     )
 
 
@@ -175,6 +179,7 @@ async def handle_staking(
         if func_sig == constants.SC_FUNC_SIG_CLAIM:
             await _handle_staking_tx_claim(
                 data_reader,
+                msg,
                 address_bytes,
                 maximum_fee,
                 fee_items,
@@ -187,7 +192,7 @@ async def handle_staking(
     return False
 
 
-async def handle_erc20_transfer(
+async def _handle_erc20_transfer(
     msg: MsgInSignTx,
     definitions: Definitions,
     address_bytes: bytes,
@@ -325,6 +330,7 @@ async def _handle_staking_tx_stake(
     await require_confirm_stake(
         address_bytes,
         int.from_bytes(msg.value, "big"),
+        msg.address_n,
         maximum_fee,
         fee_items,
         network,
@@ -364,6 +370,7 @@ async def _handle_staking_tx_unstake(
     await require_confirm_unstake(
         address_bytes,
         value,
+        msg.address_n,
         maximum_fee,
         fee_items,
         network,
@@ -373,6 +380,7 @@ async def _handle_staking_tx_unstake(
 
 async def _handle_staking_tx_claim(
     data_reader: BufferReader,
+    msg: MsgInSignTx,
     staking_addr: bytes,
     maximum_fee: str,
     fee_items: Iterable[tuple[str, str]],
@@ -385,7 +393,9 @@ async def _handle_staking_tx_claim(
     if data_reader.remaining_count() != 0:
         raise DataError("Invalid staking transaction call")
 
-    await require_confirm_claim(staking_addr, maximum_fee, fee_items, network, chunkify)
+    await require_confirm_claim(
+        staking_addr, msg.address_n, maximum_fee, fee_items, network, chunkify
+    )
 
 
 _progress_obj: ProgressLayout | None = None

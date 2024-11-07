@@ -39,8 +39,9 @@ def configure(
     defines += [f"HW_MODEL={hw_model}"]
     defines += [f"HW_REVISION={hw_revision}"]
     sources += [
-        "embed/models/T2T1/model_T2T1_layout.c",
+        "embed/models/T2T1/compat_settings.c",
     ]
+
     if "new_rendering" in features_wanted:
         sources += ["embed/trezorhal/xdisplay_legacy.c"]
         sources += ["embed/trezorhal/stm32f4/xdisplay/st-7789/display_nofb.c"]
@@ -80,7 +81,7 @@ def configure(
     features_available.append("backlight")
 
     if "input" in features_wanted:
-        sources += ["embed/trezorhal/stm32f4/i2c.c"]
+        sources += ["embed/trezorhal/stm32f4/i2c_bus.c"]
         sources += ["embed/trezorhal/stm32f4/touch/ft6x36.c"]
         features_available.append("touch")
 

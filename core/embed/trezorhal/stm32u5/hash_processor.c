@@ -4,7 +4,10 @@
 #include STM32_HAL_H
 #include "irq.h"
 #include "memzero.h"
+#include "mpu.h"
 #include "sha2.h"
+
+#ifdef KERNEL_MODE
 
 HASH_HandleTypeDef hhash = {0};
 DMA_HandleTypeDef DMA_Handle = {0};
@@ -40,11 +43,15 @@ void hash_processor_init(void) {
 
   DMA_Handle.Parent = &hhash;
 
-  HAL_NVIC_SetPriority(GPDMA1_Channel12_IRQn, IRQ_PRI_DMA, 0);
-  HAL_NVIC_EnableIRQ(GPDMA1_Channel12_IRQn);
+  NVIC_SetPriority(GPDMA1_Channel12_IRQn, IRQ_PRI_NORMAL);
+  NVIC_EnableIRQ(GPDMA1_Channel12_IRQn);
 }
 
-void GPDMA1_Channel12_IRQHandler(void) { HAL_DMA_IRQHandler(&DMA_Handle); }
+void GPDMA1_Channel12_IRQHandler(void) {
+  mpu_mode_t mpu_mode = mpu_reconfig(MPU_MODE_DEFAULT);
+  HAL_DMA_IRQHandler(&DMA_Handle);
+  mpu_restore(mpu_mode);
+}
 
 static void hash_processor_sha256_calc_dma(const uint8_t *data, uint32_t len,
                                            uint8_t *hash) {
@@ -76,11 +83,11 @@ void hash_processor_sha256_calc(const uint8_t *data, uint32_t len,
   }
 }
 
-void hash_processor_sha256_init(hash_sha265_context_t *ctx) {
-  memzero(ctx, sizeof(hash_sha265_context_t));
+void hash_processor_sha256_init(hash_sha256_context_t *ctx) {
+  memzero(ctx, sizeof(hash_sha256_context_t));
 }
 
-void hash_processor_sha256_update(hash_sha265_context_t *ctx,
+void hash_processor_sha256_update(hash_sha256_context_t *ctx,
                                   const uint8_t *data, uint32_t len) {
   if (ctx->length > 0) {
     uint32_t chunk = HASH_SHA256_BUFFER_SIZE - ctx->length;
@@ -115,7 +122,7 @@ void hash_processor_sha256_update(hash_sha265_context_t *ctx,
   }
 }
 
-void hash_processor_sha256_final(hash_sha265_context_t *ctx, uint8_t *output) {
+void hash_processor_sha256_final(hash_sha256_context_t *ctx, uint8_t *output) {
   uint32_t tmp_out[SHA256_DIGEST_LENGTH / sizeof(uint32_t)] = {0};
   memzero(ctx->buffer + ctx->length, HASH_SHA256_BUFFER_SIZE - ctx->length);
   HAL_HASHEx_SHA256_Accmlt_End(&hhash, (uint8_t *)ctx->buffer, ctx->length,
@@ -125,3 +132,5 @@ void hash_processor_sha256_final(hash_sha265_context_t *ctx, uint8_t *output) {
   memcpy(output, tmp_out, SHA256_DIGEST_LENGTH);
   memzero(tmp_out, sizeof(tmp_out));
 }
+
+#endif  // KERNEL_MODE

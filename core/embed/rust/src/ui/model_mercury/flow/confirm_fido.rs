@@ -7,20 +7,21 @@ use crate::{
         component::{
             swipe_detect::SwipeSettings,
             text::paragraphs::{Paragraph, Paragraphs},
-            ComponentExt, SwipeDirection,
+            ComponentExt, EventCtx,
         },
         flow::{
-            base::{DecisionBuilder as _, StateChange},
-            FlowMsg, FlowState, SwipeFlow,
+            base::{Decision, DecisionBuilder as _},
+            FlowController, FlowMsg, SwipeFlow, SwipePage,
         },
+        geometry::Direction,
         layout::obj::LayoutObj,
     },
 };
 
 use super::super::{
     component::{
-        ChooseCredential, FidoCredential, Frame, FrameMsg, PromptMsg, PromptScreen, SwipeContent,
-        VerticalMenu, VerticalMenuChoiceMsg,
+        FidoCredential, Footer, Frame, FrameMsg, InternallySwipable, PagedVerticalMenu, PromptMsg,
+        PromptScreen, SwipeContent, VerticalMenu, VerticalMenuChoiceMsg,
     },
     theme,
 };
@@ -39,26 +40,26 @@ pub enum ConfirmFido {
 static CRED_SELECTED: AtomicUsize = AtomicUsize::new(0);
 static SINGLE_CRED: AtomicBool = AtomicBool::new(false);
 
-impl FlowState for ConfirmFido {
+impl FlowController for ConfirmFido {
     #[inline]
     fn index(&'static self) -> usize {
         *self as usize
     }
 
-    fn handle_swipe(&'static self, direction: SwipeDirection) -> StateChange {
+    fn handle_swipe(&'static self, direction: Direction) -> Decision {
         match (self, direction) {
-            (Self::Intro, SwipeDirection::Left) => Self::Menu.swipe(direction),
-            (Self::Intro, SwipeDirection::Up) => Self::ChooseCredential.swipe(direction),
-            (Self::ChooseCredential, SwipeDirection::Down) => Self::Intro.swipe(direction),
-            (Self::Details, SwipeDirection::Up) => Self::Tap.swipe(direction),
-            (Self::Tap, SwipeDirection::Down) => Self::Details.swipe(direction),
+            (Self::Intro, Direction::Left) => Self::Menu.swipe(direction),
+            (Self::Intro, Direction::Up) => Self::ChooseCredential.swipe(direction),
+            (Self::ChooseCredential, Direction::Down) => Self::Intro.swipe(direction),
+            (Self::Details, Direction::Up) => Self::Tap.swipe(direction),
+            (Self::Tap, Direction::Down) => Self::Details.swipe(direction),
             _ => self.do_nothing(),
         }
     }
 
-    fn handle_event(&'static self, msg: FlowMsg) -> StateChange {
+    fn handle_event(&'static self, msg: FlowMsg) -> Decision {
         match (self, msg) {
-            (_, FlowMsg::Info) => Self::Menu.transit(),
+            (_, FlowMsg::Info) => Self::Menu.goto(),
             (Self::Menu, FlowMsg::Choice(0)) => self.return_msg(FlowMsg::Cancelled),
             (Self::Menu, FlowMsg::Cancelled) => {
                 if Self::single_cred() {
@@ -83,6 +84,16 @@ impl FlowState for ConfirmFido {
 #[allow(clippy::not_unsafe_ptr_arg_deref)]
 pub extern "C" fn new_confirm_fido(n_args: usize, args: *const Obj, kwargs: *mut Map) -> Obj {
     unsafe { util::try_with_args_and_kwargs(n_args, args, kwargs, ConfirmFido::new_obj) }
+}
+
+fn footer_update_fn(
+    content: &SwipeContent<SwipePage<PagedVerticalMenu<impl Fn(usize) -> TString<'static>>>>,
+    ctx: &mut EventCtx,
+    footer: &mut Footer,
+) {
+    let current_page = content.inner().inner().current_page();
+    let total_pages = content.inner().inner().num_pages();
+    footer.update_page_counter(ctx, current_page, Some(total_pages));
 }
 
 impl ConfirmFido {
@@ -110,8 +121,8 @@ impl ConfirmFido {
         )
         .with_menu_button()
         .with_footer(TR::instructions__swipe_up.into(), None)
-        .with_swipe(SwipeDirection::Up, SwipeSettings::default())
-        .with_swipe(SwipeDirection::Right, SwipeSettings::immediate())
+        .with_swipe(Direction::Up, SwipeSettings::default())
+        .with_swipe(Direction::Right, SwipeSettings::immediate())
         .map(|msg| matches!(msg, FrameMsg::Button(_)).then_some(FlowMsg::Info));
 
         // Closure to lazy-load the information on given page index.
@@ -123,11 +134,30 @@ impl ConfirmFido {
                 .try_into()
                 .unwrap_or_else(|_| TString::from_str("-"))
         };
-        let content_choose_credential =
-            ChooseCredential::new(label_fn, num_accounts).map(|msg| match msg {
-                FrameMsg::Button(_) => Some(FlowMsg::Info),
-                FrameMsg::Content(VerticalMenuChoiceMsg::Selected(i)) => Some(FlowMsg::Choice(i)),
-            });
+
+        let content_choose_credential = Frame::left_aligned(
+            TR::fido__title_select_credential.into(),
+            SwipeContent::new(SwipePage::vertical(PagedVerticalMenu::new(
+                num_accounts,
+                label_fn,
+            ))),
+        )
+        .with_subtitle(TR::fido__title_for_authentication.into())
+        .with_menu_button()
+        .with_footer_page_hint(
+            TR::fido__more_credentials.into(),
+            TR::buttons__go_back.into(),
+            TR::instructions__swipe_up.into(),
+            TR::instructions__swipe_down.into(),
+        )
+        .register_footer_update_fn(footer_update_fn)
+        .with_swipe(Direction::Down, SwipeSettings::default())
+        .with_swipe(Direction::Right, SwipeSettings::immediate())
+        .with_vertical_pages()
+        .map(|msg| match msg {
+            FrameMsg::Button(_) => Some(FlowMsg::Info),
+            FrameMsg::Content(VerticalMenuChoiceMsg::Selected(i)) => Some(FlowMsg::Choice(i)),
+        });
 
         let get_account = move || {
             let current = CRED_SELECTED.load(Ordering::Relaxed);
@@ -139,8 +169,8 @@ impl ConfirmFido {
             SwipeContent::new(FidoCredential::new(icon_name, app_name, get_account)),
         )
         .with_footer(TR::instructions__swipe_up.into(), Some(title))
-        .with_swipe(SwipeDirection::Up, SwipeSettings::default())
-        .with_swipe(SwipeDirection::Right, SwipeSettings::immediate());
+        .with_swipe(Direction::Up, SwipeSettings::default())
+        .with_swipe(Direction::Right, SwipeSettings::immediate());
         let content_details = if Self::single_cred() {
             content_details.with_menu_button()
         } else {
@@ -154,8 +184,8 @@ impl ConfirmFido {
         let content_tap = Frame::left_aligned(title, PromptScreen::new_tap_to_confirm())
             .with_menu_button()
             .with_footer(TR::instructions__tap_to_confirm.into(), None)
-            .with_swipe(SwipeDirection::Down, SwipeSettings::default())
-            .with_swipe(SwipeDirection::Right, SwipeSettings::immediate())
+            .with_swipe(Direction::Down, SwipeSettings::default())
+            .with_swipe(Direction::Right, SwipeSettings::immediate())
             .map(|msg| match msg {
                 FrameMsg::Content(PromptMsg::Confirmed) => Some(FlowMsg::Confirmed),
                 FrameMsg::Button(_) => Some(FlowMsg::Info),
@@ -167,7 +197,7 @@ impl ConfirmFido {
             VerticalMenu::empty().danger(theme::ICON_CANCEL, TR::buttons__cancel.into()),
         )
         .with_cancel_button()
-        .with_swipe(SwipeDirection::Right, SwipeSettings::immediate())
+        .with_swipe(Direction::Right, SwipeSettings::immediate())
         .map(|msg| match msg {
             FrameMsg::Content(VerticalMenuChoiceMsg::Selected(i)) => Some(FlowMsg::Choice(i)),
             FrameMsg::Button(_) => Some(FlowMsg::Cancelled),

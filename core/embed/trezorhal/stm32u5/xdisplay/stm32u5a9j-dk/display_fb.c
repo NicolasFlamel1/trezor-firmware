@@ -25,6 +25,9 @@
 
 #include <xdisplay.h>
 #include "display_internal.h"
+#include "mpu.h"
+
+#ifdef KERNEL_MODE
 
 // Physical frame buffers in internal SRAM memory
 __attribute__((section(".fb1")))
@@ -38,7 +41,15 @@ ALIGN_32BYTES(uint32_t physical_frame_buffer_1[PHYSICAL_FRAME_BUFFER_SIZE]);
 __attribute__((section(".framebuffer_select"))) uint32_t current_frame_buffer =
     0;
 
-display_fb_info_t display_get_frame_buffer(void) {
+bool display_get_frame_buffer(display_fb_info_t *fb) {
+  display_driver_t *drv = &g_display_driver;
+
+  if (!drv->initialized) {
+    fb->ptr = NULL;
+    fb->stride = 0;
+    return false;
+  }
+
   uintptr_t addr;
 
   if (current_frame_buffer == 0) {
@@ -54,15 +65,25 @@ display_fb_info_t display_get_frame_buffer(void) {
   addr += (480 - DISPLAY_RESY) / 2 * sizeof(uint32_t);
   addr += (480 - DISPLAY_RESX) / 2 * fb_stride;
 
-  display_fb_info_t fb = {
-      .ptr = (void *)addr,
-      .stride = fb_stride,
-  };
+  fb->ptr = (void *)addr;
+  fb->stride = fb_stride;
 
-  return fb;
+  // Enable access to the frame buffer from the unprivileged code
+  mpu_set_unpriv_fb(fb->ptr, VIRTUAL_FRAME_BUFFER_SIZE);
+
+  return true;
 }
 
 void display_refresh(void) {
+  display_driver_t *drv = &g_display_driver;
+
+  if (!drv->initialized) {
+    return;
+  }
+
+  // Disable access to the frame buffer from the unprivileged code
+  mpu_set_unpriv_fb(NULL, 0);
+
   if (current_frame_buffer == 0) {
     current_frame_buffer = 1;
     BSP_LCD_SetFrameBuffer(0, GFXMMU_VIRTUAL_BUFFER1_BASE_S);
@@ -75,3 +96,5 @@ void display_refresh(void) {
            sizeof(physical_frame_buffer_1));
   }
 }
+
+#endif

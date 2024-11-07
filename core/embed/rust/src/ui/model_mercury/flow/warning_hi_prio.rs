@@ -7,12 +7,13 @@ use crate::{
         component::{
             swipe_detect::SwipeSettings,
             text::paragraphs::{Paragraph, ParagraphSource},
-            ComponentExt, SwipeDirection,
+            ComponentExt,
         },
         flow::{
-            base::{DecisionBuilder as _, StateChange},
-            FlowMsg, FlowState, SwipeFlow,
+            base::{Decision, DecisionBuilder as _},
+            FlowController, FlowMsg, SwipeFlow,
         },
+        geometry::Direction,
         layout::obj::LayoutObj,
         model_mercury::component::SwipeContent,
     },
@@ -30,24 +31,24 @@ pub enum WarningHiPrio {
     Cancelled,
 }
 
-impl FlowState for WarningHiPrio {
+impl FlowController for WarningHiPrio {
     #[inline]
     fn index(&'static self) -> usize {
         *self as usize
     }
 
-    fn handle_swipe(&'static self, direction: SwipeDirection) -> StateChange {
+    fn handle_swipe(&'static self, direction: Direction) -> Decision {
         match (self, direction) {
-            (Self::Message, SwipeDirection::Left) => Self::Menu.swipe(direction),
-            (Self::Message, SwipeDirection::Up) => Self::Cancelled.swipe(direction),
-            (Self::Menu, SwipeDirection::Right) => Self::Message.swipe(direction),
+            (Self::Message, Direction::Left) => Self::Menu.swipe(direction),
+            (Self::Message, Direction::Up) => Self::Cancelled.swipe(direction),
+            (Self::Menu, Direction::Right) => Self::Message.swipe(direction),
             _ => self.do_nothing(),
         }
     }
 
-    fn handle_event(&'static self, msg: FlowMsg) -> StateChange {
+    fn handle_event(&'static self, msg: FlowMsg) -> Decision {
         match (self, msg) {
-            (Self::Message, FlowMsg::Info) => Self::Menu.transit(),
+            (Self::Message, FlowMsg::Info) => Self::Menu.goto(),
             (Self::Menu, FlowMsg::Choice(1)) => self.return_msg(FlowMsg::Confirmed),
             (Self::Menu, FlowMsg::Choice(_)) => Self::Cancelled.swipe_up(),
             (Self::Menu, FlowMsg::Cancelled) => Self::Message.swipe_right(),
@@ -70,8 +71,8 @@ impl WarningHiPrio {
         let description: TString = kwargs.get(Qstr::MP_QSTR_description)?.try_into()?;
         let value: TString = kwargs.get_or(Qstr::MP_QSTR_value, "".into())?;
         let cancel: TString = TR::words__cancel_and_exit.into();
-        let confirm: TString = "Continue anyway".into(); // FIXME: en.json has punctuation
-        let done_title: TString = "Operation cancelled".into();
+        let confirm: TString = TR::words__continue_anyway.into();
+        let done_title: TString = TR::words__operation_cancelled.into();
 
         // Message
         let paragraphs = [
@@ -84,8 +85,8 @@ impl WarningHiPrio {
             .with_menu_button()
             .with_footer(TR::instructions__swipe_up.into(), Some(cancel))
             .with_danger()
-            .with_swipe(SwipeDirection::Up, SwipeSettings::default())
-            .with_swipe(SwipeDirection::Left, SwipeSettings::default())
+            .with_swipe(Direction::Up, SwipeSettings::default())
+            .with_swipe(Direction::Left, SwipeSettings::default())
             .map(|msg| matches!(msg, FrameMsg::Button(_)).then_some(FlowMsg::Info));
         // .one_button_request(ButtonRequestCode::Warning, br_name);
 
@@ -93,11 +94,11 @@ impl WarningHiPrio {
         let content_menu = Frame::left_aligned(
             "".into(),
             VerticalMenu::empty()
-                .item(theme::ICON_CANCEL, "Cancel".into()) // TODO: button__cancel after it's lowercase
+                .item(theme::ICON_CANCEL, TR::buttons__cancel.into())
                 .danger(theme::ICON_CHEVRON_RIGHT, confirm),
         )
         .with_cancel_button()
-        .with_swipe(SwipeDirection::Right, SwipeSettings::immediate())
+        .with_swipe(Direction::Right, SwipeSettings::immediate())
         .map(|msg| match msg {
             FrameMsg::Content(VerticalMenuChoiceMsg::Selected(i)) => Some(FlowMsg::Choice(i)),
             FrameMsg::Button(_) => Some(FlowMsg::Cancelled),

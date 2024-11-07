@@ -11,7 +11,7 @@ class LayoutObj(Generic[T]):
     def attach_timer_fn(self, fn: Callable[[int, int], None], attach_type: AttachType | None) -> None:
         """Attach a timer setter function.
         The layout object can call the timer setter with two arguments,
-        `token` and `deadline`. When `deadline` is reached, the layout object
+        `token` and `duration_ms`. When `duration_ms` is reached, the layout object
         expects a callback to `self.timer(token)`.
         """
     if utils.USE_TOUCH:
@@ -27,7 +27,7 @@ class LayoutObj(Generic[T]):
     def timer(self, token: int) -> T | None:
         """Callback for the timer set by `attach_timer_fn`.
         This function should be called by the executor after the corresponding
-        deadline is reached.
+        duration has expired.
         """
     def paint(self) -> bool:
         """Paint the layout object on screen.
@@ -118,12 +118,19 @@ def confirm_blob(
     title: str,
     data: str | bytes,
     description: str | None,
-    extra: str | None,
+    description_font_green: bool = False,
+    text_mono: bool = True,
+    extra: str | None = None,
+    subtitle: str | None = None,
     verb: str | None = None,
     verb_cancel: str | None = None,
+    verb_info: str | None = None,
+    info: bool = True,
     hold: bool = False,
     chunkify: bool = False,
     prompt_screen: bool = False,
+    default_cancel: bool = False,
+    page_limit: int | None = None,
 ) -> LayoutObj[UiResult]:
     """Confirm byte sequence data."""
 
@@ -315,8 +322,8 @@ def confirm_with_info(
     info_button: str,
     items: Iterable[tuple[int, str]],
 ) -> LayoutObj[UiResult]:
-    """Confirm given items but with third button. Always single page
-    without scrolling."""
+    """Confirm given items but with third button. In mercury, the button is placed in
+    context menu."""
 
 
 # rust/src/ui/model_mercury/layout.rs
@@ -404,7 +411,6 @@ def flow_show_share_words(
     description: str,
     text_info: Iterable[str],
     text_confirm: str,
-    highlight_repeated: bool,
 ) -> LayoutObj[UiResult]:
     """Show wallet backup words preceded by an instruction screen and followed by
     confirmation."""
@@ -554,6 +560,7 @@ def flow_get_address(
     account: str | None,
     path: str | None,
     xpubs: list[tuple[str, str]],
+    title_success: str,
     br_code: ButtonRequestType,
     br_name: str,
 ) -> LayoutObj[UiResult]:
@@ -601,6 +608,7 @@ def flow_confirm_summary(
     title: str,
     items: Iterable[tuple[str, str]],
     account_items: Iterable[tuple[str, str]],
+    account_items_title: str | None,
     fee_items: Iterable[tuple[str, str]],
     br_code: ButtonRequestType,
     br_name: str,
@@ -675,12 +683,19 @@ def confirm_blob(
     title: str,
     data: str | bytes,
     description: str | None,
-    extra: str | None,
+    description_font_green: bool = False,
+    text_mono: bool = True,
+    extra: str | None = None,
+    subtitle: str | None = None,
     verb: str = "CONFIRM",
     verb_cancel: str | None = None,
+    verb_info: str | None = None,
+    info: bool = True,
     hold: bool = False,
     chunkify: bool = False,
     prompt_screen: bool = False,
+    default_cancel: bool = False,
+    page_limit: int | None = None,
 ) -> LayoutObj[UiResult]:
     """Confirm byte sequence data."""
 
@@ -808,6 +823,7 @@ def altcoin_tx_summary(
     amount_value: str,
     fee_title: str,
     fee_value: str,
+    items_title: str,
     items: Iterable[Tuple[str, str]],
     cancel_cross: bool = False,
 ) -> LayoutObj[UiResult]:
@@ -1121,7 +1137,7 @@ class LayoutObj(Generic[T]):
     def attach_timer_fn(self, fn: Callable[[int, int], None], attach_type: AttachType | None) -> None:
         """Attach a timer setter function.
         The layout object can call the timer setter with two arguments,
-        `token` and `deadline`. When `deadline` is reached, the layout object
+        `token` and `duration`. When `duration` elapses, the layout object
         expects a callback to `self.timer(token)`.
         """
     if utils.USE_TOUCH:
@@ -1137,7 +1153,7 @@ class LayoutObj(Generic[T]):
     def timer(self, token: int) -> T | None:
         """Callback for the timer set by `attach_timer_fn`.
         This function should be called by the executor after the corresponding
-        deadline is reached.
+        duration elapses.
         """
     def paint(self) -> bool:
         """Paint the layout object on screen.
@@ -1230,12 +1246,19 @@ def confirm_blob(
     title: str,
     data: str | bytes,
     description: str | None,
-    extra: str | None,
+    description_font_green: bool = False,
+    text_mono: bool = True,
+    extra: str | None = None,
+    subtitle: str | None = None,
     verb: str | None = None,
     verb_cancel: str | None = None,
+    verb_info: str | None = None,
+    info: bool = True,
     hold: bool = False,
     chunkify: bool = False,
     prompt_screen: bool = False,
+    default_cancel: bool = False,
+    page_limit: int | None = None,
 ) -> LayoutObj[UiResult]:
     """Confirm byte sequence data."""
 
@@ -1445,6 +1468,7 @@ def confirm_more(
     *,
     title: str,
     button: str,
+    button_style_confirm: bool = False,
     items: Iterable[tuple[int, str | bytes]],
 ) -> LayoutObj[UiResult]:
     """Confirm long content with the possibility to go back from any page.

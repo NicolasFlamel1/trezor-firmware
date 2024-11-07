@@ -1,5 +1,3 @@
-use core::mem;
-
 use heapless::Vec;
 
 use crate::{
@@ -18,11 +16,12 @@ use crate::{
 use crate::ui::event::ButtonEvent;
 use crate::ui::event::USBEvent;
 #[cfg(feature = "touch")]
-use crate::ui::event::{SwipeEvent, TouchEvent};
+use crate::ui::{
+    event::{SwipeEvent, TouchEvent},
+    geometry::Direction,
+};
 
 use super::Paginate;
-#[cfg(feature = "touch")]
-use super::SwipeDirection;
 
 /// Type used by components that do not return any messages.
 ///
@@ -101,7 +100,7 @@ impl<T> Child<T> {
     where
         F: FnOnce(&mut EventCtx, &mut T) -> U,
     {
-        let prev_requested = mem::replace(&mut ctx.paint_requested, false);
+        let prev_requested = core::mem::replace(&mut ctx.paint_requested, false);
         let result = component_func(ctx, &mut self.component);
         if ctx.paint_requested {
             // If a paint was requested anywhere in the inner component tree, we need to
@@ -355,7 +354,7 @@ pub enum AttachType {
     /// in the given component.
     Resume,
     #[cfg(feature = "touch")]
-    Swipe(SwipeDirection),
+    Swipe(Direction),
 }
 
 #[derive(Copy, Clone, PartialEq, Eq)]
@@ -380,6 +379,19 @@ pub enum Event {
     /// Swipe and transition events
     #[cfg(feature = "touch")]
     Swipe(SwipeEvent),
+}
+
+/// Result of an event processor.
+///
+/// Indicates whether to continue processing the event, propagate it further,
+/// or stop processing it.
+#[derive(Copy, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "debug", derive(ufmt::derive::uDebug))]
+pub enum EventPropagation {
+    /// Event was not consumed by the component, propagate it further.
+    Continue,
+    /// Event was consumed by the component, do not propagate it further.
+    Stop,
 }
 
 #[derive(Copy, Clone, PartialEq, Eq)]
@@ -418,7 +430,7 @@ impl EventCtx {
     pub const ANIM_FRAME_TIMER: TimerToken = TimerToken(1);
 
     /// How long into the future we should schedule the animation frame timer.
-    const ANIM_FRAME_DEADLINE: Duration = Duration::from_millis(1);
+    const ANIM_FRAME_DURATION: Duration = Duration::from_millis(1);
 
     // 0 == `TimerToken::INVALID`,
     // 1 == `Self::ANIM_FRAME_TIMER`.
@@ -464,10 +476,10 @@ impl EventCtx {
         self.paint_requested = true;
     }
 
-    /// Request a timer event to be delivered after `deadline` elapses.
-    pub fn request_timer(&mut self, deadline: Duration) -> TimerToken {
+    /// Request a timer event to be delivered after `duration` elapses.
+    pub fn request_timer(&mut self, duration: Duration) -> TimerToken {
         let token = self.next_timer_token();
-        self.register_timer(token, deadline);
+        self.register_timer(token, duration);
         token
     }
 
@@ -475,7 +487,7 @@ impl EventCtx {
     pub fn request_anim_frame(&mut self) {
         if !self.anim_frame_scheduled {
             self.anim_frame_scheduled = true;
-            self.register_timer(Self::ANIM_FRAME_TIMER, Self::ANIM_FRAME_DEADLINE);
+            self.register_timer(Self::ANIM_FRAME_TIMER, Self::ANIM_FRAME_DURATION);
         }
     }
 
@@ -549,8 +561,8 @@ impl EventCtx {
         self.transition_out = None;
     }
 
-    fn register_timer(&mut self, token: TimerToken, deadline: Duration) {
-        if self.timers.push((token, deadline)).is_err() {
+    fn register_timer(&mut self, token: TimerToken, duration: Duration) {
+        if self.timers.push((token, duration)).is_err() {
             // The timer queue is full, this would be a development error in the layout
             // layer. Let's panic in the debug env.
             #[cfg(feature = "ui_debug")]
@@ -598,14 +610,14 @@ impl TryFrom<FlowMsg> for crate::micropython::obj::Obj {
     type Error = crate::error::Error;
 
     fn try_from(val: FlowMsg) -> Result<crate::micropython::obj::Obj, Self::Error> {
+        use crate::ui::layout::result;
+
         match val {
-            FlowMsg::Confirmed => Ok(crate::ui::layout::result::CONFIRMED.as_obj()),
-            FlowMsg::Cancelled => Ok(crate::ui::layout::result::CANCELLED.as_obj()),
-            FlowMsg::Info => Ok(crate::ui::layout::result::INFO.as_obj()),
-            FlowMsg::Choice(i) => {
-                Ok((crate::ui::layout::result::CONFIRMED.as_obj(), i.try_into()?).try_into()?)
-            }
-            FlowMsg::Text(_s) => panic!(),
+            FlowMsg::Confirmed => Ok(result::CONFIRMED.as_obj()),
+            FlowMsg::Cancelled => Ok(result::CANCELLED.as_obj()),
+            FlowMsg::Info => Ok(result::INFO.as_obj()),
+            FlowMsg::Choice(i) => i.try_into(),
+            FlowMsg::Text(s) => s.as_str().try_into(),
         }
     }
 }

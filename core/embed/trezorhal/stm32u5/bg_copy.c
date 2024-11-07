@@ -1,7 +1,11 @@
 #include "bg_copy.h"
 #include "irq.h"
+#include "mpu.h"
+#include "systemview.h"
 
 #include STM32_HAL_H
+
+#ifdef KERNEL_MODE
 
 #define MAX_DATA_SIZE 0xFFF0
 
@@ -33,6 +37,9 @@ void HAL_DMA_XferCpltCallback(DMA_HandleTypeDef *hdma) {
 }
 
 void GPDMA1_Channel0_IRQHandler(void) {
+  SEGGER_SYSVIEW_RecordEnterISR();
+  mpu_mode_t mpu_mode = mpu_reconfig(MPU_MODE_DEFAULT);
+
   if ((DMA_Handle.Instance->CSR & DMA_CSR_TCF) == 0) {
     // error, abort the transfer and allow the next one to start
     dma_data_transferred = 0;
@@ -44,7 +51,8 @@ void GPDMA1_Channel0_IRQHandler(void) {
   if (dma_transfer_remaining == 0) {
     // transfer finished, disable the channel
     HAL_DMA_DeInit(&DMA_Handle);
-    HAL_NVIC_DisableIRQ(GPDMA1_Channel0_IRQn);
+    NVIC_DisableIRQ(GPDMA1_Channel0_IRQn);
+    DMA_Handle.Instance = NULL;
     data_src = NULL;
     data_dst = NULL;
 
@@ -52,6 +60,9 @@ void GPDMA1_Channel0_IRQHandler(void) {
       bg_copy_callback();
     }
   }
+
+  mpu_restore(mpu_mode);
+  SEGGER_SYSVIEW_RecordExitISR();
 }
 
 bool bg_copy_pending(void) { return dma_transfer_remaining > 0; }
@@ -97,8 +108,8 @@ void bg_copy_start_const_out_8(const uint8_t *src, uint8_t *dst, size_t size,
                                                    DMA_CHANNEL_SRC_SEC |
                                                    DMA_CHANNEL_DEST_SEC);
 
-  HAL_NVIC_SetPriority(GPDMA1_Channel0_IRQn, IRQ_PRI_DMA, 0);
-  HAL_NVIC_EnableIRQ(GPDMA1_Channel0_IRQn);
+  NVIC_SetPriority(GPDMA1_Channel0_IRQn, IRQ_PRI_NORMAL);
+  NVIC_EnableIRQ(GPDMA1_Channel0_IRQn);
 
   HAL_DMA_Start_IT(&DMA_Handle, (uint32_t)src, (uint32_t)dst, data_to_send);
 }
@@ -106,9 +117,14 @@ void bg_copy_start_const_out_8(const uint8_t *src, uint8_t *dst, size_t size,
 void bg_copy_abort(void) {
   dma_transfer_remaining = 0;
   dma_data_transferred = 0;
-  HAL_DMA_Abort(&DMA_Handle);
-  HAL_DMA_DeInit(&DMA_Handle);
-  HAL_NVIC_DisableIRQ(GPDMA1_Channel0_IRQn);
+  if (DMA_Handle.Instance != NULL) {
+    HAL_DMA_Abort(&DMA_Handle);
+    HAL_DMA_DeInit(&DMA_Handle);
+    DMA_Handle.Instance = NULL;
+  }
+  NVIC_DisableIRQ(GPDMA1_Channel0_IRQn);
   data_src = NULL;
   data_dst = NULL;
 }
+
+#endif  // KERNEL_MODE

@@ -26,6 +26,7 @@
 
 #include "common.h"
 #include "flash.h"
+#include "flash_utils.h"
 #include "image.h"
 #include "model.h"
 #include "secbool.h"
@@ -341,7 +342,7 @@ void process_msg_FirmwareErase(uint8_t iface_num, uint32_t msg_size,
   firmware_remaining = msg_recv.has_length ? msg_recv.length : 0;
   if ((firmware_remaining > 0) &&
       ((firmware_remaining % sizeof(uint32_t)) == 0) &&
-      (firmware_remaining <= (FIRMWARE_IMAGE_MAXSIZE))) {
+      (firmware_remaining <= (FIRMWARE_MAXSIZE))) {
     // request new firmware
     chunk_requested = (firmware_remaining > IMAGE_INIT_CHUNK_SIZE)
                           ? IMAGE_INIT_CHUNK_SIZE
@@ -498,9 +499,8 @@ int process_msg_FirmwareUpload(uint8_t iface_num, uint32_t msg_size,
         return UPLOAD_ERR_INVALID_VENDOR_HEADER_SIG;
       }
 
-      const image_header *received_hdr =
-          read_image_header(chunk_buffer + vhdr.hdrlen, FIRMWARE_IMAGE_MAGIC,
-                            FIRMWARE_IMAGE_MAXSIZE);
+      const image_header *received_hdr = read_image_header(
+          chunk_buffer + vhdr.hdrlen, FIRMWARE_IMAGE_MAGIC, FIRMWARE_MAXSIZE);
 
       if (received_hdr != (const image_header *)(chunk_buffer + vhdr.hdrlen)) {
         MSG_SEND_INIT(Failure);
@@ -543,7 +543,7 @@ int process_msg_FirmwareUpload(uint8_t iface_num, uint32_t msg_size,
       if (is_new == secfalse) {
         current_hdr = read_image_header(
             (const uint8_t *)FIRMWARE_START + current_vhdr.hdrlen,
-            FIRMWARE_IMAGE_MAGIC, FIRMWARE_IMAGE_MAXSIZE);
+            FIRMWARE_IMAGE_MAGIC, FIRMWARE_MAXSIZE);
 
         if (current_hdr !=
             (const image_header *)(FIRMWARE_START + current_vhdr.hdrlen)) {
@@ -648,14 +648,7 @@ int process_msg_FirmwareUpload(uint8_t iface_num, uint32_t msg_size,
 }
 
 int process_msg_WipeDevice(uint8_t iface_num, uint32_t msg_size, uint8_t *buf) {
-  flash_area_t wipe_area[STORAGE_AREAS_COUNT + 1];
-  for (int i = 0; i < STORAGE_AREAS_COUNT; i++) {
-    memcpy(&wipe_area[i], &STORAGE_AREAS[i], sizeof(flash_area_t));
-  }
-  memcpy(&wipe_area[STORAGE_AREAS_COUNT], &FIRMWARE_AREA, sizeof(flash_area_t));
-
-  if (sectrue != flash_area_erase_bulk(wipe_area, STORAGE_AREAS_COUNT + 1,
-                                       ui_screen_wipe_progress)) {
+  if (sectrue != erase_device(ui_screen_wipe_progress)) {
     MSG_SEND_INIT(Failure);
     MSG_SEND_ASSIGN_VALUE(code, FailureType_Failure_ProcessError);
     MSG_SEND_ASSIGN_STRING(message, "Could not erase flash");

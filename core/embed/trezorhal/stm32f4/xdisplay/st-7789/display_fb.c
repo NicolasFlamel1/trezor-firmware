@@ -32,7 +32,8 @@
 
 #include "gfx_bitblt.h"
 #include "irq.h"
-#include "supervise.h"
+#include "mpu.h"
+#include "systemview.h"
 
 #ifndef BOARDLOADER
 #include "bg_copy.h"
@@ -41,6 +42,8 @@
 #ifndef STM32U5
 #error Framebuffer only supported on STM32U5 for now
 #endif
+
+#ifdef KERNEL_MODE
 
 // The following code supports only 1 or 2 frame buffers
 _Static_assert(FRAME_BUFFER_COUNT == 1 || FRAME_BUFFER_COUNT == 2);
@@ -96,7 +99,7 @@ static void bg_copy_callback(void) {
 }
 
 // Interrupt routing handling TE signal
-void DISPLAY_TE_INTERRUPT_HANDLER(void) {
+static void display_te_interrupt_handler(void) {
   display_driver_t *drv = &g_display_driver;
 
   __HAL_GPIO_EXTI_CLEAR_FLAG(DISPLAY_TE_PIN);
@@ -134,10 +137,24 @@ void DISPLAY_TE_INTERRUPT_HANDLER(void) {
       break;
   }
 }
+
+void DISPLAY_TE_INTERRUPT_HANDLER(void) {
+  SEGGER_SYSVIEW_RecordEnterISR();
+  mpu_mode_t mpu_mode = mpu_reconfig(MPU_MODE_DEFAULT);
+  display_te_interrupt_handler();
+  mpu_restore(mpu_mode);
+  SEGGER_SYSVIEW_RecordExitISR();
+}
 #endif
 
-display_fb_info_t display_get_frame_buffer(void) {
+bool display_get_frame_buffer(display_fb_info_t *fb) {
   display_driver_t *drv = &g_display_driver;
+
+  if (!drv->initialized) {
+    fb->ptr = NULL;
+    fb->stride = 0;
+    return false;
+  }
 
   frame_buffer_state_t state;
 
@@ -150,21 +167,23 @@ display_fb_info_t display_get_frame_buffer(void) {
   if (state == FB_STATE_EMPTY) {
     // First use of this buffer, copy the previous buffer into it
 #if (FRAME_BUFFER_COUNT > 1)
+#ifndef NEW_RENDERING
     uint8_t *src = get_fb_ptr((FRAME_BUFFER_COUNT + drv->queue.wix - 1) %
                               FRAME_BUFFER_COUNT);
     uint8_t *dst = get_fb_ptr(drv->queue.wix);
     memcpy(dst, src, PHYSICAL_FRAME_BUFFER_SIZE);
 #endif
+#endif
   };
 
   drv->queue.entry[drv->queue.wix] = FB_STATE_PREPARING;
 
-  display_fb_info_t fb = {
-      .ptr = get_fb_ptr(drv->queue.wix),
-      .stride = DISPLAY_RESX * sizeof(uint16_t),
-  };
+  fb->ptr = get_fb_ptr(drv->queue.wix);
+  fb->stride = DISPLAY_RESX * sizeof(uint16_t);
+  // Enable access to the frame buffer from the unprivileged code
+  mpu_set_unpriv_fb(fb->ptr, PHYSICAL_FRAME_BUFFER_SIZE);
 
-  return fb;
+  return true;
 }
 
 // Copies the frame buffer with the given index to the display
@@ -191,16 +210,23 @@ static void wait_for_te_signal(void) {
 void display_refresh(void) {
   display_driver_t *drv = &g_display_driver;
 
+  if (!drv->initialized) {
+    return;
+  }
+
   if (drv->queue.entry[drv->queue.wix] != FB_STATE_PREPARING) {
     // No refresh needed as the frame buffer is not in
     // the state to be copied to the display
     return;
   }
 
+  // Disable access to the frame buffer from the unprivileged code
+  mpu_set_unpriv_fb(NULL, 0);
+
 #ifndef BOARDLOADER
-  if (is_mode_handler()) {
+  if (is_mode_exception()) {
     // Disable scheduling of any new background copying
-    HAL_NVIC_DisableIRQ(DISPLAY_TE_INTERRUPT_NUM);
+    NVIC_DisableIRQ(DISPLAY_TE_INTERRUPT_NUM);
     // Wait for next TE signal. During this time the
     // display might be updated in the background
     wait_for_te_signal();
@@ -216,7 +242,7 @@ void display_refresh(void) {
       drv->queue.entry[i] = FB_STATE_EMPTY;
     }
     // Enable normal processing again
-    HAL_NVIC_EnableIRQ(DISPLAY_TE_INTERRUPT_NUM);
+    NVIC_EnableIRQ(DISPLAY_TE_INTERRUPT_NUM);
   } else {
     // Mark the buffer ready to switch to
     drv->queue.entry[drv->queue.wix] = FB_STATE_READY;
@@ -234,7 +260,11 @@ void display_ensure_refreshed(void) {
 #ifndef BOARDLOADER
   display_driver_t *drv = &g_display_driver;
 
-  if (!is_mode_handler()) {
+  if (!drv->initialized) {
+    return;
+  }
+
+  if (!is_mode_exception()) {
     bool copy_pending;
 
     // Wait until all frame buffers are written to the display
@@ -263,7 +293,11 @@ void display_ensure_refreshed(void) {
 }
 
 void display_fill(const gfx_bitblt_t *bb) {
-  display_fb_info_t fb = display_get_frame_buffer();
+  display_fb_info_t fb;
+
+  if (!display_get_frame_buffer(&fb)) {
+    return;
+  }
 
   gfx_bitblt_t bb_new = *bb;
   bb_new.dst_row = (uint16_t *)((uintptr_t)fb.ptr + fb.stride * bb_new.dst_y);
@@ -273,7 +307,11 @@ void display_fill(const gfx_bitblt_t *bb) {
 }
 
 void display_copy_rgb565(const gfx_bitblt_t *bb) {
-  display_fb_info_t fb = display_get_frame_buffer();
+  display_fb_info_t fb;
+
+  if (!display_get_frame_buffer(&fb)) {
+    return;
+  }
 
   gfx_bitblt_t bb_new = *bb;
   bb_new.dst_row = (uint16_t *)((uintptr_t)fb.ptr + fb.stride * bb_new.dst_y);
@@ -283,7 +321,11 @@ void display_copy_rgb565(const gfx_bitblt_t *bb) {
 }
 
 void display_copy_mono1p(const gfx_bitblt_t *bb) {
-  display_fb_info_t fb = display_get_frame_buffer();
+  display_fb_info_t fb;
+
+  if (!display_get_frame_buffer(&fb)) {
+    return;
+  }
 
   gfx_bitblt_t bb_new = *bb;
   bb_new.dst_row = (uint16_t *)((uintptr_t)fb.ptr + fb.stride * bb_new.dst_y);
@@ -293,7 +335,11 @@ void display_copy_mono1p(const gfx_bitblt_t *bb) {
 }
 
 void display_copy_mono4(const gfx_bitblt_t *bb) {
-  display_fb_info_t fb = display_get_frame_buffer();
+  display_fb_info_t fb;
+
+  if (!display_get_frame_buffer(&fb)) {
+    return;
+  }
 
   gfx_bitblt_t bb_new = *bb;
   bb_new.dst_row = (uint16_t *)((uintptr_t)fb.ptr + fb.stride * bb_new.dst_y);
@@ -301,3 +347,5 @@ void display_copy_mono4(const gfx_bitblt_t *bb) {
 
   gfx_rgb565_copy_mono4(&bb_new);
 }
+
+#endif  // KERNEL_MODE

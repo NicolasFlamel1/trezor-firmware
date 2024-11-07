@@ -23,6 +23,7 @@
 
 #include STM32_HAL_H
 
+#include "bootutils.h"
 #include "common.h"
 #include "display.h"
 #include "display_draw.h"
@@ -30,9 +31,12 @@
 #include "image.h"
 #include "model.h"
 #include "rng.h"
+#include "rsod.h"
 #include "sbu.h"
 #include "sdcard.h"
 #include "secbool.h"
+#include "system.h"
+#include "systimer.h"
 #include "terminal.h"
 #include "touch.h"
 
@@ -42,7 +46,7 @@
 
 static void progress_callback(int pos, int len) { term_printf("."); }
 
-static void flash_from_sdcard(const flash_area_t* area, uint32_t source,
+static void flash_from_sdcard(const flash_area_t *area, uint32_t source,
                               uint32_t length) {
   static uint32_t buf[SDCARD_BLOCK_SIZE / sizeof(uint32_t)];
 
@@ -68,6 +72,8 @@ static void flash_from_sdcard(const flash_area_t* area, uint32_t source,
 }
 
 int main(void) {
+  system_init(&rsod_panic_handler);
+
   sdcard_init();
   touch_init();
 

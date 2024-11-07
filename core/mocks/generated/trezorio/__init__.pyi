@@ -1,36 +1,6 @@
 from typing import *
 
 
-# extmod/modtrezorio/modtrezorio-flash.h
-class FlashOTP:
-    """
-    """
-
-    def __init__(self) -> None:
-        """
-        """
-
-    def write(self, block: int, offset: int, data: bytes) -> None:
-        """
-        Writes data to OTP flash
-        """
-
-    def read(self, block: int, offset: int, data: bytearray) -> None:
-        """
-        Reads data from OTP flash
-        """
-
-    def lock(self, block: int) -> None:
-        """
-        Lock OTP flash block
-        """
-
-    def is_locked(self, block: int) -> bool:
-        """
-        Is OTP flash block locked?
-        """
-
-
 # extmod/modtrezorio/modtrezorio-hid.h
 class HID:
     """
@@ -84,21 +54,6 @@ def poll(ifaces: Iterable[int], list_ref: list, timeout_ms: int) -> bool:
 
     If timeout occurs, False is returned, True otherwise.
     """
-
-
-# extmod/modtrezorio/modtrezorio-sbu.h
-class SBU:
-    """
-    """
-
-    def __init__(self) -> None:
-        """
-        """
-
-    def set(self, sbu1: bool, sbu2: bool) -> None:
-        """
-        Sets SBU wires to sbu1 and sbu2 values respectively
-        """
 
 
 # extmod/modtrezorio/modtrezorio-usb.h

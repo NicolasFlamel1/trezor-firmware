@@ -40,23 +40,35 @@ def stm32f4_common_files(env, defines, sources, paths):
     ]
 
     sources += [
+        "embed/trezorhal/stm32f4/applet.c",
         "embed/trezorhal/stm32f4/board_capabilities.c",
-        "embed/trezorhal/stm32f4/boot_args.c",
-        "embed/trezorhal/stm32f4/common.c",
-        "embed/trezorhal/stm32f4/fault_handlers.c",
+        "embed/trezorhal/stm32f4/bootutils.c",
+        "embed/trezorhal/stm32f4/entropy.c",
         "embed/trezorhal/stm32f4/flash.c",
         "embed/trezorhal/stm32f4/flash_otp.c",
-        "embed/trezorhal/stm32f4/lowlevel.c",
+        "embed/trezorhal/stm32f4/fwutils.c",
+        "embed/trezorhal/stm32f4/layout.c",
         "embed/trezorhal/stm32f4/monoctr.c",
         "embed/trezorhal/stm32f4/mpu.c",
-        "embed/trezorhal/stm32f4/platform.c",
-        "embed/trezorhal/stm32f4/secret.c",
-        "embed/trezorhal/stm32f4/systick.c",
-        "embed/trezorhal/stm32f4/supervise.c",
-        "embed/trezorhal/stm32f4/time_estimate.c",
+        "embed/trezorhal/stm32f4/option_bytes.c",
+        "embed/trezorhal/stm32f4/pvd.c",
         "embed/trezorhal/stm32f4/random_delays.c",
+        "embed/trezorhal/stm32f4/reset_flags.c",
         "embed/trezorhal/stm32f4/rng.c",
-        "embed/trezorhal/stm32f4/vectortable.s",
+        "embed/trezorhal/stm32f4/secret.c",
+        "embed/trezorhal/stm32f4/startup_init.c",
+        "embed/trezorhal/stm32f4/syscall.c",
+        "embed/trezorhal/stm32f4/syscall_dispatch.c",
+        "embed/trezorhal/stm32f4/syscall_probe.c",
+        "embed/trezorhal/stm32f4/syscall_stubs.c",
+        "embed/trezorhal/stm32f4/syscall_verifiers.c",
+        "embed/trezorhal/stm32f4/system.c",
+        "embed/trezorhal/stm32f4/systask.c",
+        "embed/trezorhal/stm32f4/systick.c",
+        "embed/trezorhal/stm32f4/systimer.c",
+        "embed/trezorhal/stm32f4/time_estimate.c",
+        "embed/trezorhal/stm32f4/unit_properties.c",
+        "embed/trezorhal/stm32f4/vectortable.S",
     ]
 
     # boardloader needs separate assembler for some function unencumbered by various FW+bootloader hacks
@@ -64,12 +76,12 @@ def stm32f4_common_files(env, defines, sources, paths):
     env_constraints = env.get("CONSTRAINTS")
     if env_constraints and "limited_util_s" in env_constraints:
         sources += [
-            "embed/trezorhal/stm32f4/limited_util.s",
+            "embed/trezorhal/stm32f4/limited_util.S",
         ]
     else:
         sources += [
-            "embed/trezorhal/stm32f4/util.s",
+            "embed/trezorhal/stm32f4/util.S",
         ]
 
     env.get("ENV")["SUFFIX"] = "stm32f4"
-    env.get("ENV")["LINKER_SCRIPT"] = "stm32f4"
+    env.get("ENV")["LINKER_SCRIPT"] = """embed/trezorhal/stm32f4/linker/{target}.ld"""

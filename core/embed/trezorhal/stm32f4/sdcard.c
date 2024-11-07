@@ -49,9 +49,11 @@
 #include <string.h>
 
 #include "irq.h"
+#include "mpu.h"
 #include "sdcard-set_clr_card_detect.h"
 #include "sdcard.h"
-#include "supervise.h"
+
+#ifdef KERNEL_MODE
 
 #define SDMMC_CLK_ENABLE() __HAL_RCC_SDMMC1_CLK_ENABLE()
 #define SDMMC_CLK_DISABLE() __HAL_RCC_SDMMC1_CLK_DISABLE()
@@ -62,9 +64,9 @@ static DMA_HandleTypeDef sd_dma = {0};
 
 void DMA2_Stream3_IRQHandler(void) {
   IRQ_ENTER(DMA2_Stream3_IRQn);
-
+  mpu_mode_t mpu_mode = mpu_reconfig(MPU_MODE_DEFAULT);
   HAL_DMA_IRQHandler(&sd_dma);
-
+  mpu_restore(mpu_mode);
   IRQ_EXIT(DMA2_Stream3_IRQn);
 }
 
@@ -134,8 +136,8 @@ void HAL_SD_MspInit(SD_HandleTypeDef *hsd) {
     SDMMC_CLK_ENABLE();
 
     // NVIC configuration for SDIO interrupts
-    svc_setpriority(SDMMC_IRQn, IRQ_PRI_SDIO);
-    svc_enableIRQ(SDMMC_IRQn);
+    NVIC_SetPriority(SDMMC_IRQn, IRQ_PRI_NORMAL);
+    NVIC_EnableIRQ(SDMMC_IRQn);
   }
 
   // GPIO have already been initialised by sdcard_init
@@ -143,7 +145,7 @@ void HAL_SD_MspInit(SD_HandleTypeDef *hsd) {
 
 void HAL_SD_MspDeInit(SD_HandleTypeDef *hsd) {
   if (hsd->Instance == sd_handle.Instance) {
-    svc_disableIRQ(SDMMC_IRQn);
+    NVIC_DisableIRQ(SDMMC_IRQn);
     SDMMC_CLK_DISABLE();
   }
 }
@@ -232,9 +234,11 @@ uint64_t sdcard_get_capacity_in_bytes(void) {
 
 void SDIO_IRQHandler(void) {
   IRQ_ENTER(SDIO_IRQn);
+  mpu_mode_t mpu_mode = mpu_reconfig(MPU_MODE_DEFAULT);
   if (sd_handle.Instance) {
     HAL_SD_IRQHandler(&sd_handle);
   }
+  mpu_restore(mpu_mode);
   IRQ_EXIT(SDIO_IRQn);
 }
 
@@ -254,13 +258,13 @@ static HAL_StatusTypeDef sdcard_wait_finished(SD_HandleTypeDef *sd,
   uint32_t start = HAL_GetTick();
   for (;;) {
     // Do an atomic check of the state; WFI will exit even if IRQs are disabled
-    uint32_t irq_state = disable_irq();
+    irq_key_t irq_key = irq_lock();
     if (sd->State != HAL_SD_STATE_BUSY) {
-      enable_irq(irq_state);
+      irq_unlock(irq_key);
       break;
     }
     __WFI();
-    enable_irq(irq_state);
+    irq_unlock(irq_key);
     if (HAL_GetTick() - start >= timeout) {
       return HAL_TIMEOUT;
     }
@@ -298,9 +302,6 @@ secbool sdcard_read_blocks(uint32_t *dest, uint32_t block_num,
 
   HAL_StatusTypeDef err = HAL_OK;
 
-  // we must disable USB irqs to prevent MSC contention with SD card
-  uint32_t basepri = raise_irq_pri(IRQ_PRI_OTG_FS);
-
   sd_dma.Instance = DMA2_Stream3;
   sd_dma.State = HAL_DMA_STATE_RESET;
   sd_dma.Init.Channel = DMA_CHANNEL_4;
@@ -327,7 +328,7 @@ secbool sdcard_read_blocks(uint32_t *dest, uint32_t block_num,
   DMA_HandleTypeDef dummy_dma = {0};
   sd_handle.hdmatx = &dummy_dma;
 
-  svc_enableIRQ(DMA2_Stream3_IRQn);
+  NVIC_EnableIRQ(DMA2_Stream3_IRQn);
 
   sdcard_reset_periph();
   err =
@@ -336,11 +337,9 @@ secbool sdcard_read_blocks(uint32_t *dest, uint32_t block_num,
     err = sdcard_wait_finished(&sd_handle, 5000);
   }
 
-  svc_disableIRQ(DMA2_Stream3_IRQn);
+  NVIC_DisableIRQ(DMA2_Stream3_IRQn);
   HAL_DMA_DeInit(&sd_dma);
   sd_handle.hdmarx = NULL;
-
-  restore_irq_pri(basepri);
 
   return sectrue * (err == HAL_OK);
 }
@@ -358,9 +357,6 @@ secbool sdcard_write_blocks(const uint32_t *src, uint32_t block_num,
   }
 
   HAL_StatusTypeDef err = HAL_OK;
-
-  // we must disable USB irqs to prevent MSC contention with SD card
-  uint32_t basepri = raise_irq_pri(IRQ_PRI_OTG_FS);
 
   sd_dma.Instance = DMA2_Stream3;
   sd_dma.State = HAL_DMA_STATE_RESET;
@@ -388,7 +384,7 @@ secbool sdcard_write_blocks(const uint32_t *src, uint32_t block_num,
   DMA_HandleTypeDef dummy_dma = {0};
   sd_handle.hdmarx = &dummy_dma;
 
-  svc_enableIRQ(DMA2_Stream3_IRQn);
+  NVIC_EnableIRQ(DMA2_Stream3_IRQn);
 
   sdcard_reset_periph();
   err =
@@ -397,11 +393,11 @@ secbool sdcard_write_blocks(const uint32_t *src, uint32_t block_num,
     err = sdcard_wait_finished(&sd_handle, 5000);
   }
 
-  svc_disableIRQ(DMA2_Stream3_IRQn);
+  NVIC_DisableIRQ(DMA2_Stream3_IRQn);
   HAL_DMA_DeInit(&sd_dma);
   sd_handle.hdmatx = NULL;
 
-  restore_irq_pri(basepri);
-
   return sectrue * (err == HAL_OK);
 }
+
+#endif  // KERNEL_MODE

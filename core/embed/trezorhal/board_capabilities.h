@@ -35,7 +35,8 @@ Last tag must be terminator or all space used.
 
 #include <stdint.h>
 
-#define BOARD_CAPABILITIES_SIZE 256
+#ifdef KERNEL_MODE
+
 #define CAPABILITIES_HEADER "TRZC"
 
 enum CapabilityTag {
@@ -76,5 +77,7 @@ void parse_boardloader_capabilities();
 
 const uint32_t get_board_name();
 const boardloader_version_t* get_boardloader_version();
+
+#endif  // KERNEL_MODE
 
 #endif

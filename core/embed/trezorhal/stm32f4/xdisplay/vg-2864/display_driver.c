@@ -25,12 +25,14 @@
 #include TREZOR_BOARD
 #include STM32_HAL_H
 
+#include "mpu.h"
 #include "xdisplay.h"
 
 #ifdef USE_CONSUMPTION_MASK
 #include "consumption_mask.h"
 #endif
 
+#ifdef KERNEL_MODE
 #if (DISPLAY_RESX != 128) || (DISPLAY_RESY != 64)
 #error "Incompatible display resolution"
 #endif
@@ -38,14 +40,20 @@
 // This file implements display driver for monochromatic display V-2864KSWEG01
 // with 128x64 resolution connected to CPU via SPI interface.
 //
-// This type of display is used with T3T1 model (Trezor TS3)
+// This type of display is used with T3B1 model (Trezor TS3)
+
+#define FRAME_BUFFER_SIZE (DISPLAY_RESX * DISPLAY_RESY)
+
+__attribute__((section(".fb1"))) uint8_t g_framebuf[FRAME_BUFFER_SIZE];
 
 // Display driver context.
 typedef struct {
+  // Set if the driver is initialized
+  bool initialized;
   // SPI driver instance
   SPI_HandleTypeDef spi;
   // Frame buffer (8-bit Mono)
-  uint8_t framebuf[DISPLAY_RESX * DISPLAY_RESY];
+  uint8_t *framebuf;
   // Current display orientation (0 or 180)
   int orientation_angle;
   // Current backlight level ranging from 0 to 255
@@ -53,7 +61,9 @@ typedef struct {
 } display_driver_t;
 
 // Display driver instance
-static display_driver_t g_display_driver;
+static display_driver_t g_display_driver = {
+    .initialized = false,
+};
 
 // Display controller registers
 #define OLED_SETCONTRAST 0x81
@@ -220,88 +230,98 @@ static void display_sync_with_fb(display_driver_t *drv) {
   HAL_GPIO_WritePin(OLED_DC_PORT, OLED_DC_PIN, GPIO_PIN_RESET);
 }
 
-void display_init(void) {
+void display_init(display_content_mode_t mode) {
   display_driver_t *drv = &g_display_driver;
+
+  if (drv->initialized) {
+    return;
+  }
 
   memset(drv, 0, sizeof(display_driver_t));
   drv->backlight_level = 255;
+  drv->framebuf = g_framebuf;
 
-  OLED_DC_CLK_ENA();
-  OLED_CS_CLK_ENA();
-  OLED_RST_CLK_ENA();
-  OLED_SPI_SCK_CLK_ENA();
-  OLED_SPI_MOSI_CLK_ENA();
-  OLED_SPI_CLK_ENA();
+  if (mode == DISPLAY_RESET_CONTENT) {
+    OLED_DC_CLK_ENA();
+    OLED_CS_CLK_ENA();
+    OLED_RST_CLK_ENA();
+    OLED_SPI_SCK_CLK_ENA();
+    OLED_SPI_MOSI_CLK_ENA();
+    OLED_SPI_CLK_ENA();
 
-  GPIO_InitTypeDef GPIO_InitStructure;
+    GPIO_InitTypeDef GPIO_InitStructure;
 
-  // Set GPIO for OLED display
-  GPIO_InitStructure.Mode = GPIO_MODE_OUTPUT_PP;
-  GPIO_InitStructure.Pull = GPIO_NOPULL;
-  GPIO_InitStructure.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
-  GPIO_InitStructure.Alternate = 0;
-  GPIO_InitStructure.Pin = OLED_CS_PIN;
-  HAL_GPIO_WritePin(OLED_CS_PORT, OLED_CS_PIN, GPIO_PIN_RESET);
-  HAL_GPIO_Init(OLED_CS_PORT, &GPIO_InitStructure);
-  GPIO_InitStructure.Pin = OLED_DC_PIN;
-  HAL_GPIO_WritePin(OLED_DC_PORT, OLED_DC_PIN, GPIO_PIN_RESET);
-  HAL_GPIO_Init(OLED_DC_PORT, &GPIO_InitStructure);
-  GPIO_InitStructure.Pin = OLED_RST_PIN;
-  HAL_GPIO_WritePin(OLED_RST_PORT, OLED_RST_PIN, GPIO_PIN_RESET);
-  HAL_GPIO_Init(OLED_RST_PORT, &GPIO_InitStructure);
+    // Set GPIO for OLED display
+    GPIO_InitStructure.Mode = GPIO_MODE_OUTPUT_PP;
+    GPIO_InitStructure.Pull = GPIO_NOPULL;
+    GPIO_InitStructure.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
+    GPIO_InitStructure.Alternate = 0;
+    GPIO_InitStructure.Pin = OLED_CS_PIN;
+    HAL_GPIO_WritePin(OLED_CS_PORT, OLED_CS_PIN, GPIO_PIN_RESET);
+    HAL_GPIO_Init(OLED_CS_PORT, &GPIO_InitStructure);
+    GPIO_InitStructure.Pin = OLED_DC_PIN;
+    HAL_GPIO_WritePin(OLED_DC_PORT, OLED_DC_PIN, GPIO_PIN_RESET);
+    HAL_GPIO_Init(OLED_DC_PORT, &GPIO_InitStructure);
+    GPIO_InitStructure.Pin = OLED_RST_PIN;
+    HAL_GPIO_WritePin(OLED_RST_PORT, OLED_RST_PIN, GPIO_PIN_RESET);
+    HAL_GPIO_Init(OLED_RST_PORT, &GPIO_InitStructure);
 
-  // Enable SPI 1 for OLED display
-  GPIO_InitStructure.Mode = GPIO_MODE_AF_PP;
-  GPIO_InitStructure.Pull = GPIO_NOPULL;
-  GPIO_InitStructure.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
-  GPIO_InitStructure.Alternate = OLED_SPI_AF;
-  GPIO_InitStructure.Pin = OLED_SPI_SCK_PIN;
-  HAL_GPIO_Init(OLED_SPI_SCK_PORT, &GPIO_InitStructure);
-  GPIO_InitStructure.Pin = OLED_SPI_MOSI_PIN;
-  HAL_GPIO_Init(OLED_SPI_MOSI_PORT, &GPIO_InitStructure);
+    // Enable SPI 1 for OLED display
+    GPIO_InitStructure.Mode = GPIO_MODE_AF_PP;
+    GPIO_InitStructure.Pull = GPIO_NOPULL;
+    GPIO_InitStructure.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
+    GPIO_InitStructure.Alternate = OLED_SPI_AF;
+    GPIO_InitStructure.Pin = OLED_SPI_SCK_PIN;
+    HAL_GPIO_Init(OLED_SPI_SCK_PORT, &GPIO_InitStructure);
+    GPIO_InitStructure.Pin = OLED_SPI_MOSI_PIN;
+    HAL_GPIO_Init(OLED_SPI_MOSI_PORT, &GPIO_InitStructure);
 
-  // Initialize SPI controller
-  display_init_spi(drv);
+    // Initialize SPI controller
+    display_init_spi(drv);
 
-  // Set to CMD
-  HAL_GPIO_WritePin(OLED_DC_PORT, OLED_DC_PIN, GPIO_PIN_RESET);
-  // SPI deselect
-  HAL_GPIO_WritePin(OLED_CS_PORT, OLED_CS_PIN, GPIO_PIN_SET);
+    // Set to CMD
+    HAL_GPIO_WritePin(OLED_DC_PORT, OLED_DC_PIN, GPIO_PIN_RESET);
+    // SPI deselect
+    HAL_GPIO_WritePin(OLED_CS_PORT, OLED_CS_PIN, GPIO_PIN_SET);
 
-  // Reset the LCD
-  HAL_GPIO_WritePin(OLED_RST_PORT, OLED_RST_PIN, GPIO_PIN_SET);
-  HAL_Delay(1);
-  HAL_GPIO_WritePin(OLED_RST_PORT, OLED_RST_PIN, GPIO_PIN_RESET);
-  HAL_Delay(1);
-  HAL_GPIO_WritePin(OLED_RST_PORT, OLED_RST_PIN, GPIO_PIN_SET);
+    // Reset the LCD
+    HAL_GPIO_WritePin(OLED_RST_PORT, OLED_RST_PIN, GPIO_PIN_SET);
+    HAL_Delay(1);
+    HAL_GPIO_WritePin(OLED_RST_PORT, OLED_RST_PIN, GPIO_PIN_RESET);
+    HAL_Delay(1);
+    HAL_GPIO_WritePin(OLED_RST_PORT, OLED_RST_PIN, GPIO_PIN_SET);
 
-  // SPI select
-  HAL_GPIO_WritePin(OLED_CS_PORT, OLED_CS_PIN, GPIO_PIN_RESET);
-  // Send initialization command sequence
-  display_send_bytes(drv, &vg_2864ksweg01_init_seq[0],
-                     sizeof(vg_2864ksweg01_init_seq));
-  // SPI deselect
-  HAL_GPIO_WritePin(OLED_CS_PORT, OLED_CS_PIN, GPIO_PIN_SET);
+    // SPI select
+    HAL_GPIO_WritePin(OLED_CS_PORT, OLED_CS_PIN, GPIO_PIN_RESET);
+    // Send initialization command sequence
+    display_send_bytes(drv, &vg_2864ksweg01_init_seq[0],
+                       sizeof(vg_2864ksweg01_init_seq));
+    // SPI deselect
+    HAL_GPIO_WritePin(OLED_CS_PORT, OLED_CS_PIN, GPIO_PIN_SET);
 
-  // Clear display internal framebuffer
-  display_sync_with_fb(drv);
+    // Clear display internal framebuffer
+    display_sync_with_fb(drv);
+  } else {
+    display_init_spi(drv);
+  }
+
+  drv->initialized = true;
 }
 
-void display_reinit(void) {
+void display_deinit(display_content_mode_t mode) {
   display_driver_t *drv = &g_display_driver;
 
-  memset(drv, 0, sizeof(display_driver_t));
-  drv->backlight_level = 255;
+  mpu_set_unpriv_fb(NULL, 0);
 
-  display_init_spi(drv);
-}
-
-void display_finish_actions(void) {
-  /// Not used and intentionally left empty
+  drv->initialized = false;
 }
 
 int display_set_backlight(int level) {
   display_driver_t *drv = &g_display_driver;
+
+  if (!drv->initialized) {
+    return 0;
+  }
 
   drv->backlight_level = 255;
   return drv->backlight_level;
@@ -310,11 +330,19 @@ int display_set_backlight(int level) {
 int display_get_backlight(void) {
   display_driver_t *drv = &g_display_driver;
 
+  if (!drv->initialized) {
+    return 0;
+  }
+
   return drv->backlight_level;
 }
 
 int display_set_orientation(int angle) {
   display_driver_t *drv = &g_display_driver;
+
+  if (!drv->initialized) {
+    return 0;
+  }
 
   if (angle != drv->orientation_angle) {
     if (angle == 0 || angle == 180) {
@@ -329,22 +357,35 @@ int display_set_orientation(int angle) {
 int display_get_orientation(void) {
   display_driver_t *drv = &g_display_driver;
 
+  if (!drv->initialized) {
+    return 0;
+  }
+
   return drv->orientation_angle;
 }
 
-display_fb_info_t display_get_frame_buffer(void) {
+bool display_get_frame_buffer(display_fb_info_t *fb) {
   display_driver_t *drv = &g_display_driver;
 
-  display_fb_info_t fb = {
-      .ptr = &drv->framebuf[0],
-      .stride = DISPLAY_RESX,
-  };
-
-  return fb;
+  if (!drv->initialized) {
+    fb->ptr = NULL;
+    fb->stride = 0;
+    return false;
+  } else {
+    fb->ptr = &drv->framebuf[0];
+    fb->stride = DISPLAY_RESX;
+    // Enable access to the frame buffer from the unprivileged code
+    mpu_set_unpriv_fb(fb->ptr, FRAME_BUFFER_SIZE);
+    return true;
+  }
 }
 
 void display_refresh(void) {
   display_driver_t *drv = &g_display_driver;
+
+  if (!drv->initialized) {
+    return;
+  }
 
 #if defined USE_CONSUMPTION_MASK && !defined BOARDLOADER
   // This is an intentional randomization of the consumption masking algorithm
@@ -352,28 +393,39 @@ void display_refresh(void) {
   consumption_mask_randomize();
 #endif
 
-  // Sends the current frame buffer to the display
+  // Disable access to the frame buffer from the unprivileged code
+  mpu_set_unpriv_fb(NULL, 0);
+
+  // Copy the frame buffer to the display
   display_sync_with_fb(drv);
 }
 
-void display_set_compatible_settings() {}
-
 void display_fill(const gfx_bitblt_t *bb) {
-  display_driver_t *drv = &g_display_driver;
+  display_fb_info_t fb;
+
+  if (!display_get_frame_buffer(&fb)) {
+    return;
+  }
 
   gfx_bitblt_t bb_new = *bb;
-  bb_new.dst_row = &drv->framebuf[DISPLAY_RESX * bb_new.dst_y];
+  bb_new.dst_row = &(((uint8_t *)fb.ptr)[DISPLAY_RESX * bb_new.dst_y]);
   bb_new.dst_stride = DISPLAY_RESX;
 
   gfx_mono8_fill(&bb_new);
 }
 
 void display_copy_mono1p(const gfx_bitblt_t *bb) {
-  display_driver_t *drv = &g_display_driver;
+  display_fb_info_t fb;
+
+  if (!display_get_frame_buffer(&fb)) {
+    return;
+  }
 
   gfx_bitblt_t bb_new = *bb;
-  bb_new.dst_row = &drv->framebuf[DISPLAY_RESX * bb_new.dst_y];
+  bb_new.dst_row = &(((uint8_t *)fb.ptr)[DISPLAY_RESX * bb_new.dst_y]);
   bb_new.dst_stride = DISPLAY_RESX;
 
   gfx_mono8_copy_mono1p(&bb_new);
 }
+
+#endif

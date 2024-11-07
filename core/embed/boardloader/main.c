@@ -19,19 +19,26 @@
 
 #include <string.h>
 
+#include STM32_HAL_H
 #include TREZOR_BOARD
 #include "board_capabilities.h"
+#include "bootutils.h"
 #include "buffers.h"
 #include "common.h"
 #include "compiler_traits.h"
 #include "display.h"
 #include "display_draw.h"
-#include "fault_handlers.h"
 #include "flash.h"
+#include "flash_utils.h"
 #include "image.h"
 #include "model.h"
 #include "mpu.h"
+#include "pvd.h"
+#include "reset_flags.h"
 #include "rng.h"
+#include "rsod.h"
+#include "secret.h"
+#include "system.h"
 #include "terminal.h"
 
 #ifdef USE_SD_CARD
@@ -52,15 +59,14 @@
 #endif
 #endif
 
-#include "lowlevel.h"
 #include "model.h"
 #include "monoctr.h"
+#include "option_bytes.h"
 #include "version.h"
 
 #include "memzero.h"
 
 #ifdef STM32U5
-#include "secret.h"
 #include "tamper.h"
 #include "trustzone.h"
 #endif
@@ -105,7 +111,7 @@ struct BoardCapabilities capabilities
         .terminator_length = 0};
 
 // we use SRAM as SD card read buffer (because DMA can't access the CCMRAM)
-BUFFER_SECTION uint32_t sdcard_buf[BOOTLOADER_IMAGE_MAXSIZE / sizeof(uint32_t)];
+BUFFER_SECTION uint32_t sdcard_buf[BOOTLOADER_MAXSIZE / sizeof(uint32_t)];
 
 #if defined USE_SD_CARD
 static uint32_t check_sdcard(void) {
@@ -121,15 +127,15 @@ static uint32_t check_sdcard(void) {
 
   memzero(sdcard_buf, IMAGE_HEADER_SIZE);
 
-  const secbool read_status = sdcard_read_blocks(
-      sdcard_buf, 0, BOOTLOADER_IMAGE_MAXSIZE / SDCARD_BLOCK_SIZE);
+  const secbool read_status =
+      sdcard_read_blocks(sdcard_buf, 0, BOOTLOADER_MAXSIZE / SDCARD_BLOCK_SIZE);
 
   sdcard_power_off();
 
   if (sectrue == read_status) {
     const image_header *hdr =
         read_image_header((const uint8_t *)sdcard_buf, BOOTLOADER_IMAGE_MAGIC,
-                          BOOTLOADER_IMAGE_MAXSIZE);
+                          BOOTLOADER_MAXSIZE);
 
     if (hdr != (const image_header *)sdcard_buf) {
       return 0;
@@ -145,7 +151,7 @@ static uint32_t check_sdcard(void) {
       return 0;
     }
 
-    _Static_assert(IMAGE_CHUNK_SIZE >= BOOTLOADER_IMAGE_MAXSIZE,
+    _Static_assert(IMAGE_CHUNK_SIZE >= BOOTLOADER_MAXSIZE,
                    "BOOTLOADER IMAGE MAXSIZE too large for IMAGE_CHUNK_SIZE");
 
     const uint32_t headers_end_offset = hdr->hdrlen;
@@ -207,7 +213,7 @@ static secbool copy_sdcard(void) {
   term_printf("\n\nerasing flash:\n\n");
 
   // erase all flash (except boardloader)
-  if (sectrue != flash_area_erase(&ALL_WIPE_AREA, progress_callback)) {
+  if (sectrue != erase_device(progress_callback)) {
     term_printf(" failed\n");
     return secfalse;
   }
@@ -232,17 +238,17 @@ static secbool copy_sdcard(void) {
 #endif
 
 int main(void) {
+  system_init(&rsod_panic_handler);
+
   reset_flags_reset();
 
-  // need the systick timer running before many HAL operations.
-  // want the PVD enabled before flash operations too.
-  periph_init();
+#ifdef USE_PVD
+  pvd_init();
+#endif
 
   if (sectrue != flash_configure_option_bytes()) {
     // display is not initialized so don't call ensure
-    const secbool r =
-        flash_area_erase_bulk(STORAGE_AREAS, STORAGE_AREAS_COUNT, NULL);
-    (void)r;
+    erase_storage(NULL);
     return 2;
   }
 
@@ -250,17 +256,9 @@ int main(void) {
   tamper_init();
 
   trustzone_init_boardloader();
-
-  secret_ensure_initialized();
 #endif
 
-#ifdef STM32F4
-  clear_otg_hs_memory();
-#endif
-
-  mpu_config_boardloader();
-
-  fault_handlers_init();
+  secret_init();
 
 #ifdef USE_SDRAM
   sdram_init();
@@ -274,7 +272,8 @@ int main(void) {
   dma2d_init();
 #endif
 
-  display_init();
+  display_init(DISPLAY_RESET_CONTENT);
+
   display_clear();
   display_refresh();
 
@@ -324,9 +323,13 @@ int main(void) {
   // This includes the version of bootloader potentially updated from SD card.
   write_bootloader_min_version(hdr->monotonic);
 
-  ensure_compatible_settings();
+  display_deinit(DISPLAY_JUMP_BEHAVIOR);
 
-  mpu_config_off();
+#ifdef ENSURE_COMPATIBLE_SETTINGS
+  ensure_compatible_settings();
+#endif
+
+  mpu_reconfig(MPU_MODE_DISABLED);
 
   // g_boot_command is preserved on STM32U5
   jump_to(IMAGE_CODE_ALIGN(BOOTLOADER_START + IMAGE_HEADER_SIZE));
