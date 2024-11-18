@@ -92,7 +92,7 @@ async def get_root_public_key(message: MimbleWimbleCoinGetRootPublicKey) -> Mimb
 	else:
 	
 		# Show prompt
-		await show_warning("", "The host will be able to view the account's transactions.", "Approve", "Warning", ButtonRequestType.Other, allow_cancel = True)
+		await show_warning("", "The host will be able to view the account's transactions.", "Approve", "Warning", br_code = ButtonRequestType.Other, allow_cancel = True)
 	
 	# Get extended private key
 	extendedPrivateKey = await getExtendedPrivateKey(coinInfo, message.account)

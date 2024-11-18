@@ -155,7 +155,7 @@ async def get_mqs_challenge_signature(message: MimbleWimbleCoinGetMqsChallengeSi
 	else:
 	
 		# Show prompt
-		await show_warning("", f"The host will be able to listen for the account's {coinInfo.mqsName} transactions.", "Approve", "Warning", ButtonRequestType.Other, allow_cancel = True)
+		await show_warning("", f"The host will be able to listen for the account's {coinInfo.mqsName} transactions.", "Approve", "Warning", br_code = ButtonRequestType.Other, allow_cancel = True)
 	
 	# Get extended private key
 	extendedPrivateKey = await getExtendedPrivateKey(coinInfo, message.account)

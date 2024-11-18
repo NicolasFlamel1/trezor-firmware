@@ -428,7 +428,7 @@ async def finish_transaction(message: MimbleWimbleCoinFinishTransaction) -> Mimb
 			if UI_LAYOUT == "MERCURY":
 			
 				# Show prompt
-				await show_warning("", bytes(transactionContextStructure.address).split(b"\0", 1)[0].decode(), "Approve", "Proof Address", ButtonRequestType.Other, allow_cancel = True, value_text_mono = True)
+				await show_warning("", bytes(transactionContextStructure.address).split(b"\0", 1)[0].decode(), "Approve", "Proof Address", br_code = ButtonRequestType.Other, allow_cancel = True, value_text_mono = True)
 			
 			# Otherwise
 			else:
@@ -455,7 +455,7 @@ async def finish_transaction(message: MimbleWimbleCoinFinishTransaction) -> Mimb
 			else:
 			
 				# Show prompt
-				await show_warning("", "No payment proof.", "Approve", "Warning", ButtonRequestType.Other, allow_cancel = True)
+				await show_warning("", "No payment proof.", "Approve", "Warning", br_code = ButtonRequestType.Other, allow_cancel = True)
 	
 	# Catch action cancelled errors
 	except ActionCancelled:

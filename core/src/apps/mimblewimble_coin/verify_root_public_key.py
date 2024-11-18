@@ -95,7 +95,7 @@ async def verify_root_public_key(message: MimbleWimbleCoinVerifyRootPublicKey) -
 		if UI_LAYOUT == "MERCURY":
 		
 			# Show prompt
-			await show_warning("", "".join(f"{i:02x}" for i in rootPublicKey), "Valid", "Root Public Key", ButtonRequestType.Other, allow_cancel = True, value_text_mono = True)
+			await show_warning("", "".join(f"{i:02x}" for i in rootPublicKey), "Valid", "Root Public Key", br_code = ButtonRequestType.Other, allow_cancel = True, value_text_mono = True)
 		
 		# Otherwise
 		else:

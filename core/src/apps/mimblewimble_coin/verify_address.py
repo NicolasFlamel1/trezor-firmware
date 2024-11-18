@@ -107,7 +107,7 @@ async def verify_address(message: MimbleWimbleCoinVerifyAddress) -> Success:
 		if UI_LAYOUT == "MERCURY":
 		
 			# Show prompt
-			await show_warning("", address, "Valid", f"{coinInfo.mqsName} Address", ButtonRequestType.Other, allow_cancel = True, value_text_mono = True)
+			await show_warning("", address, "Valid", f"{coinInfo.mqsName} Address", br_code = ButtonRequestType.Other, allow_cancel = True, value_text_mono = True)
 		
 		# Otherwise
 		else:
@@ -152,7 +152,7 @@ async def verify_address(message: MimbleWimbleCoinVerifyAddress) -> Success:
 		if UI_LAYOUT == "MERCURY":
 		
 			# Show prompt
-			await show_warning("", address, "Valid", "Tor Address", ButtonRequestType.Other, allow_cancel = True, value_text_mono = True)
+			await show_warning("", address, "Valid", "Tor Address", br_code = ButtonRequestType.Other, allow_cancel = True, value_text_mono = True)
 		
 		# Otherwise
 		else:
@@ -197,7 +197,7 @@ async def verify_address(message: MimbleWimbleCoinVerifyAddress) -> Success:
 		if UI_LAYOUT == "MERCURY":
 		
 			# Show prompt
-			await show_warning("", address, "Valid", "Slatepack Address", ButtonRequestType.Other, allow_cancel = True, value_text_mono = True)
+			await show_warning("", address, "Valid", "Slatepack Address", br_code = ButtonRequestType.Other, allow_cancel = True, value_text_mono = True)
 		
 		# Otherwise
 		else:
