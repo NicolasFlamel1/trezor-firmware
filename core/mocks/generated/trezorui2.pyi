@@ -1,64 +1,5 @@
 from typing import *
 from trezor import utils
-T = TypeVar("T")
-
-
-# rust/src/ui/model_mercury/layout.rs
-class LayoutObj(Generic[T]):
-    """Representation of a Rust-based layout object.
-    see `trezor::ui::layout::obj::LayoutObj`.
-    """
-    def attach_timer_fn(self, fn: Callable[[int, int], None], attach_type: AttachType | None) -> None:
-        """Attach a timer setter function.
-        The layout object can call the timer setter with two arguments,
-        `token` and `duration_ms`. When `duration_ms` is reached, the layout object
-        expects a callback to `self.timer(token)`.
-        """
-    if utils.USE_TOUCH:
-        def touch_event(self, event: int, x: int, y: int) -> T | None:
-            """Receive a touch event `event` at coordinates `x`, `y`."""
-    if utils.USE_BUTTON:
-        def button_event(self, event: int, button: int) -> T | None:
-            """Receive a button event `event` for button `button`."""
-    def progress_event(self, value: int, description: str) -> T | None:
-        """Receive a progress event."""
-    def usb_event(self, connected: bool) -> T | None:
-        """Receive a USB connect/disconnect event."""
-    def timer(self, token: int) -> T | None:
-        """Callback for the timer set by `attach_timer_fn`.
-        This function should be called by the executor after the corresponding
-        duration has expired.
-        """
-    def paint(self) -> bool:
-        """Paint the layout object on screen.
-        Will only paint updated parts of the layout as required.
-        Returns True if any painting actually happened.
-        """
-    def request_complete_repaint(self) -> None:
-        """Request a complete repaint of the screen.
-        Does not repaint the screen, a subsequent call to `paint()` is required.
-        """
-    if __debug__:
-        def trace(self, tracer: Callable[[str], None]) -> None:
-            """Generate a JSON trace of the layout object.
-            The JSON can be emitted as a sequence of calls to `tracer`, each of
-            which is not necessarily a valid JSON chunk. The caller must
-            reassemble the chunks to get a sensible result.
-            """
-        def bounds(self) -> None:
-            """Paint bounds of individual components on screen."""
-    def page_count(self) -> int:
-        """Return the number of pages in the layout object."""
-    def get_transition_out(self) -> AttachType:
-        """Return the transition type."""
-    def __del__(self) -> None:
-        """Calls drop on contents of the root component."""
-
-
-# rust/src/ui/model_mercury/layout.rs
-class UiResult:
-   """Result of a UI operation."""
-   pass
 CONFIRMED: UiResult
 CANCELLED: UiResult
 INFO: UiResult
@@ -118,7 +59,6 @@ def confirm_blob(
     title: str,
     data: str | bytes,
     description: str | None,
-    description_font_green: bool = False,
     text_mono: bool = True,
     extra: str | None = None,
     subtitle: str | None = None,
@@ -128,11 +68,26 @@ def confirm_blob(
     info: bool = True,
     hold: bool = False,
     chunkify: bool = False,
+    page_counter: bool = False,
     prompt_screen: bool = False,
-    default_cancel: bool = False,
-    page_limit: int | None = None,
+    cancel: bool = False,
 ) -> LayoutObj[UiResult]:
     """Confirm byte sequence data."""
+
+
+# rust/src/ui/model_mercury/layout.rs
+def confirm_blob_intro(
+    *,
+    title: str,
+    data: str | bytes,
+    subtitle: str | None = None,
+    verb: str | None = None,
+    verb_cancel: str | None = None,
+    chunkify: bool = False,
+) -> LayoutObj[UiResult]:
+    """Confirm byte sequence data by showing only the first page of the data
+    and instructing the user to access the menu in order to view all the data,
+    which can then be confirmed using confirm_blob."""
 
 
 # rust/src/ui/model_mercury/layout.rs
@@ -327,17 +282,6 @@ def confirm_with_info(
 
 
 # rust/src/ui/model_mercury/layout.rs
-def confirm_more(
-    *,
-    title: str,
-    button: str,
-    items: Iterable[tuple[int, str]],
-) -> LayoutObj[UiResult]:
-    """Confirm long content with the possibility to go back from any page.
-    Meant to be used with confirm_with_info."""
-
-
-# rust/src/ui/model_mercury/layout.rs
 def confirm_coinjoin(
     *,
     max_rounds: str,
@@ -398,8 +342,8 @@ def select_word(
 
 
 # rust/src/ui/model_mercury/layout.rs
-def flow_prompt_backup() -> LayoutObj[UiResult]
-"""Prompt a user to create backup with an option to skip."""
+def flow_prompt_backup() -> LayoutObj[UiResult]:
+    """Prompt a user to create backup with an option to skip."""
 
 
 # rust/src/ui/model_mercury/layout.rs
@@ -428,7 +372,7 @@ def flow_request_number(
     br_code: ButtonRequestType,
     br_name: str,
 ) -> LayoutObj[tuple[UiResult, int]]:
-    """Numer input with + and - buttons, description, and context menu with cancel and
+    """Number input with + and - buttons, description, and context menu with cancel and
     info."""
 
 
@@ -573,6 +517,7 @@ def flow_warning_hi_prio(
     title: str,
     description: str,
     value: str = "",
+    verb_cancel: str | None = None,
 ) -> LayoutObj[UiResult]:
     """Warning modal with multiple steps to confirm."""
 
@@ -635,6 +580,15 @@ class AttachType:
     SWIPE_DOWN: ClassVar[int]
     SWIPE_LEFT: ClassVar[int]
     SWIPE_RIGHT: ClassVar[int]
+
+
+# rust/src/ui/model_mercury/layout.rs
+class LayoutState:
+    """Layout state."""
+    INITIAL: "ClassVar[LayoutState]"
+    ATTACHED: "ClassVar[LayoutState]"
+    TRANSITIONING: "ClassVar[LayoutState]"
+    DONE: "ClassVar[LayoutState]"
 CONFIRMED: UiResult
 CANCELLED: UiResult
 INFO: UiResult
@@ -683,7 +637,6 @@ def confirm_blob(
     title: str,
     data: str | bytes,
     description: str | None,
-    description_font_green: bool = False,
     text_mono: bool = True,
     extra: str | None = None,
     subtitle: str | None = None,
@@ -693,9 +646,9 @@ def confirm_blob(
     info: bool = True,
     hold: bool = False,
     chunkify: bool = False,
+    page_counter: bool = False,
     prompt_screen: bool = False,
-    default_cancel: bool = False,
-    page_limit: int | None = None,
+    cancel: bool = False,
 ) -> LayoutObj[UiResult]:
     """Confirm byte sequence data."""
 
@@ -970,7 +923,7 @@ def request_slip39(
     prefill_word: str,
     can_go_back: bool,
 ) -> LayoutObj[str]:
-   """SLIP39 word input keyboard."""
+    """SLIP39 word input keyboard."""
 
 
 # rust/src/ui/model_tr/layout.rs
@@ -980,8 +933,8 @@ def select_word(
     description: str,
     words: Iterable[str],
 ) -> LayoutObj[int]:
-   """Select mnemonic word from three possibilities - seed check after backup. The
-   iterable must be of exact size. Returns index in range `0..3`."""
+    """Select mnemonic word from three possibilities - seed check after backup. The
+    iterable must be of exact size. Returns index in range `0..3`."""
 
 
 # rust/src/ui/model_tr/layout.rs
@@ -1001,7 +954,7 @@ def request_number(
     max_count: int,
     description: Callable[[int], str] | None = None,  # unused on TR
 ) -> LayoutObj[tuple[UiResult, int]]:
-   """Number input with + and - buttons, description, and info button."""
+    """Number input with + and - buttons, description, and info button."""
 
 
 # rust/src/ui/model_tr/layout.rs
@@ -1012,8 +965,8 @@ def show_checklist(
     active: int,
     button: str,
 ) -> LayoutObj[UiResult]:
-   """Checklist of backup steps. Active index is highlighted, previous items have check
-   mark next to them."""
+    """Checklist of backup steps. Active index is highlighted, previous items have check
+    mark next to them."""
 
 
 # rust/src/ui/model_tr/layout.rs
@@ -1024,9 +977,9 @@ def confirm_recovery(
     button: str,
     recovery_type: RecoveryType,
     info_button: bool,  # unused on TR
-    show_info: bool,
+    show_instructions: bool,
 ) -> LayoutObj[UiResult]:
-   """Device recovery homescreen."""
+    """Device recovery homescreen."""
 
 
 # rust/src/ui/model_tr/layout.rs
@@ -1043,7 +996,7 @@ def show_group_share_success(
     *,
     lines: Iterable[str],
 ) -> LayoutObj[int]:
-   """Shown after successfully finishing a group."""
+    """Shown after successfully finishing a group."""
 
 
 # rust/src/ui/model_tr/layout.rs
@@ -1053,9 +1006,9 @@ def show_progress(
     indeterminate: bool = False,
     title: str | None = None,
 ) -> LayoutObj[UiResult]:
-   """Show progress loader. Please note that the number of lines reserved on screen for
-   description is determined at construction time. If you want multiline descriptions
-   make sure the initial description has at least that amount of lines."""
+    """Show progress loader. Please note that the number of lines reserved on screen for
+    description is determined at construction time. If you want multiline descriptions
+    make sure the initial description has at least that amount of lines."""
 
 
 # rust/src/ui/model_tr/layout.rs
@@ -1066,8 +1019,8 @@ def show_progress_coinjoin(
     time_ms: int = 0,
     skip_first_paint: bool = False,
 ) -> LayoutObj[UiResult]:
-   """Show progress loader for coinjoin. Returns CANCELLED after a specified time when
-   time_ms timeout is passed."""
+    """Show progress loader for coinjoin. Returns CANCELLED after a specified time when
+    time_ms timeout is passed."""
 
 
 # rust/src/ui/model_tr/layout.rs
@@ -1125,6 +1078,15 @@ class AttachType:
     SWIPE_DOWN: ClassVar[int]
     SWIPE_LEFT: ClassVar[int]
     SWIPE_RIGHT: ClassVar[int]
+
+
+# rust/src/ui/model_tr/layout.rs
+class LayoutState:
+    """Layout state."""
+    INITIAL: "ClassVar[LayoutState]"
+    ATTACHED: "ClassVar[LayoutState]"
+    TRANSITIONING: "ClassVar[LayoutState]"
+    DONE: "ClassVar[LayoutState]"
 from trezor import utils
 T = TypeVar("T")
 
@@ -1134,23 +1096,23 @@ class LayoutObj(Generic[T]):
     """Representation of a Rust-based layout object.
     see `trezor::ui::layout::obj::LayoutObj`.
     """
-    def attach_timer_fn(self, fn: Callable[[int, int], None], attach_type: AttachType | None) -> None:
+    def attach_timer_fn(self, fn: Callable[[int, int], None], attach_type: AttachType | None) -> LayoutState | None:
         """Attach a timer setter function.
         The layout object can call the timer setter with two arguments,
-        `token` and `duration`. When `duration` elapses, the layout object
+        `token` and `duration_ms`. When `duration_ms` elapses, the layout object
         expects a callback to `self.timer(token)`.
         """
     if utils.USE_TOUCH:
-        def touch_event(self, event: int, x: int, y: int) -> T | None:
+        def touch_event(self, event: int, x: int, y: int) -> LayoutState | None:
             """Receive a touch event `event` at coordinates `x`, `y`."""
     if utils.USE_BUTTON:
-        def button_event(self, event: int, button: int) -> T | None:
+        def button_event(self, event: int, button: int) -> LayoutState | None:
             """Receive a button event `event` for button `button`."""
-    def progress_event(self, value: int, description: str) -> T | None:
+    def progress_event(self, value: int, description: str) -> LayoutState | None:
         """Receive a progress event."""
-    def usb_event(self, connected: bool) -> T | None:
+    def usb_event(self, connected: bool) -> LayoutState | None:
         """Receive a USB connect/disconnect event."""
-    def timer(self, token: int) -> T | None:
+    def timer(self, token: int) -> LayoutState | None:
         """Callback for the timer set by `attach_timer_fn`.
         This function should be called by the executor after the corresponding
         duration elapses.
@@ -1179,14 +1141,16 @@ class LayoutObj(Generic[T]):
         """Return (code, type) of button request made during the last event or timer pass."""
     def get_transition_out(self) -> AttachType:
         """Return the transition type."""
+    def return_value(self) -> T:
+        """Retrieve the return value of the layout object."""
     def __del__(self) -> None:
         """Calls drop on contents of the root component."""
 
 
 # rust/src/ui/model_tt/layout.rs
 class UiResult:
-   """Result of a UI operation."""
-   pass
+    """Result of an UI operation."""
+    pass
 CONFIRMED: UiResult
 CANCELLED: UiResult
 INFO: UiResult
@@ -1246,7 +1210,6 @@ def confirm_blob(
     title: str,
     data: str | bytes,
     description: str | None,
-    description_font_green: bool = False,
     text_mono: bool = True,
     extra: str | None = None,
     subtitle: str | None = None,
@@ -1256,9 +1219,9 @@ def confirm_blob(
     info: bool = True,
     hold: bool = False,
     chunkify: bool = False,
+    page_counter: bool = False,
     prompt_screen: bool = False,
-    default_cancel: bool = False,
-    page_limit: int | None = None,
+    cancel: bool = False,
 ) -> LayoutObj[UiResult]:
     """Confirm byte sequence data."""
 
@@ -1584,6 +1547,7 @@ def confirm_recovery(
     button: str,
     recovery_type: RecoveryType,
     info_button: bool = False,
+    show_instructions: bool = False,  # unused on TT
 ) -> LayoutObj[UiResult]:
     """Device recovery homescreen."""
 
@@ -1692,3 +1656,12 @@ class AttachType:
     SWIPE_DOWN: ClassVar[int]
     SWIPE_LEFT: ClassVar[int]
     SWIPE_RIGHT: ClassVar[int]
+
+
+# rust/src/ui/model_tt/layout.rs
+class LayoutState:
+    """Layout state."""
+    INITIAL: "ClassVar[LayoutState]"
+    ATTACHED: "ClassVar[LayoutState]"
+    TRANSITIONING: "ClassVar[LayoutState]"
+    DONE: "ClassVar[LayoutState]"

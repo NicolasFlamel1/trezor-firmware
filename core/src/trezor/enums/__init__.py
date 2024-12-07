@@ -193,6 +193,12 @@ if TYPE_CHECKING:
         PromptAlways = 1
         PromptTemporarily = 2
 
+    class DisplayRotation(IntEnum):
+        North = 0
+        East = 90
+        South = 180
+        West = 270
+
     class HomescreenFormat(IntEnum):
         Toif = 1
         Jpeg = 2
@@ -270,6 +276,11 @@ if TYPE_CHECKING:
         LEFT_BTN = 0
         MIDDLE_BTN = 1
         RIGHT_BTN = 2
+
+    class DebugWaitType(IntEnum):
+        IMMEDIATE = 0
+        NEXT_LAYOUT = 1
+        CURRENT_LAYOUT = 2
 
     class EthereumDefinitionType(IntEnum):
         NETWORK = 0

@@ -40,7 +40,9 @@ if TYPE_CHECKING:
     from trezor.enums import DebugButton  # noqa: F401
     from trezor.enums import DebugPhysicalButton  # noqa: F401
     from trezor.enums import DebugSwipeDirection  # noqa: F401
+    from trezor.enums import DebugWaitType  # noqa: F401
     from trezor.enums import DecredStakingSpendType  # noqa: F401
+    from trezor.enums import DisplayRotation  # noqa: F401
     from trezor.enums import EthereumDataType  # noqa: F401
     from trezor.enums import EthereumDefinitionType  # noqa: F401
     from trezor.enums import FailureType  # noqa: F401
@@ -2146,7 +2148,7 @@ if TYPE_CHECKING:
         passphrase_always_on_device: "bool | None"
         safety_checks: "SafetyCheckLevel | None"
         auto_lock_delay_ms: "int | None"
-        display_rotation: "int | None"
+        display_rotation: "DisplayRotation | None"
         experimental_features: "bool | None"
         busy: "bool | None"
         homescreen_format: "HomescreenFormat | None"
@@ -2201,7 +2203,7 @@ if TYPE_CHECKING:
             passphrase_always_on_device: "bool | None" = None,
             safety_checks: "SafetyCheckLevel | None" = None,
             auto_lock_delay_ms: "int | None" = None,
-            display_rotation: "int | None" = None,
+            display_rotation: "DisplayRotation | None" = None,
             experimental_features: "bool | None" = None,
             busy: "bool | None" = None,
             homescreen_format: "HomescreenFormat | None" = None,
@@ -2255,7 +2257,7 @@ if TYPE_CHECKING:
         use_passphrase: "bool | None"
         homescreen: "bytes | None"
         auto_lock_delay_ms: "int | None"
-        display_rotation: "int | None"
+        display_rotation: "DisplayRotation | None"
         passphrase_always_on_device: "bool | None"
         safety_checks: "SafetyCheckLevel | None"
         experimental_features: "bool | None"
@@ -2269,7 +2271,7 @@ if TYPE_CHECKING:
             use_passphrase: "bool | None" = None,
             homescreen: "bytes | None" = None,
             auto_lock_delay_ms: "int | None" = None,
-            display_rotation: "int | None" = None,
+            display_rotation: "DisplayRotation | None" = None,
             passphrase_always_on_device: "bool | None" = None,
             safety_checks: "SafetyCheckLevel | None" = None,
             experimental_features: "bool | None" = None,
@@ -2814,7 +2816,6 @@ if TYPE_CHECKING:
         input: "str | None"
         x: "int | None"
         y: "int | None"
-        wait: "bool | None"
         hold_ms: "int | None"
         physical_button: "DebugPhysicalButton | None"
 
@@ -2826,7 +2827,6 @@ if TYPE_CHECKING:
             input: "str | None" = None,
             x: "int | None" = None,
             y: "int | None" = None,
-            wait: "bool | None" = None,
             hold_ms: "int | None" = None,
             physical_button: "DebugPhysicalButton | None" = None,
         ) -> None:
@@ -2834,20 +2834,6 @@ if TYPE_CHECKING:
 
         @classmethod
         def is_type_of(cls, msg: Any) -> TypeGuard["DebugLinkDecision"]:
-            return isinstance(msg, cls)
-
-    class DebugLinkLayout(protobuf.MessageType):
-        tokens: "list[str]"
-
-        def __init__(
-            self,
-            *,
-            tokens: "list[str] | None" = None,
-        ) -> None:
-            pass
-
-        @classmethod
-        def is_type_of(cls, msg: Any) -> TypeGuard["DebugLinkLayout"]:
             return isinstance(msg, cls)
 
     class DebugLinkReseedRandom(protobuf.MessageType):
@@ -2881,16 +2867,12 @@ if TYPE_CHECKING:
             return isinstance(msg, cls)
 
     class DebugLinkGetState(protobuf.MessageType):
-        wait_word_list: "bool | None"
-        wait_word_pos: "bool | None"
-        wait_layout: "bool | None"
+        wait_layout: "DebugWaitType"
 
         def __init__(
             self,
             *,
-            wait_word_list: "bool | None" = None,
-            wait_word_pos: "bool | None" = None,
-            wait_layout: "bool | None" = None,
+            wait_layout: "DebugWaitType | None" = None,
         ) -> None:
             pass
 
@@ -3034,26 +3016,6 @@ if TYPE_CHECKING:
 
         @classmethod
         def is_type_of(cls, msg: Any) -> TypeGuard["DebugLinkEraseSdCard"]:
-            return isinstance(msg, cls)
-
-    class DebugLinkWatchLayout(protobuf.MessageType):
-        watch: "bool | None"
-
-        def __init__(
-            self,
-            *,
-            watch: "bool | None" = None,
-        ) -> None:
-            pass
-
-        @classmethod
-        def is_type_of(cls, msg: Any) -> TypeGuard["DebugLinkWatchLayout"]:
-            return isinstance(msg, cls)
-
-    class DebugLinkResetDebugEvents(protobuf.MessageType):
-
-        @classmethod
-        def is_type_of(cls, msg: Any) -> TypeGuard["DebugLinkResetDebugEvents"]:
             return isinstance(msg, cls)
 
     class DebugLinkOptigaSetSecMax(protobuf.MessageType):

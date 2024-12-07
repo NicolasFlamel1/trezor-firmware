@@ -43,10 +43,11 @@ use crate::{
                 },
                 TextStyle,
             },
-            ComponentExt, FormattedText, Label, LineBreaking, Timeout,
+            ComponentExt, FormattedText, Label, LineBreaking, Never, Timeout,
         },
         geometry,
         layout::{
+            base::LAYOUT_STATE,
             obj::{ComponentMsgObj, LayoutObj, ATTACH_TYPE_OBJ},
             result::{CANCELLED, CONFIRMED, INFO},
             util::{upy_disable_animation, ConfirmBlob, RecoveryType},
@@ -66,7 +67,7 @@ impl From<CancelConfirmMsg> for Obj {
 
 impl<T> ComponentMsgObj for ShowMore<T>
 where
-    T: Component,
+    T: Component<Msg = Never>,
 {
     fn msg_try_into_obj(&self, msg: Self::Msg) -> Result<Obj, Error> {
         match msg {
@@ -94,7 +95,6 @@ where
         match msg {
             PageMsg::Confirmed => Ok(CONFIRMED.as_obj()),
             PageMsg::Cancelled => Ok(CANCELLED.as_obj()),
-            PageMsg::Info => Ok(INFO.as_obj()),
             _ => Err(Error::TypeError),
         }
     }
@@ -244,9 +244,7 @@ fn content_in_button_page<T: Component + Paginate + MaybeTrace + 'static>(
     content: T,
     verb: TString<'static>,
     verb_cancel: Option<TString<'static>>,
-    info: bool,
     hold: bool,
-    page_limit: Option<usize>,
 ) -> Result<Obj, Error> {
     // Left button - icon, text or nothing.
     let cancel_btn = verb_cancel.map(ButtonDetails::from_text_possible_icon);
@@ -262,14 +260,9 @@ fn content_in_button_page<T: Component + Paginate + MaybeTrace + 'static>(
         confirm_btn = confirm_btn.map(|btn| btn.with_default_duration());
     }
 
-    let mut content = ButtonPage::new(content, theme::BG)
+    let content = ButtonPage::new(content, theme::BG)
         .with_cancel_btn(cancel_btn)
-        .with_page_limit(page_limit)
         .with_confirm_btn(confirm_btn);
-
-    if info {
-        content = content.with_armed_confirm_plus_info();
-    }
 
     let mut frame = ScrollableFrame::new(content);
     if !title.is_empty() {
@@ -311,7 +304,7 @@ extern "C" fn new_confirm_action(n_args: usize, args: *const Obj, kwargs: *mut M
             paragraphs.into_paragraphs()
         };
 
-        content_in_button_page(title, paragraphs, verb, verb_cancel, false, hold, None)
+        content_in_button_page(title, paragraphs, verb, verb_cancel, hold)
     };
     unsafe { util::try_with_args_and_kwargs(n_args, args, kwargs, block) }
 }
@@ -334,13 +327,8 @@ extern "C" fn new_confirm_blob(n_args: usize, args: *const Obj, kwargs: *mut Map
             .get(Qstr::MP_QSTR_verb_cancel)
             .unwrap_or_else(|_| Obj::const_none())
             .try_into_option()?;
-        let info: bool = kwargs.get_or(Qstr::MP_QSTR_info, false)?;
         let hold: bool = kwargs.get_or(Qstr::MP_QSTR_hold, false)?;
         let chunkify: bool = kwargs.get_or(Qstr::MP_QSTR_chunkify, false)?;
-        let page_limit: Option<usize> = kwargs
-            .get(Qstr::MP_QSTR_page_limit)
-            .unwrap_or_else(|_| Obj::const_none())
-            .try_into_option()?;
 
         let style = if chunkify {
             // Chunkifying the address into smaller pieces when requested
@@ -364,9 +352,7 @@ extern "C" fn new_confirm_blob(n_args: usize, args: *const Obj, kwargs: *mut Map
             paragraphs,
             verb.unwrap_or(TR::buttons__confirm.into()),
             verb_cancel,
-            info,
             hold,
-            page_limit,
         )
     };
     unsafe { util::try_with_args_and_kwargs(n_args, args, kwargs, block) }
@@ -421,9 +407,7 @@ extern "C" fn new_confirm_properties(n_args: usize, args: *const Obj, kwargs: *m
             paragraphs.into_paragraphs(),
             button_text,
             Some("".into()),
-            false,
             hold,
-            None,
         )
     };
     unsafe { util::try_with_args_and_kwargs(n_args, args, kwargs, block) }
@@ -453,15 +437,7 @@ extern "C" fn new_confirm_reset_device(n_args: usize, args: *const Obj, kwargs: 
             .text_bold(TR::reset__tos_link);
         let formatted = FormattedText::new(ops).vertically_centered();
 
-        content_in_button_page(
-            title,
-            formatted,
-            button,
-            Some("".into()),
-            false,
-            false,
-            None,
-        )
+        content_in_button_page(title, formatted, button, Some("".into()), false)
     };
     unsafe { util::try_with_args_and_kwargs(n_args, args, kwargs, block) }
 }
@@ -543,9 +519,7 @@ extern "C" fn new_confirm_value(n_args: usize, args: *const Obj, kwargs: *mut Ma
             paragraphs,
             verb.unwrap_or(TR::buttons__confirm.into()),
             Some("".into()),
-            false,
             hold,
-            None,
         )
     };
     unsafe { util::try_with_args_and_kwargs(n_args, args, kwargs, block) }
@@ -568,9 +542,7 @@ extern "C" fn new_confirm_joint_total(n_args: usize, args: *const Obj, kwargs: *
             paragraphs,
             TR::buttons__hold_to_confirm.into(),
             Some("".into()),
-            false,
             true,
-            None,
         )
     };
     unsafe { util::try_with_args_and_kwargs(n_args, args, kwargs, block) }
@@ -601,8 +573,6 @@ extern "C" fn new_confirm_modify_output(n_args: usize, args: *const Obj, kwargs:
             TR::buttons__confirm.into(),
             Some("".into()),
             false,
-            false,
-            None,
         )
     };
     unsafe { util::try_with_args_and_kwargs(n_args, args, kwargs, block) }
@@ -976,8 +946,6 @@ extern "C" fn new_confirm_modify_fee(n_args: usize, args: *const Obj, kwargs: *m
             TR::buttons__confirm.into(),
             Some("".into()),
             false,
-            false,
-            None,
         )
     };
     unsafe { util::try_with_args_and_kwargs(n_args, args, kwargs, block) }
@@ -1264,8 +1232,6 @@ extern "C" fn new_confirm_more(n_args: usize, args: *const Obj, kwargs: *mut Map
             button,
             Some("<".into()),
             false,
-            false,
-            None,
         )
     };
     unsafe { util::try_with_args_and_kwargs(n_args, args, kwargs, block) }
@@ -1291,9 +1257,7 @@ extern "C" fn new_confirm_coinjoin(n_args: usize, args: *const Obj, kwargs: *mut
             paragraphs,
             TR::buttons__hold_to_confirm.into(),
             None,
-            false,
             true,
-            None,
         )
     };
     unsafe { util::try_with_args_and_kwargs(n_args, args, kwargs, block) }
@@ -1461,11 +1425,11 @@ extern "C" fn new_confirm_recovery(n_args: usize, args: *const Obj, kwargs: *mut
         let description: TString = kwargs.get(Qstr::MP_QSTR_description)?.try_into()?;
         let button: TString<'static> = kwargs.get(Qstr::MP_QSTR_button)?.try_into()?;
         let recovery_type: RecoveryType = kwargs.get(Qstr::MP_QSTR_recovery_type)?.try_into()?;
-        let show_info: bool = kwargs.get(Qstr::MP_QSTR_show_info)?.try_into()?;
+        let show_instructions: bool = kwargs.get(Qstr::MP_QSTR_show_instructions)?.try_into()?;
 
         let mut paragraphs = ParagraphVecShort::new();
         paragraphs.add(Paragraph::new(&theme::TEXT_NORMAL, description));
-        if show_info {
+        if show_instructions {
             paragraphs
                 .add(Paragraph::new(
                     &theme::TEXT_NORMAL,
@@ -1489,8 +1453,6 @@ extern "C" fn new_confirm_recovery(n_args: usize, args: *const Obj, kwargs: *mut
             button,
             Some("".into()),
             false,
-            false,
-            None,
         )
     };
     unsafe { util::try_with_args_and_kwargs(n_args, args, kwargs, block) }
@@ -1543,8 +1505,6 @@ extern "C" fn new_show_group_share_success(
             TR::buttons__continue.into(),
             None,
             false,
-            false,
-            None,
         )
     };
     unsafe { util::try_with_args_and_kwargs(n_args, args, kwargs, block) }
@@ -1742,7 +1702,6 @@ pub static mp_module_trezorui2: Module = obj_module! {
     ///     title: str,
     ///     data: str | bytes,
     ///     description: str | None,
-    ///     description_font_green: bool = False,
     ///     text_mono: bool = True,
     ///     extra: str | None = None,
     ///     subtitle: str | None = None,
@@ -1752,9 +1711,9 @@ pub static mp_module_trezorui2: Module = obj_module! {
     ///     info: bool = True,
     ///     hold: bool = False,
     ///     chunkify: bool = False,
+    ///     page_counter: bool = False,
     ///     prompt_screen: bool = False,
-    ///     default_cancel: bool = False,
-    ///     page_limit: int | None = None,
+    ///     cancel: bool = False,
     /// ) -> LayoutObj[UiResult]:
     ///     """Confirm byte sequence data."""
     Qstr::MP_QSTR_confirm_blob => obj_fn_kw!(0, new_confirm_blob).as_obj(),
@@ -2004,7 +1963,7 @@ pub static mp_module_trezorui2: Module = obj_module! {
     ///     prefill_word: str,
     ///     can_go_back: bool,
     /// ) -> LayoutObj[str]:
-    ///    """SLIP39 word input keyboard."""
+    ///     """SLIP39 word input keyboard."""
     Qstr::MP_QSTR_request_slip39 => obj_fn_kw!(0, new_request_slip39).as_obj(),
 
     /// def select_word(
@@ -2013,8 +1972,8 @@ pub static mp_module_trezorui2: Module = obj_module! {
     ///     description: str,
     ///     words: Iterable[str],
     /// ) -> LayoutObj[int]:
-    ///    """Select mnemonic word from three possibilities - seed check after backup. The
-    ///    iterable must be of exact size. Returns index in range `0..3`."""
+    ///     """Select mnemonic word from three possibilities - seed check after backup. The
+    ///     iterable must be of exact size. Returns index in range `0..3`."""
     Qstr::MP_QSTR_select_word => obj_fn_kw!(0, new_select_word).as_obj(),
 
     /// def show_share_words(
@@ -2032,7 +1991,7 @@ pub static mp_module_trezorui2: Module = obj_module! {
     ///     max_count: int,
     ///     description: Callable[[int], str] | None = None,  # unused on TR
     /// ) -> LayoutObj[tuple[UiResult, int]]:
-    ///    """Number input with + and - buttons, description, and info button."""
+    ///     """Number input with + and - buttons, description, and info button."""
     Qstr::MP_QSTR_request_number => obj_fn_kw!(0, new_request_number).as_obj(),
 
     /// def show_checklist(
@@ -2042,8 +2001,8 @@ pub static mp_module_trezorui2: Module = obj_module! {
     ///     active: int,
     ///     button: str,
     /// ) -> LayoutObj[UiResult]:
-    ///    """Checklist of backup steps. Active index is highlighted, previous items have check
-    ///    mark next to them."""
+    ///     """Checklist of backup steps. Active index is highlighted, previous items have check
+    ///     mark next to them."""
     Qstr::MP_QSTR_show_checklist => obj_fn_kw!(0, new_show_checklist).as_obj(),
 
     /// def confirm_recovery(
@@ -2053,9 +2012,9 @@ pub static mp_module_trezorui2: Module = obj_module! {
     ///     button: str,
     ///     recovery_type: RecoveryType,
     ///     info_button: bool,  # unused on TR
-    ///     show_info: bool,
+    ///     show_instructions: bool,
     /// ) -> LayoutObj[UiResult]:
-    ///    """Device recovery homescreen."""
+    ///     """Device recovery homescreen."""
     Qstr::MP_QSTR_confirm_recovery => obj_fn_kw!(0, new_confirm_recovery).as_obj(),
 
     /// def select_word_count(
@@ -2070,7 +2029,7 @@ pub static mp_module_trezorui2: Module = obj_module! {
     ///     *,
     ///     lines: Iterable[str],
     /// ) -> LayoutObj[int]:
-    ///    """Shown after successfully finishing a group."""
+    ///     """Shown after successfully finishing a group."""
     Qstr::MP_QSTR_show_group_share_success => obj_fn_kw!(0, new_show_group_share_success).as_obj(),
 
     /// def show_progress(
@@ -2079,9 +2038,9 @@ pub static mp_module_trezorui2: Module = obj_module! {
     ///     indeterminate: bool = False,
     ///     title: str | None = None,
     /// ) -> LayoutObj[UiResult]:
-    ///    """Show progress loader. Please note that the number of lines reserved on screen for
-    ///    description is determined at construction time. If you want multiline descriptions
-    ///    make sure the initial description has at least that amount of lines."""
+    ///     """Show progress loader. Please note that the number of lines reserved on screen for
+    ///     description is determined at construction time. If you want multiline descriptions
+    ///     make sure the initial description has at least that amount of lines."""
     Qstr::MP_QSTR_show_progress => obj_fn_kw!(0, new_show_progress).as_obj(),
 
     /// def show_progress_coinjoin(
@@ -2091,8 +2050,8 @@ pub static mp_module_trezorui2: Module = obj_module! {
     ///     time_ms: int = 0,
     ///     skip_first_paint: bool = False,
     /// ) -> LayoutObj[UiResult]:
-    ///    """Show progress loader for coinjoin. Returns CANCELLED after a specified time when
-    ///    time_ms timeout is passed."""
+    ///     """Show progress loader for coinjoin. Returns CANCELLED after a specified time when
+    ///     time_ms timeout is passed."""
     Qstr::MP_QSTR_show_progress_coinjoin => obj_fn_kw!(0, new_show_progress_coinjoin).as_obj(),
 
     /// def show_homescreen(
@@ -2147,4 +2106,12 @@ pub static mp_module_trezorui2: Module = obj_module! {
     ///     SWIPE_LEFT: ClassVar[int]
     ///     SWIPE_RIGHT: ClassVar[int]
     Qstr::MP_QSTR_AttachType => ATTACH_TYPE_OBJ.as_obj(),
+
+    /// class LayoutState:
+    ///     """Layout state."""
+    ///     INITIAL: "ClassVar[LayoutState]"
+    ///     ATTACHED: "ClassVar[LayoutState]"
+    ///     TRANSITIONING: "ClassVar[LayoutState]"
+    ///     DONE: "ClassVar[LayoutState]"
+    Qstr::MP_QSTR_LayoutState => LAYOUT_STATE.as_obj(),
 };

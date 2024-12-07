@@ -15,13 +15,12 @@ pub mod request_passphrase;
 pub mod set_brightness;
 pub mod show_share_words;
 pub mod show_tutorial;
+pub mod util;
 pub mod warning_hi_prio;
 
-mod util;
-
 pub use confirm_action::{
-    new_confirm_action, new_confirm_action_simple, new_confirm_action_simple_default_cancel,
-    ConfirmActionMenu, ConfirmActionStrings,
+    new_confirm_action, new_confirm_action_simple, ConfirmActionExtra, ConfirmActionMenuStrings,
+    ConfirmActionStrings,
 };
 #[cfg(feature = "universal_fw")]
 pub use confirm_fido::new_confirm_fido;
@@ -39,4 +38,5 @@ pub use request_passphrase::RequestPassphrase;
 pub use set_brightness::SetBrightness;
 pub use show_share_words::ShowShareWords;
 pub use show_tutorial::ShowTutorial;
+pub use util::{ConfirmBlobParams, ShowInfoParams};
 pub use warning_hi_prio::WarningHiPrio;

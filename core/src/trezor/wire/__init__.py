@@ -45,6 +45,7 @@ if TYPE_CHECKING:
     Msg = TypeVar("Msg", bound=protobuf.MessageType)
     HandlerTask = Coroutine[Any, Any, protobuf.MessageType]
     Handler = Callable[[Msg], HandlerTask]
+    Filter = Callable[[int, Handler], Handler]
 
     LoadedMessageType = TypeVar("LoadedMessageType", bound=protobuf.MessageType)
 
@@ -53,9 +54,9 @@ if TYPE_CHECKING:
 EXPERIMENTAL_ENABLED = False
 
 
-def setup(iface: WireInterface, is_debug_session: bool = False) -> None:
+def setup(iface: WireInterface) -> None:
     """Initialize the wire stack on passed USB interface."""
-    loop.schedule(handle_session(iface, codec_v1.SESSION_ID, is_debug_session))
+    loop.schedule(handle_session(iface))
 
 
 def wrap_protobuf_load(
@@ -87,9 +88,7 @@ if __debug__:
     WIRE_BUFFER_DEBUG = bytearray(PROTOBUF_BUFFER_SIZE_DEBUG)
 
 
-async def _handle_single_message(
-    ctx: context.Context, msg: codec_v1.Message, use_workflow: bool
-) -> bool:
+async def _handle_single_message(ctx: context.Context, msg: codec_v1.Message) -> bool:
     """Handle a message that was loaded from USB by the caller.
 
     Find the appropriate handler, run it and write its result on the wire. In case
@@ -110,9 +109,8 @@ async def _handle_single_message(
             msg_type = f"{msg.type} - unknown message type"
         log.debug(
             __name__,
-            "%s:%x receive: <%s>",
+            "%d receive: <%s>",
             ctx.iface.iface_num(),
-            ctx.sid,
             msg_type,
         )
 
@@ -148,14 +146,7 @@ async def _handle_single_message(
         # communication inside, but it should eventually return a
         # response message, or raise an exception (a rather common
         # thing to do).  Exceptions are handled in the code below.
-        if use_workflow:
-            # Spawn a workflow around the task. This ensures that concurrent
-            # workflows are shut down.
-            res_msg = await workflow.spawn(context.with_context(ctx, task))
-        else:
-            # For debug messages, ignore workflow processing and just await
-            # results of the handler.
-            res_msg = await task
+        res_msg = await workflow.spawn(context.with_context(ctx, task))
 
     except context.UnexpectedMessage:
         # Workflow was trying to read a message from the wire, and
@@ -198,21 +189,9 @@ async def _handle_single_message(
     return msg.type in AVOID_RESTARTING_FOR
 
 
-async def handle_session(
-    iface: WireInterface, session_id: int, is_debug_session: bool = False
-) -> None:
-    if __debug__ and is_debug_session:
-        ctx_buffer = WIRE_BUFFER_DEBUG
-    else:
-        ctx_buffer = WIRE_BUFFER
-
-    ctx = context.Context(iface, session_id, ctx_buffer)
+async def handle_session(iface: WireInterface) -> None:
+    ctx = context.Context(iface, WIRE_BUFFER)
     next_msg: codec_v1.Message | None = None
-
-    if __debug__ and is_debug_session:
-        import apps.debug
-
-        apps.debug.DEBUG_CONTEXT = ctx
 
     # Take a mark of modules that are imported at this point, so we can
     # roll back and un-import any others.
@@ -235,10 +214,9 @@ async def handle_session(
                 msg = next_msg
                 next_msg = None
 
+            do_not_restart = False
             try:
-                do_not_restart = await _handle_single_message(
-                    ctx, msg, use_workflow=not is_debug_session
-                )
+                do_not_restart = await _handle_single_message(ctx, msg)
             except context.UnexpectedMessage as unexpected:
                 # The workflow was interrupted by an unexpected message. We need to
                 # process it as if it was a new message...
@@ -252,17 +230,13 @@ async def handle_session(
                 if __debug__:
                     log.exception(__name__, exc)
             finally:
-                if not __debug__ or not is_debug_session:
-                    # Unload modules imported by the workflow.  Should not raise.
-                    # This is not done for the debug session because the snapshot taken
-                    # in a debug session would clear modules which are in use by the
-                    # workflow running on wire.
-                    utils.unimport_end(modules)
+                # Unload modules imported by the workflow.  Should not raise.
+                utils.unimport_end(modules)
 
-                    if not do_not_restart:
-                        # Let the session be restarted from `main`.
-                        loop.clear()
-                        return  # pylint: disable=lost-exception
+                if not do_not_restart:
+                    # Let the session be restarted from `main`.
+                    loop.clear()
+                    return  # pylint: disable=lost-exception
 
         except Exception as exc:
             # Log and try again. The session handler can only exit explicitly via
@@ -290,7 +264,7 @@ def find_handler(iface: WireInterface, msg_type: int) -> Handler:
     return handler
 
 
-filters: list[Callable[[int, Handler], Handler]] = []
+filters: list[Filter] = []
 """Filters for the wire handler.
 
 Filters are applied in order. Each filter gets a message id and a preceding handler. It
@@ -318,7 +292,7 @@ and `filters` becomes private!
 """
 
 
-def remove_filter(filter):
+def remove_filter(filter: Filter) -> None:
     try:
         filters.remove(filter)
     except ValueError:

@@ -948,7 +948,7 @@ pub enum TranslatedString {
     sign_message__bytes_template = 658,  // "{0} Bytes"
     sign_message__confirm_address = 659,  // "Signing address"
     sign_message__confirm_message = 660,  // "Confirm message"
-    sign_message__message_size = 661,  // "Message size:"
+    sign_message__message_size = 661,  // "Message size"
     sign_message__verify_address = 662,  // "Verify address"
     #[cfg(feature = "universal_fw")]
     solana__account_index = 663,  // "Account index"
@@ -1379,6 +1379,9 @@ pub enum TranslatedString {
     instructions__view_all_data = 971,  // "View all data in the menu."
     #[cfg(feature = "universal_fw")]
     ethereum__interaction_contract = 972,  // "Interaction contract"
+    misc__enable_labeling = 973,  // "Enable labeling?"
+    #[cfg(feature = "universal_fw")]
+    ethereum__unknown_contract_address_short = 974,  // "Unknown contract address."
 }
 
 impl TranslatedString {
@@ -2321,7 +2324,7 @@ impl TranslatedString {
             Self::sign_message__bytes_template => "{0} Bytes",
             Self::sign_message__confirm_address => "Signing address",
             Self::sign_message__confirm_message => "Confirm message",
-            Self::sign_message__message_size => "Message size:",
+            Self::sign_message__message_size => "Message size",
             Self::sign_message__verify_address => "Verify address",
             #[cfg(feature = "universal_fw")]
             Self::solana__account_index => "Account index",
@@ -2752,6 +2755,9 @@ impl TranslatedString {
             Self::instructions__view_all_data => "View all data in the menu.",
             #[cfg(feature = "universal_fw")]
             Self::ethereum__interaction_contract => "Interaction contract",
+            Self::misc__enable_labeling => "Enable labeling?",
+            #[cfg(feature = "universal_fw")]
+            Self::ethereum__unknown_contract_address_short => "Unknown contract address.",
         }
     }
 
@@ -4126,6 +4132,9 @@ impl TranslatedString {
             Qstr::MP_QSTR_instructions__view_all_data => Some(Self::instructions__view_all_data),
             #[cfg(feature = "universal_fw")]
             Qstr::MP_QSTR_ethereum__interaction_contract => Some(Self::ethereum__interaction_contract),
+            Qstr::MP_QSTR_misc__enable_labeling => Some(Self::misc__enable_labeling),
+            #[cfg(feature = "universal_fw")]
+            Qstr::MP_QSTR_ethereum__unknown_contract_address_short => Some(Self::ethereum__unknown_contract_address_short),
             _ => None,
         }
     }

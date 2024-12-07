@@ -50,6 +50,7 @@ use crate::{
         },
         geometry,
         layout::{
+            base::LAYOUT_STATE,
             obj::{ComponentMsgObj, LayoutObj, ATTACH_TYPE_OBJ},
             result::{CANCELLED, CONFIRMED, INFO},
             util::{upy_disable_animation, ConfirmBlob, PropsList, RecoveryType},
@@ -413,7 +414,6 @@ struct ConfirmBlobParams {
     hold: bool,
     chunkify: bool,
     text_mono: bool,
-    page_limit: Option<usize>,
 }
 
 impl ConfirmBlobParams {
@@ -437,7 +437,6 @@ impl ConfirmBlobParams {
             hold,
             chunkify: false,
             text_mono: true,
-            page_limit: None,
         }
     }
 
@@ -466,11 +465,6 @@ impl ConfirmBlobParams {
         self
     }
 
-    fn with_page_limit(mut self, page_limit: Option<usize>) -> Self {
-        self.page_limit = page_limit;
-        self
-    }
-
     fn into_layout(self) -> Result<Obj, Error> {
         let paragraphs = ConfirmBlob {
             description: self.description.unwrap_or("".into()),
@@ -496,7 +490,6 @@ impl ConfirmBlobParams {
         if self.hold {
             page = page.with_hold()?
         }
-        page = page.with_page_limit(self.page_limit);
         let mut frame = Frame::left_aligned(theme::label_title(), self.title, page);
         if let Some(subtitle) = self.subtitle {
             frame = frame.with_subtitle(theme::label_subtitle(), subtitle);
@@ -532,17 +525,12 @@ extern "C" fn new_confirm_blob(n_args: usize, args: *const Obj, kwargs: *mut Map
         let info: bool = kwargs.get_or(Qstr::MP_QSTR_info, false)?;
         let hold: bool = kwargs.get_or(Qstr::MP_QSTR_hold, false)?;
         let chunkify: bool = kwargs.get_or(Qstr::MP_QSTR_chunkify, false)?;
-        let page_limit: Option<usize> = kwargs
-            .get(Qstr::MP_QSTR_page_limit)
-            .unwrap_or_else(|_| Obj::const_none())
-            .try_into_option()?;
 
         ConfirmBlobParams::new(title, data, description, verb, verb_cancel, hold)
             .with_text_mono(text_mono)
             .with_extra(extra)
             .with_chunkify(chunkify)
             .with_info_button(info)
-            .with_page_limit(page_limit)
             .into_layout()
     };
     unsafe { util::try_with_args_and_kwargs(n_args, args, kwargs, block) }
@@ -1663,29 +1651,29 @@ pub static mp_module_trezorui2: Module = obj_module! {
     ///     see `trezor::ui::layout::obj::LayoutObj`.
     ///     """
     ///
-    ///     def attach_timer_fn(self, fn: Callable[[int, int], None], attach_type: AttachType | None) -> None:
+    ///     def attach_timer_fn(self, fn: Callable[[int, int], None], attach_type: AttachType | None) -> LayoutState | None:
     ///         """Attach a timer setter function.
     ///
     ///         The layout object can call the timer setter with two arguments,
-    ///         `token` and `duration`. When `duration` elapses, the layout object
+    ///         `token` and `duration_ms`. When `duration_ms` elapses, the layout object
     ///         expects a callback to `self.timer(token)`.
     ///         """
     ///
     ///     if utils.USE_TOUCH:
-    ///         def touch_event(self, event: int, x: int, y: int) -> T | None:
+    ///         def touch_event(self, event: int, x: int, y: int) -> LayoutState | None:
     ///             """Receive a touch event `event` at coordinates `x`, `y`."""
     ///
     ///     if utils.USE_BUTTON:
-    ///         def button_event(self, event: int, button: int) -> T | None:
+    ///         def button_event(self, event: int, button: int) -> LayoutState | None:
     ///             """Receive a button event `event` for button `button`."""
     ///
-    ///     def progress_event(self, value: int, description: str) -> T | None:
+    ///     def progress_event(self, value: int, description: str) -> LayoutState | None:
     ///         """Receive a progress event."""
     ///
-    ///     def usb_event(self, connected: bool) -> T | None:
+    ///     def usb_event(self, connected: bool) -> LayoutState | None:
     ///         """Receive a USB connect/disconnect event."""
     ///
-    ///     def timer(self, token: int) -> T | None:
+    ///     def timer(self, token: int) -> LayoutState | None:
     ///         """Callback for the timer set by `attach_timer_fn`.
     ///
     ///         This function should be called by the executor after the corresponding
@@ -1726,12 +1714,15 @@ pub static mp_module_trezorui2: Module = obj_module! {
     ///     def get_transition_out(self) -> AttachType:
     ///         """Return the transition type."""
     ///
+    ///     def return_value(self) -> T:
+    ///         """Retrieve the return value of the layout object."""
+    ///
     ///     def __del__(self) -> None:
     ///         """Calls drop on contents of the root component."""
     ///
     /// class UiResult:
-    ///    """Result of a UI operation."""
-    ///    pass
+    ///     """Result of an UI operation."""
+    ///     pass
     ///
     /// mock:global
     Qstr::MP_QSTR___name__ => Qstr::MP_QSTR_trezorui2.to_obj(),
@@ -1793,7 +1784,6 @@ pub static mp_module_trezorui2: Module = obj_module! {
     ///     title: str,
     ///     data: str | bytes,
     ///     description: str | None,
-    ///     description_font_green: bool = False,
     ///     text_mono: bool = True,
     ///     extra: str | None = None,
     ///     subtitle: str | None = None,
@@ -1803,9 +1793,9 @@ pub static mp_module_trezorui2: Module = obj_module! {
     ///     info: bool = True,
     ///     hold: bool = False,
     ///     chunkify: bool = False,
+    ///     page_counter: bool = False,
     ///     prompt_screen: bool = False,
-    ///     default_cancel: bool = False,
-    ///     page_limit: int | None = None,
+    ///     cancel: bool = False,
     /// ) -> LayoutObj[UiResult]:
     ///     """Confirm byte sequence data."""
     Qstr::MP_QSTR_confirm_blob => obj_fn_kw!(0, new_confirm_blob).as_obj(),
@@ -2103,6 +2093,7 @@ pub static mp_module_trezorui2: Module = obj_module! {
     ///     button: str,
     ///     recovery_type: RecoveryType,
     ///     info_button: bool = False,
+    ///     show_instructions: bool = False,  # unused on TT
     /// ) -> LayoutObj[UiResult]:
     ///     """Device recovery homescreen."""
     Qstr::MP_QSTR_confirm_recovery => obj_fn_kw!(0, new_confirm_recovery).as_obj(),
@@ -2203,6 +2194,14 @@ pub static mp_module_trezorui2: Module = obj_module! {
     ///     SWIPE_LEFT: ClassVar[int]
     ///     SWIPE_RIGHT: ClassVar[int]
     Qstr::MP_QSTR_AttachType => ATTACH_TYPE_OBJ.as_obj(),
+
+    /// class LayoutState:
+    ///     """Layout state."""
+    ///     INITIAL: "ClassVar[LayoutState]"
+    ///     ATTACHED: "ClassVar[LayoutState]"
+    ///     TRANSITIONING: "ClassVar[LayoutState]"
+    ///     DONE: "ClassVar[LayoutState]"
+    Qstr::MP_QSTR_LayoutState => LAYOUT_STATE.as_obj(),
 };
 
 #[cfg(test)]

@@ -6,15 +6,18 @@
 
 static void _librust_qstrs(void) {
   MP_QSTR_;
+  MP_QSTR_ATTACHED;
   MP_QSTR_AttachType;
   MP_QSTR_BacklightLevels;
   MP_QSTR_CANCELLED;
   MP_QSTR_CONFIRMED;
   MP_QSTR_DIM;
+  MP_QSTR_DONE;
   MP_QSTR_INFO;
   MP_QSTR_INITIAL;
   MP_QSTR_LOW;
   MP_QSTR_LayoutObj;
+  MP_QSTR_LayoutState;
   MP_QSTR_MAX;
   MP_QSTR_MESSAGE_NAME;
   MP_QSTR_MESSAGE_WIRE_TYPE;
@@ -28,6 +31,7 @@ static void _librust_qstrs(void) {
   MP_QSTR_SWIPE_RIGHT;
   MP_QSTR_SWIPE_UP;
   MP_QSTR_TR;
+  MP_QSTR_TRANSITIONING;
   MP_QSTR_TranslationsHeader;
   MP_QSTR___del__;
   MP_QSTR___dict__;
@@ -170,6 +174,7 @@ static void _librust_qstrs(void) {
   MP_QSTR_buttons__turn_on;
   MP_QSTR_buttons__view_all_data;
   MP_QSTR_can_go_back;
+  MP_QSTR_cancel;
   MP_QSTR_cancel_arrow;
   MP_QSTR_cancel_cross;
   MP_QSTR_cancel_text;
@@ -189,6 +194,7 @@ static void _librust_qstrs(void) {
   MP_QSTR_confirm_address;
   MP_QSTR_confirm_backup;
   MP_QSTR_confirm_blob;
+  MP_QSTR_confirm_blob_intro;
   MP_QSTR_confirm_coinjoin;
   MP_QSTR_confirm_emphasized;
   MP_QSTR_confirm_fido;
@@ -220,10 +226,8 @@ static void _librust_qstrs(void) {
   MP_QSTR_debug__loading_seed;
   MP_QSTR_debug__loading_seed_not_recommended;
   MP_QSTR_decode;
-  MP_QSTR_default_cancel;
   MP_QSTR_deinit;
   MP_QSTR_description;
-  MP_QSTR_description_font_green;
   MP_QSTR_details_title;
   MP_QSTR_device_name__change_template;
   MP_QSTR_device_name__title;
@@ -338,6 +342,7 @@ static void _librust_qstrs(void) {
   MP_QSTR_message;
   MP_QSTR_min_count;
   MP_QSTR_misc__decrypt_value;
+  MP_QSTR_misc__enable_labeling;
   MP_QSTR_misc__encrypt_value;
   MP_QSTR_misc__title_suite_labeling;
   MP_QSTR_modify_amount__decrease_amount;
@@ -355,7 +360,7 @@ static void _librust_qstrs(void) {
   MP_QSTR_notification;
   MP_QSTR_notification_level;
   MP_QSTR_page_count;
-  MP_QSTR_page_limit;
+  MP_QSTR_page_counter;
   MP_QSTR_pages;
   MP_QSTR_paint;
   MP_QSTR_passphrase__access_wallet;
@@ -581,6 +586,7 @@ static void _librust_qstrs(void) {
   MP_QSTR_reset__wrong_word_selected;
   MP_QSTR_reset__you_need_one_share;
   MP_QSTR_reset__your_backup_is_done;
+  MP_QSTR_return_value;
   MP_QSTR_reverse;
   MP_QSTR_rotation__change_template;
   MP_QSTR_rotation__east;
@@ -652,6 +658,7 @@ static void _librust_qstrs(void) {
   MP_QSTR_show_homescreen;
   MP_QSTR_show_info;
   MP_QSTR_show_info_with_cancel;
+  MP_QSTR_show_instructions;
   MP_QSTR_show_lockscreen;
   MP_QSTR_show_mismatch;
   MP_QSTR_show_passphrase;
@@ -689,7 +696,6 @@ static void _librust_qstrs(void) {
   MP_QSTR_time_ms;
   MP_QSTR_timer;
   MP_QSTR_title;
-  MP_QSTR_title_success;
   MP_QSTR_total_amount;
   MP_QSTR_total_fee_new;
   MP_QSTR_total_label;
@@ -1016,6 +1022,7 @@ static void _librust_qstrs(void) {
   MP_QSTR_ethereum__token_contract;
   MP_QSTR_ethereum__units_template;
   MP_QSTR_ethereum__unknown_contract_address;
+  MP_QSTR_ethereum__unknown_contract_address_short;
   MP_QSTR_ethereum__unknown_token;
   MP_QSTR_ethereum__valid_signature;
   MP_QSTR_fido__already_registered;

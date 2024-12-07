@@ -4,7 +4,6 @@ from trezor import TR, ui
 from trezor.enums import ButtonRequestType
 from trezor.ui.layouts import (
     confirm_blob,
-    confirm_blob_with_optional_pagination,
     confirm_ethereum_staking_tx,
     confirm_text,
     should_show_more,
@@ -142,18 +141,15 @@ async def require_confirm_claim(
     )
 
 
-async def require_confirm_unknown_token(address_bytes: bytes):
+async def require_confirm_unknown_token(address_bytes: bytes) -> None:
     from ubinascii import hexlify
 
-    from trezor.ui.layouts import confirm_address, show_warning
-
-    await show_warning(
-        "unknown_contract_warning",
-        TR.ethereum__unknown_contract_address,
-        default_cancel=True,
-        verb_cancel=TR.send__cancel_sign,
-        br_code=ButtonRequestType.Other,
+    from trezor.ui.layouts import (
+        confirm_address,
+        confirm_ethereum_unknown_contract_warning,
     )
+
+    await confirm_ethereum_unknown_contract_warning()
 
     contract_address_hex = "0x" + hexlify(address_bytes).decode()
     await confirm_address(
@@ -180,14 +176,15 @@ def require_confirm_address(address_bytes: bytes) -> Awaitable[None]:
 
 
 def require_confirm_other_data(data: bytes, data_total: int) -> Awaitable[None]:
-    return confirm_blob_with_optional_pagination(
+    return confirm_blob(
         "confirm_data",
         TR.ethereum__title_input_data,
         data,
-        subtitle=TR.ethereum__data_size_template.format(data_total),
+        TR.ethereum__data_size_template.format(data_total),
         verb=TR.buttons__confirm,
         verb_cancel=TR.send__cancel_sign,
         br_code=ButtonRequestType.SignTx,
+        ask_pagination=True,
     )
 
 

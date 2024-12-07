@@ -43,7 +43,7 @@
   },
   "header": {
     "language": "it-IT",
-    "version": "2.8.5"
+    "version": "2.8.6"
   },
   "translations": {
     "addr_mismatch__contact_support_at": "Contatta l'Assistenza di Trezor all'indirizzo",
@@ -371,6 +371,7 @@
     "ethereum__token_contract": "Contratto token",
     "ethereum__units_template": "{0} unità",
     "ethereum__unknown_contract_address": "Indirizzo del contratto sconosciuto. Continua solo se sai cosa stai facendo.",
+    "ethereum__unknown_contract_address_short": "Indirizzo del contratto sconosciuto.",
     "ethereum__unknown_token": "Token sconosciuto",
     "ethereum__valid_signature": "La firma è valida.",
     "experimental_mode__enable": "Abilitare funzion. sperimentali?",
@@ -459,6 +460,7 @@
     "misc__decrypt_value": "Decrittogr. valore",
     "misc__encrypt_value": "Crittogr. valore",
     "misc__title_suite_labeling": "Etichett. suite",
+    "misc__enable_labeling": "Abilitare etichettatura?",
     "modify_amount__decrease_amount": "Riduci importo di:",
     "modify_amount__increase_amount": "Aumenta importo di:",
     "modify_amount__new_amount": "Nuovo importo:",
@@ -808,7 +810,7 @@
     "sign_message__bytes_template": "{0} byte",
     "sign_message__confirm_address": "Indirizzo di firma",
     "sign_message__confirm_message": "Conferma mess.",
-    "sign_message__message_size": "Dimensioni messaggio:",
+    "sign_message__message_size": "Dimensioni messaggio",
     "sign_message__verify_address": "Verifica indirizzo",
     "solana__account_index": "Indice conto",
     "solana__associated_token_account": "Conto token associato",

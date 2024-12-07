@@ -167,7 +167,6 @@ impl AttachAnimation {
     }
 }
 
-#[derive(Clone)]
 pub struct VerticalMenu {
     /// buttons placed vertically from top to bottom
     buttons: VerticalMenuButtons,
@@ -249,10 +248,6 @@ impl Component for VerticalMenu {
             }
         }
         None
-    }
-
-    fn paint(&mut self) {
-        // TODO remove when ui-t3t1 done
     }
 
     fn render<'s>(&'s self, target: &mut impl Renderer<'s>) {
@@ -340,7 +335,7 @@ impl<F: Fn(usize) -> TString<'static>> PagedVerticalMenu<F> {
 }
 
 impl<F: Fn(usize) -> TString<'static>> Paginate for PagedVerticalMenu<F> {
-    fn page_count(&mut self) -> usize {
+    fn page_count(&self) -> usize {
         self.num_pages()
     }
 
@@ -376,10 +371,6 @@ impl<F: Fn(usize) -> TString<'static>> Component for PagedVerticalMenu<F> {
             ));
         }
         msg
-    }
-
-    fn paint(&mut self) {
-        // TODO remove when ui-t3t1 done
     }
 
     fn render<'s>(&'s self, target: &mut impl Renderer<'s>) {

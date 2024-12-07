@@ -1,7 +1,7 @@
 {
   "header": {
     "language": "en-US",
-    "version": "2.8.5"
+    "version": "2.8.6"
   },
   "translations": {
     "addr_mismatch__contact_support_at": "Please contact Trezor support at",
@@ -329,6 +329,7 @@
     "ethereum__token_contract": "Token contract",
     "ethereum__units_template": "{0} units",
     "ethereum__unknown_contract_address": "Unknown contract address. Continue only if you know what you are doing.",
+    "ethereum__unknown_contract_address_short": "Unknown contract address.",
     "ethereum__unknown_token": "Unknown token",
     "ethereum__valid_signature": "The signature is valid.",
     "experimental_mode__enable": "Enable experimental features?",
@@ -417,6 +418,7 @@
     "misc__decrypt_value": "Decrypt value",
     "misc__encrypt_value": "Encrypt value",
     "misc__title_suite_labeling": "Suite labeling",
+    "misc__enable_labeling": "Enable labeling?",
     "modify_amount__decrease_amount": "Decrease amount by:",
     "modify_amount__increase_amount": "Increase amount by:",
     "modify_amount__new_amount": "New amount:",
@@ -766,7 +768,7 @@
     "sign_message__bytes_template": "{0} Bytes",
     "sign_message__confirm_address": "Signing address",
     "sign_message__confirm_message": "Confirm message",
-    "sign_message__message_size": "Message size:",
+    "sign_message__message_size": "Message size",
     "sign_message__verify_address": "Verify address",
     "solana__account_index": "Account index",
     "solana__associated_token_account": "Associated token account",
