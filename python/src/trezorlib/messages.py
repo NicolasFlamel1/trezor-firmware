@@ -108,6 +108,11 @@ class AmountUnit(IntEnum):
     SATOSHI = 3
 
 
+class MultisigPubkeysOrder(IntEnum):
+    PRESERVED = 0
+    LEXICOGRAPHIC = 1
+
+
 class RequestType(IntEnum):
     TXINPUT = 0
     TXOUTPUT = 1
@@ -450,6 +455,8 @@ class MessageType(IntEnum):
     BackupDevice = 34
     EntropyRequest = 35
     EntropyAck = 36
+    EntropyCheckReady = 994
+    EntropyCheckContinue = 995
     PassphraseRequest = 41
     PassphraseAck = 42
     RecoveryDevice = 45
@@ -1163,6 +1170,7 @@ class MultisigRedeemScriptType(protobuf.MessageType):
         3: protobuf.Field("m", "uint32", repeated=False, required=True),
         4: protobuf.Field("nodes", "HDNodeType", repeated=True, required=False, default=None),
         5: protobuf.Field("address_n", "uint32", repeated=True, required=False, default=None),
+        6: protobuf.Field("pubkeys_order", "MultisigPubkeysOrder", repeated=False, required=False, default=MultisigPubkeysOrder.PRESERVED),
     }
 
     def __init__(
@@ -1173,12 +1181,14 @@ class MultisigRedeemScriptType(protobuf.MessageType):
         signatures: Optional[Sequence["bytes"]] = None,
         nodes: Optional[Sequence["HDNodeType"]] = None,
         address_n: Optional[Sequence["int"]] = None,
+        pubkeys_order: Optional["MultisigPubkeysOrder"] = MultisigPubkeysOrder.PRESERVED,
     ) -> None:
         self.pubkeys: Sequence["HDNodePathType"] = pubkeys if pubkeys is not None else []
         self.signatures: Sequence["bytes"] = signatures if signatures is not None else []
         self.nodes: Sequence["HDNodeType"] = nodes if nodes is not None else []
         self.address_n: Sequence["int"] = address_n if address_n is not None else []
         self.m = m
+        self.pubkeys_order = pubkeys_order
 
 
 class GetPublicKey(protobuf.MessageType):
@@ -3796,6 +3806,7 @@ class ResetDevice(protobuf.MessageType):
         8: protobuf.Field("skip_backup", "bool", repeated=False, required=False, default=None),
         9: protobuf.Field("no_backup", "bool", repeated=False, required=False, default=None),
         10: protobuf.Field("backup_type", "BackupType", repeated=False, required=False, default=BackupType.Bip39),
+        11: protobuf.Field("entropy_check", "bool", repeated=False, required=False, default=None),
     }
 
     def __init__(
@@ -3810,6 +3821,7 @@ class ResetDevice(protobuf.MessageType):
         skip_backup: Optional["bool"] = None,
         no_backup: Optional["bool"] = None,
         backup_type: Optional["BackupType"] = BackupType.Bip39,
+        entropy_check: Optional["bool"] = None,
     ) -> None:
         self.strength = strength
         self.passphrase_protection = passphrase_protection
@@ -3820,6 +3832,7 @@ class ResetDevice(protobuf.MessageType):
         self.skip_backup = skip_backup
         self.no_backup = no_backup
         self.backup_type = backup_type
+        self.entropy_check = entropy_check
 
 
 class BackupDevice(protobuf.MessageType):
@@ -3841,6 +3854,19 @@ class BackupDevice(protobuf.MessageType):
 
 class EntropyRequest(protobuf.MessageType):
     MESSAGE_WIRE_TYPE = 35
+    FIELDS = {
+        1: protobuf.Field("entropy_commitment", "bytes", repeated=False, required=False, default=None),
+        2: protobuf.Field("prev_entropy", "bytes", repeated=False, required=False, default=None),
+    }
+
+    def __init__(
+        self,
+        *,
+        entropy_commitment: Optional["bytes"] = None,
+        prev_entropy: Optional["bytes"] = None,
+    ) -> None:
+        self.entropy_commitment = entropy_commitment
+        self.prev_entropy = prev_entropy
 
 
 class EntropyAck(protobuf.MessageType):
@@ -3855,6 +3881,24 @@ class EntropyAck(protobuf.MessageType):
         entropy: "bytes",
     ) -> None:
         self.entropy = entropy
+
+
+class EntropyCheckReady(protobuf.MessageType):
+    MESSAGE_WIRE_TYPE = 994
+
+
+class EntropyCheckContinue(protobuf.MessageType):
+    MESSAGE_WIRE_TYPE = 995
+    FIELDS = {
+        1: protobuf.Field("finish", "bool", repeated=False, required=False, default=False),
+    }
+
+    def __init__(
+        self,
+        *,
+        finish: Optional["bool"] = False,
+    ) -> None:
+        self.finish = finish
 
 
 class RecoveryDevice(protobuf.MessageType):

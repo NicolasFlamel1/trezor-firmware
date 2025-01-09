@@ -77,6 +77,12 @@
 
 #include "memzero.h"
 
+#ifdef USE_POWERCTL
+#include <sys/powerctl.h>
+#include "../../sys/powerctl/npm1300/npm1300.h"
+#include "../../sys/powerctl/stwlc38/stwlc38.h"
+#endif
+
 #ifdef USE_STORAGE_HWKEY
 #include <sec/secure_aes.h>
 #endif
@@ -550,7 +556,7 @@ static void test_touch_power(const char *args) {
 
   touch_power_set(true);
 
-  systick_delay_ms(timeout * 1000);
+  systick_delay_ms(timeout);
 
   vcp_println("OK");
 
@@ -662,8 +668,9 @@ static uint32_t read_bootloader_version(void) {
 
   mpu_mode_t mpu_mode = mpu_reconfig(MPU_MODE_BOOTUPDATE);
 
-  const image_header *header = read_image_header(
-      (const uint8_t *)BOOTLOADER_START, BOOTLOADER_MAXSIZE, 0xffffffff);
+  const image_header *header =
+      read_image_header((const uint8_t *)BOOTLOADER_START,
+                        BOOTLOADER_IMAGE_MAGIC, BOOTLOADER_MAXSIZE);
 
   if (header != NULL) {
     version = header->version;
@@ -847,10 +854,258 @@ void cpuid_read(void) {
   vcp_println_hex((uint8_t *)cpuid, sizeof(cpuid));
 }
 
+#ifdef USE_POWERCTL
+void test_pmic(const char *args) {
+  if (strcmp(args, "INIT") == 0) {
+    npm1300_deinit();
+    bool ok = npm1300_init();
+    if (ok) {
+      vcp_println("OK");
+    } else {
+      vcp_println("ERROR # I/O error");
+    }
+  } else if (strcmp(args, "CHGSTART") == 0) {
+    bool ok = npm1300_set_charging(true);
+    if (ok) {
+      vcp_println("OK # Charging started with %dmA current limit",
+                  npm1300_get_charging_limit());
+    } else {
+      vcp_println("ERROR");
+    }
+  } else if (strcmp(args, "CHGSTOP") == 0) {
+    bool ok = npm1300_set_charging(false);
+    if (ok) {
+      vcp_println("OK # Charging stopped");
+    } else {
+      vcp_println("ERROR # I/O error");
+    }
+  } else if (strncmp(args, "CHGLIMIT", 8) == 0) {
+    int i_charge = atoi(&args[8]);
+    if (i_charge < NPM1300_CHARGING_LIMIT_MIN ||
+        i_charge > NPM1300_CHARGING_LIMIT_MAX) {
+      vcp_println("ERROR # Out of range");
+      return;
+    } else {
+      bool ok = npm1300_set_charging_limit(i_charge);
+      if (ok) {
+        vcp_println("OK # %dmA current limit", npm1300_get_charging_limit());
+      } else {
+        vcp_println("ERROR # I/O error");
+      }
+    }
+  } else if (strcmp(args, "BUCK PWM") == 0) {
+    bool ok = npm1300_set_buck_mode(NPM1300_BUCK_MODE_PWM);
+    if (ok) {
+      vcp_println("OK # PWM mode set");
+    } else {
+      vcp_println("ERROR # I/O error");
+    }
+  } else if (strcmp(args, "BUCK PFM") == 0) {
+    bool ok = npm1300_set_buck_mode(NPM1300_BUCK_MODE_PFM);
+    if (ok) {
+      vcp_println("OK # PFM mode set");
+    } else {
+      vcp_println("ERROR # I/O error");
+    }
+  } else if (strcmp(args, "BUCK AUTO") == 0) {
+    bool ok = npm1300_set_buck_mode(NPM1300_BUCK_MODE_AUTO);
+    if (ok) {
+      vcp_println("OK # AUTO mode set");
+    } else {
+      vcp_println("ERROR # I/O error");
+    }
+  } else if (strncmp(args, "MEASURE", 7) == 0) {
+    int seconds = atoi(&args[7]);
+    uint32_t ticks = hal_ticks_ms();
+    vcp_println(
+        "time; vbat; ibat; ntc_temp; vsys; die_temp; iba_meas_status; "
+        "buck_status; mode");
+    do {
+      npm1300_report_t report;
+      bool ok = npm1300_measure_sync(&report);
+      if (!ok) {
+        vcp_println("ERROR # I/O error");
+        break;
+      }
+
+      vcp_print("%09d; ", ticks);
+      vcp_print("%d.%03d; ", (int)report.vbat,
+                (int)(report.vbat * 1000) % 1000);
+      vcp_print("%d.%03d; ", (int)report.ibat,
+                (int)abs(report.ibat * 1000) % 1000);
+      vcp_print("%d.%03d; ", (int)report.ntc_temp,
+                (int)abs(report.ntc_temp * 1000) % 1000);
+      vcp_print("%d.%03d; ", (int)report.vsys,
+                (int)(report.vsys * 1000) % 1000);
+      vcp_print("%d.%03d; ", (int)report.die_temp,
+                (int)abs(report.die_temp * 1000) % 1000);
+      vcp_print("%02X; ", report.ibat_meas_status);
+      vcp_print("%02X; ", report.buck_status);
+
+      bool ibat_discharging = ((report.ibat_meas_status >> 2) & 0x03) == 1;
+      bool ibat_charging = ((report.ibat_meas_status >> 2) & 0x03) == 3;
+
+      if (ibat_discharging) {
+        vcp_print("DISCHARGING");
+      } else if (ibat_charging) {
+        vcp_print("CHARGING");
+      } else {
+        vcp_print("IDLE");
+      }
+
+      vcp_println("");
+
+      while (!ticks_expired(ticks + 1000)) {
+      };
+
+      ticks += 1000;
+
+    } while (seconds-- > 0);
+
+    vcp_println("OK # Measurement finished");
+  }
+}
+#endif  // USE_POWERCTL
+
+#ifdef USE_POWERCTL
+void test_wpc(const char *args) {
+  stwlc38_init();
+
+  if (strcmp(args, "UPDATE") == 0) {
+    vcp_println("Trying to update STWLC38 ... ");
+
+    uint32_t update_time_ms = systick_ms();
+    bool status = stwlc38_patch_and_config();
+    update_time_ms = systick_ms() - update_time_ms;
+
+    if (status == false) {
+      vcp_println("ERROR # Some problem occured");
+    } else {
+      vcp_println("WPC update completed {%d ms}", update_time_ms);
+      vcp_println("OK");
+    }
+
+  } else if (strcmp(args, "CHIP_INFO") == 0) {
+    stwlc38_chip_info_t chip_info;
+
+    if (!stwlc38_read_chip_info(&chip_info)) {
+      vcp_println("ERROR # STWLC38 not initialized");
+      return;
+    }
+
+    vcp_println("chip_id  0x%d", chip_info.chip_id);
+    vcp_println("chip_rev 0x%d ", chip_info.chip_rev);
+    vcp_println("cust_id  0x%d ", chip_info.cust_id);
+    vcp_println("rom_id   0x%X ", chip_info.rom_id);
+    vcp_println("patch_id 0x%X ", chip_info.patch_id);
+    vcp_println("cfg_id   0x%X ", chip_info.cfg_id);
+    vcp_println("pe_id    0x%X ", chip_info.pe_id);
+    vcp_println("op_mode  0x%X ", chip_info.op_mode);
+
+    vcp_print("device_id : ");
+    for (uint8_t i = 0; i < sizeof(chip_info.device_id); i++) {
+      vcp_print("%x", chip_info.device_id[i]);
+    }
+    vcp_println("");
+
+    vcp_println("sys_err  0x%X ", chip_info.sys_err);
+    vcp_println(" - core_hard_fault:   0x%X ", chip_info.core_hard_fault);
+    vcp_println(" - nvm_ip_err:        0x%X ", chip_info.nvm_ip_err);
+    vcp_println(" - nvm_boot_err:      0x%X ", chip_info.nvm_boot_err);
+    vcp_println(" - nvm_pe_error:      0x%X ", chip_info.nvm_pe_error);
+    vcp_println(" - nvm_config_err:    0x%X ", chip_info.nvm_config_err);
+    vcp_println(" - nvm_patch_err:     0x%X ", chip_info.nvm_patch_err);
+    vcp_println(" - nvm_prod_info_err: 0x%X ", chip_info.nvm_prod_info_err);
+
+    vcp_println("OK");
+
+  } else if (strcmp(args, "EN") == 0) {
+    if (!stwlc38_enable(true)) {
+      vcp_println("ERROR # STWLC38 not initialized");
+      return;
+    }
+    vcp_println("OK");
+  } else if (strcmp(args, "DIS") == 0) {
+    if (!stwlc38_enable(false)) {
+      vcp_println("ERROR # STWLC38 not initialized");
+      return;
+    }
+    vcp_println("OK");
+  } else if (strcmp(args, "VEN") == 0) {
+    if (!stwlc38_enable_vout(true)) {
+      vcp_println("ERROR # STWLC38 not initialized");
+      return;
+    }
+    vcp_println("OK");
+  } else if (strcmp(args, "VDIS") == 0) {
+    if (!stwlc38_enable_vout(false)) {
+      vcp_println("ERROR # STWLC38 not initialized");
+      return;
+    }
+    vcp_println("OK");
+  } else if (strncmp(args, "MEASURE", 7) == 0) {
+    stwlc38_report_t report;
+
+    int seconds = atoi(&args[7]);
+    uint32_t ticks = hal_ticks_ms();
+
+    vcp_println(
+        "time; ready; vout_ready; vrect; vout; icur; tmeas; opfreq; ntc");
+    do {
+      if (!stwlc38_get_report(&report)) {
+        vcp_println("ERROR # STWLC38 not initialized");
+        return;
+      } else {
+        vcp_print("%09d; ", ticks);
+        vcp_print("%d; ", report.ready ? 1 : 0);
+        vcp_print("%d; ", report.vout_ready ? 1 : 0);
+        vcp_print("%d.%03d; ", (int)report.vrect,
+                  (int)abs(report.vrect * 1000) % 1000);
+        vcp_print("%d.%03d; ", (int)report.vout,
+                  (int)(report.vout * 1000) % 1000);
+        vcp_print("%d.%03d; ", (int)report.icur,
+                  (int)abs(report.icur * 1000) % 1000);
+        vcp_print("%d.%03d; ", (int)report.tmeas,
+                  (int)abs(report.tmeas * 1000) % 1000);
+        vcp_print("%d; ", report.opfreq);
+        vcp_print("%d.%03d; ", (int)report.ntc,
+                  (int)abs(report.ntc * 1000) % 1000);
+
+        vcp_println("");
+      }
+
+      while (!ticks_expired(ticks + 1000)) {
+      };
+
+      ticks += 1000;
+
+    } while (seconds-- > 0);
+
+    vcp_println("OK # Measurement finished");
+  }
+}
+#endif  // USE_POWERCTL
+
+#ifdef USE_POWERCTL
+void test_suspend(void) {
+  vcp_println("# Going to suspend mode (press power button to resume)");
+  systick_delay_ms(500);
+
+  powerctl_suspend();
+
+  systick_delay_ms(1500);
+  vcp_println("OK # Resumed");
+}
+#endif  // USE_POWERCTL
+
 #define BACKLIGHT_NORMAL 150
 
 int main(void) {
   system_init(&rsod_panic_handler);
+
+#ifdef USE_POWERCTL
+  npm1300_init();
+#endif
 
   display_init(DISPLAY_JUMP_BEHAVIOR);
 
@@ -1009,6 +1264,14 @@ int main(void) {
       test_wipe();
     } else if (startswith(line, "REBOOT")) {
       test_reboot();
+#ifdef USE_POWERCTL
+    } else if (startswith(line, "PMIC ")) {
+      test_pmic(line + 5);
+    } else if (startswith(line, "WPC ")) {
+      test_wpc(line + 4);
+    } else if (startswith(line, "SUSPEND")) {
+      test_suspend();
+#endif
     } else {
       vcp_println("UNKNOWN");
     }

@@ -37,8 +37,7 @@ use crate::{
         },
         display,
         event::USBEvent,
-        ui_features::ModelUI,
-        UIFeaturesCommon,
+        CommonUI, ModelUI,
     },
 };
 
@@ -94,10 +93,10 @@ pub trait ComponentMsgObj: Component {
 pub trait ComponentMaybeTrace: Component + ComponentMsgObj + MaybeTrace {}
 impl<T> ComponentMaybeTrace for T where T: Component + ComponentMsgObj + MaybeTrace {}
 
-struct RootComponent<T, M>
+pub struct RootComponent<T, M>
 where
     T: Component,
-    M: UIFeaturesCommon,
+    M: CommonUI,
 {
     inner: T,
     returned_value: Option<Result<Obj, Error>>,
@@ -107,7 +106,7 @@ where
 impl<T, M> RootComponent<T, M>
 where
     T: ComponentMaybeTrace,
-    M: UIFeaturesCommon,
+    M: CommonUI,
 {
     pub fn new(component: T) -> Self {
         Self {

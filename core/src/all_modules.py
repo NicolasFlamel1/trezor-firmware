@@ -47,6 +47,10 @@ storage
 import storage
 storage.cache
 import storage.cache
+storage.cache_codec
+import storage.cache_codec
+storage.cache_common
+import storage.cache_common
 storage.common
 import storage.common
 storage.debug
@@ -131,6 +135,8 @@ trezor.enums.MimbleWimbleCoinNetworkType
 import trezor.enums.MimbleWimbleCoinNetworkType
 trezor.enums.MimbleWimbleCoinSwitchType
 import trezor.enums.MimbleWimbleCoinSwitchType
+trezor.enums.MultisigPubkeysOrder
+import trezor.enums.MultisigPubkeysOrder
 trezor.enums.OutputScriptType
 import trezor.enums.OutputScriptType
 trezor.enums.PinMatrixRequestType
@@ -211,12 +217,20 @@ trezor.utils
 import trezor.utils
 trezor.wire
 import trezor.wire
-trezor.wire.codec_v1
-import trezor.wire.codec_v1
+trezor.wire.codec
+import trezor.wire.codec
+trezor.wire.codec.codec_context
+import trezor.wire.codec.codec_context
+trezor.wire.codec.codec_v1
+import trezor.wire.codec.codec_v1
 trezor.wire.context
 import trezor.wire.context
 trezor.wire.errors
 import trezor.wire.errors
+trezor.wire.message_handler
+import trezor.wire.message_handler
+trezor.wire.protocol_common
+import trezor.wire.protocol_common
 trezor.workflow
 import trezor.workflow
 apps
@@ -281,6 +295,8 @@ apps.bitcoin.sign_tx.bitcoin
 import apps.bitcoin.sign_tx.bitcoin
 apps.bitcoin.sign_tx.bitcoinlike
 import apps.bitcoin.sign_tx.bitcoinlike
+apps.bitcoin.sign_tx.change_detector
+import apps.bitcoin.sign_tx.change_detector
 apps.bitcoin.sign_tx.decred
 import apps.bitcoin.sign_tx.decred
 apps.bitcoin.sign_tx.helpers
@@ -319,6 +335,8 @@ apps.common.backup
 import apps.common.backup
 apps.common.backup_types
 import apps.common.backup_types
+apps.common.cache
+import apps.common.cache
 apps.common.cbor
 import apps.common.cbor
 apps.common.coininfo

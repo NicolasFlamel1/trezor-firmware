@@ -97,6 +97,10 @@ if TYPE_CHECKING:
         MICROBITCOIN = 2
         SATOSHI = 3
 
+    class MultisigPubkeysOrder(IntEnum):
+        PRESERVED = 0
+        LEXICOGRAPHIC = 1
+
     class RequestType(IntEnum):
         TXINPUT = 0
         TXOUTPUT = 1
@@ -393,6 +397,8 @@ if TYPE_CHECKING:
         BackupDevice = 34
         EntropyRequest = 35
         EntropyAck = 36
+        EntropyCheckReady = 994
+        EntropyCheckContinue = 995
         PassphraseRequest = 41
         PassphraseAck = 42
         RecoveryDevice = 45

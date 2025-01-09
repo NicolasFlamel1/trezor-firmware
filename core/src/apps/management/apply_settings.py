@@ -1,7 +1,7 @@
 from typing import TYPE_CHECKING
 
 import storage.device as storage_device
-import trezorui2
+import trezorui_api
 from trezor import TR, utils
 from trezor.enums import ButtonRequestType, DisplayRotation
 from trezor.ui.layouts import confirm_action
@@ -25,7 +25,7 @@ def _validate_homescreen(homescreen: bytes) -> None:
         raise DataError(
             f"Homescreen is too large, maximum size is {storage_device.HOMESCREEN_MAXSIZE} bytes"
         )
-    if not trezorui2.check_homescreen_format(homescreen):
+    if not trezorui_api.check_homescreen_format(homescreen):
         raise DataError("Wrong homescreen format")
 
 
@@ -182,6 +182,7 @@ async def _require_confirm_change_display_rotation(rotation: DisplayRotation) ->
     await confirm_action(
         "set_rotation",
         TR.rotation__title_change,
+        subtitle=TR.words__settings,
         description=TR.rotation__change_template,
         description_param=label,
         br_code=BRT_PROTECT_CALL,

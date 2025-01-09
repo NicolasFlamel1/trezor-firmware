@@ -55,6 +55,7 @@ if TYPE_CHECKING:
     from trezor.enums import MimbleWimbleCoinNetworkType  # noqa: F401
     from trezor.enums import MimbleWimbleCoinSwitchType  # noqa: F401
     from trezor.enums import MoneroNetworkType  # noqa: F401
+    from trezor.enums import MultisigPubkeysOrder  # noqa: F401
     from trezor.enums import NEMImportanceTransferMode  # noqa: F401
     from trezor.enums import NEMModificationType  # noqa: F401
     from trezor.enums import NEMMosaicLevy  # noqa: F401
@@ -466,6 +467,7 @@ if TYPE_CHECKING:
         m: "int"
         nodes: "list[HDNodeType]"
         address_n: "list[int]"
+        pubkeys_order: "MultisigPubkeysOrder"
 
         def __init__(
             self,
@@ -475,6 +477,7 @@ if TYPE_CHECKING:
             signatures: "list[bytes] | None" = None,
             nodes: "list[HDNodeType] | None" = None,
             address_n: "list[int] | None" = None,
+            pubkeys_order: "MultisigPubkeysOrder | None" = None,
         ) -> None:
             pass
 
@@ -2537,6 +2540,7 @@ if TYPE_CHECKING:
         skip_backup: "bool | None"
         no_backup: "bool | None"
         backup_type: "BackupType"
+        entropy_check: "bool | None"
 
         def __init__(
             self,
@@ -2549,6 +2553,7 @@ if TYPE_CHECKING:
             skip_backup: "bool | None" = None,
             no_backup: "bool | None" = None,
             backup_type: "BackupType | None" = None,
+            entropy_check: "bool | None" = None,
         ) -> None:
             pass
 
@@ -2573,6 +2578,16 @@ if TYPE_CHECKING:
             return isinstance(msg, cls)
 
     class EntropyRequest(protobuf.MessageType):
+        entropy_commitment: "bytes | None"
+        prev_entropy: "bytes | None"
+
+        def __init__(
+            self,
+            *,
+            entropy_commitment: "bytes | None" = None,
+            prev_entropy: "bytes | None" = None,
+        ) -> None:
+            pass
 
         @classmethod
         def is_type_of(cls, msg: Any) -> TypeGuard["EntropyRequest"]:
@@ -2590,6 +2605,26 @@ if TYPE_CHECKING:
 
         @classmethod
         def is_type_of(cls, msg: Any) -> TypeGuard["EntropyAck"]:
+            return isinstance(msg, cls)
+
+    class EntropyCheckReady(protobuf.MessageType):
+
+        @classmethod
+        def is_type_of(cls, msg: Any) -> TypeGuard["EntropyCheckReady"]:
+            return isinstance(msg, cls)
+
+    class EntropyCheckContinue(protobuf.MessageType):
+        finish: "bool"
+
+        def __init__(
+            self,
+            *,
+            finish: "bool | None" = None,
+        ) -> None:
+            pass
+
+        @classmethod
+        def is_type_of(cls, msg: Any) -> TypeGuard["EntropyCheckContinue"]:
             return isinstance(msg, cls)
 
     class RecoveryDevice(protobuf.MessageType):

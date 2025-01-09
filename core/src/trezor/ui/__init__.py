@@ -4,16 +4,16 @@ from micropython import const
 from trezorui import Display
 from typing import TYPE_CHECKING
 
-import trezorui2
 from trezor import io, log, loop, utils, wire, workflow
 from trezor.messages import ButtonAck, ButtonRequest
 from trezor.wire import context
-from trezorui2 import AttachType, BacklightLevels, LayoutState
+from trezor.wire.protocol_common import Context
+from trezorui_api import AttachType, BacklightLevels, LayoutState
 
 if TYPE_CHECKING:
     from typing import Any, Callable, Generator, Generic, Iterator, TypeVar
 
-    from trezorui2 import LayoutObj, UiResult  # noqa: F401
+    from trezorui_api import LayoutObj, UiResult  # noqa: F401
 
     T = TypeVar("T", covariant=True)
 
@@ -23,7 +23,9 @@ else:
 
 
 if __debug__:
-    trezorui2.disable_animation(bool(utils.DISABLE_ANIMATION))
+    from trezorui_api import disable_animation
+
+    disable_animation(utils.DISABLE_ANIMATION)
 
 
 # all rendering is done through a singleton of `Display`
@@ -166,7 +168,7 @@ class Layout(Generic[T]):
         self.button_request_ack_pending: bool = False
         self.transition_out: AttachType | None = None
         self.backlight_level = BacklightLevels.NORMAL
-        self.context: context.Context | None = None
+        self.context: Context | None = None
         self.state: LayoutState = LayoutState.INITIAL
 
         # Indicates whether we should use Resume attach style when launching.

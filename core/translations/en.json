@@ -1,7 +1,7 @@
 {
   "header": {
     "language": "en-US",
-    "version": "2.8.6"
+    "version": "2.8.7"
   },
   "translations": {
     "addr_mismatch__contact_support_at": "Please contact Trezor support at",
@@ -416,9 +416,9 @@
     "lockscreen__title_locked": "Locked",
     "lockscreen__title_not_connected": "Not connected",
     "misc__decrypt_value": "Decrypt value",
+    "misc__enable_labeling": "Enable labeling?",
     "misc__encrypt_value": "Encrypt value",
     "misc__title_suite_labeling": "Suite labeling",
-    "misc__enable_labeling": "Enable labeling?",
     "modify_amount__decrease_amount": "Decrease amount by:",
     "modify_amount__increase_amount": "Increase amount by:",
     "modify_amount__new_amount": "New amount:",
@@ -707,11 +707,11 @@
     "reset__your_backup_is_done": "Your backup is done.",
     "ripple__confirm_tag": "Confirm tag",
     "ripple__destination_tag_template": "Destination tag:\n{0}",
-    "rotation__change_template": "Do you want to change device rotation to {0}?",
+    "rotation__change_template": "Change display orientation to {0}?",
     "rotation__east": "east",
     "rotation__north": "north",
     "rotation__south": "south",
-    "rotation__title_change": "Change rotation",
+    "rotation__title_change": "Display orientation",
     "rotation__west": "west",
     "safety_checks__approve_unsafe_always": "Trezor will allow you to approve some actions which might be unsafe.",
     "safety_checks__approve_unsafe_temporary": "Trezor will temporarily allow you to approve some actions which might be unsafe.",

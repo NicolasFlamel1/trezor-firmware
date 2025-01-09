@@ -34,6 +34,7 @@
 #include <io/usb.h>
 #include <sys/bootutils.h>
 #include <util/fwutils.h>
+#include <util/scm_revision.h>
 #include <util/unit_properties.h>
 #include "blake2s.h"
 
@@ -347,7 +348,7 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_0(mod_trezorutils_bootloader_locked_obj,
                                  mod_trezorutils_bootloader_locked);
 
 STATIC mp_obj_str_t mod_trezorutils_revision_obj = {
-    {&mp_type_bytes}, 0, sizeof(SCM_REVISION) - 1, (const byte *)SCM_REVISION};
+    {&mp_type_bytes}, 0, sizeof(SCM_REVISION), (const byte *)SCM_REVISION};
 
 STATIC mp_obj_str_t mod_trezorutils_model_name_obj = {
     {&mp_type_str}, 0, sizeof(MODEL_NAME) - 1, (const byte *)MODEL_NAME};
@@ -410,6 +411,9 @@ STATIC mp_obj_tuple_t mod_trezorutils_version_obj = {
 /// """UI layout identifier ("tt" for model T, "tr" for models One and R)."""
 /// USE_THP: bool
 /// """Whether the firmware supports Trezor-Host Protocol (version 2)."""
+/// if __debug__:
+///     DISABLE_ANIMATION: bool
+///     """Whether the firmware should disable animations."""
 
 STATIC const mp_rom_map_elem_t mp_module_trezorutils_globals_table[] = {
     {MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR_trezorutils)},
@@ -502,6 +506,13 @@ STATIC const mp_rom_map_elem_t mp_module_trezorutils_globals_table[] = {
 #else
 #error Unknown layout
 #endif
+#if !PYOPT
+#if DISABLE_ANIMATION
+    {MP_ROM_QSTR(MP_QSTR_DISABLE_ANIMATION), mp_const_true},
+#else
+    {MP_ROM_QSTR(MP_QSTR_DISABLE_ANIMATION), mp_const_false},
+#endif  // TREZOR_DISABLE_ANIMATION
+#endif  // PYOPT
 };
 
 STATIC MP_DEFINE_CONST_DICT(mp_module_trezorutils_globals,

@@ -16,6 +16,13 @@ DISABLE_OPTIGA = ARGUMENTS.get('DISABLE_OPTIGA', '0') == '1'
 HW_REVISION = ARGUMENTS.get('HW_REVISION', None)
 THP = ARGUMENTS.get('THP', '0') == '1' # Trezor-Host Protocol
 
+STORAGE_INSECURE_TESTING_MODE = ARGUMENTS.get('STORAGE_INSECURE_TESTING_MODE', '0') == '1'
+if STORAGE_INSECURE_TESTING_MODE and PRODUCTION:
+    raise RuntimeError("STORAGE_INSECURE_TESTING_MODE cannot be used in production")
+if STORAGE_INSECURE_TESTING_MODE:
+    DISABLE_OPTIGA = True
+    PYOPT = "0"
+
 FEATURE_FLAGS = {
     "RDI": True,
     "SECP256K1_ZKP": True,  # required for trezor.crypto.curve.bip340 (BIP340/Taproot)
@@ -24,7 +31,10 @@ FEATURE_FLAGS = {
 }
 
 FEATURES_WANTED = ["input", "sd_card", "rgb_led", "dma2d", "consumption_mask", "usb" ,"optiga", "haptic"]
-if DISABLE_OPTIGA and PYOPT == '0':
+if DISABLE_OPTIGA:
+    # TODO use PYOPT instead of PRODUCTION, same as in firmware, blocked on #4253
+    if PRODUCTION:
+        raise RuntimeError("DISABLE_OPTIGA requires non-production build")
     FEATURES_WANTED.remove("optiga")
 
 CCFLAGS_MOD = ''
@@ -235,10 +245,12 @@ if THP:
         'vendor/trezor-crypto/elligator2.c',
     ]
 
+if STORAGE_INSECURE_TESTING_MODE:
+    CPPDEFINES_MOD += ['STORAGE_INSECURE_TESTING_MODE']
 
 env = Environment(
     ENV=os.environ,
-    CFLAGS=f"{ARGUMENTS.get('CFLAGS', '')} -DPRODUCTION={int(PRODUCTION)} -DPYOPT={PYOPT} -DBOOTLOADER_QA={int(BOOTLOADER_QA)} -DBITCOIN_ONLY={BITCOIN_ONLY}",
+    CFLAGS=f"{ARGUMENTS.get('CFLAGS', '')} -DPRODUCTION={int(PRODUCTION)} -DPYOPT={PYOPT} -DBOOTLOADER_QA={int(BOOTLOADER_QA)} -DBITCOIN_ONLY={BITCOIN_ONLY} -USCM_REVISION_INIT",
     CPPDEFINES_IMPLICIT=[],
     CPPDEFPREFIX="-D'",
     CPPDEFSUFFIX="'",
@@ -297,7 +309,8 @@ env.Replace(
     '-ffreestanding '
     '-fstack-protector-all '
     +  env.get('ENV')["CPU_CCFLAGS"] + CCFLAGS_MOD,
-    LINKFLAGS='-T build/kernel/memory.ld -Wl,--gc-sections  -Wl,--print-memory-usage -Wl,-Map=build/kernel/kernel.map -Wl,--warn-common',
+    LINKFLAGS='-T build/kernel/memory.ld -Wl,--gc-sections -Wl,--print-memory-usage '
+        ' -Wl,-Map=build/kernel/kernel.map -Wl,--warn-common -Wl,--undefined=__errno',
     CPPPATH=ALLPATHS,
     CPPDEFINES=[
         'KERNEL',
@@ -410,6 +423,14 @@ action_bin=[
     '$OBJCOPY -O binary -j .flash -j .uflash  -j .data -j .confidential $SOURCE ${TARGET}',
     '$CP $TARGET ' + BINARY_NAME,
 ]
+
+if STORAGE_INSECURE_TESTING_MODE:
+    INSECURE_TESTING_MODE_STR = """
+#########################################################
+#   STORAGE_INSECURE_TESTING_MODE enabled, DO NOT USE   #
+#########################################################
+"""
+    action_bin.append(INSECURE_TESTING_MODE_STR)
 
 program_bin = env.Command(
     target='kernel.bin',

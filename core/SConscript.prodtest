@@ -75,6 +75,7 @@ SOURCE_MOD += [
     'embed/io/display/display_utils.c',
     'embed/util/image/image.c',
     'embed/util/rsod/rsod.c',
+    'embed/util/scm_revision/scm_revision.c',
     'embed/rtl/error_handling.c',
     'embed/rtl/mini_printf.c',
     'vendor/micropython/lib/uzlib/adler32.c',
@@ -136,7 +137,7 @@ env.Replace(
     '-fstack-protector-all '
     +  env.get('ENV')["CPU_CCFLAGS"] + CCFLAGS_MOD,
     CCFLAGS_QSTR='-DNO_QSTR -DN_X64 -DN_X86 -DN_THUMB',
-    LINKFLAGS=f'-T build/prodtest/memory.ld -Wl,--gc-sections -Wl,-Map=build/prodtest/prodtest.map -Wl,--warn-common',
+    LINKFLAGS=f'-T build/prodtest/memory.ld -Wl,--gc-sections -Wl,--print-memory-usage -Wl,-Map=build/prodtest/prodtest.map -Wl,--warn-common',
     CPPPATH=[
         'embed/projects/prodtest',
         'embed/rtl/inc',
@@ -145,6 +146,7 @@ env.Replace(
         'embed/sys/bsp/inc',
         'embed/util/image/inc',
         'embed/util/rsod/inc',
+        'embed/util/scm_revision/inc',
         'embed/upymod/modtrezorui',
     ] + CPPPATH_MOD + PATH_HAL,
     CPPDEFINES=[
@@ -220,7 +222,7 @@ program_elf = env.Command(
     target='prodtest.elf',
     source=obj_program,
     action=
-    '$LINK -o $TARGET $CCFLAGS $CFLAGS $LINKFLAGS $SOURCES -lc_nano -lgcc',
+    '$LINK -o $TARGET $CCFLAGS $CFLAGS $LINKFLAGS $SOURCES -lc_nano -lgcc -lm',
 )
 
 env.Depends(program_elf, linkerscript_gen)

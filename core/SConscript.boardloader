@@ -65,6 +65,7 @@ SOURCE_MOD += [
     'embed/util/flash/flash_utils.c',
     'embed/util/image/image.c',
     'embed/util/rsod/rsod.c',
+    'embed/util/scm_revision/scm_revision.c',
     'embed/rtl/error_handling.c',
     'embed/rtl/mini_printf.c',
 ]
@@ -114,7 +115,7 @@ env.Replace(
     '-fstack-protector-strong '
     + env.get('ENV')["CPU_CCFLAGS"] + CCFLAGS_MOD,
     CCFLAGS_QSTR='-DNO_QSTR -DN_X64 -DN_X86 -DN_THUMB',
-    LINKFLAGS="-T build/boardloader/memory.ld -Wl,--gc-sections -Wl,-Map=build/boardloader/boardloader.map -Wl,--warn-common  -Wl,--print-memory-usage",
+    LINKFLAGS="-T build/boardloader/memory.ld -Wl,--gc-sections -Wl,-Map=build/boardloader/boardloader.map -Wl,--warn-common -Wl,--undefined=__errno -Wl,--print-memory-usage",
     CPPPATH=[
         'embed/projects/boardloader',
         'embed/rtl/inc',
@@ -128,6 +129,7 @@ env.Replace(
         'embed/sys/bsp/inc',
         'embed/util/image/inc',
         'embed/util/rsod/inc',
+        'embed/util/scm_revision/inc',
         'vendor/micropython/lib/cmsis/inc',
     ] + CPPPATH_MOD + PATH_HAL,
     CPPDEFINES=[
@@ -169,7 +171,7 @@ program_elf = env.Command(
     target='boardloader.elf',
     source=obj_program,
     action=
-    '$LINK -o $TARGET $CCFLAGS $CFLAGS $LINKFLAGS $SOURCES -lc_nano -lgcc',
+    '$LINK -o $TARGET $CCFLAGS $CFLAGS $LINKFLAGS $SOURCES -lc_nano -lm -lgcc',
 )
 
 env.Depends(program_elf, linkerscript_gen)

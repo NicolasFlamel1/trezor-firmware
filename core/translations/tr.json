@@ -43,7 +43,7 @@
   },
   "header": {
     "language": "tr-TR",
-    "version": "2.8.6"
+    "version": "2.8.7"
   },
   "translations": {
     "addr_mismatch__contact_support_at": "Lütfen Trezor support ile iletişime geçin:",
@@ -416,9 +416,9 @@
     "lockscreen__title_locked": "Ki̇li̇tli̇",
     "lockscreen__title_not_connected": "Bağli deği̇l",
     "misc__decrypt_value": "Değerin şifresini çöz",
+    "misc__enable_labeling": "Etiketleme etkinleştirilsin mi?",
     "misc__encrypt_value": "Değeri şifrele",
     "misc__title_suite_labeling": "Suite eti̇ketleme",
-    "misc__enable_labeling": "Etiketleme etkinleştirilsin mi?",
     "modify_amount__decrease_amount": "Tutarı şu kadar azalt:",
     "modify_amount__increase_amount": "Tutarı şu kadar artır:",
     "modify_amount__new_amount": "Yeni tutar:",
@@ -680,11 +680,11 @@
     "reset__your_backup_is_done": "Yedekleme tamamlandı.",
     "ripple__confirm_tag": "Etiketi onayla",
     "ripple__destination_tag_template": "Hedef etiket:\n{0}",
-    "rotation__change_template": "Cihaz rotasyonunu {0} olarak değiştirmek istiyor musunuz?",
+    "rotation__change_template": "Ekran yönünü {0} olarak değiştir?",
     "rotation__east": "doğu",
     "rotation__north": "kuzey",
     "rotation__south": "güney",
-    "rotation__title_change": "Rotasyonu deği̇şti̇r",
+    "rotation__title_change": "Ekran yönü",
     "rotation__west": "batı",
     "safety_checks__approve_unsafe_always": "Trezor, güvenli olmayabilecek bazı eylemleri onaylamanıza izin verecektir.",
     "safety_checks__approve_unsafe_temporary": "Trezor, güvenli olmayabilecek bazı eylemleri onaylamanıza geçici izin verecektir.",

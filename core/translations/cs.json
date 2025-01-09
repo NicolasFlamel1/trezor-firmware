@@ -43,7 +43,7 @@
   },
   "header": {
     "language": "cs-CZ",
-    "version": "2.8.6"
+    "version": "2.8.7"
   },
   "translations": {
     "addr_mismatch__contact_support_at": "Kontaktujte naši podporu na",
@@ -458,9 +458,9 @@
     "lockscreen__title_locked": "Uzamčeno",
     "lockscreen__title_not_connected": "Nepřipojeno",
     "misc__decrypt_value": "Dešifrovat hodnotu",
+    "misc__enable_labeling": "Povolit popisky?",
     "misc__encrypt_value": "Zašifrovat hodnotu",
     "misc__title_suite_labeling": "Popisky ze suite",
-    "misc__enable_labeling": "Povolit popisky?",
     "modify_amount__decrease_amount": "Snížit částku o:",
     "modify_amount__increase_amount": "Zvýšit částku o:",
     "modify_amount__new_amount": "Nová částka:",
@@ -749,11 +749,11 @@
     "reset__your_backup_is_done": "Záloha je dokončena.",
     "ripple__confirm_tag": "Potvrdit značku",
     "ripple__destination_tag_template": "Cílová značka:\n{0}",
-    "rotation__change_template": "Chcete změnit orientaci zařízení na {0}?",
+    "rotation__change_template": "Změnit orientaci displeje na {0}?",
     "rotation__east": "východ",
     "rotation__north": "sever",
     "rotation__south": "jih",
-    "rotation__title_change": "Změnit orientaci",
+    "rotation__title_change": "Orientace displeje",
     "rotation__west": "západ",
     "safety_checks__approve_unsafe_always": "Trezor vám umožní schválit některé akce, které by mohly být nebezpečné.",
     "safety_checks__approve_unsafe_temporary": "Trezor vám dočasně umožní schválit některé akce, které by mohly být nebezpečné.",

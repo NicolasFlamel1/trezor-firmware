@@ -55,6 +55,10 @@
 #include <sec/optiga_transport.h>
 #endif
 
+#ifdef USE_POWERCTL
+#include <sys/powerctl.h>
+#endif
+
 #ifdef USE_PVD
 #include <sys/pvd.h>
 #endif
@@ -104,6 +108,10 @@ static void optiga_log_hex(const char *prefix, const uint8_t *data,
 #endif
 
 void drivers_init() {
+#ifdef USE_POWERCTL
+  powerctl_init();
+#endif
+
 #ifdef USE_TAMPER
   tamper_init();
 #endif
@@ -204,10 +212,7 @@ void drivers_init() {
 
 // defined in linker script
 extern uint32_t _codelen;
-extern uint32_t _coreapp_clear_ram_0_start;
-extern uint32_t _coreapp_clear_ram_0_size;
-extern uint32_t _coreapp_clear_ram_1_start;
-extern uint32_t _coreapp_clear_ram_1_size;
+
 #define KERNEL_SIZE (uint32_t) & _codelen
 
 // Initializes coreapp applet
@@ -223,10 +228,12 @@ static void coreapp_init(applet_t *applet) {
   applet_header_t *coreapp_header = (applet_header_t *)CODE1_START;
 
   applet_layout_t coreapp_layout = {
-      .data1.start = (uint32_t)&_coreapp_clear_ram_0_start,
-      .data1.size = (uint32_t)&_coreapp_clear_ram_0_size,
-      .data2.start = (uint32_t)&_coreapp_clear_ram_1_start,
-      .data2.size = (uint32_t)&_coreapp_clear_ram_1_size,
+      .data1.start = (uint32_t)AUX1_RAM_START,
+      .data1.size = (uint32_t)AUX1_RAM_SIZE,
+#ifdef AUX2_RAM_START
+      .data2.start = (uint32_t)AUX2_RAM_START,
+      .data2.size = (uint32_t)AUX2_RAM_SIZE,
+#endif
       .code1.start = CODE1_START,
       .code1.size = CODE1_END - CODE1_START,
 #ifdef FIRMWARE_P2_START
@@ -235,7 +242,11 @@ static void coreapp_init(applet_t *applet) {
 #endif
   };
 
-  applet_init(applet, coreapp_header, &coreapp_layout);
+  applet_privileges_t coreapp_privileges = {
+      .assets_area_access = true,
+  };
+
+  applet_init(applet, coreapp_header, &coreapp_layout, &coreapp_privileges);
 }
 
 // Shows RSOD (Red Screen of Death)

@@ -43,7 +43,7 @@
   },
   "header": {
     "language": "pt-BR",
-    "version": "2.8.6"
+    "version": "2.8.7"
   },
   "translations": {
     "addr_mismatch__contact_support_at": "Entre em contato com o suporte Trezor em",
@@ -457,9 +457,9 @@
     "lockscreen__title_locked": "Bloqueado",
     "lockscreen__title_not_connected": "Não conectado",
     "misc__decrypt_value": "Descript. quantia",
+    "misc__enable_labeling": "Ativar rotulagem?",
     "misc__encrypt_value": "Criptografar quantia",
     "misc__title_suite_labeling": "Rotulagem da suite",
-    "misc__enable_labeling": "Ativar rotulagem?",
     "modify_amount__decrease_amount": "Diminuir a quantia em:",
     "modify_amount__increase_amount": "Aumentar a quantia em:",
     "modify_amount__new_amount": "Nova quantia:",
@@ -748,11 +748,11 @@
     "reset__your_backup_is_done": "Backup concluído.",
     "ripple__confirm_tag": "Confirmar etiqueta",
     "ripple__destination_tag_template": "Etiqueta de destino:\n{0}",
-    "rotation__change_template": "Deseja alterar a rotação do dispositivo para {0}?",
+    "rotation__change_template": "Alterar a orientação da tela para {0}?",
     "rotation__east": "leste",
     "rotation__north": "norte",
     "rotation__south": "sul",
-    "rotation__title_change": "Alterar rotação",
+    "rotation__title_change": "Orientação da tela",
     "rotation__west": "oeste",
     "safety_checks__approve_unsafe_always": "O Trezor permitirá aprovação de cotas  não seguras.",
     "safety_checks__approve_unsafe_temporary": "O Trezor permitirá temporariamente aprovação de cotas não seguras.",
