@@ -19,8 +19,9 @@ async def get_root_public_key(message: MimbleWimbleCoinGetRootPublicKey) -> Mimb
 	from apps.base import unlock_device
 	from apps.common.seed import derive_and_store_roots
 	from trezor.workflow import idle_timer
-	from storage.cache import delete, APP_MIMBLEWIMBLE_COIN_ENCRYPTION_AND_DECRYPTION_CONTEXT, APP_MIMBLEWIMBLE_COIN_TRANSACTION_CONTEXT
+	from storage.cache_common import APP_MIMBLEWIMBLE_COIN_ENCRYPTION_AND_DECRYPTION_CONTEXT, APP_MIMBLEWIMBLE_COIN_TRANSACTION_CONTEXT
 	from trezor.wire import NotInitialized, ProcessError, DataError
+	from trezor.wire.context import cache_delete
 	from trezor.ui.layouts import confirm_action, confirm_value, show_warning, confirm_text
 	from trezor.enums import ButtonRequestType
 	from trezor.crypto import mimblewimble_coin
@@ -49,8 +50,8 @@ async def get_root_public_key(message: MimbleWimbleCoinGetRootPublicKey) -> Mimb
 	initializeStorage()
 	
 	# Clear session
-	delete(APP_MIMBLEWIMBLE_COIN_ENCRYPTION_AND_DECRYPTION_CONTEXT)
-	delete(APP_MIMBLEWIMBLE_COIN_TRANSACTION_CONTEXT)
+	cache_delete(APP_MIMBLEWIMBLE_COIN_ENCRYPTION_AND_DECRYPTION_CONTEXT)
+	cache_delete(APP_MIMBLEWIMBLE_COIN_TRANSACTION_CONTEXT)
 	
 	# Get coin info
 	coinInfo = getCoinInfo(message.coin_type, message.network_type)

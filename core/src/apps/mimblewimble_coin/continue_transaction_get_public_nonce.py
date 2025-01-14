@@ -19,8 +19,9 @@ async def continue_transaction_get_public_nonce(message: MimbleWimbleCoinContinu
 	from apps.base import unlock_device
 	from apps.common.seed import derive_and_store_roots
 	from trezor.workflow import idle_timer
-	from storage.cache import delete, get_memory_view, APP_MIMBLEWIMBLE_COIN_ENCRYPTION_AND_DECRYPTION_CONTEXT, APP_MIMBLEWIMBLE_COIN_TRANSACTION_CONTEXT
+	from storage.cache_common import APP_MIMBLEWIMBLE_COIN_ENCRYPTION_AND_DECRYPTION_CONTEXT, APP_MIMBLEWIMBLE_COIN_TRANSACTION_CONTEXT
 	from trezor.wire import NotInitialized, ProcessError, InvalidSession
+	from trezor.wire.context import cache_delete, cache_get_memory_view
 	from trezor.crypto import mimblewimble_coin
 	from uctypes import struct, addressof, UINT8, ARRAY
 	from struct import unpack, calcsize
@@ -46,10 +47,10 @@ async def continue_transaction_get_public_nonce(message: MimbleWimbleCoinContinu
 	initializeStorage()
 	
 	# Clear unrelated session
-	delete(APP_MIMBLEWIMBLE_COIN_ENCRYPTION_AND_DECRYPTION_CONTEXT)
+	cache_delete(APP_MIMBLEWIMBLE_COIN_ENCRYPTION_AND_DECRYPTION_CONTEXT)
 	
 	# Get session's transaction context
-	transactionContext = get_memory_view(APP_MIMBLEWIMBLE_COIN_TRANSACTION_CONTEXT)
+	transactionContext = cache_get_memory_view(APP_MIMBLEWIMBLE_COIN_TRANSACTION_CONTEXT)
 	
 	# Get session's transaction context's structure
 	transactionContextStructure = struct(addressof(transactionContext), {
@@ -101,7 +102,7 @@ async def continue_transaction_get_public_nonce(message: MimbleWimbleCoinContinu
 	except:
 	
 		# Clear session's transaction context
-		delete(APP_MIMBLEWIMBLE_COIN_TRANSACTION_CONTEXT)
+		cache_delete(APP_MIMBLEWIMBLE_COIN_TRANSACTION_CONTEXT)
 		
 		# Raise process error
 		raise ProcessError("")

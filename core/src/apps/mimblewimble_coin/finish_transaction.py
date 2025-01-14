@@ -26,8 +26,9 @@ async def finish_transaction(message: MimbleWimbleCoinFinishTransaction) -> Mimb
 	from apps.base import unlock_device
 	from apps.common.seed import derive_and_store_roots
 	from trezor.workflow import idle_timer
-	from storage.cache import delete, get_memory_view, APP_MIMBLEWIMBLE_COIN_ENCRYPTION_AND_DECRYPTION_CONTEXT, APP_MIMBLEWIMBLE_COIN_TRANSACTION_CONTEXT
+	from storage.cache_common import APP_MIMBLEWIMBLE_COIN_ENCRYPTION_AND_DECRYPTION_CONTEXT, APP_MIMBLEWIMBLE_COIN_TRANSACTION_CONTEXT
 	from trezor.wire import NotInitialized, ProcessError, DataError, InvalidSession, ActionCancelled
+	from trezor.wire.context import cache_delete, cache_get_memory_view
 	from trezor.ui.layouts import confirm_action, confirm_value, confirm_blob, show_warning, confirm_text
 	from trezor.enums import ButtonRequestType
 	from trezor.crypto import mimblewimble_coin
@@ -59,10 +60,10 @@ async def finish_transaction(message: MimbleWimbleCoinFinishTransaction) -> Mimb
 	initializeStorage()
 	
 	# Clear unrelated session
-	delete(APP_MIMBLEWIMBLE_COIN_ENCRYPTION_AND_DECRYPTION_CONTEXT)
+	cache_delete(APP_MIMBLEWIMBLE_COIN_ENCRYPTION_AND_DECRYPTION_CONTEXT)
 	
 	# Get session's transaction context
-	transactionContext = get_memory_view(APP_MIMBLEWIMBLE_COIN_TRANSACTION_CONTEXT)
+	transactionContext = cache_get_memory_view(APP_MIMBLEWIMBLE_COIN_TRANSACTION_CONTEXT)
 	
 	# Get session's transaction context's structure
 	transactionContextStructure = struct(addressof(transactionContext), {
@@ -461,7 +462,7 @@ async def finish_transaction(message: MimbleWimbleCoinFinishTransaction) -> Mimb
 	except ActionCancelled:
 	
 		# Clear session's transaction context
-		delete(APP_MIMBLEWIMBLE_COIN_TRANSACTION_CONTEXT)
+		cache_delete(APP_MIMBLEWIMBLE_COIN_TRANSACTION_CONTEXT)
 		
 		# Raise error
 		raise
@@ -476,13 +477,13 @@ async def finish_transaction(message: MimbleWimbleCoinFinishTransaction) -> Mimb
 	except:
 	
 		# Clear session's transaction context
-		delete(APP_MIMBLEWIMBLE_COIN_TRANSACTION_CONTEXT)
+		cache_delete(APP_MIMBLEWIMBLE_COIN_TRANSACTION_CONTEXT)
 		
 		# Raise process error
 		raise ProcessError("")
 	
 	# Clear session's transaction context
-	delete(APP_MIMBLEWIMBLE_COIN_TRANSACTION_CONTEXT)
+	cache_delete(APP_MIMBLEWIMBLE_COIN_TRANSACTION_CONTEXT)
 	
 	# Return transaction signature and payment proof
 	return MimbleWimbleCoinTransactionSignatureAndPaymentProof(signature = signature, payment_proof = paymentProof)

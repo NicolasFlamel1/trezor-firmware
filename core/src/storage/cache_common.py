@@ -64,6 +64,13 @@ class DataCache:
             return default
         return bytes(self.data[key][1:])
 
+    def get_memory_view(self, key: int) -> memoryview:  # noqa: F811
+        utils.ensure(key < len(self.fields))
+        if self.data[key][0] != 1:
+            self.data[key][0] = 1
+            self.data[key][1:] = bytearray(self.fields[key])
+        return memoryview(self.data[key])[1:]
+
     def get_bool(self, key: int) -> bool:  # noqa: F811
         return self.get(key) is not None
 

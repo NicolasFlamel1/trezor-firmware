@@ -1122,7 +1122,9 @@ impl FirmwareUI for UIMercury {
             .with_footer(TR::instructions__swipe_up.into(), action)
             .with_swipe(Direction::Up, SwipeSettings::default());
 
-        let frame_with_icon = if danger {
+        let frame_with_icon = if _allow_cancel {
+            frame.with_cancel_button()
+        } else if danger {
             frame.with_danger_icon()
         } else {
             frame.with_warning_low_icon()

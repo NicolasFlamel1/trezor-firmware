@@ -19,8 +19,9 @@ async def start_transaction(message: MimbleWimbleCoinStartTransaction) -> Succes
 	from apps.base import unlock_device
 	from apps.common.seed import derive_and_store_roots
 	from trezor.workflow import idle_timer
-	from storage.cache import delete, get_memory_view, APP_MIMBLEWIMBLE_COIN_ENCRYPTION_AND_DECRYPTION_CONTEXT, APP_MIMBLEWIMBLE_COIN_TRANSACTION_CONTEXT
+	from storage.cache_common import APP_MIMBLEWIMBLE_COIN_ENCRYPTION_AND_DECRYPTION_CONTEXT, APP_MIMBLEWIMBLE_COIN_TRANSACTION_CONTEXT
 	from trezor.wire import NotInitialized, ProcessError, DataError
+	from trezor.wire.context import cache_delete, cache_get_memory_view
 	from trezor.crypto import mimblewimble_coin
 	from apps.common.paths import HARDENED
 	from uctypes import struct, addressof, UINT8, UINT32
@@ -47,11 +48,11 @@ async def start_transaction(message: MimbleWimbleCoinStartTransaction) -> Succes
 	initializeStorage()
 	
 	# Clear session
-	delete(APP_MIMBLEWIMBLE_COIN_ENCRYPTION_AND_DECRYPTION_CONTEXT)
-	delete(APP_MIMBLEWIMBLE_COIN_TRANSACTION_CONTEXT)
+	cache_delete(APP_MIMBLEWIMBLE_COIN_ENCRYPTION_AND_DECRYPTION_CONTEXT)
+	cache_delete(APP_MIMBLEWIMBLE_COIN_TRANSACTION_CONTEXT)
 	
 	# Get session's transaction context
-	transactionContext = get_memory_view(APP_MIMBLEWIMBLE_COIN_TRANSACTION_CONTEXT)
+	transactionContext = cache_get_memory_view(APP_MIMBLEWIMBLE_COIN_TRANSACTION_CONTEXT)
 	
 	# Get session's transaction context's structure
 	transactionContextStructure = struct(addressof(transactionContext), {

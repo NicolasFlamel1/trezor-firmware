@@ -31,6 +31,8 @@ class SessionCache(DataCache):
                 32,  # APP_COMMON_NONCE
             )
         else:
+            from trezorcrypto import mimblewimble_coin  # avoid pulling in trezor.crypto
+
             self.fields = (
                 64,  # APP_COMMON_SEED
                 2,  # APP_COMMON_AUTHORIZATION_TYPE
@@ -40,6 +42,8 @@ class SessionCache(DataCache):
                 96,  # APP_CARDANO_ICARUS_SECRET
                 96,  # APP_CARDANO_ICARUS_TREZOR_SECRET
                 0,  # APP_MONERO_LIVE_REFRESH
+                mimblewimble_coin.ENCRYPTION_AND_DECRYPTION_CONTEXT_SIZE,  # APP_MIMBLEWIMBLE_COIN_ENCRYPTION_AND_DECRYPTION_CONTEXT
+                mimblewimble_coin.TRANSACTION_CONTEXT_SIZE,  # APP_MIMBLEWIMBLE_COIN_TRANSACTION_CONTEXT
             )
         self.last_usage = 0
         super().__init__()

@@ -157,6 +157,10 @@ def cache_get(key: int, default: T | None = None) -> bytes | T | None:  # noqa: 
     return cache.get(key, default)
 
 
+def cache_get_memory_view(key: int) -> memoryview:  # noqa: F811
+    cache = _get_cache_for_key(key)
+    return cache.get_memory_view(key)
+
 def cache_get_bool(key: int) -> bool:  # noqa: F811
     cache = _get_cache_for_key(key)
     return cache.get_bool(key)
