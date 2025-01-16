@@ -388,6 +388,8 @@ pub trait FirmwareUI {
         description: TString<'static>,
         allow_cancel: bool,
         danger: bool,
+        left_is_small: bool,
+        text_mono: bool,
     ) -> Result<Gc<LayoutObj>, Error>; // TODO: return LayoutMaybeTrace
 
     fn tutorial() -> Result<impl LayoutMaybeTrace, Error>;

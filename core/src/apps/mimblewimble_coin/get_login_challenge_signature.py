@@ -112,7 +112,7 @@ async def get_login_challenge_signature(message: MimbleWimbleCoinGetLoginChallen
 	await confirm_value("Account Index", str(message.account), "", "", verb = "Next")
 	
 	# Show prompt
-	await confirm_blob("", "Identifier", bytes(message.identifier).split(b"\0", 1)[0].decode(), verb = "Next".upper(), prompt_screen = False)
+	await confirm_blob("", "Identifier", bytes(message.identifier).split(b"\0", 1)[0].decode(), verb = "Next".upper(), prompt_screen = False, info = False)
 	
 	# Get timestamp from timestamp
 	timestamp = message.timestamp // MILLISECONDS_IN_A_SECOND

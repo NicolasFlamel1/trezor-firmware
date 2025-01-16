@@ -835,6 +835,7 @@ impl FirmwareUI for UIModelTT {
             time_ms,
             icon,
             theme::button_default(),
+            false,
         )
     }
 
@@ -888,6 +889,7 @@ impl FirmwareUI for UIModelTT {
             time_ms,
             icon,
             theme::button_info(),
+            false,
         )
     }
 
@@ -1116,6 +1118,7 @@ impl FirmwareUI for UIModelTT {
             time_ms,
             icon,
             theme::button_confirm(),
+            false,
         )
     }
 
@@ -1131,6 +1134,8 @@ impl FirmwareUI for UIModelTT {
         description: TString<'static>,
         allow_cancel: bool,
         _danger: bool,
+        left_is_small: bool,
+        _text_mono: bool,
     ) -> Result<Gc<LayoutObj>, Error> {
         let icon = BlendedImage::new(
             theme::IMAGE_BG_OCTAGON,
@@ -1148,6 +1153,7 @@ impl FirmwareUI for UIModelTT {
             0,
             icon,
             theme::button_reset(),
+            left_is_small,
         )
     }
 
@@ -1166,6 +1172,7 @@ fn new_show_modal(
     time_ms: u32,
     icon: BlendedImage,
     button_style: ButtonStyleSheet,
+    left_is_small: bool,
 ) -> Result<Gc<LayoutObj>, Error> {
     let no_buttons = button.is_empty();
     let obj = if no_buttons && time_ms == 0 {
@@ -1196,7 +1203,7 @@ fn new_show_modal(
                 Button::cancel_confirm(
                     Button::with_icon(theme::ICON_CANCEL),
                     Button::with_text(button).styled(button_style),
-                    false,
+                    left_is_small,
                 ),
             )
             .with_value(value)

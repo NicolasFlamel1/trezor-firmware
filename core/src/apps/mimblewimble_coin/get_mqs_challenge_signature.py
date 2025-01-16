@@ -138,7 +138,7 @@ async def get_mqs_challenge_signature(message: MimbleWimbleCoinGetMqsChallengeSi
 	else:
 	
 		# Show prompt
-		await confirm_blob("", "Default Challenge", mimblewimble_coin.DEFAULT_MQS_CHALLENGE, verb = "Next".upper(), prompt_screen = False)
+		await confirm_blob("", "Default Challenge", mimblewimble_coin.DEFAULT_MQS_CHALLENGE, verb = "Next".upper(), prompt_screen = False, info = False)
 	
 	# Check if UI layout is TR
 	if UI_LAYOUT == "TR":

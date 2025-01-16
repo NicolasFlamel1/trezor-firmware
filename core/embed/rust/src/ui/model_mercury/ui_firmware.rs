@@ -1104,25 +1104,35 @@ impl FirmwareUI for UIMercury {
         button: TString<'static>,
         value: TString<'static>,
         description: TString<'static>,
-        _allow_cancel: bool,
+        allow_cancel: bool,
         danger: bool,
+        _left_is_small: bool,
+        text_mono: bool
     ) -> Result<Gc<LayoutObj>, Error> {
         let action = if button.is_empty() {
             None
         } else {
             Some(button)
         };
-        let content = ParagraphVecShort::from_iter([
-            Paragraph::new(&theme::TEXT_MAIN_GREY_LIGHT, description),
-            Paragraph::new(&theme::TEXT_MAIN_GREY_EXTRA_LIGHT, value),
-        ])
-        .into_paragraphs();
+        let content = if text_mono {
+            ParagraphVecShort::from_iter([
+                Paragraph::new(&theme::TEXT_MAIN_GREY_LIGHT, description),
+                Paragraph::new(&theme::TEXT_MONO, value),
+            ])
+            .into_paragraphs()
+        } else {
+            ParagraphVecShort::from_iter([
+                Paragraph::new(&theme::TEXT_MAIN_GREY_LIGHT, description),
+                Paragraph::new(&theme::TEXT_MAIN_GREY_EXTRA_LIGHT, value),
+            ])
+            .into_paragraphs()
+        };
 
         let frame = Frame::left_aligned(title, SwipeContent::new(content))
             .with_footer(TR::instructions__swipe_up.into(), action)
             .with_swipe(Direction::Up, SwipeSettings::default());
 
-        let frame_with_icon = if _allow_cancel {
+        let frame_with_icon = if allow_cancel {
             frame.with_cancel_button()
         } else if danger {
             frame.with_danger_icon()

@@ -309,6 +309,7 @@ static void _librust_qstrs(void) {
   MP_QSTR_language__changed;
   MP_QSTR_language__progress;
   MP_QSTR_language__title;
+  MP_QSTR_left_is_small;
   MP_QSTR_lines;
   MP_QSTR_load_from_flash;
   MP_QSTR_lockscreen__tap_to_connect;

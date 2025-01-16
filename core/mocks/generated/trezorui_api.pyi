@@ -655,6 +655,8 @@ def show_warning(
     description: str = "",
     allow_cancel: bool = True,
     danger: bool = False,  # unused on TT
+    left_is_small: bool = False,  # unused on TR and MERCURY
+    text_mono: bool = False,  # unused by TT and TR
 ) -> LayoutObj[UiResult]:
     """Warning modal. TT: No buttons shown when `button` is empty string. TR: middle button and centered text."""
 

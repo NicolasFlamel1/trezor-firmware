@@ -1207,6 +1207,8 @@ impl FirmwareUI for UIModelTR {
         description: TString<'static>,
         _allow_cancel: bool,
         _danger: bool,
+        _left_is_small: bool,
+        _text_mono: bool,
     ) -> Result<Gc<LayoutObj>, Error> {
         let get_page = move |page_index| {
             assert!(page_index == 0);
