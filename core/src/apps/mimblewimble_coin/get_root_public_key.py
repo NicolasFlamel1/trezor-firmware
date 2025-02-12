@@ -62,11 +62,11 @@ async def get_root_public_key(message: MimbleWimbleCoinGetRootPublicKey) -> Mimb
 		# Raise data error
 		raise DataError("")
 	
-	# Check if UI layout is mercury
-	if UI_LAYOUT == "MERCURY":
+	# Check if UI layout is delizia
+	if UI_LAYOUT == "DELIZIA":
 	
 		# Show prompt
-		await confirm_value(coinInfo.name, "", "Export root public key?", "", verb = "Next")
+		await confirm_value(coinInfo.name, "Export root public key?", "", "", verb = "Next", is_data = False)
 		
 	# Otherwise
 	else:
@@ -77,14 +77,14 @@ async def get_root_public_key(message: MimbleWimbleCoinGetRootPublicKey) -> Mimb
 	# Show prompt
 	await confirm_value("Account Index", str(message.account), "", "", verb = "Next")
 	
-	# Check if UI layout is TR
-	if UI_LAYOUT == "TR":
+	# Check if UI layout is caesar
+	if UI_LAYOUT == "CAESAR":
 	
 		# Show prompt
 		await confirm_text("", "Warning", "The host will be able to view the account's transactions.", verb = "Approve")
 	
-	# Otherwise check if UI layout is TT
-	elif UI_LAYOUT == "TT":
+	# Otherwise check if UI layout is bolt
+	elif UI_LAYOUT == "BOLT":
 	
 		# Show prompt
 		await show_warning("", "The host will be able to view the account's transactions.", button = "Approve", br_code = ButtonRequestType.Other, left_is_small = True)

@@ -303,11 +303,11 @@ async def finish_transaction(message: MimbleWimbleCoinFinishTransaction) -> Mimb
 	# Try
 	try:
 	
-		# Check if UI layout is mercury
-		if UI_LAYOUT == "MERCURY":
+		# Check if UI layout is delizia
+		if UI_LAYOUT == "DELIZIA":
 		
 			# Show prompt
-			await confirm_value(coinInfo.name, "", "Send transaction?" if send != 0 else "Receive transaction?", "", verb = "Next")
+			await confirm_value(coinInfo.name, "Send transaction?" if send != 0 else "Receive transaction?", "", "", verb = "Next", is_data = False)
 			
 		# Otherwise
 		else:
@@ -329,14 +329,14 @@ async def finish_transaction(message: MimbleWimbleCoinFinishTransaction) -> Mimb
 		# Check kernel information's features is plain features
 		if message.kernel_information[0] == mimblewimble_coin.KernelFeatures.PLAIN_FEATURES:
 		
-			# Check if UI layout is TR
-			if UI_LAYOUT == "TR":
+			# Check if UI layout is caesar
+			if UI_LAYOUT == "CAESAR":
 			
 				# Show prompt
 				await confirm_value("Kernel Features", "Plain", "", "", verb = "Next")
 				
-			# Otherwise check if UI layout is TT
-			elif UI_LAYOUT == "TT":
+			# Otherwise check if UI layout is bolt
+			elif UI_LAYOUT == "BOLT":
 			
 				# Show prompt
 				await confirm_action("", "Kernel Features", action = "Plain", verb = "Next")
@@ -345,19 +345,19 @@ async def finish_transaction(message: MimbleWimbleCoinFinishTransaction) -> Mimb
 			else:
 			
 				# Show prompt
-				await confirm_value("Kernel Features", "", "Plain", "", verb = "Next")
+				await confirm_value("Kernel Features", "Plain", "", "", verb = "Next", is_data = False)
 		
 		# Otherwise check kernel information's features is coinbase features
 		elif message.kernel_information[0] == mimblewimble_coin.KernelFeatures.COINBASE_FEATURES:
 		
-			# Check if UI layout is TR
-			if UI_LAYOUT == "TR":
+			# Check if UI layout is caesar
+			if UI_LAYOUT == "CAESAR":
 			
 				# Show prompt
 				await confirm_value("Kernel Features", "Coinbase", "", "", verb = "Next")
 				
-			# Otherwise check if UI layout is TT
-			elif UI_LAYOUT == "TT":
+			# Otherwise check if UI layout is bolt
+			elif UI_LAYOUT == "BOLT":
 			
 				# Show prompt
 				await confirm_action("", "Kernel Features", action = "Coinbase", verb = "Next")
@@ -366,19 +366,19 @@ async def finish_transaction(message: MimbleWimbleCoinFinishTransaction) -> Mimb
 			else:
 			
 				# Show prompt
-				await confirm_value("Kernel Features", "", "Coinbase", "", verb = "Next")
+				await confirm_value("Kernel Features", "Coinbase", "", "", verb = "Next", is_data = False)
 		
 		# Otherwise check kernel information's features is height locked features
 		elif message.kernel_information[0] == mimblewimble_coin.KernelFeatures.HEIGHT_LOCKED_FEATURES:
 		
-			# Check if UI layout is TR
-			if UI_LAYOUT == "TR":
+			# Check if UI layout is caesar
+			if UI_LAYOUT == "CAESAR":
 			
 				# Show prompt
 				await confirm_value("Kernel Features", "Height locked", "", "", verb = "Next")
 				
-			# Otherwise check if UI layout is TT
-			elif UI_LAYOUT == "TT":
+			# Otherwise check if UI layout is bolt
+			elif UI_LAYOUT == "BOLT":
 			
 				# Show prompt
 				await confirm_action("", "Kernel Features", action = "Height locked", verb = "Next")
@@ -387,7 +387,7 @@ async def finish_transaction(message: MimbleWimbleCoinFinishTransaction) -> Mimb
 			else:
 			
 				# Show prompt
-				await confirm_value("Kernel Features", "", "Height locked", "", verb = "Next")
+				await confirm_value("Kernel Features", "Height locked", "", "", verb = "Next", is_data = False)
 			
 			# Get lock height from kernel information
 			lockHeight = unpack("<BQ", message.kernel_information)[1]
@@ -398,14 +398,14 @@ async def finish_transaction(message: MimbleWimbleCoinFinishTransaction) -> Mimb
 		# Otherwise check kernel information's features is no recent duplicate features
 		elif message.kernel_information[0] == mimblewimble_coin.KernelFeatures.NO_RECENT_DUPLICATE_FEATURES:
 		
-			# Check if UI layout is TR
-			if UI_LAYOUT == "TR":
+			# Check if UI layout is caesar
+			if UI_LAYOUT == "CAESAR":
 			
 				# Show prompt
 				await confirm_value("Kernel Features", "No recent duplicate", "", "", verb = "Next")
 				
-			# Otherwise check if UI layout is TT
-			elif UI_LAYOUT == "TT":
+			# Otherwise check if UI layout is bolt
+			elif UI_LAYOUT == "BOLT":
 			
 				# Show prompt
 				await confirm_action("", "Kernel Features", action = "No recent duplicate", verb = "Next")
@@ -414,7 +414,7 @@ async def finish_transaction(message: MimbleWimbleCoinFinishTransaction) -> Mimb
 			else:
 			
 				# Show prompt
-				await confirm_value("Kernel Features", "", "No recent duplicate", "", verb = "Next")
+				await confirm_value("Kernel Features", "No recent duplicate", "", "", verb = "Next", is_data = False)
 			
 			# Get relative height from kernel information
 			relativeHeight = unpack("<BH", message.kernel_information)[1]
@@ -425,8 +425,8 @@ async def finish_transaction(message: MimbleWimbleCoinFinishTransaction) -> Mimb
 		# Check if kernel commitment exists
 		if message.kernel_commitment is not None:
 		
-			# Check if UI layout is mercury
-			if UI_LAYOUT == "MERCURY":
+			# Check if UI layout is delizia
+			if UI_LAYOUT == "DELIZIA":
 			
 				# Show prompt
 				await show_warning("", bytes(transactionContextStructure.address).split(b"\0", 1)[0].decode(), "Approve", "Proof Address", br_code = ButtonRequestType.Other, allow_cancel = True, value_text_mono = True)
@@ -440,14 +440,14 @@ async def finish_transaction(message: MimbleWimbleCoinFinishTransaction) -> Mimb
 		# Otherwise
 		else:
 		
-			# Check if UI layout is TR
-			if UI_LAYOUT == "TR":
+			# Check if UI layout is caesar
+			if UI_LAYOUT == "CAESAR":
 			
 				# Show prompt
 				await confirm_text("", "Warning", "No payment proof.", verb = "Approve")
 			
-			# Otherwise check if UI layout is TT
-			elif UI_LAYOUT == "TT":
+			# Otherwise check if UI layout is bolt
+			elif UI_LAYOUT == "BOLT":
 			
 				# Show prompt
 				await show_warning("", "No payment proof.", button = "Approve", br_code = ButtonRequestType.Other, left_is_small = True)

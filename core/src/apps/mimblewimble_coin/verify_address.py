@@ -92,11 +92,11 @@ async def verify_address(message: MimbleWimbleCoinVerifyAddress) -> Success:
 			# Raise process error
 			raise ProcessError("")
 		
-		# Check if UI layout is mercury
-		if UI_LAYOUT == "MERCURY":
+		# Check if UI layout is delizia
+		if UI_LAYOUT == "DELIZIA":
 		
 			# Show prompt
-			await confirm_value(coinInfo.name, "", f"Verify {coinInfo.mqsName} address.", "", verb = "Next")
+			await confirm_value(coinInfo.name, f"Verify {coinInfo.mqsName} address.", "", "", verb = "Next", is_data = False)
 			
 		# Otherwise
 		else:
@@ -104,8 +104,8 @@ async def verify_address(message: MimbleWimbleCoinVerifyAddress) -> Success:
 			# Show prompt
 			await confirm_action("", coinInfo.name, action = f"Verify {coinInfo.mqsName} address.", verb = "Next")
 		
-		# Check if UI layout is mercury
-		if UI_LAYOUT == "MERCURY":
+		# Check if UI layout is delizia
+		if UI_LAYOUT == "DELIZIA":
 		
 			# Show prompt
 			await show_warning("", address, "Valid", f"{coinInfo.mqsName} Address", br_code = ButtonRequestType.Other, allow_cancel = True, value_text_mono = True)
@@ -137,11 +137,11 @@ async def verify_address(message: MimbleWimbleCoinVerifyAddress) -> Success:
 			# Raise process error
 			raise ProcessError("")
 		
-		# Check if UI layout is mercury
-		if UI_LAYOUT == "MERCURY":
+		# Check if UI layout is delizia
+		if UI_LAYOUT == "DELIZIA":
 		
 			# Show prompt
-			await confirm_value(coinInfo.name, "", "Verify Tor address.", "", verb = "Next")
+			await confirm_value(coinInfo.name, "Verify Tor address.", "", "", verb = "Next", is_data = False)
 			
 		# Otherwise
 		else:
@@ -149,8 +149,8 @@ async def verify_address(message: MimbleWimbleCoinVerifyAddress) -> Success:
 			# Show prompt
 			await confirm_action("", coinInfo.name, action = "Verify Tor address.", verb = "Next")
 		
-		# Check if UI layout is mercury
-		if UI_LAYOUT == "MERCURY":
+		# Check if UI layout is delizia
+		if UI_LAYOUT == "DELIZIA":
 		
 			# Show prompt
 			await show_warning("", address, "Valid", "Tor Address", br_code = ButtonRequestType.Other, allow_cancel = True, value_text_mono = True)
@@ -182,11 +182,11 @@ async def verify_address(message: MimbleWimbleCoinVerifyAddress) -> Success:
 			# Raise process error
 			raise ProcessError("")
 		
-		# Check if UI layout is mercury
-		if UI_LAYOUT == "MERCURY":
+		# Check if UI layout is delizia
+		if UI_LAYOUT == "DELIZIA":
 		
 			# Show prompt
-			await confirm_value(coinInfo.name, "", "Verify Slatepack address.", "", verb = "Next")
+			await confirm_value(coinInfo.name, "Verify Slatepack address.", "", "", verb = "Next", is_data = False)
 			
 		# Otherwise
 		else:
@@ -194,8 +194,8 @@ async def verify_address(message: MimbleWimbleCoinVerifyAddress) -> Success:
 			# Show prompt
 			await confirm_action("", coinInfo.name, action = "Verify Slatepack address.", verb = "Next")
 		
-		# Check if UI layout is mercury
-		if UI_LAYOUT == "MERCURY":
+		# Check if UI layout is delizia
+		if UI_LAYOUT == "DELIZIA":
 		
 			# Show prompt
 			await show_warning("", address, "Valid", "Slatepack Address", br_code = ButtonRequestType.Other, allow_cancel = True, value_text_mono = True)

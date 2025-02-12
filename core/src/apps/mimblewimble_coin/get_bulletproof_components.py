@@ -98,8 +98,8 @@ async def get_bulletproof_components(message: MimbleWimbleCoinGetBulletproofComp
 		# Check if message type is sending transaction
 		if message.message_type == MimbleWimbleCoinMessageType.SENDING_TRANSACTION:
 		
-			# Check if UI layout is TR
-			if UI_LAYOUT == "TR":
+			# Check if UI layout is caesar
+			if UI_LAYOUT == "CAESAR":
 			
 				# Display progress
 				displayProgress = progress("Sending Transaction".upper(), "")
@@ -113,8 +113,8 @@ async def get_bulletproof_components(message: MimbleWimbleCoinGetBulletproofComp
 		# Otherwise check if message type is receiving transaction
 		elif message.message_type == MimbleWimbleCoinMessageType.RECEIVING_TRANSACTION:
 		
-			# Check if UI layout is TR
-			if UI_LAYOUT == "TR":
+			# Check if UI layout is caesar
+			if UI_LAYOUT == "CAESAR":
 			
 				# Display progress
 				displayProgress = progress("Receiving Transaction".upper(), "")
@@ -128,8 +128,8 @@ async def get_bulletproof_components(message: MimbleWimbleCoinGetBulletproofComp
 		# Otherwise check if message type is creating coinbase
 		elif message.message_type == MimbleWimbleCoinMessageType.CREATING_COINBASE:
 		
-			# Check if UI layout is TR
-			if UI_LAYOUT == "TR":
+			# Check if UI layout is caesar
+			if UI_LAYOUT == "CAESAR":
 			
 				# Display progress
 				displayProgress = progress("Creating Coinbase".upper(), "")

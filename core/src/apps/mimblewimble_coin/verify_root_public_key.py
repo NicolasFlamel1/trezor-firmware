@@ -80,11 +80,11 @@ async def verify_root_public_key(message: MimbleWimbleCoinVerifyRootPublicKey) -
 	# Try
 	try:
 	
-		# Check if UI layout is mercury
-		if UI_LAYOUT == "MERCURY":
+		# Check if UI layout is delizia
+		if UI_LAYOUT == "DELIZIA":
 		
 			# Show prompt
-			await confirm_value(coinInfo.name, "", "Verify root public key.", "", verb = "Next")
+			await confirm_value(coinInfo.name, "Verify root public key.", "", "", verb = "Next", is_data = False)
 			
 		# Otherwise
 		else:
@@ -92,8 +92,8 @@ async def verify_root_public_key(message: MimbleWimbleCoinVerifyRootPublicKey) -
 			# Show prompt
 			await confirm_action("", coinInfo.name, action = "Verify root public key.", verb = "Next")
 		
-		# Check if UI layout is mercury
-		if UI_LAYOUT == "MERCURY":
+		# Check if UI layout is delizia
+		if UI_LAYOUT == "DELIZIA":
 		
 			# Show prompt
 			await show_warning("", "".join(f"{i:02x}" for i in rootPublicKey), "Valid", "Root Public Key", br_code = ButtonRequestType.Other, allow_cancel = True, value_text_mono = True)

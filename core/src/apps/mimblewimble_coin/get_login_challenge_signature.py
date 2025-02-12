@@ -96,11 +96,11 @@ async def get_login_challenge_signature(message: MimbleWimbleCoinGetLoginChallen
 		# Raise data error
 		raise DataError("")
 	
-	# Check if UI layout is mercury
-	if UI_LAYOUT == "MERCURY":
+	# Check if UI layout is delizia
+	if UI_LAYOUT == "DELIZIA":
 	
 		# Show prompt
-		await confirm_value(coinInfo.name, "", "Login with wallet?", "", verb = "Next")
+		await confirm_value(coinInfo.name, "Login with wallet?", "", "", verb = "Next", is_data = False)
 		
 	# Otherwise
 	else:
@@ -126,14 +126,14 @@ async def get_login_challenge_signature(message: MimbleWimbleCoinGetLoginChallen
 	# Get timestamp components
 	time = mimblewimble_coin.getTimestampComponents(timestamp)
 	
-	# Check if UI layout is TR
-	if UI_LAYOUT == "TR":
+	# Check if UI layout is caesar
+	if UI_LAYOUT == "CAESAR":
 	
 		# Show prompt
 		await confirm_value("Time And Date", f"{time[3]:02d}:{time[4]:02d}:{time[5]:02d} on {time[0]}-{time[1]:02d}-{time[2]:02d} UTC{'-' if timeZoneOffset > 0 else '+'}{abs(timeZoneOffset) // MINUTES_IN_AN_HOUR:02d}:{abs(timeZoneOffset) % MINUTES_IN_AN_HOUR:02d}", "", "", verb = "Approve")
 		
-	# Otherwise check if UI layout is TT
-	elif UI_LAYOUT == "TT":
+	# Otherwise check if UI layout is bolt
+	elif UI_LAYOUT == "BOLT":
 	
 		# Show prompt
 		await confirm_action("", "Time And Date", action = f"{time[3]:02d}:{time[4]:02d}:{time[5]:02d} on {time[0]}-{time[1]:02d}-{time[2]:02d} UTC{'-' if timeZoneOffset > 0 else '+'}{abs(timeZoneOffset) // MINUTES_IN_AN_HOUR:02d}:{abs(timeZoneOffset) % MINUTES_IN_AN_HOUR:02d}", verb = "Approve")
