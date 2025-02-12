@@ -6,11 +6,11 @@ edition = "2021"
 build = "build.rs"
 
 [features]
-default = ["model_tt"]
+default = ["layout_bolt"]
 crypto = ["zeroize"]
-model_tt = ["jpeg"]
-model_tr = []
-model_mercury = ["jpeg", "dma2d"]
+layout_bolt = ["jpeg"]
+layout_caesar = []
+layout_delizia = ["jpeg", "dma2d"]
 micropython = []
 protobuf = ["micropython"]
 ui = []
@@ -40,6 +40,7 @@ rgb_led = []
 backlight = []
 usb = []
 optiga = []
+ble = []
 translations = ["crypto"]
 test = [
     "backlight",

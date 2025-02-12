@@ -122,6 +122,8 @@ SCM_REVISION: bytes
 """Git commit hash of the firmware."""
 VERSION: VersionTuple
 """Firmware version as a tuple (major, minor, patch, build)."""
+USE_BLE: bool
+"""Whether the hardware supports BLE."""
 USE_SD_CARD: bool
 """Whether the hardware supports SD card."""
 USE_BACKLIGHT: bool
@@ -149,7 +151,7 @@ EMULATOR: bool
 BITCOIN_ONLY: bool
 """Whether the firmware is Bitcoin-only."""
 UI_LAYOUT: str
-"""UI layout identifier ("tt" for model T, "tr" for models One and R)."""
+"""UI layout identifier ("BOLT"-T, "CAESAR"-TS3, "DELIZIA"-TS5)."""
 USE_THP: bool
 """Whether the firmware supports Trezor-Host Protocol (version 2)."""
 if __debug__:

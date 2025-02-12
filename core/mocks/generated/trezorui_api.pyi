@@ -81,6 +81,16 @@ def disable_animation(disable: bool) -> None:
 
 
 # rust/src/ui/api/firmware_micropython.rs
+def backlight_set(level: int) -> None:
+    """Set backlight to desired level."""
+
+
+# rust/src/ui/api/firmware_micropython.rs
+def backlight_fade(level: int) -> None:
+    """Fade backlight to desired level."""
+
+
+# rust/src/ui/api/firmware_micropython.rs
 def confirm_action(
     *,
     title: str,
@@ -112,17 +122,16 @@ def confirm_address(
 
 
 # rust/src/ui/api/firmware_micropython.rs
-def confirm_blob(
+def confirm_value(
     *,
     title: str,
-    data: str | bytes,
+    value: str | bytes,
     description: str | None,
-    text_mono: bool = True,
+    is_data: bool = True,
     extra: str | None = None,
     subtitle: str | None = None,
     verb: str | None = None,
     verb_cancel: str | None = None,
-    verb_info: str | None = None,
     info: bool = True,
     hold: bool = False,
     chunkify: bool = False,
@@ -130,22 +139,27 @@ def confirm_blob(
     prompt_screen: bool = False,
     cancel: bool = False,
 ) -> LayoutObj[UiResult]:
-    """Confirm byte sequence data."""
+    """Confirm a generic piece of information on the screen.
+    The value can either be human readable text (`is_data=False`)
+    or something else - like an address or a blob of data.
+    The difference between the two kinds of values
+    is both in the font and in the linebreak strategy."""
 
 
 # rust/src/ui/api/firmware_micropython.rs
-def confirm_blob_intro(
+def confirm_value_intro(
     *,
     title: str,
-    data: str | bytes,
+    value: str | bytes,
     subtitle: str | None = None,
     verb: str | None = None,
     verb_cancel: str | None = None,
     chunkify: bool = False,
 ) -> LayoutObj[UiResult]:
-    """Confirm byte sequence data by showing only the first page of the data
-    and instructing the user to access the menu in order to view all the data,
-    which can then be confirmed using confirm_blob."""
+    """Similar to `confirm_value`, but only the first page is shown.
+    This function is intended as a building block for a higher level `confirm_blob`
+    abstraction which can paginate the blob, show just the first page
+    and instruct the user to view the complete blob if they wish."""
 
 
 # rust/src/ui/api/firmware_micropython.rs
@@ -230,7 +244,7 @@ def confirm_more(
     items: Iterable[tuple[int, str | bytes]],
 ) -> LayoutObj[UiResult]:
     """Confirm long content with the possibility to go back from any page.
-    Meant to be used with confirm_with_info on model TT and TR."""
+    Meant to be used with confirm_with_info on UI Bolt and Caesar."""
 
 
 # rust/src/ui/api/firmware_micropython.rs
@@ -266,24 +280,6 @@ def confirm_summary(
 
 
 # rust/src/ui/api/firmware_micropython.rs
-def confirm_value(
-    *,
-    title: str,
-    value: str,
-    description: str | None,
-    subtitle: str | None,
-    verb: str | None = None,
-    verb_info: str | None = None,
-    verb_cancel: str | None = None,
-    info_button: bool = False,
-    hold: bool = False,
-    chunkify: bool = False,
-    text_mono: bool = True,
-) -> LayoutObj[UiResult]:
-    """Confirm value. Merge of confirm_total and confirm_output."""
-
-
-# rust/src/ui/api/firmware_micropython.rs
 def confirm_with_info(
     *,
     title: str,
@@ -293,7 +289,7 @@ def confirm_with_info(
     items: Iterable[tuple[int, str | bytes]],
 ) -> LayoutObj[UiResult]:
     """Confirm given items but with third button. Always single page
-    without scrolling. In mercury, the button is placed in
+    without scrolling. In Delizia, the button is placed in
     context menu."""
 
 
@@ -304,7 +300,7 @@ def continue_recovery_homepage(
     subtext: str | None,
     button: str | None,
     recovery_type: RecoveryType,
-    show_instructions: bool = False,  # unused on TT
+    show_instructions: bool = False,  # unused on bolt
     remaining_shares: Iterable[tuple[str, str]] | None = None,
 ) -> LayoutObj[UiResult]:
     """Device recovery homescreen."""
@@ -607,7 +603,7 @@ def show_share_words(
 
 
 # rust/src/ui/api/firmware_micropython.rs
-def show_share_words_mercury(
+def show_share_words_delizia(
     *,
     words: Iterable[str],
     subtitle: str | None,
@@ -654,11 +650,11 @@ def show_warning(
     value: str = "",
     description: str = "",
     allow_cancel: bool = True,
-    danger: bool = False,  # unused on TT
+    danger: bool = False,  # unused on bolt
     left_is_small: bool = False,  # unused on TR and MERCURY
     text_mono: bool = False,  # unused by TT and TR
 ) -> LayoutObj[UiResult]:
-    """Warning modal. TT: No buttons shown when `button` is empty string. TR: middle button and centered text."""
+    """Warning modal. Bolt: No buttons shown when `button` is empty string. Caesar: middle button and centered text."""
 
 
 # rust/src/ui/api/firmware_micropython.rs

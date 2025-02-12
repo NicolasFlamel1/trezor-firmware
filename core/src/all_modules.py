@@ -177,42 +177,42 @@ trezor.ui
 import trezor.ui
 trezor.ui.layouts
 import trezor.ui.layouts
+trezor.ui.layouts.bolt
+import trezor.ui.layouts.bolt
+trezor.ui.layouts.bolt.fido
+import trezor.ui.layouts.bolt.fido
+trezor.ui.layouts.bolt.recovery
+import trezor.ui.layouts.bolt.recovery
+trezor.ui.layouts.bolt.reset
+import trezor.ui.layouts.bolt.reset
+trezor.ui.layouts.caesar
+import trezor.ui.layouts.caesar
+trezor.ui.layouts.caesar.fido
+import trezor.ui.layouts.caesar.fido
+trezor.ui.layouts.caesar.recovery
+import trezor.ui.layouts.caesar.recovery
+trezor.ui.layouts.caesar.reset
+import trezor.ui.layouts.caesar.reset
 trezor.ui.layouts.common
 import trezor.ui.layouts.common
+trezor.ui.layouts.delizia
+import trezor.ui.layouts.delizia
+trezor.ui.layouts.delizia.fido
+import trezor.ui.layouts.delizia.fido
+trezor.ui.layouts.delizia.recovery
+import trezor.ui.layouts.delizia.recovery
+trezor.ui.layouts.delizia.reset
+import trezor.ui.layouts.delizia.reset
 trezor.ui.layouts.fido
 import trezor.ui.layouts.fido
 trezor.ui.layouts.homescreen
 import trezor.ui.layouts.homescreen
-trezor.ui.layouts.mercury
-import trezor.ui.layouts.mercury
-trezor.ui.layouts.mercury.fido
-import trezor.ui.layouts.mercury.fido
-trezor.ui.layouts.mercury.recovery
-import trezor.ui.layouts.mercury.recovery
-trezor.ui.layouts.mercury.reset
-import trezor.ui.layouts.mercury.reset
 trezor.ui.layouts.progress
 import trezor.ui.layouts.progress
 trezor.ui.layouts.recovery
 import trezor.ui.layouts.recovery
 trezor.ui.layouts.reset
 import trezor.ui.layouts.reset
-trezor.ui.layouts.tr
-import trezor.ui.layouts.tr
-trezor.ui.layouts.tr.fido
-import trezor.ui.layouts.tr.fido
-trezor.ui.layouts.tr.recovery
-import trezor.ui.layouts.tr.recovery
-trezor.ui.layouts.tr.reset
-import trezor.ui.layouts.tr.reset
-trezor.ui.layouts.tt
-import trezor.ui.layouts.tt
-trezor.ui.layouts.tt.fido
-import trezor.ui.layouts.tt.fido
-trezor.ui.layouts.tt.recovery
-import trezor.ui.layouts.tt.recovery
-trezor.ui.layouts.tt.reset
-import trezor.ui.layouts.tt.reset
 trezor.utils
 import trezor.utils
 trezor.wire

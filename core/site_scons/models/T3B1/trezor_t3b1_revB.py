@@ -16,7 +16,11 @@ def configure(
     hw_model = get_hw_model_as_number("T3B1")
     hw_revision = ord("B")
 
-    defines += ["FRAMEBUFFER"]
+    defines += [
+        "FRAMEBUFFER",
+        ("DISPLAY_RESX", "128"),
+        ("DISPLAY_RESY", "64"),
+    ]
     features_available.append("framebuffer")
     features_available.append("display_mono")
 
@@ -69,12 +73,14 @@ def configure(
         ]
         features_available.append("usb")
         paths += ["embed/io/usb/inc"]
+        defines += [("USE_USB", "1")]
 
     if "optiga" in features_wanted:
         sources += ["embed/io/i2c_bus/stm32u5/i2c_bus.c"]
         sources += ["embed/sec/optiga/stm32/optiga_hal.c"]
         sources += ["embed/sec/optiga/optiga.c"]
         sources += ["embed/sec/optiga/optiga_commands.c"]
+        sources += ["embed/sec/optiga/optiga_config.c"]
         sources += ["embed/sec/optiga/optiga_transport.c"]
         sources += ["vendor/trezor-crypto/hash_to_curve.c"]
         paths += ["embed/io/i2c_bus/inc"]

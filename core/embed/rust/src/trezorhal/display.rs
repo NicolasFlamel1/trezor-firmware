@@ -3,7 +3,10 @@ use super::ffi;
 #[cfg(feature = "framebuffer")]
 use core::ptr;
 
-pub use ffi::{DISPLAY_RESX, DISPLAY_RESY};
+use ffi::{DISPLAY_RESX_, DISPLAY_RESY_};
+
+pub const DISPLAY_RESX: u32 = DISPLAY_RESX_;
+pub const DISPLAY_RESY: u32 = DISPLAY_RESY_;
 
 pub type FontInfo = ffi::font_info_t;
 
@@ -19,7 +22,7 @@ pub fn get_font_info(font: i32) -> Option<FontInfo> {
     // - The font_info_t contains pointers to static glyph data arrays also in ROM
     // - All font data is generated at compile time and included in the binary
     unsafe {
-        let font = ffi::get_font_info(font);
+        let font = ffi::get_font_info(font as _);
         Some(*font.as_ref()?)
     }
 }

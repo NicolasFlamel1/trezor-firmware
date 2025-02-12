@@ -41,9 +41,10 @@ def configure(
 
     sources += [
         "embed/io/display/ltdc_dsi/display_driver.c",
-        "embed/io/display/ltdc_dsi/panels/lx200d2406a/lx200d2406a.c",
+        "embed/io/display/ltdc_dsi/panels/lx250a2401a/lx250a2401a.c",
         "embed/io/display/ltdc_dsi/display_fb.c",
-        "embed/io/display/ltdc_dsi/display_fb_rgb565.c",
+        "embed/io/display/ltdc_dsi/display_fb_rgb888.c",
+        "embed/io/display/ltdc_dsi/display_gfxmmu.c",
         "embed/io/display/fb_queue/fb_queue.c",
         "embed/io/display/backlight/stm32/backlight_pwm.c",
     ]
@@ -54,7 +55,6 @@ def configure(
 
     if "input" in features_wanted:
         sources += ["embed/io/touch/ft6x36/ft6x36.c"]
-        sources += ["embed/io/touch/ft6x36/panels/lhs200kb-if21.c"]
         paths += ["embed/io/touch/inc"]
         features_available.append("touch")
         sources += ["embed/io/button/stm32/button.c"]
@@ -77,27 +77,24 @@ def configure(
         features_available.append("haptic")
         defines += ["USE_HAPTIC=1"]
 
-    # if "ble" in features_wanted:
-    #     sources += ["embed/trezorhal/stm32f4/ble/ble_hal.c"]
-    #     sources += ["embed/trezorhal/stm32f4/ble/dfu.c"]
-    #     sources += ["embed/trezorhal/stm32f4/ble/fwu.c"]
-    #     sources += ["embed/trezorhal/stm32f4/ble/ble.c"]
-    #     sources += ["embed/trezorhal/stm32f4/ble/messages.c"]
-    #     sources += [
-    #         "vendor/micropython/lib/stm32lib/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_uart.c"
-    #     ]
-    #     features_available.append("ble")
-    #     defines += [("USE_BLE", "1")]
-
     if "ble" in features_wanted:
+        sources += ["embed/io/ble/stm32/ble.c"]
+        paths += ["embed/io/ble/inc"]
+        features_available.append("ble")
+        defines += [("USE_BLE", "1")]
+        sources += ["embed/io/nrf/stm32u5/nrf.c"]
+        sources += ["embed/io/nrf/crc8.c"]
+        paths += ["embed/io/nrf/inc"]
         sources += [
-            "vendor/micropython/lib/stm32lib/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_dma.c"
+            "vendor/stm32u5xx_hal_driver/Src/stm32u5xx_hal_uart.c",
+            "vendor/stm32u5xx_hal_driver/Src/stm32u5xx_hal_uart_ex.c",
         ]
 
     if "optiga" in features_wanted:
         sources += ["embed/sec/optiga/stm32/optiga_hal.c"]
         sources += ["embed/sec/optiga/optiga.c"]
         sources += ["embed/sec/optiga/optiga_commands.c"]
+        sources += ["embed/sec/optiga/optiga_config.c"]
         sources += ["embed/sec/optiga/optiga_transport.c"]
         sources += ["vendor/trezor-crypto/hash_to_curve.c"]
         paths += ["embed/sec/optiga/inc"]
@@ -130,19 +127,25 @@ def configure(
         ]
         features_available.append("usb")
         paths += ["embed/io/usb/inc"]
+        defines += [("USE_USB", "1")]
+
+    defines += [
+        "FRAMEBUFFER",
+        "DISPLAY_RGBA8888",
+        ("UI_COLOR_32BIT", "1"),
+        ("USE_RGB_COLORS", "1"),
+        ("DISPLAY_RESX", "380"),
+        ("DISPLAY_RESY", "520"),
+    ]
+    features_available.append("ui_color_32bit")
+    features_available.append("framebuffer")
+    features_available.append("display_rgba8888")
 
     defines += [
         "USE_DMA2D",
-        ("USE_RGB_COLORS", "1"),
     ]
-    sources += ["embed/gfx/bitblt/stm32/dma2d_bitblt.c"]
-
     features_available.append("dma2d")
-
-    defines += ["FRAMEBUFFER"]
-    defines += ["DISPLAY_RGB565"]
-    features_available.append("framebuffer")
-    features_available.append("display_rgb565")
+    sources += ["embed/gfx/bitblt/stm32/dma2d_bitblt.c"]
 
     defines += [
         ("USE_HASH_PROCESSOR", "1"),

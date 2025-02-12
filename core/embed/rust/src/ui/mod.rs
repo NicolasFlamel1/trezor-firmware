@@ -17,12 +17,12 @@ pub mod layout;
 
 mod api;
 
-#[cfg(feature = "model_mercury")]
-pub mod model_mercury;
-#[cfg(feature = "model_tr")]
-pub mod model_tr;
-#[cfg(feature = "model_tt")]
-pub mod model_tt;
+#[cfg(feature = "layout_bolt")]
+pub mod layout_bolt;
+#[cfg(feature = "layout_caesar")]
+pub mod layout_caesar;
+#[cfg(feature = "layout_delizia")]
+pub mod layout_delizia;
 
 #[cfg(feature = "bootloader")]
 pub mod ui_bootloader;
@@ -33,14 +33,14 @@ pub mod ui_firmware;
 pub use ui_common::CommonUI;
 
 #[cfg(all(
-    feature = "model_mercury",
-    not(feature = "model_tr"),
-    not(feature = "model_tt")
+    feature = "layout_delizia",
+    not(feature = "layout_caesar"),
+    not(feature = "layout_bolt")
 ))]
-pub type ModelUI = crate::ui::model_mercury::UIMercury;
+pub type ModelUI = crate::ui::layout_delizia::UIDelizia;
 
-#[cfg(all(feature = "model_tr", not(feature = "model_tt")))]
-pub type ModelUI = crate::ui::model_tr::UIModelTR;
+#[cfg(all(feature = "layout_caesar", not(feature = "layout_bolt")))]
+pub type ModelUI = crate::ui::layout_caesar::UICaesar;
 
-#[cfg(feature = "model_tt")]
-pub type ModelUI = crate::ui::model_tt::UIModelTT;
+#[cfg(feature = "layout_bolt")]
+pub type ModelUI = crate::ui::layout_bolt::UIBolt;

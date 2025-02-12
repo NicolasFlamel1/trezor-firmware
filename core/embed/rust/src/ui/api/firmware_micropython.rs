@@ -29,6 +29,9 @@ use crate::{
 };
 use heapless::Vec;
 
+#[cfg(feature = "backlight")]
+use crate::ui::display::{fade_backlight_duration, set_backlight};
+
 /// Dummy implementation so that we can use `Empty` in a return type of
 /// unimplemented trait function
 impl ComponentMsgObj for Empty {
@@ -108,15 +111,15 @@ extern "C" fn new_confirm_address(n_args: usize, args: *const Obj, kwargs: *mut 
     unsafe { util::try_with_args_and_kwargs(n_args, args, kwargs, block) }
 }
 
-extern "C" fn new_confirm_blob(n_args: usize, args: *const Obj, kwargs: *mut Map) -> Obj {
+extern "C" fn new_confirm_value(n_args: usize, args: *const Obj, kwargs: *mut Map) -> Obj {
     let block = move |_args: &[Obj], kwargs: &Map| {
         let title: TString = kwargs.get(Qstr::MP_QSTR_title)?.try_into()?;
-        let data: Obj = kwargs.get(Qstr::MP_QSTR_data)?;
+        let value: Obj = kwargs.get(Qstr::MP_QSTR_value)?;
         let description: Option<TString> = kwargs
             .get(Qstr::MP_QSTR_description)
             .unwrap_or_else(|_| Obj::const_none())
             .try_into_option()?;
-        let text_mono: bool = kwargs.get_or(Qstr::MP_QSTR_text_mono, true)?;
+        let is_data: bool = kwargs.get_or(Qstr::MP_QSTR_is_data, true)?;
         let extra: Option<TString> = kwargs
             .get(Qstr::MP_QSTR_extra)
             .unwrap_or_else(|_| Obj::const_none())
@@ -133,10 +136,6 @@ extern "C" fn new_confirm_blob(n_args: usize, args: *const Obj, kwargs: *mut Map
             .get(Qstr::MP_QSTR_verb_cancel)
             .unwrap_or_else(|_| Obj::const_none())
             .try_into_option()?;
-        let verb_info: Option<TString> = kwargs
-            .get(Qstr::MP_QSTR_verb_info)
-            .unwrap_or_else(|_| Obj::const_none())
-            .try_into_option()?;
         let info: bool = kwargs.get_or(Qstr::MP_QSTR_info, false)?;
         let hold: bool = kwargs.get_or(Qstr::MP_QSTR_hold, false)?;
         let chunkify: bool = kwargs.get_or(Qstr::MP_QSTR_chunkify, false)?;
@@ -144,16 +143,15 @@ extern "C" fn new_confirm_blob(n_args: usize, args: *const Obj, kwargs: *mut Map
         let prompt_screen: bool = kwargs.get_or(Qstr::MP_QSTR_prompt_screen, false)?;
         let cancel: bool = kwargs.get_or(Qstr::MP_QSTR_cancel, false)?;
 
-        let layout_obj = ModelUI::confirm_blob(
+        let layout_obj = ModelUI::confirm_value(
             title,
-            data,
+            value,
             description,
-            text_mono,
+            is_data,
             extra,
             subtitle,
             verb,
             verb_cancel,
-            verb_info,
             info,
             hold,
             chunkify,
@@ -166,10 +164,10 @@ extern "C" fn new_confirm_blob(n_args: usize, args: *const Obj, kwargs: *mut Map
     unsafe { util::try_with_args_and_kwargs(n_args, args, kwargs, block) }
 }
 
-extern "C" fn new_confirm_blob_intro(n_args: usize, args: *const Obj, kwargs: *mut Map) -> Obj {
+extern "C" fn new_confirm_value_intro(n_args: usize, args: *const Obj, kwargs: *mut Map) -> Obj {
     let block = move |_args: &[Obj], kwargs: &Map| {
         let title: TString = kwargs.get(Qstr::MP_QSTR_title)?.try_into()?;
-        let data: Obj = kwargs.get(Qstr::MP_QSTR_data)?;
+        let value: Obj = kwargs.get(Qstr::MP_QSTR_value)?;
         let subtitle: Option<TString> = kwargs
             .get(Qstr::MP_QSTR_subtitle)
             .unwrap_or_else(|_| Obj::const_none())
@@ -185,7 +183,7 @@ extern "C" fn new_confirm_blob_intro(n_args: usize, args: *const Obj, kwargs: *m
         let chunkify: bool = kwargs.get_or(Qstr::MP_QSTR_chunkify, false)?;
 
         let layout_obj =
-            ModelUI::confirm_blob_intro(title, data, subtitle, verb, verb_cancel, chunkify)?;
+            ModelUI::confirm_value_intro(title, value, subtitle, verb, verb_cancel, chunkify)?;
         Ok(layout_obj.into())
     };
     unsafe { util::try_with_args_and_kwargs(n_args, args, kwargs, block) }
@@ -369,53 +367,6 @@ extern "C" fn new_confirm_summary(n_args: usize, args: *const Obj, kwargs: *mut 
             verb_cancel,
         )?;
         Ok(LayoutObj::new_root(layout)?.into())
-    };
-    unsafe { util::try_with_args_and_kwargs(n_args, args, kwargs, block) }
-}
-
-extern "C" fn new_confirm_value(n_args: usize, args: *const Obj, kwargs: *mut Map) -> Obj {
-    let block = move |_args: &[Obj], kwargs: &Map| {
-        let title: TString = kwargs.get(Qstr::MP_QSTR_title)?.try_into()?;
-        let subtitle: Option<TString> = kwargs
-            .get(Qstr::MP_QSTR_subtitle)
-            .unwrap_or_else(|_| Obj::const_none())
-            .try_into_option()?;
-        let description: Option<TString> = kwargs
-            .get(Qstr::MP_QSTR_description)
-            .unwrap_or_else(|_| Obj::const_none())
-            .try_into_option()?;
-        let value: Obj = kwargs.get(Qstr::MP_QSTR_value)?;
-        let info_button: bool = kwargs.get_or(Qstr::MP_QSTR_info_button, false)?;
-        let verb: Option<TString> = kwargs
-            .get(Qstr::MP_QSTR_verb)
-            .unwrap_or_else(|_| Obj::const_none())
-            .try_into_option()?;
-        let verb_info: Option<TString> = kwargs
-            .get(Qstr::MP_QSTR_verb_info)
-            .unwrap_or_else(|_| Obj::const_none())
-            .try_into_option()?;
-        let verb_cancel: Option<TString> = kwargs
-            .get(Qstr::MP_QSTR_verb_cancel)
-            .unwrap_or_else(|_| Obj::const_none())
-            .try_into_option()?;
-        let hold: bool = kwargs.get_or(Qstr::MP_QSTR_hold, false)?;
-        let chunkify: bool = kwargs.get_or(Qstr::MP_QSTR_chunkify, false)?;
-        let text_mono: bool = kwargs.get_or(Qstr::MP_QSTR_text_mono, true)?;
-
-        let layout_obj = ModelUI::confirm_value(
-            title,
-            value,
-            description,
-            subtitle,
-            verb,
-            verb_info,
-            verb_cancel,
-            info_button,
-            hold,
-            chunkify,
-            text_mono,
-        )?;
-        Ok(layout_obj.into())
     };
     unsafe { util::try_with_args_and_kwargs(n_args, args, kwargs, block) }
 }
@@ -927,7 +878,7 @@ extern "C" fn new_show_share_words(n_args: usize, args: *const Obj, kwargs: *mut
     unsafe { util::try_with_args_and_kwargs(n_args, args, kwargs, block) }
 }
 
-extern "C" fn new_show_share_words_mercury(
+extern "C" fn new_show_share_words_delizia(
     n_args: usize,
     args: *const Obj,
     kwargs: *mut Map,
@@ -947,7 +898,7 @@ extern "C" fn new_show_share_words_mercury(
 
         let words: Vec<TString, 33> = util::iter_into_vec(words)?;
 
-        let layout = ModelUI::show_share_words_mercury(
+        let layout = ModelUI::show_share_words_delizia(
             words,
             subtitle,
             instructions,
@@ -1034,6 +985,24 @@ pub extern "C" fn upy_check_homescreen_format(data: Obj) -> Obj {
         Ok(ModelUI::check_homescreen_format(buffer, false).into())
     };
 
+    unsafe { util::try_or_raise(block) }
+}
+
+pub extern "C" fn upy_backlight_set(_level: Obj) -> Obj {
+    let block = || {
+        #[cfg(feature = "backlight")]
+        set_backlight(_level.try_into()?);
+        Ok(Obj::const_none())
+    };
+    unsafe { util::try_or_raise(block) }
+}
+
+pub extern "C" fn upy_backlight_fade(_level: Obj) -> Obj {
+    let block = || {
+        #[cfg(feature = "backlight")]
+        fade_backlight_duration(_level.try_into()?, 150);
+        Ok(Obj::const_none())
+    };
     unsafe { util::try_or_raise(block) }
 }
 
@@ -1143,6 +1112,14 @@ pub static mp_module_trezorui_api: Module = obj_module! {
     ///     """Disable animations, debug builds only."""
     Qstr::MP_QSTR_disable_animation => obj_fn_1!(upy_disable_animation).as_obj(),
 
+    /// def backlight_set(level: int) -> None:
+    ///     """Set backlight to desired level."""
+    Qstr::MP_QSTR_backlight_set => obj_fn_1!(upy_backlight_set).as_obj(),
+
+    /// def backlight_fade(level: int) -> None:
+    ///     """Fade backlight to desired level."""
+    Qstr::MP_QSTR_backlight_fade => obj_fn_1!(upy_backlight_fade).as_obj(),
+
     /// def confirm_action(
     ///     *,
     ///     title: str,
@@ -1172,17 +1149,16 @@ pub static mp_module_trezorui_api: Module = obj_module! {
     ///     """Confirm address."""
     Qstr::MP_QSTR_confirm_address => obj_fn_kw!(0, new_confirm_address).as_obj(),
 
-    /// def confirm_blob(
+    /// def confirm_value(
     ///     *,
     ///     title: str,
-    ///     data: str | bytes,
+    ///     value: str | bytes,
     ///     description: str | None,
-    ///     text_mono: bool = True,
+    ///     is_data: bool = True,
     ///     extra: str | None = None,
     ///     subtitle: str | None = None,
     ///     verb: str | None = None,
     ///     verb_cancel: str | None = None,
-    ///     verb_info: str | None = None,
     ///     info: bool = True,
     ///     hold: bool = False,
     ///     chunkify: bool = False,
@@ -1190,22 +1166,27 @@ pub static mp_module_trezorui_api: Module = obj_module! {
     ///     prompt_screen: bool = False,
     ///     cancel: bool = False,
     /// ) -> LayoutObj[UiResult]:
-    ///     """Confirm byte sequence data."""
-    Qstr::MP_QSTR_confirm_blob => obj_fn_kw!(0, new_confirm_blob).as_obj(),
+    ///     """Confirm a generic piece of information on the screen.
+    ///     The value can either be human readable text (`is_data=False`)
+    ///     or something else - like an address or a blob of data.
+    ///     The difference between the two kinds of values
+    ///     is both in the font and in the linebreak strategy."""
+    Qstr::MP_QSTR_confirm_value => obj_fn_kw!(0, new_confirm_value).as_obj(),
 
-    /// def confirm_blob_intro(
+    /// def confirm_value_intro(
     ///     *,
     ///     title: str,
-    ///     data: str | bytes,
+    ///     value: str | bytes,
     ///     subtitle: str | None = None,
     ///     verb: str | None = None,
     ///     verb_cancel: str | None = None,
     ///     chunkify: bool = False,
     /// ) -> LayoutObj[UiResult]:
-    ///     """Confirm byte sequence data by showing only the first page of the data
-    ///     and instructing the user to access the menu in order to view all the data,
-    ///     which can then be confirmed using confirm_blob."""
-    Qstr::MP_QSTR_confirm_blob_intro => obj_fn_kw!(0, new_confirm_blob_intro).as_obj(),
+    ///     """Similar to `confirm_value`, but only the first page is shown.
+    ///     This function is intended as a building block for a higher level `confirm_blob`
+    ///     abstraction which can paginate the blob, show just the first page
+    ///     and instruct the user to view the complete blob if they wish."""
+    Qstr::MP_QSTR_confirm_value_intro => obj_fn_kw!(0, new_confirm_value_intro).as_obj(),
 
     /// def confirm_coinjoin(
     ///     *,
@@ -1282,7 +1263,7 @@ pub static mp_module_trezorui_api: Module = obj_module! {
     ///     items: Iterable[tuple[int, str | bytes]],
     /// ) -> LayoutObj[UiResult]:
     ///     """Confirm long content with the possibility to go back from any page.
-    ///     Meant to be used with confirm_with_info on model TT and TR."""
+    ///     Meant to be used with confirm_with_info on UI Bolt and Caesar."""
     Qstr::MP_QSTR_confirm_more => obj_fn_kw!(0, new_confirm_more).as_obj(),
 
     /// def confirm_properties(
@@ -1314,23 +1295,6 @@ pub static mp_module_trezorui_api: Module = obj_module! {
     ///     """Confirm summary of a transaction."""
     Qstr::MP_QSTR_confirm_summary => obj_fn_kw!(0, new_confirm_summary).as_obj(),
 
-    /// def confirm_value(
-    ///     *,
-    ///     title: str,
-    ///     value: str,
-    ///     description: str | None,
-    ///     subtitle: str | None,
-    ///     verb: str | None = None,
-    ///     verb_info: str | None = None,
-    ///     verb_cancel: str | None = None,
-    ///     info_button: bool = False,
-    ///     hold: bool = False,
-    ///     chunkify: bool = False,
-    ///     text_mono: bool = True,
-    /// ) -> LayoutObj[UiResult]:
-    ///     """Confirm value. Merge of confirm_total and confirm_output."""
-    Qstr::MP_QSTR_confirm_value => obj_fn_kw!(0, new_confirm_value).as_obj(),
-
     /// def confirm_with_info(
     ///     *,
     ///     title: str,
@@ -1340,7 +1304,7 @@ pub static mp_module_trezorui_api: Module = obj_module! {
     ///     items: Iterable[tuple[int, str | bytes]],
     /// ) -> LayoutObj[UiResult]:
     ///     """Confirm given items but with third button. Always single page
-    ///     without scrolling. In mercury, the button is placed in
+    ///     without scrolling. In Delizia, the button is placed in
     ///     context menu."""
     Qstr::MP_QSTR_confirm_with_info => obj_fn_kw!(0, new_confirm_with_info).as_obj(),
 
@@ -1350,7 +1314,7 @@ pub static mp_module_trezorui_api: Module = obj_module! {
     ///     subtext: str | None,
     ///     button: str | None,
     ///     recovery_type: RecoveryType,
-    ///     show_instructions: bool = False,  # unused on TT
+    ///     show_instructions: bool = False,  # unused on bolt
     ///     remaining_shares: Iterable[tuple[str, str]] | None = None,
     /// ) -> LayoutObj[UiResult]:
     ///     """Device recovery homescreen."""
@@ -1380,7 +1344,7 @@ pub static mp_module_trezorui_api: Module = obj_module! {
     ///     """Confirm the recipient, (optionally) confirm the amount and (optionally) confirm the summary and present a Hold to Sign page."""
     Qstr::MP_QSTR_flow_confirm_output => obj_fn_kw!(0, new_flow_confirm_output).as_obj(),
 
-    // TODO: supply more arguments for Wipe code setting (mercury)
+    // TODO: supply more arguments for Wipe code setting (delizia)
     ///
     /// def flow_confirm_set_new_pin(
     ///     *,
@@ -1627,7 +1591,7 @@ pub static mp_module_trezorui_api: Module = obj_module! {
     ///     """Show mnemonic for backup."""
     Qstr::MP_QSTR_show_share_words => obj_fn_kw!(0, new_show_share_words).as_obj(),
 
-    /// def show_share_words_mercury(
+    /// def show_share_words_delizia(
     ///     *,
     ///     words: Iterable[str],
     ///     subtitle: str | None,
@@ -1637,7 +1601,7 @@ pub static mp_module_trezorui_api: Module = obj_module! {
     /// ) -> LayoutObj[UiResult]:
     ///     """Show mnemonic for wallet backup preceded by an instruction screen and followed by a
     ///     confirmation screen."""
-    Qstr::MP_QSTR_show_share_words_mercury => obj_fn_kw!(0, new_show_share_words_mercury).as_obj(),
+    Qstr::MP_QSTR_show_share_words_delizia => obj_fn_kw!(0, new_show_share_words_delizia).as_obj(),
 
     /// def show_simple(
     ///     *,
@@ -1670,11 +1634,11 @@ pub static mp_module_trezorui_api: Module = obj_module! {
     ///     value: str = "",
     ///     description: str = "",
     ///     allow_cancel: bool = True,
-    ///     danger: bool = False,  # unused on TT
+    ///     danger: bool = False,  # unused on bolt
     ///     left_is_small: bool = False,  # unused on TR and MERCURY
     ///     text_mono: bool = False,  # unused by TT and TR
     /// ) -> LayoutObj[UiResult]:
-    ///     """Warning modal. TT: No buttons shown when `button` is empty string. TR: middle button and centered text."""
+    ///     """Warning modal. Bolt: No buttons shown when `button` is empty string. Caesar: middle button and centered text."""
     Qstr::MP_QSTR_show_warning => obj_fn_kw!(0, new_show_warning).as_obj(),
 
     /// def tutorial() -> LayoutObj[UiResult]:

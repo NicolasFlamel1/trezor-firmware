@@ -71,6 +71,10 @@
 #include <io/haptic.h>
 #endif
 
+#ifdef USE_RGB_LED
+#include <io/rgb_led.h>
+#endif
+
 #ifdef USE_HASH_PROCESSOR
 #include <sec/hash_processor.h>
 #endif
@@ -93,7 +97,7 @@
 #include "stm32f4xx_ll_utils.h"
 #endif
 
-#ifdef TREZOR_MODEL_T
+#ifdef TREZOR_MODEL_T2T1
 #define MODEL_IDENTIFIER "TREZOR2-"
 #else
 #define MODEL_IDENTIFIER MODEL_INTERNAL_NAME "-"
@@ -232,7 +236,7 @@ static void draw_border(int width, int padding) {
 }
 
 static void draw_welcome_screen(void) {
-#if defined TREZOR_MODEL_R || defined TREZOR_MODEL_T3B1
+#if defined TREZOR_MODEL_T2B1 || defined TREZOR_MODEL_T3B1
   gfx_draw_bar(gfx_rect_wh(0, 0, DISPLAY_RESX, DISPLAY_RESY), COLOR_WHITE);
   display_refresh();
 #else
@@ -731,6 +735,33 @@ static void test_haptic(const char *args) {
 }
 #endif
 
+#ifdef USE_RGB_LED
+static void test_rgb_led(const char *args) {
+  static const int expected_params = 3;
+
+  int params[expected_params];
+  int num_params = 0;
+
+  extract_params(args, params, &num_params, expected_params);
+
+  if (num_params != expected_params) {
+    vcp_println("ERROR PARAM");
+    return;
+  }
+
+  if (params[0] > 255 || params[1] > 255 || params[2] > 255) {
+    vcp_println("ERROR RGB VALUE");
+    return;
+  }
+
+  uint32_t color = params[0] << 16 | params[1] << 8 | params[2];
+
+  rgb_led_set_color(color);
+
+  vcp_println("OK");
+}
+#endif
+
 static void test_otp_read(void) {
   uint8_t data[FLASH_OTP_BLOCK_SIZE + 1];
   memzero(data, sizeof(data));
@@ -1130,6 +1161,10 @@ int main(void) {
 #ifdef USE_HAPTIC
   haptic_init();
 #endif
+#ifdef USE_RGB_LED
+  rgb_led_init();
+#endif
+
   usb_init_all();
 
   uint32_t bootloader_version = read_bootloader_version();
@@ -1145,7 +1180,7 @@ int main(void) {
   draw_welcome_screen();
 
   char dom[32];
-  // format: {MODEL_IDENTIFIER}-YYMMDD
+  // format: {MODEL_IDENTIFIER}YYMMDD
   if (sectrue == flash_otp_read(FLASH_OTP_BLOCK_BATCH, 0, (uint8_t *)dom, 32) &&
       sectrue == startswith(dom, MODEL_IDENTIFIER) && dom[31] == 0) {
     gfx_offset_t pos;
@@ -1154,7 +1189,8 @@ int main(void) {
     gfx_draw_qrcode(pos, 4, dom);
 
     pos = gfx_offset(DISPLAY_RESX / 2, DISPLAY_RESY - 30);
-    gfx_draw_text(pos, dom + 8, -1, &bold, GFX_ALIGN_CENTER);
+    gfx_draw_text(pos, dom + sizeof(MODEL_IDENTIFIER) - 1, -1, &bold,
+                  GFX_ALIGN_CENTER);
 
     display_refresh();
   }
@@ -1215,6 +1251,10 @@ int main(void) {
 #ifdef USE_HAPTIC
     } else if (startswith(line, "HAPTIC ")) {
       test_haptic(line + 7);
+#endif
+#ifdef USE_RGB_LED
+    } else if (startswith(line, "RGB_LED ")) {
+      test_rgb_led(line + 8);
 #endif
 #ifdef USE_OPTIGA
     } else if (startswith(line, "OPTIGAID READ")) {

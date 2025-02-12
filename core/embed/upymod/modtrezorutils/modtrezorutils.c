@@ -381,6 +381,8 @@ STATIC mp_obj_tuple_t mod_trezorutils_version_obj = {
 /// """Git commit hash of the firmware."""
 /// VERSION: VersionTuple
 /// """Firmware version as a tuple (major, minor, patch, build)."""
+/// USE_BLE: bool
+/// """Whether the hardware supports BLE."""
 /// USE_SD_CARD: bool
 /// """Whether the hardware supports SD card."""
 /// USE_BACKLIGHT: bool
@@ -408,7 +410,7 @@ STATIC mp_obj_tuple_t mod_trezorutils_version_obj = {
 /// BITCOIN_ONLY: bool
 /// """Whether the firmware is Bitcoin-only."""
 /// UI_LAYOUT: str
-/// """UI layout identifier ("tt" for model T, "tr" for models One and R)."""
+/// """UI layout identifier ("BOLT"-T, "CAESAR"-TS3, "DELIZIA"-TS5)."""
 /// USE_THP: bool
 /// """Whether the firmware supports Trezor-Host Protocol (version 2)."""
 /// if __debug__:
@@ -446,6 +448,11 @@ STATIC const mp_rom_map_elem_t mp_module_trezorutils_globals_table[] = {
     {MP_ROM_QSTR(MP_QSTR_USE_SD_CARD), mp_const_true},
 #else
     {MP_ROM_QSTR(MP_QSTR_USE_SD_CARD), mp_const_false},
+#endif
+#ifdef USE_BLE
+    {MP_ROM_QSTR(MP_QSTR_USE_BLE), mp_const_true},
+#else
+    {MP_ROM_QSTR(MP_QSTR_USE_BLE), mp_const_false},
 #endif
 #ifdef USE_BACKLIGHT
     {MP_ROM_QSTR(MP_QSTR_USE_BACKLIGHT), mp_const_true},
@@ -497,12 +504,12 @@ STATIC const mp_rom_map_elem_t mp_module_trezorutils_globals_table[] = {
 #else
     {MP_ROM_QSTR(MP_QSTR_USE_THP), mp_const_false},
 #endif
-#ifdef UI_LAYOUT_TT
-    {MP_ROM_QSTR(MP_QSTR_UI_LAYOUT), MP_ROM_QSTR(MP_QSTR_TT)},
-#elif UI_LAYOUT_TR
-    {MP_ROM_QSTR(MP_QSTR_UI_LAYOUT), MP_ROM_QSTR(MP_QSTR_TR)},
-#elif UI_LAYOUT_MERCURY
-    {MP_ROM_QSTR(MP_QSTR_UI_LAYOUT), MP_ROM_QSTR(MP_QSTR_MERCURY)},
+#ifdef UI_LAYOUT_BOLT
+    {MP_ROM_QSTR(MP_QSTR_UI_LAYOUT), MP_ROM_QSTR(MP_QSTR_BOLT)},
+#elif UI_LAYOUT_CAESAR
+    {MP_ROM_QSTR(MP_QSTR_UI_LAYOUT), MP_ROM_QSTR(MP_QSTR_CAESAR)},
+#elif UI_LAYOUT_DELIZIA
+    {MP_ROM_QSTR(MP_QSTR_UI_LAYOUT), MP_ROM_QSTR(MP_QSTR_DELIZIA)},
 #else
 #error Unknown layout
 #endif

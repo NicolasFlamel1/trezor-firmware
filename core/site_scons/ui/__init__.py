@@ -2,17 +2,17 @@ from __future__ import annotations
 
 from site_scons import models
 
-from . import mercury, tr, tt
+from . import ui_bolt, ui_caesar, ui_delizia
 
 
-def get_ui_module(model: str):
+def get_ui_module(layout: str):
     ui_modules = {
-        "mercury": mercury,
-        "tr": tr,
-        "tt": tt,
+        "delizia": ui_delizia,
+        "caesar": ui_caesar,
+        "bolt": ui_bolt,
     }
 
-    return ui_modules[models.get_model_ui(model)]
+    return ui_modules[models.get_model_ui(layout)]
 
 
 def init_ui(

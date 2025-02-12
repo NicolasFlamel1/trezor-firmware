@@ -4069,13 +4069,13 @@ class UnlockPath(protobuf.MessageType):
 class UnlockedPathRequest(protobuf.MessageType):
     MESSAGE_WIRE_TYPE = 94
     FIELDS = {
-        1: protobuf.Field("mac", "bytes", repeated=False, required=False, default=None),
+        1: protobuf.Field("mac", "bytes", repeated=False, required=True),
     }
 
     def __init__(
         self,
         *,
-        mac: Optional["bytes"] = None,
+        mac: "bytes",
     ) -> None:
         self.mac = mac
 
@@ -6374,13 +6374,13 @@ class MoneroGetAddress(protobuf.MessageType):
 class MoneroAddress(protobuf.MessageType):
     MESSAGE_WIRE_TYPE = 541
     FIELDS = {
-        1: protobuf.Field("address", "bytes", repeated=False, required=False, default=None),
+        1: protobuf.Field("address", "bytes", repeated=False, required=True),
     }
 
     def __init__(
         self,
         *,
-        address: Optional["bytes"] = None,
+        address: "bytes",
     ) -> None:
         self.address = address
 
@@ -6405,15 +6405,15 @@ class MoneroGetWatchKey(protobuf.MessageType):
 class MoneroWatchKey(protobuf.MessageType):
     MESSAGE_WIRE_TYPE = 543
     FIELDS = {
-        1: protobuf.Field("watch_key", "bytes", repeated=False, required=False, default=None),
-        2: protobuf.Field("address", "bytes", repeated=False, required=False, default=None),
+        1: protobuf.Field("watch_key", "bytes", repeated=False, required=True),
+        2: protobuf.Field("address", "bytes", repeated=False, required=True),
     }
 
     def __init__(
         self,
         *,
-        watch_key: Optional["bytes"] = None,
-        address: Optional["bytes"] = None,
+        watch_key: "bytes",
+        address: "bytes",
     ) -> None:
         self.watch_key = watch_key
         self.address = address

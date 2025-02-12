@@ -89,11 +89,11 @@ static void display_exit_handler(void) {
   display_deinit(DISPLAY_RESET_CONTENT);
 }
 
-void display_init(display_content_mode_t mode) {
+bool display_init(display_content_mode_t mode) {
   display_driver_t *drv = &g_display_driver;
 
   if (drv->initialized) {
-    return;
+    return true;
   }
 
   if (SDL_Init(SDL_INIT_VIDEO) != 0) {
@@ -178,7 +178,11 @@ void display_init(display_content_mode_t mode) {
 #else
   drv->orientation_angle = 0;
 #endif
+
+  gfx_bitblt_init();
+
   drv->initialized = true;
+  return true;
 }
 
 void display_deinit(display_content_mode_t mode) {
@@ -187,6 +191,8 @@ void display_deinit(display_content_mode_t mode) {
   if (!drv->initialized) {
     return;
   }
+
+  gfx_bitblt_deinit();
 
   SDL_FreeSurface(drv->prev_saved);
   SDL_FreeSurface(drv->buffer);

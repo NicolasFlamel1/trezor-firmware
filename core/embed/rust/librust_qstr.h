@@ -79,6 +79,8 @@ static void _librust_qstrs(void) {
   MP_QSTR_auto_lock__change_template;
   MP_QSTR_auto_lock__title;
   MP_QSTR_auto_lock__turned_on;
+  MP_QSTR_backlight_fade;
+  MP_QSTR_backlight_set;
   MP_QSTR_backup__can_back_up_anytime;
   MP_QSTR_backup__create_backup_to_prevent_loss;
   MP_QSTR_backup__info_multi_share_backup;
@@ -120,6 +122,7 @@ static void _librust_qstrs(void) {
   MP_QSTR_bitcoin__unverified_external_inputs;
   MP_QSTR_bitcoin__valid_signature;
   MP_QSTR_bitcoin__voting_rights;
+  MP_QSTR_ble_event;
   MP_QSTR_bootscreen;
   MP_QSTR_br_code;
   MP_QSTR_br_name;
@@ -186,8 +189,6 @@ static void _librust_qstrs(void) {
   MP_QSTR_coinjoin_authorized;
   MP_QSTR_confirm_action;
   MP_QSTR_confirm_address;
-  MP_QSTR_confirm_blob;
-  MP_QSTR_confirm_blob_intro;
   MP_QSTR_confirm_coinjoin;
   MP_QSTR_confirm_emphasized;
   MP_QSTR_confirm_fido;
@@ -205,12 +206,12 @@ static void _librust_qstrs(void) {
   MP_QSTR_confirm_total__title_fee;
   MP_QSTR_confirm_total__title_sending_from;
   MP_QSTR_confirm_value;
+  MP_QSTR_confirm_value_intro;
   MP_QSTR_confirm_with_info;
   MP_QSTR_continue_recovery_homepage;
   MP_QSTR_count;
   MP_QSTR_current;
   MP_QSTR_danger;
-  MP_QSTR_data;
   MP_QSTR_data_hash;
   MP_QSTR_data_len;
   MP_QSTR_debug__loading_seed;
@@ -298,6 +299,7 @@ static void _librust_qstrs(void) {
   MP_QSTR_instructions__tap_to_confirm;
   MP_QSTR_instructions__tap_to_start;
   MP_QSTR_instructions__view_all_data;
+  MP_QSTR_is_data;
   MP_QSTR_is_type_of;
   MP_QSTR_items;
   MP_QSTR_joint__title;
@@ -649,7 +651,7 @@ static void _librust_qstrs(void) {
   MP_QSTR_show_progress_coinjoin;
   MP_QSTR_show_remaining_shares;
   MP_QSTR_show_share_words;
-  MP_QSTR_show_share_words_mercury;
+  MP_QSTR_show_share_words_delizia;
   MP_QSTR_show_simple;
   MP_QSTR_show_success;
   MP_QSTR_show_wait_text;
@@ -725,7 +727,6 @@ static void _librust_qstrs(void) {
   MP_QSTR_value;
   MP_QSTR_verb;
   MP_QSTR_verb_cancel;
-  MP_QSTR_verb_info;
   MP_QSTR_verify;
   MP_QSTR_version;
   MP_QSTR_wipe__info;

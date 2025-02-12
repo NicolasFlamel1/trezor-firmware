@@ -47,11 +47,11 @@ display_driver_t g_display_driver = {
     .initialized = false,
 };
 
-void display_init(display_content_mode_t mode) {
+bool display_init(display_content_mode_t mode) {
   display_driver_t* drv = &g_display_driver;
 
   if (drv->initialized) {
-    return;
+    return true;
   }
 
   memset(drv, 0, sizeof(display_driver_t));
@@ -61,6 +61,12 @@ void display_init(display_content_mode_t mode) {
 #endif
 
   if (mode == DISPLAY_RESET_CONTENT) {
+#if defined TREZOR_MODEL_T2T1 && !defined BOARDLOADER
+    // This is required for the model T to work correctly.
+    // Boardloader does this by constant in binary, other stages need to read
+    // this from the display
+    display_panel_preserve_inversion();
+#endif
     display_io_init_gpio();
     display_io_init_fmc();
     display_panel_init();
@@ -83,7 +89,10 @@ void display_init(display_content_mode_t mode) {
 #endif
 #endif
 
+  gfx_bitblt_init();
+
   drv->initialized = true;
+  return true;
 }
 
 void display_deinit(display_content_mode_t mode) {
@@ -93,22 +102,24 @@ void display_deinit(display_content_mode_t mode) {
     return;
   }
 
-#ifdef FRAMEBUFFER
 #ifndef BOARDLOADER
-  // Ensure that the ready frame buffer is transfered to
+  // Ensure that the ready frame buffer is transferred to
   // the display controller
   display_ensure_refreshed();
+#ifdef FRAMEBUFFER
   // Disable periodical interrupt
   NVIC_DisableIRQ(DISPLAY_TE_INTERRUPT_NUM);
 #endif
 #endif
+
+  gfx_bitblt_deinit();
 
   mpu_set_active_fb(NULL, 0);
 
   backlight_pwm_deinit(mode == DISPLAY_RESET_CONTENT ? BACKLIGHT_RESET
                                                      : BACKLIGHT_RETAIN);
 
-#ifdef TREZOR_MODEL_T
+#ifdef TREZOR_MODEL_T2T1
   // This ensures backward compatibility with legacy bootloader/firmware
   // that relies on this hardware settings from the previous boot stage
   if (mode == DISPLAY_RESET_CONTENT) {
@@ -127,13 +138,11 @@ int display_set_backlight(int level) {
     return 0;
   }
 
-#ifdef FRAMEBUFFER
 #ifndef BOARDLOADER
   // if turning on the backlight, wait until the panel is refreshed
   if (backlight_pwm_get() < level && !is_mode_exception()) {
     display_ensure_refreshed();
   }
-#endif
 #endif
 
   return backlight_pwm_set(level);

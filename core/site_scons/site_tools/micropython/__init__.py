@@ -44,20 +44,20 @@ def generate(env):
         btc_only = env["bitcoin_only"] == "1"
         backlight = env["backlight"]
         optiga = env["optiga"]
-        layout_tt = env["ui_layout"] == "UI_LAYOUT_TT"
-        layout_tr = env["ui_layout"] == "UI_LAYOUT_TR"
         touch = env["use_touch"]
         button = env["use_button"]
-        layout_mercury = env["ui_layout"] == "UI_LAYOUT_MERCURY"
+        layout_bolt = env["ui_layout"] == "UI_LAYOUT_BOLT"
+        layout_caesar = env["ui_layout"] == "UI_LAYOUT_CAESAR"
+        layout_delizia = env["ui_layout"] == "UI_LAYOUT_DELIZIA"
         thp = env["thp"]
         interim = f"{target[:-4]}.i"  # replace .mpy with .i
         sed_scripts = [
             rf"-e 's/utils\.BITCOIN_ONLY/{btc_only}/g'",
             rf"-e 's/utils\.USE_BACKLIGHT/{backlight}/g'",
             rf"-e 's/utils\.USE_OPTIGA/{optiga}/g'",
-            rf"-e 's/utils\.UI_LAYOUT == \"TT\"/{layout_tt}/g'",
-            rf"-e 's/utils\.UI_LAYOUT == \"TR\"/{layout_tr}/g'",
-            rf"-e 's/utils\.UI_LAYOUT == \"MERCURY\"/{layout_mercury}/g'",
+            rf"-e 's/utils\.UI_LAYOUT == \"BOLT\"/{layout_bolt}/g'",
+            rf"-e 's/utils\.UI_LAYOUT == \"CAESAR\"/{layout_caesar}/g'",
+            rf"-e 's/utils\.UI_LAYOUT == \"DELIZIA\"/{layout_delizia}/g'",
             rf"-e 's/utils\.USE_BUTTON/{button}/g'",
             rf"-e 's/utils\.USE_TOUCH/{touch}/g'",
             rf"-e 's/utils\.USE_THP/{thp}/g'",
@@ -67,14 +67,10 @@ def generate(env):
             r"-e 's/from typing import/# \0/'",
         ]
 
-        MODEL_SYMS = {
-            "T": "T2T1",
-            "R": "T2B1",
-            "T3T1": "T3T1",
-        }
+        MODELS = ["T2T1", "T2B1", "T3T1", "T3B1", "T3W1"]
 
-        for model_sym, internal_model in MODEL_SYMS.items():
-            model_matches = env["TREZOR_MODEL"] == model_sym
+        for internal_model in MODELS:
+            model_matches = env["TREZOR_MODEL"] == internal_model
             sed_scripts.extend(
                 (
                     rf"-e 's/utils\.INTERNAL_MODEL == \"{internal_model}\"/{model_matches}/g'",

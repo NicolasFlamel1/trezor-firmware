@@ -51,6 +51,10 @@ void display_fill__verified(const gfx_bitblt_t *bb);
 void display_copy_rgb565__verified(const gfx_bitblt_t *bb);
 
 // ---------------------------------------------------------------------
+#include <io/usb.h>
+void usb_get_state__verified(usb_state_t *state);
+
+// ---------------------------------------------------------------------
 #include <io/usb_hid.h>
 
 int usb_hid_read__verified(uint8_t iface_num, uint8_t *buf, uint32_t len);
@@ -181,6 +185,23 @@ secbool firmware_calc_hash__verified(const uint8_t *challenge,
                                      void *callback_context);
 
 secbool firmware_get_vendor__verified(char *buff, size_t buff_size);
+
+// ---------------------------------------------------------------------
+#ifdef USE_BLE
+
+#include <io/ble.h>
+
+bool ble_issue_command__verified(ble_command_t *state);
+
+void ble_get_state__verified(ble_state_t *state);
+
+bool ble_get_event__verified(ble_event_t *event);
+
+bool ble_write__verified(const uint8_t *data, size_t len);
+
+secbool ble_read__verified(uint8_t *data, size_t len);
+
+#endif
 
 #endif  // SYSCALL_DISPATCH
 

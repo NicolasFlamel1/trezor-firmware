@@ -35,6 +35,7 @@ const DEFAULT_BINDGEN_MACROS_COMMON: &[&str] = &[
     "-I../../vendor/micropython/lib/uzlib",
     "-I../rtl/inc",
     "-I../gfx/inc",
+    "-I../io/ble/inc",
     "-I../io/button/inc",
     "-I../io/display/inc",
     "-I../io/haptic/inc",
@@ -51,51 +52,22 @@ const DEFAULT_BINDGEN_MACROS_COMMON: &[&str] = &[
     "-DUSE_TOUCH",
     "-DUSE_HAPTIC",
     "-DUSE_RGB_LED",
+    "-DUSE_BLE",
 ];
 
-#[cfg(feature = "model_tt")]
-const DEFAULT_BINDGEN_MACROS_T2T1: &[&str] = &[
-    "-DSTM32F427",
-    "-DTREZOR_MODEL_T",
-    "-DFLASH_BIT_ACCESS=1",
-    "-DFLASH_BLOCK_WORDS=1",
-    "-DTREZOR_BOARD=\"T2T1/boards/t2t1-unix.h\"",
-];
-#[cfg(not(feature = "model_tt"))]
-const DEFAULT_BINDGEN_MACROS_T2T1: &[&str] = &[];
-
-#[cfg(feature = "model_tr")]
-const DEFAULT_BINDGEN_MACROS_T2B1: &[&str] = &[
-    "-DSTM32F427",
-    "-DTREZOR_MODEL_R",
-    "-DFLASH_BIT_ACCESS=1",
-    "-DFLASH_BLOCK_WORDS=1",
-    "-DTREZOR_BOARD=\"T2B1/boards/t2b1-unix.h\"",
-];
-#[cfg(not(feature = "model_tr"))]
-const DEFAULT_BINDGEN_MACROS_T2B1: &[&str] = &[];
-
-#[cfg(feature = "model_mercury")]
-const DEFAULT_BINDGEN_MACROS_T3T1: &[&str] = &[
-    "-DSTM32U5",
-    "-DTREZOR_MODEL_T3T1",
-    "-DFLASH_BIT_ACCESS=0",
-    "-DFLASH_BLOCK_WORDS=4",
-    "-DTREZOR_BOARD=\"T3T1/boards/t3t1-unix.h\"",
-];
-#[cfg(not(feature = "model_mercury"))]
-const DEFAULT_BINDGEN_MACROS_T3T1: &[&str] = &[];
-
-fn add_bindgen_macros<'a>(clang_args: &mut Vec<&'a str>, envvar: Option<&'a str>) {
-    let default_macros = DEFAULT_BINDGEN_MACROS_COMMON
-        .iter()
-        .chain(DEFAULT_BINDGEN_MACROS_T2T1)
-        .chain(DEFAULT_BINDGEN_MACROS_T2B1)
-        .chain(DEFAULT_BINDGEN_MACROS_T3T1);
-
+fn add_bindgen_macros<'a>(
+    clang_args: &mut Vec<&'a str>,
+    envvar: Option<&'a str>,
+    test_envvar: Option<&'a str>,
+) {
     match envvar {
         Some(envvar) => clang_args.extend(envvar.split(',')),
-        None => clang_args.extend(default_macros),
+        None => {
+            println!("{}", test_envvar.unwrap());
+            let test_macros_env = test_envvar.unwrap().split(',');
+            clang_args.extend(DEFAULT_BINDGEN_MACROS_COMMON.iter());
+            clang_args.extend(test_macros_env);
+        }
     }
 }
 
@@ -148,7 +120,12 @@ fn prepare_bindings() -> bindgen::Builder {
     let mut clang_args: Vec<&str> = Vec::new();
 
     let bindgen_macros_env = env::var("BINDGEN_MACROS").ok();
-    add_bindgen_macros(&mut clang_args, bindgen_macros_env.as_deref());
+    let test_macros_env = env::var("TEST_BINDGEN_MACROS").ok();
+    add_bindgen_macros(
+        &mut clang_args,
+        bindgen_macros_env.as_deref(),
+        test_macros_env.as_deref(),
+    );
 
     #[cfg(feature = "framebuffer")]
     {
@@ -160,6 +137,7 @@ fn prepare_bindings() -> bindgen::Builder {
     // Pass in correct include paths and defines.
     if is_firmware() {
         clang_args.push("-nostdinc");
+        clang_args.push("-fshort-enums"); // Make sure enums use the same size as in C
 
         // Append gcc-arm-none-eabi's include paths.
         let cc_output = Command::new("arm-none-eabi-gcc")
@@ -181,6 +159,8 @@ fn prepare_bindings() -> bindgen::Builder {
             .map(|s| format!("-I{}", s.trim()));
 
         bindings = bindings.clang_args(include_args);
+    } else {
+        clang_args.push("-fno-short-enums");
     }
 
     bindings = bindings.clang_args(&clang_args);
@@ -353,8 +333,8 @@ fn generate_trezorhal_bindings() {
         .allowlist_function("display_set_backlight")
         .allowlist_function("display_get_backlight")
         .allowlist_function("display_wait_for_sync")
-        .allowlist_var("DISPLAY_RESX")
-        .allowlist_var("DISPLAY_RESY")
+        .allowlist_var("DISPLAY_RESX_")
+        .allowlist_var("DISPLAY_RESY_")
         .allowlist_type("display_fb_info_t")
         .allowlist_function("display_get_frame_buffer")
         .allowlist_function("display_fill")
@@ -404,7 +384,13 @@ fn generate_trezorhal_bindings() {
         // toif
         .allowlist_type("toif_format_t")
         //usb
-        .allowlist_function("usb_configured")
+        .allowlist_type("usb_event_t")
+        .allowlist_function("usb_get_state")
+        // ble
+        .allowlist_function("ble_get_state")
+        .allowlist_function("ble_issue_command")
+        .allowlist_type("ble_command_t")
+        .allowlist_type("ble_state_t")
         // touch
         .allowlist_function("touch_get_event")
         // button
@@ -423,6 +409,7 @@ fn generate_trezorhal_bindings() {
         .unwrap();
 }
 
+#[cfg(feature = "crypto")]
 fn generate_crypto_bindings() {
     let out_path = env::var("OUT_DIR").unwrap();
 

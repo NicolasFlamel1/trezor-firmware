@@ -18,9 +18,13 @@ def configure(
 
     features_available.append("framebuffer")
     features_available.append("display_rgb565")
-    defines += [("DISPLAY_RGB565", "1")]
-    defines += [("FRAMEBUFFER", "1")]
-    defines += [("USE_RGB_COLORS", "1")]
+    defines += [
+        ("DISPLAY_RGB565", "1"),
+        ("FRAMEBUFFER", "1"),
+        ("USE_RGB_COLORS", "1"),
+        ("DISPLAY_RESX", "240"),
+        ("DISPLAY_RESY", "240"),
+    ]
 
     mcu = "STM32U585xx"
     linker_script = """embed/sys/linker/stm32u58/{target}.ld"""
@@ -106,6 +110,7 @@ def configure(
         ]
         features_available.append("usb")
         paths += ["embed/io/usb/inc"]
+        defines += [("USE_USB", "1")]
 
     if "dma2d" in features_wanted:
         defines += [("USE_DMA2D", "1")]
@@ -116,6 +121,7 @@ def configure(
         sources += ["embed/sec/optiga/stm32/optiga_hal.c"]
         sources += ["embed/sec/optiga/optiga.c"]
         sources += ["embed/sec/optiga/optiga_commands.c"]
+        sources += ["embed/sec/optiga/optiga_config.c"]
         sources += ["embed/sec/optiga/optiga_transport.c"]
         sources += ["vendor/trezor-crypto/hash_to_curve.c"]
         paths += ["embed/sec/optiga/inc"]

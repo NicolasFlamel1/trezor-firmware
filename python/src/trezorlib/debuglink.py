@@ -44,10 +44,9 @@ from mnemonic import Mnemonic
 
 from . import mapping, messages, models, protobuf
 from .client import TrezorClient
-from .exceptions import TrezorFailure
+from .exceptions import TrezorFailure, UnexpectedMessageError
 from .log import DUMP_BYTES
 from .messages import DebugWaitType
-from .tools import expect
 
 if TYPE_CHECKING:
     from typing_extensions import Protocol
@@ -68,6 +67,8 @@ if TYPE_CHECKING:
             wait: bool | None = None,
         ) -> "LayoutContent": ...
 
+    InputFlowType = Generator[None, messages.ButtonRequest, None]
+
 
 EXPECTED_RESPONSES_CONTEXT_LINES = 3
 
@@ -76,18 +77,21 @@ LOG = logging.getLogger(__name__)
 
 class LayoutType(Enum):
     T1 = auto()
-    TT = auto()
-    TR = auto()
-    Mercury = auto()
+    Bolt = auto()
+    Caesar = auto()
+    Delizia = auto()
+    Eckhart = auto()
 
     @classmethod
     def from_model(cls, model: models.TrezorModel) -> "LayoutType":
         if model in (models.T2T1,):
-            return cls.TT
+            return cls.Bolt
         if model in (models.T2B1, models.T3B1):
-            return cls.TR
+            return cls.Caesar
         if model in (models.T3T1,):
-            return cls.Mercury
+            return cls.Delizia
+        if model in (models.T3W1,):
+            return cls.Eckhart
         if model in (models.T1B1,):
             return cls.T1
         raise ValueError(f"Unknown model: {model}")
@@ -775,9 +779,10 @@ class DebugLink:
         else:
             self.t1_take_screenshots = False
 
-    @expect(messages.DebugLinkMemory, field="memory", ret_type=bytes)
-    def memory_read(self, address: int, length: int) -> protobuf.MessageType:
-        return self._call(messages.DebugLinkMemoryRead(address=address, length=length))
+    def memory_read(self, address: int, length: int) -> bytes:
+        return self._call(
+            messages.DebugLinkMemoryRead(address=address, length=length)
+        ).memory
 
     def memory_write(self, address: int, memory: bytes, flash: bool = False) -> None:
         self._write(
@@ -787,9 +792,11 @@ class DebugLink:
     def flash_erase(self, sector: int) -> None:
         self._write(messages.DebugLinkFlashErase(sector=sector))
 
-    @expect(messages.Success)
     def erase_sd_card(self, format: bool = True) -> messages.Success:
-        return self._call(messages.DebugLinkEraseSdCard(format=format))
+        res = self._call(messages.DebugLinkEraseSdCard(format=format))
+        if not isinstance(res, messages.Success):
+            raise UnexpectedMessageError(messages.Success, res)
+        return res
 
     def snapshot_legacy(self) -> None:
         """Snapshot the current state of the device."""
@@ -1106,7 +1113,7 @@ class TrezorClientDebugLink(TrezorClient):
             return msg
 
     def set_input_flow(
-        self, input_flow: Generator[None, messages.ButtonRequest | None, None]
+        self, input_flow: InputFlowType | Callable[[], InputFlowType]
     ) -> None:
         """Configure a sequence of input events for the current with-block.
 
@@ -1140,7 +1147,7 @@ class TrezorClientDebugLink(TrezorClient):
         if not hasattr(input_flow, "send"):
             raise RuntimeError("input_flow should be a generator function")
         self.ui.input_flow = input_flow
-        input_flow.send(None)  # start the generator
+        next(input_flow)  # start the generator
 
     def watch_layout(self, watch: bool = True) -> None:
         """Enable or disable watching layout changes.
@@ -1188,7 +1195,8 @@ class TrezorClientDebugLink(TrezorClient):
             input_flow.throw(exc_type, value, traceback)
 
     def set_expected_responses(
-        self, expected: list[Union["ExpectedMessage", Tuple[bool, "ExpectedMessage"]]]
+        self,
+        expected: Sequence[Union["ExpectedMessage", Tuple[bool, "ExpectedMessage"]]],
     ) -> None:
         """Set a sequence of expected responses to client calls.
 
@@ -1350,7 +1358,6 @@ class TrezorClientDebugLink(TrezorClient):
         raise RuntimeError("Unexpected call")
 
 
-@expect(messages.Success, field="message", ret_type=str)
 def load_device(
     client: "TrezorClient",
     mnemonic: Union[str, Iterable[str]],
@@ -1360,7 +1367,7 @@ def load_device(
     skip_checksum: bool = False,
     needs_backup: bool = False,
     no_backup: bool = False,
-) -> protobuf.MessageType:
+) -> None:
     if isinstance(mnemonic, str):
         mnemonic = [mnemonic]
 
@@ -1371,7 +1378,7 @@ def load_device(
             "Device is initialized already. Call device.wipe() and try again."
         )
 
-    resp = client.call(
+    client.call(
         messages.LoadDevice(
             mnemonics=mnemonics,
             pin=pin,
@@ -1380,25 +1387,25 @@ def load_device(
             skip_checksum=skip_checksum,
             needs_backup=needs_backup,
             no_backup=no_backup,
-        )
+        ),
+        expect=messages.Success,
     )
     client.init_device()
-    return resp
 
 
 # keep the old name for compatibility
 load_device_by_mnemonic = load_device
 
 
-@expect(messages.Success, field="message", ret_type=str)
-def prodtest_t1(client: "TrezorClient") -> protobuf.MessageType:
+def prodtest_t1(client: "TrezorClient") -> None:
     if client.features.bootloader_mode is not True:
         raise RuntimeError("Device must be in bootloader mode")
 
-    return client.call(
+    client.call(
         messages.ProdTestT1(
             payload=b"\x00\xFF\x55\xAA\x66\x99\x33\xCCABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!\x00\xFF\x55\xAA\x66\x99\x33\xCC"
-        )
+        ),
+        expect=messages.Success,
     )
 
 
@@ -1450,6 +1457,5 @@ def _is_emulator(debug_client: "TrezorClientDebugLink") -> bool:
     return debug_client.features.fw_vendor == "EMULATOR"
 
 
-@expect(messages.Success, field="message", ret_type=str)
-def optiga_set_sec_max(client: "TrezorClient") -> protobuf.MessageType:
-    return client.call(messages.DebugLinkOptigaSetSecMax())
+def optiga_set_sec_max(client: "TrezorClient") -> None:
+    client.call(messages.DebugLinkOptigaSetSecMax(), expect=messages.Success)

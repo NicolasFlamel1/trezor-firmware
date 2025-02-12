@@ -92,7 +92,6 @@ static void drivers_init(void) {
 #ifdef USE_HASH_PROCESSOR
   hash_processor_init();
 #endif
-  gfx_bitblt_init();
   display_init(DISPLAY_RESET_CONTENT);
 #ifdef USE_SD_CARD
   sdcard_init();

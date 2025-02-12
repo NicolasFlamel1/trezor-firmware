@@ -8,8 +8,6 @@ from trezor.wire.protocol_common import Message, WireError
 if TYPE_CHECKING:
     from trezorio import WireInterface
 
-_REP_LEN = const(64)
-
 _REP_MARKER = const(63)  # ord('?')
 _REP_MAGIC = const(35)  # org('#')
 _REP_INIT = ">BBBHL"  # marker, magic, magic, wire type, data length
@@ -23,9 +21,12 @@ class CodecError(WireError):
 
 async def read_message(iface: WireInterface, buffer: utils.BufferType) -> Message:
     read = loop.wait(iface.iface_num() | io.POLL_READ)
+    report = bytearray(iface.RX_PACKET_LEN)
 
     # wait for initial report
-    report = await read
+    msg_len = await read
+    assert msg_len == len(report)
+    iface.read(report, 0)
     if report[0] != _REP_MARKER:
         raise CodecError("Invalid magic")
     _, magic1, magic2, mtype, msize = ustruct.unpack(_REP_INIT, report)
@@ -39,7 +40,7 @@ async def read_message(iface: WireInterface, buffer: utils.BufferType) -> Messag
         try:
             mdata: utils.BufferType = bytearray(msize)
         except MemoryError:
-            mdata = bytearray(_REP_LEN)
+            mdata = bytearray(iface.RX_PACKET_LEN)
             read_and_throw_away = True
     else:
         # reuse a part of the supplied buffer
@@ -50,7 +51,9 @@ async def read_message(iface: WireInterface, buffer: utils.BufferType) -> Messag
 
     while nread < msize:
         # wait for continuation report
-        report = await read
+        msg_len = await read
+        assert msg_len == len(report)
+        iface.read(report, 0)
         if report[0] != _REP_MARKER:
             raise CodecError("Invalid magic")
 
@@ -73,7 +76,7 @@ async def write_message(iface: WireInterface, mtype: int, mdata: bytes) -> None:
     msize = len(mdata)
 
     # prepare the report buffer with header data
-    report = bytearray(_REP_LEN)
+    report = bytearray(iface.TX_PACKET_LEN)
     repofs = _REP_INIT_DATA
     ustruct.pack_into(
         _REP_INIT, report, 0, _REP_MARKER, _REP_MAGIC, _REP_MAGIC, mtype, msize
