@@ -15,6 +15,8 @@ pub const MAX_CHECKLIST_ITEMS: usize = 3;
 pub const MAX_WORD_QUIZ_ITEMS: usize = 3;
 pub const MAX_GROUP_SHARE_LINES: usize = 4;
 
+pub const ERROR_NOT_IMPLEMENTED: Error = Error::ValueError(c"not implemented");
+
 pub trait FirmwareUI {
     #[allow(clippy::too_many_arguments)]
     fn confirm_action(
@@ -64,6 +66,7 @@ pub trait FirmwareUI {
         subtitle: Option<TString<'static>>,
         verb: Option<TString<'static>>,
         verb_cancel: Option<TString<'static>>,
+        hold: bool,
         chunkify: bool,
     ) -> Result<Gc<LayoutObj>, Error>; // TODO: return LayoutMaybeTrace
 
@@ -113,6 +116,7 @@ pub trait FirmwareUI {
         title: TString<'static>,
         button: TString<'static>,
         button_style_confirm: bool,
+        hold: bool,
         items: Obj, // TODO: replace Obj
     ) -> Result<impl LayoutMaybeTrace, Error>;
 
@@ -139,10 +143,10 @@ pub trait FirmwareUI {
 
     fn confirm_with_info(
         title: TString<'static>,
-        button: TString<'static>,
-        info_button: TString<'static>,
-        verb_cancel: Option<TString<'static>>,
         items: Obj, // TODO: replace Obj
+        verb: TString<'static>,
+        verb_info: TString<'static>,
+        verb_cancel: Option<TString<'static>>,
     ) -> Result<impl LayoutMaybeTrace, Error>;
 
     fn continue_recovery_homepage(
@@ -160,16 +164,19 @@ pub trait FirmwareUI {
     fn flow_confirm_output(
         title: Option<TString<'static>>,
         subtitle: Option<TString<'static>>,
+        description: Option<TString<'static>>,
+        extra: Option<TString<'static>>,
         message: Obj,        // TODO: replace Obj
         amount: Option<Obj>, // TODO: replace Obj
         chunkify: bool,
         text_mono: bool,
+        account_title: TString<'static>,
         account: Option<TString<'static>>,
         account_path: Option<TString<'static>>,
         br_code: u16,
         br_name: TString<'static>,
-        address: Option<Obj>, // TODO: replace Obj
-        address_title: Option<TString<'static>>,
+        address_item: Option<(TString<'static>, Obj)>,
+        extra_item: Option<(TString<'static>, Obj)>,
         summary_items: Option<Obj>, // TODO: replace Obj
         fee_items: Option<Obj>,     // TODO: replace Obj
         summary_title: Option<TString<'static>>,

@@ -6,10 +6,9 @@ use crate::{
     translations::TR,
     ui::{
         component::{
-            base::ComponentExt,
             swipe_detect::SwipeSettings,
             text::{
-                paragraphs::{Paragraph, ParagraphSource, ParagraphVecShort, VecExt},
+                paragraphs::{Paragraph, ParagraphSource, ParagraphVecLong, VecExt},
                 TextStyle,
             },
             Component,
@@ -23,7 +22,7 @@ use heapless::Vec;
 
 use super::{
     super::{
-        component::{Frame, FrameMsg, SwipeContent},
+        component::{Frame, PromptMsg, SwipeContent, VerticalMenuChoiceMsg},
         flow, theme,
     },
     ConfirmActionExtra, ConfirmActionMenuStrings, ConfirmActionStrings,
@@ -38,6 +37,7 @@ pub struct ConfirmValue {
     description: Option<TString<'static>>,
     description_font: &'static TextStyle,
     extra: Option<TString<'static>>,
+    extra_font: &'static TextStyle,
     verb: Option<TString<'static>>,
     verb_cancel: TString<'static>,
     verb_info: Option<TString<'static>>,
@@ -48,7 +48,8 @@ pub struct ConfirmValue {
     chunkify: bool,
     text_mono: bool,
     page_counter: bool,
-    page_limit: Option<usize>,
+    page_limit: Option<u16>,
+    classic_ellipsis: bool,
     swipe_up: bool,
     swipe_down: bool,
     swipe_right: bool,
@@ -67,6 +68,7 @@ impl ConfirmValue {
             description,
             description_font: &theme::TEXT_NORMAL,
             extra: None,
+            extra_font: &theme::TEXT_DEMIBOLD,
             verb: None,
             verb_cancel: TR::buttons__cancel.into(),
             verb_info: None,
@@ -78,6 +80,7 @@ impl ConfirmValue {
             text_mono: true,
             page_counter: false,
             page_limit: None,
+            classic_ellipsis: false,
             swipe_up: false,
             swipe_down: false,
             swipe_right: false,
@@ -88,6 +91,11 @@ impl ConfirmValue {
 
     pub const fn with_extra(mut self, extra: Option<TString<'static>>) -> Self {
         self.extra = extra;
+        self
+    }
+
+    pub const fn with_extra_font(mut self, extra_font: &'static TextStyle) -> Self {
+        self.extra_font = extra_font;
         self
     }
 
@@ -174,6 +182,14 @@ impl ConfirmValue {
         self
     }
 
+    pub const fn with_swipeup_footer(self, description: Option<TString<'static>>) -> Self {
+        self.with_footer(
+            TString::from_translation(TR::instructions__tap_to_continue),
+            description,
+        )
+        .with_swipe_up()
+    }
+
     pub const fn with_chunkify(mut self, chunkify: bool) -> Self {
         self.chunkify = chunkify;
         self
@@ -189,8 +205,13 @@ impl ConfirmValue {
         self
     }
 
-    pub const fn with_page_limit(mut self, page_limit: Option<usize>) -> Self {
+    pub const fn with_page_limit(mut self, page_limit: Option<u16>) -> Self {
         self.page_limit = page_limit;
+        self
+    }
+
+    pub const fn with_classic_ellipsis(mut self, classic_ellipsis: bool) -> Self {
+        self.classic_ellipsis = classic_ellipsis;
         self
     }
 
@@ -214,12 +235,16 @@ impl ConfirmValue {
                 let value: TString = self.value.try_into()?;
                 theme::get_chunkified_text_style(value.len())
             } else if self.text_mono {
-                &theme::TEXT_MONO
+                if self.classic_ellipsis {
+                    &theme::TEXT_MONO_WITH_CLASSIC_ELLIPSIS
+                } else {
+                    &theme::TEXT_MONO
+                }
             } else {
                 &theme::TEXT_NORMAL
             },
-            description_font: &theme::TEXT_NORMAL,
-            extra_font: &theme::TEXT_DEMIBOLD,
+            description_font: self.description_font,
+            extra_font: self.extra_font,
         }
         .into_paragraphs();
 
@@ -253,7 +278,7 @@ impl ConfirmValue {
 
         frame = frame.with_vertical_pages();
 
-        Ok(frame.map(|msg| matches!(msg, FrameMsg::Button(_)).then_some(FlowMsg::Info)))
+        Ok(frame.map_to_button_msg())
     }
 
     pub fn into_flow(self) -> Result<SwipeFlow, Error> {
@@ -265,12 +290,16 @@ impl ConfirmValue {
                 let value: TString = self.value.try_into()?;
                 theme::get_chunkified_text_style(value.len())
             } else if self.text_mono {
-                &theme::TEXT_MONO
+                if self.classic_ellipsis {
+                    &theme::TEXT_MONO_WITH_CLASSIC_ELLIPSIS
+                } else {
+                    &theme::TEXT_MONO
+                }
             } else {
                 &theme::TEXT_NORMAL
             },
             description_font: self.description_font,
-            extra_font: &theme::TEXT_DEMIBOLD,
+            extra_font: self.extra_font,
         }
         .into_paragraphs();
 
@@ -299,6 +328,10 @@ impl ConfirmValue {
             self.frame_margin,
             self.page_counter,
         )
+    }
+
+    pub fn title(&self) -> TString<'static> {
+        self.title
     }
 }
 
@@ -372,6 +405,14 @@ impl ShowInfoParams {
         self
     }
 
+    pub const fn with_swipeup_footer(self, description: Option<TString<'static>>) -> Self {
+        self.with_footer(
+            TString::from_translation(TR::instructions__tap_to_continue),
+            description,
+        )
+        .with_swipe_up()
+    }
+
     pub const fn with_swipe_up(mut self) -> Self {
         self.swipe_up = true;
         self
@@ -386,7 +427,7 @@ impl ShowInfoParams {
     pub fn into_layout(
         self,
     ) -> Result<impl Component<Msg = FlowMsg> + Swipable + MaybeTrace, Error> {
-        let mut paragraphs = ParagraphVecShort::new();
+        let mut paragraphs = ParagraphVecLong::new();
         let mut first: bool = true;
         for item in self.items {
             // FIXME: padding:
@@ -438,12 +479,26 @@ impl ShowInfoParams {
 
         frame = frame.with_vertical_pages();
 
-        Ok(frame.map(move |msg| {
-            matches!(msg, FrameMsg::Button(_)).then_some(if self.cancel_button {
-                FlowMsg::Cancelled
-            } else {
-                FlowMsg::Info
-            })
-        }))
+        Ok(frame.map_to_button_msg())
+    }
+}
+
+pub fn map_to_confirm(msg: PromptMsg) -> Option<FlowMsg> {
+    match msg {
+        PromptMsg::Confirmed => Some(FlowMsg::Confirmed),
+        _ => None,
+    }
+}
+
+pub fn map_to_prompt(msg: PromptMsg) -> Option<FlowMsg> {
+    match msg {
+        PromptMsg::Confirmed => Some(FlowMsg::Confirmed),
+        PromptMsg::Cancelled => Some(FlowMsg::Cancelled),
+    }
+}
+
+pub fn map_to_choice(msg: VerticalMenuChoiceMsg) -> Option<FlowMsg> {
+    match msg {
+        VerticalMenuChoiceMsg::Selected(i) => Some(FlowMsg::Choice(i)),
     }
 }

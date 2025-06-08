@@ -8,7 +8,7 @@ use crate::ui::{
     util::include_icon,
 };
 
-use num_traits::FromPrimitive;
+use super::fonts;
 
 pub mod bootloader;
 
@@ -19,32 +19,38 @@ pub const FG: Color = WHITE; // Default foreground (text & icon) color.
 pub const BG: Color = BLACK; // Default background color.
 
 // Font constants.
-pub const FONT_BUTTON: Font = Font::NORMAL_UPPER;
-pub const FONT_HEADER: Font = Font::BOLD_UPPER;
-pub const FONT_CHOICE_ITEMS: Font = Font::BIG;
+pub const FONT_BUTTON: Font = fonts::FONT_NORMAL_UPPER;
+pub const FONT_HEADER: Font = fonts::FONT_BOLD_UPPER;
+pub const FONT_CHOICE_ITEMS: Font = fonts::FONT_BIG;
 
 // Text constants.
-pub const TEXT_NORMAL: TextStyle = TextStyle::new(Font::NORMAL, FG, BG, FG, FG)
+pub const TEXT_NORMAL: TextStyle = TextStyle::new(fonts::FONT_NORMAL, FG, BG, FG, FG)
     .with_page_breaking(PageBreaking::CutAndInsertEllipsisBoth)
     .with_ellipsis_icon(ICON_NEXT_PAGE, ELLIPSIS_ICON_MARGIN)
     .with_prev_page_icon(ICON_PREV_PAGE, PREV_PAGE_ICON_MARGIN);
-pub const TEXT_BIG: TextStyle = TextStyle::new(Font::BIG, FG, BG, FG, FG);
-pub const TEXT_DEMIBOLD: TextStyle = TextStyle::new(Font::DEMIBOLD, FG, BG, FG, FG);
-pub const TEXT_BOLD: TextStyle = TextStyle::new(Font::BOLD, FG, BG, FG, FG)
+pub const TEXT_BIG: TextStyle = TextStyle::new(fonts::FONT_BIG, FG, BG, FG, FG);
+pub const TEXT_DEMIBOLD: TextStyle = TextStyle::new(fonts::FONT_DEMIBOLD, FG, BG, FG, FG);
+pub const TEXT_BOLD: TextStyle = TextStyle::new(fonts::FONT_BOLD, FG, BG, FG, FG)
     .with_page_breaking(PageBreaking::CutAndInsertEllipsisBoth)
     .with_ellipsis_icon(ICON_NEXT_PAGE, ELLIPSIS_ICON_MARGIN)
     .with_prev_page_icon(ICON_PREV_PAGE, PREV_PAGE_ICON_MARGIN);
-pub const TEXT_BOLD_UPPER: TextStyle = TextStyle::new(Font::BOLD_UPPER, FG, BG, FG, FG)
+pub const TEXT_BOLD_UPPER: TextStyle = TextStyle::new(fonts::FONT_BOLD_UPPER, FG, BG, FG, FG)
     .with_page_breaking(PageBreaking::CutAndInsertEllipsisBoth)
     .with_ellipsis_icon(ICON_NEXT_PAGE, ELLIPSIS_ICON_MARGIN)
     .with_prev_page_icon(ICON_PREV_PAGE, PREV_PAGE_ICON_MARGIN);
-pub const TEXT_MONO: TextStyle = TextStyle::new(Font::MONO, FG, BG, FG, FG)
+pub const TEXT_MONO: TextStyle = TextStyle::new(fonts::FONT_MONO, FG, BG, FG, FG)
     .with_page_breaking(PageBreaking::CutAndInsertEllipsisBoth)
     .with_ellipsis_icon(ICON_NEXT_PAGE, ELLIPSIS_ICON_MARGIN)
     .with_prev_page_icon(ICON_PREV_PAGE, PREV_PAGE_ICON_MARGIN);
+pub const TEXT_MONO_WITH_CLASSIC_ELLIPSIS: TextStyle =
+    TextStyle::new(fonts::FONT_MONO, FG, BG, FG, FG)
+        .with_page_breaking(PageBreaking::CutAndInsertEllipsisBoth)
+        .with_prev_page_icon(ICON_PREV_PAGE, PREV_PAGE_ICON_MARGIN);
 /// Mono data text does not have hyphens
 pub const TEXT_MONO_DATA: TextStyle =
     TEXT_MONO.with_line_breaking(LineBreaking::BreakWordsNoHyphen);
+pub const TEXT_MONO_DATA_WITH_CLASSIC_ELLIPSIS: TextStyle =
+    TEXT_MONO_WITH_CLASSIC_ELLIPSIS.with_line_breaking(LineBreaking::BreakWordsNoHyphen);
 pub const TEXT_MONO_ADDRESS_CHUNKS: TextStyle = TEXT_MONO_DATA
     .with_chunks(MONO_CHUNKS)
     .with_line_spacing(2)
@@ -52,17 +58,6 @@ pub const TEXT_MONO_ADDRESS_CHUNKS: TextStyle = TEXT_MONO_DATA
 
 // Chunks for this model
 pub const MONO_CHUNKS: Chunks = Chunks::new(4, 4);
-
-/// Convert Python-side numeric id to a `TextStyle`.
-pub fn textstyle_number(num: i32) -> &'static TextStyle {
-    let font = Font::from_i32(-num);
-    match font {
-        Some(Font::BOLD) => &TEXT_BOLD,
-        Some(Font::DEMIBOLD) => &TEXT_BOLD,
-        Some(Font::NORMAL) => &TEXT_NORMAL,
-        _ => &TEXT_MONO_DATA,
-    }
-}
 
 // Firmware icons
 include_icon!(ICON_ARM_LEFT, "layout_caesar/res/arm_left.toif"); // 10*6

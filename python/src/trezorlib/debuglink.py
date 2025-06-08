@@ -47,6 +47,7 @@ from .client import TrezorClient
 from .exceptions import TrezorFailure, UnexpectedMessageError
 from .log import DUMP_BYTES
 from .messages import DebugWaitType
+from .transport import Timeout
 
 if TYPE_CHECKING:
     from typing_extensions import Protocol
@@ -59,13 +60,13 @@ if TYPE_CHECKING:
     ]
 
     AnyDict = Dict[str, Any]
+    Coords = Tuple[int, int]
 
     class InputFunc(Protocol):
         def __call__(
             self,
             hold_ms: int | None = None,
-            wait: bool | None = None,
-        ) -> "LayoutContent": ...
+        ) -> "None": ...
 
     InputFlowType = Generator[None, messages.ButtonRequest, None]
 
@@ -95,6 +96,12 @@ class LayoutType(Enum):
         if model in (models.T1B1,):
             return cls.T1
         raise ValueError(f"Unknown model: {model}")
+
+    def __str__(self) -> str:
+        return self.name
+
+    def __repr__(self) -> str:
+        return f"LayoutType.{self.name}"
 
 
 class UnstructuredJSONReader:
@@ -416,11 +423,10 @@ def _make_input_func(
     def input_func(
         self: "DebugLink",
         hold_ms: int | None = None,
-        wait: bool | None = None,
-    ) -> LayoutContent:
+    ) -> None:
         __tracebackhide__ = True  # for pytest # pylint: disable=W0612
         decision.hold_ms = hold_ms
-        return self._decision(decision, wait=wait)
+        self._decision(decision)
 
     return input_func  # type: ignore [Parameter name mismatch]
 
@@ -442,12 +448,7 @@ class DebugLink:
         self.t1_screenshot_directory: Path | None = None
         self.t1_screenshot_counter = 0
 
-        # Optional file for saving text representation of the screen
-        self.screen_text_file: Path | None = None
-        self.last_screen_content = ""
-
         self.waiting_for_layout_change = False
-        self.layout_dirty = True
 
         self.input_wait_type = DebugWaitType.IMMEDIATE
 
@@ -477,10 +478,13 @@ class DebugLink:
         assert self.model is not None
         return LayoutType.from_model(self.model)
 
-    def set_screen_text_file(self, file_path: Path | None) -> None:
-        if file_path is not None:
-            file_path.write_bytes(b"")
-        self.screen_text_file = file_path
+    @property
+    def screen_buttons(self) -> ScreenButtons:
+        return ScreenButtons(self.layout_type)
+
+    @property
+    def button_actions(self) -> ButtonActions:
+        return ButtonActions(self.layout_type)
 
     def open(self) -> None:
         self.transport.begin_session()
@@ -505,8 +509,8 @@ class DebugLink:
         )
         self.transport.write(msg_type, msg_bytes)
 
-    def _read(self) -> protobuf.MessageType:
-        ret_type, ret_bytes = self.transport.read()
+    def _read(self, timeout: float | None = None) -> protobuf.MessageType:
+        ret_type, ret_bytes = self.transport.read(timeout=timeout)
         LOG.log(
             DUMP_BYTES,
             f"received type {ret_type} ({len(ret_bytes)} bytes): {ret_bytes.hex()}",
@@ -525,9 +529,9 @@ class DebugLink:
         )
         return msg
 
-    def _call(self, msg: protobuf.MessageType) -> Any:
+    def _call(self, msg: protobuf.MessageType, timeout: float | None = None) -> Any:
         self._write(msg)
-        return self._read()
+        return self._read(timeout=timeout)
 
     def state(self, wait_type: DebugWaitType | None = None) -> messages.DebugLinkState:
         if wait_type is None:
@@ -543,8 +547,19 @@ class DebugLink:
             raise TrezorFailure(result)
         return result
 
-    def read_layout(self) -> LayoutContent:
-        return LayoutContent(self.state().tokens)
+    def read_layout(self, wait: bool | None = None) -> LayoutContent:
+        """
+        Force waiting for the layout by setting `wait=True`. Force not waiting by
+        setting `wait=False` -- useful when, e.g., you are causing the next layout to be
+        deliberately delayed.
+        """
+        if wait is True:
+            wait_type = DebugWaitType.CURRENT_LAYOUT
+        elif wait is False:
+            wait_type = DebugWaitType.IMMEDIATE
+        else:
+            wait_type = None
+        return LayoutContent(self.state(wait_type=wait_type).tokens)
 
     def wait_layout(self, wait_for_external_change: bool = False) -> LayoutContent:
         # Next layout change will be caused by external event
@@ -558,18 +573,12 @@ class DebugLink:
         obj = self._call(
             messages.DebugLinkGetState(wait_layout=DebugWaitType.NEXT_LAYOUT)
         )
-        self.layout_dirty = True
         if isinstance(obj, messages.Failure):
             raise TrezorFailure(obj)
         return LayoutContent(obj.tokens)
 
     @contextmanager
-    def wait_for_layout_change(self) -> Iterator[LayoutContent]:
-        # set up a dummy layout content object to be yielded
-        layout_content = LayoutContent(
-            ["DUMMY CONTENT, WAIT UNTIL THE END OF THE BLOCK :("]
-        )
-
+    def wait_for_layout_change(self) -> Iterator[None]:
         # make sure some current layout is up by issuing a dummy GetState
         self.state()
 
@@ -579,17 +588,13 @@ class DebugLink:
         # allow the block to proceed
         self.waiting_for_layout_change = True
         try:
-            yield layout_content
+            yield
         finally:
             self.waiting_for_layout_change = False
-            self.layout_dirty = True
 
         # wait for the reply
         resp = self._read()
         assert isinstance(resp, messages.DebugLinkState)
-
-        # replace contents of the yielded object with the new thing
-        layout_content.__init__(resp.tokens)
 
     def reset_debug_events(self) -> None:
         # Only supported on TT and above certain version
@@ -634,44 +639,30 @@ class DebugLink:
         state = self._call(messages.DebugLinkGetState(wait_word_list=True))
         return state.reset_word
 
-    def _decision(
-        self, decision: messages.DebugLinkDecision, wait: bool | None = None
-    ) -> LayoutContent:
-        """Send a debuglink decision and returns the resulting layout.
+    def _decision(self, decision: messages.DebugLinkDecision) -> None:
+        """Send a debuglink decision.
 
         If hold_ms is set, an additional 200ms is added to account for processing
         delays. (This is needed for hold-to-confirm to trigger reliably.)
-
-        If `wait` is unset, the following wait mode is used:
-
-        - `IMMEDIATE`, when in normal tests, which never deadlocks the device, but may
-          return an empty layout in case the next one didn't come up immediately. (E.g.,
-          in SignTx flow, the device is waiting for more TxRequest/TxAck exchanges
-          before showing the next UI layout.)
-        - `CURRENT_LAYOUT`, when in tests running through a `DeviceHandler`. This mode
-          returns the current layout or waits for some layout to come up if there is
-          none at the moment. The assumption is that wirelink is communicating on
-          another thread and won't be blocked by waiting on debuglink.
-
-        Force waiting for the layout by setting `wait=True`. Force not waiting by
-        setting `wait=False` -- useful when, e.g., you are causing the next layout to be
-        deliberately delayed.
         """
         if not self.allow_interactions:
-            return self.wait_layout()
+            self.wait_layout()
+            return
 
         if decision.hold_ms is not None:
             decision.hold_ms += 200
 
         self._write(decision)
-        self.layout_dirty = True
-        if wait is True:
-            wait_type = DebugWaitType.CURRENT_LAYOUT
-        elif wait is False:
-            wait_type = DebugWaitType.IMMEDIATE
-        else:
-            wait_type = self.input_wait_type
-        return self._snapshot_core(wait_type)
+        if self.model is models.T1B1:
+            return
+        # When the call below returns, we know that `decision` has been processed in Core.
+        # XXX Due to a bug, the reply may get lost at the end of a workflow.
+        # We assume that no single input event takes more than 5 seconds to process,
+        # and give up waiting after that.
+        try:
+            self._call(messages.DebugLinkGetState(return_empty_state=True), timeout=5)
+        except Timeout as e:
+            LOG.warning("timeout waiting for DebugLinkState: %s", e)
 
     press_yes = _make_input_func(button=messages.DebugButton.YES)
     """Confirm current layout. See `_decision` for more details."""
@@ -698,58 +689,14 @@ class DebugLink:
     )
     """Press right button. See `_decision` for more details."""
 
-    def input(self, word: str, wait: bool | None = None) -> LayoutContent:
+    def input(self, word: str) -> None:
         """Send text input to the device. See `_decision` for more details."""
-        return self._decision(messages.DebugLinkDecision(input=word), wait)
+        self._decision(messages.DebugLinkDecision(input=word))
 
-    def click(
-        self,
-        click: Tuple[int, int],
-        hold_ms: int | None = None,
-        wait: bool | None = None,
-    ) -> LayoutContent:
+    def click(self, click: Tuple[int, int], hold_ms: int | None = None) -> None:
         """Send a click to the device. See `_decision` for more details."""
         x, y = click
-        return self._decision(
-            messages.DebugLinkDecision(x=x, y=y, hold_ms=hold_ms), wait
-        )
-
-    def _snapshot_core(
-        self, wait_type: DebugWaitType = DebugWaitType.IMMEDIATE
-    ) -> LayoutContent:
-        """Save text and image content of the screen to relevant directories."""
-        # skip the snapshot if we are on T1
-        if self.model is models.T1B1:
-            return LayoutContent([])
-
-        # take the snapshot
-        state = self.state(wait_type)
-        layout = LayoutContent(state.tokens)
-
-        if state.tokens and self.layout_dirty:
-            # save it, unless we already did or unless it's empty
-            self.save_debug_screen(layout.visible_screen())
-            self.layout_dirty = False
-
-        # return the layout
-        return layout
-
-    def save_debug_screen(self, screen_content: str) -> None:
-        if self.screen_text_file is None:
-            return
-
-        if not self.screen_text_file.exists():
-            self.screen_text_file.write_bytes(b"")
-
-        # Not writing the same screen twice
-        if screen_content == self.last_screen_content:
-            return
-
-        self.last_screen_content = screen_content
-
-        with open(self.screen_text_file, "a") as f:
-            f.write(screen_content)
-            f.write("\n" + 80 * "/" + "\n")
+        self._decision(messages.DebugLinkDecision(x=x, y=y, hold_ms=hold_ms))
 
     def stop(self) -> None:
         self._write(messages.DebugLinkStop())
@@ -882,7 +829,8 @@ class DebugUI:
             # Paginating (going as further as possible) and pressing Yes
             if br.pages is not None:
                 for _ in range(br.pages - 1):
-                    self.debuglink.swipe_up(wait=True)
+                    self.debuglink.swipe_up()
+
             if self.debuglink.model is models.T3T1:
                 layout = self.debuglink.read_layout()
                 if "PromptScreen" in layout.all_components():
@@ -1367,6 +1315,7 @@ def load_device(
     skip_checksum: bool = False,
     needs_backup: bool = False,
     no_backup: bool = False,
+    _skip_init_device: bool = False,
 ) -> None:
     if isinstance(mnemonic, str):
         mnemonic = [mnemonic]
@@ -1390,7 +1339,8 @@ def load_device(
         ),
         expect=messages.Success,
     )
-    client.init_device()
+    if not _skip_init_device:
+        client.init_device()
 
 
 # keep the old name for compatibility
@@ -1459,3 +1409,303 @@ def _is_emulator(debug_client: "TrezorClientDebugLink") -> bool:
 
 def optiga_set_sec_max(client: "TrezorClient") -> None:
     client.call(messages.DebugLinkOptigaSetSecMax(), expect=messages.Success)
+
+
+class ScreenButtons:
+    def __init__(self, layout_type: LayoutType):
+        assert layout_type in (LayoutType.Bolt, LayoutType.Delizia)
+        self.layout_type = layout_type
+
+    def _width(self) -> int:
+        return 240
+
+    def _height(self) -> int:
+        return 240
+
+    def _grid(self, dim: int, grid_cells: int, cell: int) -> int:
+        assert cell < grid_cells
+        step = dim // grid_cells
+        ofs = step // 2
+        return cell * step + ofs
+
+    # 3 columns, 4 rows, 1st row is input area
+    def _grid35(self, x: int, y: int) -> Coords:
+        return self._grid(self._width(), 3, x), self._grid(self._height(), 5, y)
+
+    # TODO: do not expose this
+    # 3 columns, 3 rows, 1st row is input area
+    def grid34(self, x: int, y: int) -> Coords:
+        return self._grid(self._width(), 3, x), self._grid(self._height(), 4, y)
+
+    # Horizontal coordinates
+    def _left(self) -> int:
+        return self._grid(self._width(), 3, 0)
+
+    def _mid(self) -> int:
+        return self._grid(self._width(), 3, 1)
+
+    def _right(self) -> int:
+        return self._grid(self._width(), 3, 2)
+
+    # Vertical coordinates
+    def _top(self) -> int:
+        return self._grid(self._height(), 6, 0)
+
+    def _bottom(self) -> int:
+        return self._grid(self._height(), 6, 5)
+
+    # Buttons
+
+    # Right bottom
+    def ok(self) -> Coords:
+        return (self._right(), self._bottom())
+
+    # Left bottom
+    def cancel(self) -> Coords:
+        return (self._left(), self._bottom())
+
+    # Mid bottom
+    def info(self) -> Coords:
+        return (self._mid(), self._bottom())
+
+    # Menu/close menu button
+    def menu(self) -> Coords:
+        if self.layout_type in (LayoutType.Bolt, LayoutType.Delizia):
+            return (215, 25)
+        else:
+            raise ValueError("Wrong layout type")
+
+    # Center of the screen
+    def tap_to_confirm(self) -> Coords:
+        assert self.layout_type is LayoutType.Delizia
+        return (self._grid(self._width(), 1, 0), self._grid(self._width(), 1, 0))
+
+    # Yes/No decision component
+    def ui_yes(self) -> Coords:
+        assert self.layout_type is LayoutType.Delizia
+        return self.grid34(2, 2)
+
+    def ui_no(self) -> Coords:
+        assert self.layout_type is LayoutType.Delizia
+        return self.grid34(0, 2)
+
+    # +/- buttons in number input component
+    def number_input_minus(self) -> Coords:
+        if self.layout_type is LayoutType.Bolt:
+            return (self._left(), self._grid(self._height(), 5, 1))
+        elif self.layout_type is LayoutType.Delizia:
+            return (self._left(), self._grid(self._height(), 5, 3))
+        else:
+            raise ValueError("Wrong layout type")
+
+    def number_input_plus(self) -> Coords:
+        if self.layout_type is LayoutType.Bolt:
+            return (self._right(), self._grid(self._height(), 5, 1))
+        elif self.layout_type is LayoutType.Delizia:
+            return (self._right(), self._grid(self._height(), 5, 3))
+        else:
+            raise ValueError("Wrong layout type")
+
+    def word_count_all_word(self, word_count: int) -> Coords:
+        assert word_count in (12, 18, 20, 24, 33)
+        if self.layout_type is LayoutType.Bolt:
+            coords_map = {
+                12: self.grid34(0, 2),
+                18: self.grid34(1, 2),
+                20: self.grid34(2, 2),
+                24: self.grid34(1, 3),
+                33: self.grid34(2, 3),
+            }
+        elif self.layout_type is LayoutType.Delizia:
+            coords_map = {
+                12: self.grid34(0, 1),
+                18: self.grid34(2, 1),
+                20: self.grid34(0, 2),
+                24: self.grid34(2, 2),
+                33: self.grid34(2, 3),
+            }
+        else:
+            raise ValueError("Wrong layout type")
+
+        return coords_map[word_count]
+
+    def word_count_all_cancel(self) -> Coords:
+        if self.layout_type is LayoutType.Bolt:
+            return self.grid34(0, 3)
+
+        elif self.layout_type is LayoutType.Delizia:
+            return self.grid34(0, 3)
+
+        else:
+            raise ValueError("Wrong layout type")
+
+    def word_count_repeated_word(self, word_count: int) -> Coords:
+        assert word_count in (20, 33)
+        if self.layout_type is LayoutType.Bolt:
+            coords_map = {
+                20: self.grid34(1, 2),
+                33: self.grid34(2, 2),
+            }
+        elif self.layout_type is LayoutType.Delizia:
+            coords_map = {
+                20: self.grid34(0, 1),
+                33: self.grid34(2, 1),
+            }
+        else:
+            raise ValueError("Wrong layout type")
+
+        return coords_map[word_count]
+
+    def word_count_repeated_cancel(self) -> Coords:
+        if self.layout_type is LayoutType.Bolt:
+            return self.grid34(0, 2)
+
+        elif self.layout_type is LayoutType.Delizia:
+            return self.grid34(0, 3)
+
+        else:
+            raise ValueError("Wrong layout type")
+
+    # select word component buttons
+    def word_check_words(self) -> "list[Coords]":
+        if self.layout_type in (LayoutType.Bolt, LayoutType.Delizia):
+            return [
+                (self._mid(), self._grid(self._height(), 5, 2)),
+                (self._mid(), self._grid(self._height(), 5, 3)),
+                (self._mid(), self._grid(self._height(), 5, 4)),
+            ]
+        else:
+            raise ValueError("Wrong layout type")
+
+    # vertical menu buttons
+    def vertical_menu_items(self) -> "list[Coords]":
+        assert self.layout_type is LayoutType.Delizia
+
+        return [
+            (self._mid(), self._grid(self._height(), 4, 1)),
+            (self._mid(), self._grid(self._height(), 4, 2)),
+            (self._mid(), self._grid(self._height(), 4, 3)),
+        ]
+
+    # Pin/passphrase keyboards
+    def pin_passphrase_index(self, idx: int) -> Coords:
+        assert idx < 10
+        if idx == 9:
+            idx = 10  # last digit is in the middle
+        return self.pin_passphrase_grid(idx % 3, idx // 3)
+
+    def pin_passphrase_grid(self, x: int, y: int) -> Coords:
+        assert x < 3, y < 4
+        y += 1  # first line is empty
+        return self._grid35(x, y)
+
+    # PIN/passphrase input
+    def pin_passphrase_input(self) -> Coords:
+        return (self._mid(), self._top())
+
+    def pin_passphrase_erase(self) -> Coords:
+        return self.pin_passphrase_grid(0, 3)
+
+    def passphrase_confirm(self) -> Coords:
+        if self.layout_type is LayoutType.Bolt:
+            return self.pin_passphrase_grid(2, 3)
+        elif self.layout_type is LayoutType.Delizia:
+            return (215, 25)
+        else:
+            raise ValueError("Wrong layout type")
+
+    def pin_confirm(self) -> Coords:
+        return self.pin_passphrase_grid(2, 3)
+
+    # Mnemonic keyboard
+    def mnemonic_from_index(self, idx: int) -> Coords:
+        return self.mnemonic_grid(idx)
+
+    def mnemonic_grid(self, idx: int) -> Coords:
+        assert idx < 9
+        grid_x = idx % 3
+        grid_y = idx // 3 + 1  # first line is empty
+        return self.grid34(grid_x, grid_y)
+
+    def mnemonic_erase(self) -> Coords:
+        return (self._left(), self._top())
+
+    def mnemonic_confirm(self) -> Coords:
+        return (self._mid(), self._top())
+
+
+BUTTON_LETTERS_BIP39 = ("abc", "def", "ghi", "jkl", "mno", "pqr", "stu", "vwx", "yz")
+BUTTON_LETTERS_SLIP39 = ("ab", "cd", "ef", "ghij", "klm", "nopq", "rs", "tuv", "wxyz")
+
+# fmt: off
+PASSPHRASE_LOWERCASE_BOLT = (" ", "abc", "def", "ghi", "jkl", "mno", "pqrs", "tuv", "wxyz", "*#")
+PASSPHRASE_LOWERCASE_DELIZIA = ("abc", "def", "ghi", "jkl", "mno", "pq", "rst", "uvw", "xyz", " *#")
+PASSPHRASE_UPPERCASE_BOLT = (" ", "ABC", "DEF", "GHI", "JKL", "MNO", "PQRS", "TUV", "WXYZ", "*#")
+PASSPHRASE_UPPERCASE_DELIZIA = ("ABC", "DEF", "GHI", "JKL", "MNO", "PQ", "RST", "UVW", "XYZ", " *#")
+PASSPHRASE_DIGITS = ("1", "2", "3", "4", "5", "6", "7", "8", "9", "0")
+PASSPHRASE_SPECIAL = ("_<>", ".:@", "/|\\", "!()", "+%&", "-[]", "?{}", ",'`", ";\"~", "$^=")
+# fmt: on
+
+
+class ButtonActions:
+    def __init__(self, layout_type: LayoutType):
+        self.buttons = ScreenButtons(layout_type)
+
+    def _passphrase_choices(self, char: str) -> "tuple[str, ...]":
+        if char in " *#" or char.islower():
+            if self.buttons.layout_type is LayoutType.Bolt:
+                return PASSPHRASE_LOWERCASE_BOLT
+            elif self.buttons.layout_type is LayoutType.Delizia:
+                return PASSPHRASE_LOWERCASE_DELIZIA
+            else:
+                raise ValueError("Wrong layout type")
+        elif char.isupper():
+            if self.buttons.layout_type is LayoutType.Bolt:
+                return PASSPHRASE_UPPERCASE_BOLT
+            elif self.buttons.layout_type is LayoutType.Delizia:
+                return PASSPHRASE_UPPERCASE_DELIZIA
+            else:
+                raise ValueError("Wrong layout type")
+        elif char.isdigit():
+            return PASSPHRASE_DIGITS
+        else:
+            return PASSPHRASE_SPECIAL
+
+    def passphrase(self, char: str) -> Tuple[Coords, int]:
+        choices = self._passphrase_choices(char)
+        idx = next(i for i, letters in enumerate(choices) if char in letters)
+        click_amount = choices[idx].index(char) + 1
+        return self.buttons.pin_passphrase_index(idx), click_amount
+
+    def type_word(self, word: str, is_slip39: bool = False) -> Iterator[Coords]:
+        if is_slip39:
+            yield from self._type_word_slip39(word)
+        else:
+            yield from self._type_word_bip39(word)
+
+    def _type_word_slip39(self, word: str) -> Iterator[Coords]:
+        for l in word:
+            idx = next(
+                i for i, letters in enumerate(BUTTON_LETTERS_SLIP39) if l in letters
+            )
+            yield self.buttons.mnemonic_from_index(idx)
+
+    def _type_word_bip39(self, word: str) -> Iterator[Coords]:
+        coords_prev: Coords | None = None
+        for letter in word:
+            time.sleep(0.1)  # not being so quick to miss something
+            coords, amount = self._letter_coords_and_amount(letter)
+            # If the button is the same as for the previous letter,
+            # waiting a second before pressing it again.
+            if coords == coords_prev:
+                time.sleep(1.1)
+            coords_prev = coords
+            for _ in range(amount):
+                yield coords
+
+    def _letter_coords_and_amount(self, letter: str) -> Tuple[Coords, int]:
+        idx = next(
+            i for i, letters in enumerate(BUTTON_LETTERS_BIP39) if letter in letters
+        )
+        click_amount = BUTTON_LETTERS_BIP39[idx].index(letter) + 1
+        return self.buttons.mnemonic_from_index(idx), click_amount

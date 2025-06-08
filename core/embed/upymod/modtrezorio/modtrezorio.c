@@ -51,9 +51,6 @@ uint32_t last_touch_sample_time = 0;
 #include "modtrezorio-webusb.h"
 #include "modtrezorio-usb.h"
 // clang-format on
-#ifdef USE_BLE
-#include "modtrezorio-ble.h"
-#endif
 #ifdef USE_SD_CARD
 #include "modtrezorio-fatfs.h"
 #include "modtrezorio-sdcard.h"
@@ -99,22 +96,18 @@ STATIC const mp_rom_map_elem_t mp_module_trezorio_globals_table[] = {
 #endif
 
 #ifdef USE_BLE
-    {MP_ROM_QSTR(MP_QSTR_ble), MP_ROM_PTR(&mod_trezorio_BLE_module)},
-    {MP_ROM_QSTR(MP_QSTR_BLE), MP_ROM_INT(BLE_IFACE)},
-    {MP_ROM_QSTR(MP_QSTR_BLE_EVENT), MP_ROM_INT(BLE_EVENT_IFACE)},
+    {MP_ROM_QSTR(MP_QSTR_BLE_EVENT), MP_ROM_INT(SYSHANDLE_BLE)},
 #endif
 #ifdef USE_TOUCH
-    {MP_ROM_QSTR(MP_QSTR_TOUCH), MP_ROM_INT(TOUCH_IFACE)},
+    {MP_ROM_QSTR(MP_QSTR_TOUCH), MP_ROM_INT(SYSHANDLE_TOUCH)},
     {MP_ROM_QSTR(MP_QSTR_TOUCH_START), MP_ROM_INT((TOUCH_START >> 24) & 0xFFU)},
     {MP_ROM_QSTR(MP_QSTR_TOUCH_MOVE), MP_ROM_INT((TOUCH_MOVE >> 24) & 0xFFU)},
     {MP_ROM_QSTR(MP_QSTR_TOUCH_END), MP_ROM_INT((TOUCH_END >> 24) & 0xFFU)},
 #endif
 #ifdef USE_BUTTON
-    {MP_ROM_QSTR(MP_QSTR_BUTTON), MP_ROM_INT(BUTTON_IFACE)},
-    {MP_ROM_QSTR(MP_QSTR_BUTTON_PRESSED),
-     MP_ROM_INT((BTN_EVT_DOWN >> 24) & 0x3U)},
-    {MP_ROM_QSTR(MP_QSTR_BUTTON_RELEASED),
-     MP_ROM_INT((BTN_EVT_UP >> 24) & 0x3U)},
+    {MP_ROM_QSTR(MP_QSTR_BUTTON), MP_ROM_INT(SYSHANDLE_BUTTON)},
+    {MP_ROM_QSTR(MP_QSTR_BUTTON_PRESSED), MP_ROM_INT(BTN_EVENT_DOWN)},
+    {MP_ROM_QSTR(MP_QSTR_BUTTON_RELEASED), MP_ROM_INT(BTN_EVENT_UP)},
     {MP_ROM_QSTR(MP_QSTR_BUTTON_LEFT), MP_ROM_INT(BTN_LEFT)},
     {MP_ROM_QSTR(MP_QSTR_BUTTON_RIGHT), MP_ROM_INT(BTN_RIGHT)},
 #endif
@@ -128,7 +121,7 @@ STATIC const mp_rom_map_elem_t mp_module_trezorio_globals_table[] = {
     {MP_ROM_QSTR(MP_QSTR_POLL_READ), MP_ROM_INT(POLL_READ)},
     {MP_ROM_QSTR(MP_QSTR_POLL_WRITE), MP_ROM_INT(POLL_WRITE)},
 
-    {MP_ROM_QSTR(MP_QSTR_USB_EVENT), MP_ROM_INT(USB_EVENT_IFACE)},
+    {MP_ROM_QSTR(MP_QSTR_USB_EVENT), MP_ROM_INT(SYSHANDLE_USB)},
 };
 
 STATIC MP_DEFINE_CONST_DICT(mp_module_trezorio_globals,

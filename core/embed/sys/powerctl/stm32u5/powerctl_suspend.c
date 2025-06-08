@@ -30,12 +30,24 @@
 #include <sec/optiga_transport.h>
 #endif
 
+#ifdef USE_STORAGE_HWKEY
+#include <sec/secure_aes.h>
+#endif
+
 #ifdef USE_TOUCH
 #include <io/touch.h>
 #endif
 
 #ifdef USE_HAPTIC
 #include <io/haptic.h>
+#endif
+
+#ifdef USE_RGB_LED
+#include <io/rgb_led.h>
+#endif
+
+#ifdef USE_TROPIC
+#include <sec/tropic.h>
 #endif
 
 #ifdef KERNEL_MODE
@@ -59,6 +71,12 @@ void powerctl_suspend(void) {
 
   // Deinitialize all drivers that are not required in low-power mode
   // (e.g., USB, display, touch, haptic, etc.).
+#ifdef USE_STORAGE_HWKEY
+  secure_aes_deinit();
+#endif
+#ifdef USE_TROPIC
+  tropic_deinit();
+#endif
 #ifdef USE_OPTIGA
   optiga_deinit();
 #endif
@@ -67,6 +85,9 @@ void powerctl_suspend(void) {
 #endif
 #ifdef USE_HAPTIC
   haptic_deinit();
+#endif
+#ifdef USE_RGB_LED
+  rgb_led_deinit();
 #endif
 #ifdef USE_TOUCH
   touch_deinit();
@@ -135,11 +156,20 @@ void powerctl_suspend(void) {
 #ifdef USE_HAPTIC
   haptic_init();
 #endif
+#ifdef USE_RGB_LED
+  rgb_led_init();
+#endif
 #ifdef USE_USB
   usb_start();
 #endif
+#ifdef USE_STORAGE_HWKEY
+  secure_aes_init();
+#endif
 #ifdef USE_OPTIGA
   optiga_init_and_configure();
+#endif
+#ifdef USE_TROPIC
+  tropic_init();
 #endif
 }
 

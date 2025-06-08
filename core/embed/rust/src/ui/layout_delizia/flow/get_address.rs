@@ -1,6 +1,6 @@
 use crate::{
     error,
-    micropython::{iter::IterBuf, obj::Obj, util},
+    micropython::{buffer::StrBuffer, iter::IterBuf, obj::Obj, util},
     strutil::TString,
     translations::TR,
     ui::{
@@ -20,10 +20,7 @@ use crate::{
 };
 
 use super::super::{
-    component::{
-        AddressDetails, Frame, FrameMsg, PromptMsg, PromptScreen, StatusScreen, SwipeContent,
-        VerticalMenu, VerticalMenuChoiceMsg,
-    },
+    component::{AddressDetails, Frame, PromptScreen, StatusScreen, SwipeContent, VerticalMenu},
     theme,
 };
 
@@ -118,11 +115,10 @@ pub fn new_get_address(
     let content_address =
         Frame::left_aligned(title, SwipeContent::new(SwipePage::vertical(paragraphs)))
             .with_menu_button()
-            .with_footer(TR::instructions__swipe_up.into(), None)
-            .with_swipe(Direction::Up, SwipeSettings::default())
+            .with_swipeup_footer(None)
             .with_swipe(Direction::Left, SwipeSettings::default())
             .with_vertical_pages()
-            .map(|msg| matches!(msg, FrameMsg::Button(_)).then_some(FlowMsg::Info))
+            .map_to_button_msg()
             .one_button_request(ButtonRequest::from_num(br_code, br_name))
             // Count tap-to-confirm screen towards page count
             .with_pages(|address_pages| address_pages + 1);
@@ -133,11 +129,7 @@ pub fn new_get_address(
             .with_footer(TR::instructions__tap_to_confirm.into(), None)
             .with_swipe(Direction::Down, SwipeSettings::default())
             .with_swipe(Direction::Left, SwipeSettings::default())
-            .map(|msg| match msg {
-                FrameMsg::Content(PromptMsg::Confirmed) => Some(FlowMsg::Confirmed),
-                FrameMsg::Button(_) => Some(FlowMsg::Info),
-                _ => None,
-            });
+            .map(super::util::map_to_confirm);
 
     let content_confirmed = Frame::left_aligned(
         TR::words__title_success.into(),
@@ -160,10 +152,7 @@ pub fn new_get_address(
     )
     .with_cancel_button()
     .with_swipe(Direction::Right, SwipeSettings::immediate())
-    .map(|msg| match msg {
-        FrameMsg::Content(VerticalMenuChoiceMsg::Selected(i)) => Some(FlowMsg::Choice(i)),
-        FrameMsg::Button(_) => Some(FlowMsg::Cancelled),
-    });
+    .map(super::util::map_to_choice);
 
     // QrCode
     let content_qr = Frame::left_aligned(
@@ -174,12 +163,12 @@ pub fn new_get_address(
     )
     .with_cancel_button()
     .with_swipe(Direction::Right, SwipeSettings::immediate())
-    .map(|msg| matches!(msg, FrameMsg::Button(_)).then_some(FlowMsg::Cancelled));
+    .map_to_button_msg();
 
     // AccountInfo
     let mut ad = AddressDetails::new(TR::address_details__account_info.into(), account, path)?;
     for i in IterBuf::new().try_iterate(xpubs)? {
-        let [xtitle, text]: [TString; 2] = util::iter_into_array(i)?;
+        let [xtitle, text]: [StrBuffer; 2] = util::iter_into_array(i)?;
         ad.add_xpub(xtitle, text)?;
     }
     let content_account = ad.map(|_| Some(FlowMsg::Cancelled));
@@ -193,10 +182,9 @@ pub fn new_get_address(
         ))),
     )
     .with_cancel_button()
-    .with_footer(TR::instructions__swipe_up.into(), None)
-    .with_swipe(Direction::Up, SwipeSettings::default())
+    .with_swipeup_footer(None)
     .with_swipe(Direction::Right, SwipeSettings::immediate())
-    .map(|msg| matches!(msg, FrameMsg::Button(_)).then_some(FlowMsg::Cancelled));
+    .map_to_button_msg();
 
     // CancelTap
     let content_cancel_tap = Frame::left_aligned(
@@ -207,20 +195,16 @@ pub fn new_get_address(
     .with_footer(TR::instructions__tap_to_confirm.into(), None)
     .with_swipe(Direction::Down, SwipeSettings::default())
     .with_swipe(Direction::Right, SwipeSettings::immediate())
-    .map(|msg| match msg {
-        FrameMsg::Content(PromptMsg::Confirmed) => Some(FlowMsg::Confirmed),
-        FrameMsg::Button(FlowMsg::Cancelled) => Some(FlowMsg::Cancelled),
-        _ => None,
-    });
+    .map(super::util::map_to_confirm);
 
-    let res = SwipeFlow::new(&GetAddress::Address)?
-        .with_page(&GetAddress::Address, content_address)?
-        .with_page(&GetAddress::Tap, content_tap)?
-        .with_page(&GetAddress::Confirmed, content_confirmed)?
-        .with_page(&GetAddress::Menu, content_menu)?
-        .with_page(&GetAddress::QrCode, content_qr)?
-        .with_page(&GetAddress::AccountInfo, content_account)?
-        .with_page(&GetAddress::Cancel, content_cancel_info)?
-        .with_page(&GetAddress::CancelTap, content_cancel_tap)?;
+    let mut res = SwipeFlow::new(&GetAddress::Address)?;
+    res.add_page(&GetAddress::Address, content_address)?
+        .add_page(&GetAddress::Tap, content_tap)?
+        .add_page(&GetAddress::Confirmed, content_confirmed)?
+        .add_page(&GetAddress::Menu, content_menu)?
+        .add_page(&GetAddress::QrCode, content_qr)?
+        .add_page(&GetAddress::AccountInfo, content_account)?
+        .add_page(&GetAddress::Cancel, content_cancel_info)?
+        .add_page(&GetAddress::CancelTap, content_cancel_tap)?;
     Ok(res)
 }

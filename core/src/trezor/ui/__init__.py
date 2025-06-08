@@ -38,10 +38,6 @@ if __debug__:
 display = Display()
 
 # re-export constants from modtrezorui
-NORMAL: int = Display.FONT_NORMAL
-DEMIBOLD: int = Display.FONT_DEMIBOLD
-BOLD_UPPER: int = Display.FONT_BOLD_UPPER
-MONO: int = Display.FONT_MONO
 WIDTH: int = Display.WIDTH
 HEIGHT: int = Display.HEIGHT
 
@@ -447,7 +443,7 @@ class Layout(Generic[T]):
             return
 
         if isinstance(value, BaseException):
-            if __debug__ and value.__class__.__name__ != "UnexpectedMessage":
+            if __debug__ and value.__class__.__name__ != "UnexpectedMessageException":
                 log.error(
                     __name__, "UI task died: %s (%s)", task, value.__class__.__name__
                 )
@@ -455,6 +451,7 @@ class Layout(Generic[T]):
                 self._emit_message(value)
             except Shutdown:
                 pass
+            return
 
         if __debug__:
             log.error(__name__, "UI task returned non-None: %s (%s)", task, value)

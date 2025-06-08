@@ -2,7 +2,6 @@
 
 #include <trezor_model.h>
 
-#include <gfx/fonts.h>
 #include <gfx/gfx_bitblt.h>
 #include <io/display.h>
 #include <io/usb.h>
@@ -12,6 +11,10 @@
 #include <util/flash.h>
 #include <util/translations.h>
 #include "storage.h"
+
+#ifdef USE_HW_JPEG_DECODER
+#include <gfx/jpegdec.h>
+#endif
 
 #ifdef USE_BLE
 #include <io/ble.h>

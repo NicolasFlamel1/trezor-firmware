@@ -24,6 +24,8 @@
 #include <io/ble.h>
 #include <io/nrf.h>
 #include <sys/irq.h>
+#include <sys/sysevent_source.h>
+#include <sys/systick.h>
 #include <sys/systimer.h>
 #include <util/tsqueue.h>
 #include <util/unit_properties.h>
@@ -66,16 +68,21 @@ typedef struct {
   tsqueue_entry_t ts_queue_entries[TX_QUEUE_LEN];
   tsqueue_t tx_queue;
 
-  char adv_name[BLE_ADV_NAME_LEN];
+  ble_adv_start_cmd_data_t adv_cmd;
+  uint8_t mac[6];
+  bool mac_ready;
   systimer_t *timer;
   uint16_t ping_cntr;
 } ble_driver_t;
 
 static ble_driver_t g_ble_driver = {0};
 
+static const syshandle_vmt_t ble_handle_vmt;
+static const syshandle_vmt_t ble_iface_handle_vmt;
+
 static bool ble_send_state_request(ble_driver_t *drv) {
   (void)drv;
-  uint8_t cmd = INTERNAL_CMD_PING;
+  uint8_t cmd = INTERNAL_CMD_SEND_STATE;
   return nrf_send_msg(NRF_SERVICE_BLE_MANAGER, &cmd, sizeof(cmd), NULL, NULL) >=
          0;
 }
@@ -90,8 +97,11 @@ static bool ble_send_advertising_on(ble_driver_t *drv, bool whitelist) {
       .cmd_id = INTERNAL_CMD_ADVERTISING_ON,
       .whitelist = whitelist ? 1 : 0,
       .color = props.color,
+      .static_addr = drv->adv_cmd.static_mac,
+      .device_code = HW_MODEL,
   };
-  memcpy(data.name, drv->adv_name, BLE_ADV_NAME_LEN);
+
+  memcpy(data.name, drv->adv_cmd.name, BLE_ADV_NAME_LEN);
 
   return nrf_send_msg(NRF_SERVICE_BLE_MANAGER, (uint8_t *)&data, sizeof(data),
                       NULL, NULL) >= 0;
@@ -107,6 +117,13 @@ static bool ble_send_advertising_off(ble_driver_t *drv) {
 static bool ble_send_erase_bonds(ble_driver_t *drv) {
   (void)drv;
   uint8_t cmd = INTERNAL_CMD_ERASE_BONDS;
+  return nrf_send_msg(NRF_SERVICE_BLE_MANAGER, &cmd, sizeof(cmd), NULL, NULL) >=
+         0;
+}
+
+static bool ble_send_unpair(ble_driver_t *drv) {
+  (void)drv;
+  uint8_t cmd = INTERNAL_CMD_UNPAIR;
   return nrf_send_msg(NRF_SERVICE_BLE_MANAGER, &cmd, sizeof(cmd), NULL, NULL) >=
          0;
 }
@@ -130,16 +147,28 @@ static bool ble_send_pairing_reject(ble_driver_t *drv) {
   return result;
 }
 
-static bool ble_send_pairing_accept(ble_driver_t *drv) {
-  uint8_t cmd = INTERNAL_CMD_ALLOW_PAIRING;
-  bool result =
-      nrf_send_msg(NRF_SERVICE_BLE_MANAGER, &cmd, sizeof(cmd), NULL, NULL);
+static bool ble_send_pairing_accept(ble_driver_t *drv, uint8_t *code) {
+  cmd_allow_pairing_t data = {
+      .cmd_id = INTERNAL_CMD_ALLOW_PAIRING,
+  };
+
+  memcpy(data.code, code, sizeof(data.code));
+
+  bool result = nrf_send_msg(NRF_SERVICE_BLE_MANAGER, (uint8_t *)&data,
+                             sizeof(data), NULL, NULL);
 
   if (result) {
     drv->pairing_requested = false;
   }
 
   return result;
+}
+
+static bool ble_send_mac_request(ble_driver_t *drv) {
+  UNUSED(drv);
+  uint8_t cmd = INTERNAL_CMD_GET_MAC;
+
+  return nrf_send_msg(NRF_SERVICE_BLE_MANAGER, &cmd, sizeof(cmd), NULL, NULL);
 }
 
 static void ble_process_rx_msg_status(const uint8_t *data, uint32_t len) {
@@ -211,8 +240,9 @@ static void ble_process_rx_msg_pairing_request(const uint8_t *data,
     return;
   }
 
-  ble_event_t event = {.type = BLE_PAIRING_REQUEST, .data_len = 6};
-  memcpy(event.data, &data[1], 6);
+  ble_event_t event = {.type = BLE_PAIRING_REQUEST,
+                       .data_len = BLE_PAIRING_CODE_LEN};
+  memcpy(event.data, &data[1], BLE_PAIRING_CODE_LEN);
   if (!tsqueue_enqueue(&drv->event_queue, (uint8_t *)&event, sizeof(event),
                        NULL)) {
     ble_send_pairing_reject(drv);
@@ -233,6 +263,16 @@ static void ble_process_rx_msg_pairing_cancelled(const uint8_t *data,
   drv->pairing_requested = false;
 }
 
+static void ble_process_rx_msg_mac(const uint8_t *data, uint32_t len) {
+  ble_driver_t *drv = &g_ble_driver;
+  if (!drv->initialized) {
+    return;
+  }
+
+  drv->mac_ready = true;
+  memcpy(drv->mac, &data[1], sizeof(drv->mac));
+}
+
 static void ble_process_rx_msg(const uint8_t *data, uint32_t len) {
   if (len < 1) {
     return;
@@ -248,6 +288,8 @@ static void ble_process_rx_msg(const uint8_t *data, uint32_t len) {
     case INTERNAL_EVENT_PAIRING_CANCELLED:
       ble_process_rx_msg_pairing_cancelled(data, len);
       break;
+    case INTERNAL_EVENT_MAC:
+      ble_process_rx_msg_mac(data, len);
     default:
       break;
   }
@@ -348,6 +390,14 @@ bool ble_init(void) {
     goto cleanup;
   }
 
+  if (!syshandle_register(SYSHANDLE_BLE, &ble_handle_vmt, drv)) {
+    goto cleanup;
+  }
+
+  if (!syshandle_register(SYSHANDLE_BLE_IFACE_0, &ble_iface_handle_vmt, drv)) {
+    goto cleanup;
+  }
+
   drv->initialized = true;
   return true;
 
@@ -366,6 +416,9 @@ void ble_deinit(void) {
   if (!drv->initialized) {
     return;
   }
+
+  syshandle_unregister(SYSHANDLE_BLE_IFACE_0);
+  syshandle_unregister(SYSHANDLE_BLE);
 
   nrf_unregister_listener(NRF_SERVICE_BLE);
   nrf_unregister_listener(NRF_SERVICE_BLE_MANAGER);
@@ -523,14 +576,17 @@ bool ble_issue_command(ble_command_t *command) {
   switch (command->cmd_type) {
     case BLE_SWITCH_OFF:
       drv->mode_requested = BLE_MODE_OFF;
+      result = true;
       break;
     case BLE_SWITCH_ON:
-      memcpy(drv->adv_name, command->data.name, sizeof(drv->adv_name));
+      memcpy(&drv->adv_cmd, &command->data.adv_start, sizeof(drv->adv_cmd));
       drv->mode_requested = BLE_MODE_CONNECTABLE;
+      result = true;
       break;
     case BLE_PAIRING_MODE:
-      memcpy(drv->adv_name, command->data.name, sizeof(drv->adv_name));
+      memcpy(&drv->adv_cmd, &command->data.adv_start, sizeof(drv->adv_cmd));
       drv->mode_requested = BLE_MODE_PAIRING;
+      result = true;
       break;
     case BLE_DISCONNECT:
       result = ble_send_disconnect(drv);
@@ -539,10 +595,13 @@ bool ble_issue_command(ble_command_t *command) {
       result = ble_send_erase_bonds(drv);
       break;
     case BLE_ALLOW_PAIRING:
-      result = ble_send_pairing_accept(drv);
+      result = ble_send_pairing_accept(drv, command->data.pairing_code);
       break;
     case BLE_REJECT_PAIRING:
       result = ble_send_pairing_reject(drv);
+      break;
+    case BLE_UNPAIR:
+      result = ble_send_unpair(drv);
       break;
     default:
       break;
@@ -585,8 +644,122 @@ void ble_get_state(ble_state_t *state) {
   state->pairing = drv->mode_current == BLE_MODE_PAIRING;
   state->connectable = drv->mode_current == BLE_MODE_CONNECTABLE;
   state->pairing_requested = drv->pairing_requested;
+  state->state_known = drv->status_valid;
 
   irq_unlock(key);
 }
+
+bool ble_get_mac(uint8_t *mac, size_t max_len) {
+  ble_driver_t *drv = &g_ble_driver;
+
+  if (max_len < sizeof(drv->mac)) {
+    return false;
+  }
+
+  if (!drv->initialized) {
+    memset(mac, 0, max_len);
+    return false;
+  }
+
+  drv->mac_ready = false;
+
+  if (!ble_send_mac_request(drv)) {
+    return false;
+  }
+
+  uint32_t timeout = ticks_timeout(100);
+
+  while (!ticks_expired(timeout)) {
+    if (drv->mac_ready) {
+      memcpy(mac, drv->mac, sizeof(drv->mac));
+      return true;
+    }
+  }
+
+  memset(mac, 0, max_len);
+  return false;
+}
+
+static void on_ble_iface_event_poll(void *context, bool read_awaited,
+                                    bool write_awaited) {
+  UNUSED(context);
+
+  syshandle_t handle = SYSHANDLE_BLE_IFACE_0;
+
+  // Only one task can read or write at a time. Therefore, we can
+  // assume that only one task is waiting for events and keep the
+  // logic simple.
+
+  if (read_awaited && ble_can_read()) {
+    syshandle_signal_read_ready(handle, NULL);
+  }
+
+  if (write_awaited && ble_can_write()) {
+    syshandle_signal_write_ready(handle, NULL);
+  }
+}
+
+static bool on_ble_iface_read_ready(void *context, systask_id_t task_id,
+                                    void *param) {
+  UNUSED(context);
+  UNUSED(task_id);
+  UNUSED(param);
+
+  return ble_can_read();
+}
+
+static bool on_ble_iface_check_write_ready(void *context, systask_id_t task_id,
+                                           void *param) {
+  UNUSED(context);
+  UNUSED(task_id);
+  UNUSED(param);
+
+  return ble_can_write();
+}
+
+static const syshandle_vmt_t ble_iface_handle_vmt = {
+    .task_created = NULL,
+    .task_killed = NULL,
+    .check_read_ready = on_ble_iface_read_ready,
+    .check_write_ready = on_ble_iface_check_write_ready,
+    .poll = on_ble_iface_event_poll,
+};
+
+static void on_ble_poll(void *context, bool read_awaited, bool write_awaited) {
+  ble_driver_t *drv = (ble_driver_t *)context;
+
+  UNUSED(write_awaited);
+
+  // Until we need to poll BLE events from multiple tasks,
+  // the logic here can remain very simple. If this assumption
+  // changes, the logic will need to be updated (e.g., task-local storage
+  // with an independent queue for each task).
+
+  if (read_awaited) {
+    irq_key_t key = irq_lock();
+    bool queue_is_empty = tsqueue_empty(&drv->event_queue);
+    irq_unlock(key);
+
+    syshandle_signal_read_ready(SYSHANDLE_BLE, &queue_is_empty);
+  }
+}
+
+static bool on_ble_check_read_ready(void *context, systask_id_t task_id,
+                                    void *param) {
+  UNUSED(context);
+  UNUSED(task_id);
+
+  bool queue_is_empty = *(bool *)param;
+
+  return !queue_is_empty;
+}
+
+static const syshandle_vmt_t ble_handle_vmt = {
+    .task_created = NULL,
+    .task_killed = NULL,
+    .check_read_ready = on_ble_check_read_ready,
+    .check_write_ready = NULL,
+    .poll = on_ble_poll,
+};
 
 #endif

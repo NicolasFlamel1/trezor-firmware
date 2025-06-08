@@ -28,6 +28,7 @@
 #include <sys/applet.h>
 #include <sys/bootutils.h>
 #include <sys/mpu.h>
+#include <sys/sysevent.h>
 #include <sys/system.h>
 #include <sys/systick.h>
 #include <util/bl_check.h>
@@ -55,6 +56,10 @@
 
 #ifdef USE_OPTIGA
 #include <sec/optiga_config.h>
+#endif
+
+#ifdef USE_TROPIC
+#include <sec/tropic.h>
 #endif
 
 #ifdef USE_POWERCTL
@@ -167,6 +172,23 @@ void drivers_init() {
 #ifdef USE_OPTIGA
   optiga_init_and_configure();
 #endif
+
+#ifdef USE_TROPIC
+  tropic_init();
+#endif
+}
+
+// Kernel task main loop
+//
+// Returns when the coreapp task is terminated
+static void kernel_loop(applet_t *coreapp) {
+  do {
+    sysevents_t awaited = {0};
+    sysevents_t signalled = {0};
+
+    sysevents_poll(&awaited, &signalled, ticks_timeout(100));
+
+  } while (applet_is_alive(coreapp));
 }
 
 // defined in linker script
@@ -218,10 +240,14 @@ static void show_rsod(const systask_postmortem_t *pminfo) {
   if (applet_reset(&coreapp, 1, pminfo, sizeof(systask_postmortem_t))) {
     // Run the applet & wait for it to finish
     applet_run(&coreapp);
+    // Loop until the coreapp is terminated
+    kernel_loop(&coreapp);
+    // Release the coreapp resources
+    applet_stop(&coreapp);
 
     if (coreapp.task.pminfo.reason == TASK_TERM_REASON_EXIT) {
-      // If the RSOD was shown successfully, proceed to shutdown
-      secure_shutdown();
+      // RSOD was shown successfully
+      return;
     }
   }
 #endif
@@ -243,8 +269,8 @@ static void init_and_show_rsod(const systask_postmortem_t *pminfo) {
   // Show RSOD
   show_rsod(pminfo);
 
-  // Wait for the user to manually power off the device
-  secure_shutdown();
+  // Reboots or halts (if RSOD_INFINITE_LOOP is defined)
+  reboot_or_halt_after_rsod();
 }
 
 // Kernel panic handler
@@ -277,14 +303,18 @@ int main(void) {
     error_shutdown("Cannot start coreapp");
   }
 
-  // Run the applet & wait for it to finish
+  // Run the applet
   applet_run(&coreapp);
+  // Loop until the coreapp is terminated
+  kernel_loop(&coreapp);
+  // Release the coreapp resources
+  applet_stop(&coreapp);
 
   // Coreapp crashed, show RSOD
   show_rsod(&coreapp.task.pminfo);
 
-  // Wait for the user to manually power off the device
-  secure_shutdown();
+  // Reboots or halts (if RSOD_INFINITE_LOOP is defined)
+  reboot_or_halt_after_rsod();
 
   return 0;
 }

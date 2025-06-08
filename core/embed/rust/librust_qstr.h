@@ -5,10 +5,21 @@
 #pragma GCC diagnostic ignored "-Wunused-function"
 
 static void _librust_qstrs(void) {
+  MP_QSTR_0;
+  MP_QSTR_1;
+  MP_QSTR_2;
+  MP_QSTR_3;
+  MP_QSTR_4;
+  MP_QSTR_5;
+  MP_QSTR_6;
+  MP_QSTR_7;
+  MP_QSTR_8;
+  MP_QSTR_9;
   MP_QSTR_;
   MP_QSTR_ATTACHED;
   MP_QSTR_AttachType;
   MP_QSTR_BacklightLevels;
+  MP_QSTR_BleInterface;
   MP_QSTR_CANCELLED;
   MP_QSTR_CONFIRMED;
   MP_QSTR_DIM;
@@ -26,12 +37,14 @@ static void _librust_qstrs(void) {
   MP_QSTR_NONE;
   MP_QSTR_NORMAL;
   MP_QSTR_RESUME;
+  MP_QSTR_RX_PACKET_LEN;
   MP_QSTR_SWIPE_DOWN;
   MP_QSTR_SWIPE_LEFT;
   MP_QSTR_SWIPE_RIGHT;
   MP_QSTR_SWIPE_UP;
   MP_QSTR_TR;
   MP_QSTR_TRANSITIONING;
+  MP_QSTR_TX_PACKET_LEN;
   MP_QSTR_TranslationsHeader;
   MP_QSTR___del__;
   MP_QSTR___dict__;
@@ -39,9 +52,11 @@ static void _librust_qstrs(void) {
   MP_QSTR_account;
   MP_QSTR_account_items;
   MP_QSTR_account_path;
+  MP_QSTR_account_title;
   MP_QSTR_accounts;
   MP_QSTR_action;
   MP_QSTR_active;
+  MP_QSTR_add;
   MP_QSTR_addr_mismatch__contact_support_at;
   MP_QSTR_addr_mismatch__key_mismatch;
   MP_QSTR_addr_mismatch__mismatch;
@@ -63,10 +78,11 @@ static void _librust_qstrs(void) {
   MP_QSTR_address_details__derivation_path_colon;
   MP_QSTR_address_details__title_receive_address;
   MP_QSTR_address_details__title_receiving_to;
+  MP_QSTR_address_item;
   MP_QSTR_address_label;
   MP_QSTR_address_qr;
-  MP_QSTR_address_title;
   MP_QSTR_allow_cancel;
+  MP_QSTR_allow_pairing;
   MP_QSTR_amount;
   MP_QSTR_amount_change;
   MP_QSTR_amount_label;
@@ -122,6 +138,9 @@ static void _librust_qstrs(void) {
   MP_QSTR_bitcoin__unverified_external_inputs;
   MP_QSTR_bitcoin__valid_signature;
   MP_QSTR_bitcoin__voting_rights;
+  MP_QSTR_ble__unpair_all;
+  MP_QSTR_ble__unpair_current;
+  MP_QSTR_ble__unpair_title;
   MP_QSTR_ble_event;
   MP_QSTR_bootscreen;
   MP_QSTR_br_code;
@@ -208,14 +227,14 @@ static void _librust_qstrs(void) {
   MP_QSTR_confirm_value;
   MP_QSTR_confirm_value_intro;
   MP_QSTR_confirm_with_info;
+  MP_QSTR_connection_flags;
   MP_QSTR_continue_recovery_homepage;
   MP_QSTR_count;
+  MP_QSTR_coveragedata;
   MP_QSTR_current;
   MP_QSTR_danger;
   MP_QSTR_data_hash;
   MP_QSTR_data_len;
-  MP_QSTR_debug__loading_seed;
-  MP_QSTR_debug__loading_seed_not_recommended;
   MP_QSTR_decode;
   MP_QSTR_deinit;
   MP_QSTR_description;
@@ -223,16 +242,18 @@ static void _librust_qstrs(void) {
   MP_QSTR_device_name__change_template;
   MP_QSTR_device_name__title;
   MP_QSTR_disable_animation;
+  MP_QSTR_disconnect;
   MP_QSTR_encode;
   MP_QSTR_encoded_length;
   MP_QSTR_entropy__send;
-  MP_QSTR_entropy__title;
   MP_QSTR_entropy__title_confirm;
   MP_QSTR_erase;
+  MP_QSTR_erase_bonds;
   MP_QSTR_experimental_mode__enable;
   MP_QSTR_experimental_mode__only_for_dev;
   MP_QSTR_experimental_mode__title;
   MP_QSTR_extra;
+  MP_QSTR_extra_item;
   MP_QSTR_extra_items;
   MP_QSTR_extra_title;
   MP_QSTR_fee;
@@ -245,6 +266,7 @@ static void _librust_qstrs(void) {
   MP_QSTR_flow_confirm_output;
   MP_QSTR_flow_confirm_set_new_pin;
   MP_QSTR_flow_get_address;
+  MP_QSTR_get;
   MP_QSTR_get_language;
   MP_QSTR_get_transition_out;
   MP_QSTR_haptic_feedback__disable;
@@ -268,6 +290,7 @@ static void _librust_qstrs(void) {
   MP_QSTR_homescreen__title_set;
   MP_QSTR_horizontal;
   MP_QSTR_icon_name;
+  MP_QSTR_iface_num;
   MP_QSTR_image;
   MP_QSTR_indeterminate;
   MP_QSTR_info;
@@ -288,17 +311,18 @@ static void _librust_qstrs(void) {
   MP_QSTR_instructions__hold_to_confirm;
   MP_QSTR_instructions__hold_to_continue;
   MP_QSTR_instructions__hold_to_exit_tutorial;
-  MP_QSTR_instructions__hold_to_finish_tutorial;
   MP_QSTR_instructions__hold_to_sign;
   MP_QSTR_instructions__learn_more;
   MP_QSTR_instructions__shares_continue_with_x_template;
   MP_QSTR_instructions__shares_start_with_1;
   MP_QSTR_instructions__swipe_down;
   MP_QSTR_instructions__swipe_horizontally;
-  MP_QSTR_instructions__swipe_up;
   MP_QSTR_instructions__tap_to_confirm;
+  MP_QSTR_instructions__tap_to_continue;
   MP_QSTR_instructions__tap_to_start;
   MP_QSTR_instructions__view_all_data;
+  MP_QSTR_interface;
+  MP_QSTR_is_connected;
   MP_QSTR_is_data;
   MP_QSTR_is_type_of;
   MP_QSTR_items;
@@ -365,6 +389,7 @@ static void _librust_qstrs(void) {
   MP_QSTR_passphrase__turn_on;
   MP_QSTR_passphrase__wallet;
   MP_QSTR_path;
+  MP_QSTR_peer_count;
   MP_QSTR_pin__cancel_description;
   MP_QSTR_pin__cancel_info;
   MP_QSTR_pin__cancel_setup;
@@ -419,6 +444,7 @@ static void _librust_qstrs(void) {
   MP_QSTR_prompt_screen;
   MP_QSTR_prompt_title;
   MP_QSTR_qr_title;
+  MP_QSTR_read;
   MP_QSTR_reboot_to_bootloader__just_a_moment;
   MP_QSTR_reboot_to_bootloader__restart;
   MP_QSTR_reboot_to_bootloader__title;
@@ -450,7 +476,6 @@ static void _librust_qstrs(void) {
   MP_QSTR_recovery__num_of_words;
   MP_QSTR_recovery__only_first_n_letters;
   MP_QSTR_recovery__progress_will_be_lost;
-  MP_QSTR_recovery__select_num_of_words;
   MP_QSTR_recovery__share_already_entered;
   MP_QSTR_recovery__share_does_not_match;
   MP_QSTR_recovery__share_from_another_multi_share_backup;
@@ -475,6 +500,7 @@ static void _librust_qstrs(void) {
   MP_QSTR_recovery__x_of_y_entered_template;
   MP_QSTR_recovery__you_have_entered;
   MP_QSTR_recovery_type;
+  MP_QSTR_reject_pairing;
   MP_QSTR_remaining_shares;
   MP_QSTR_request_bip39;
   MP_QSTR_request_complete_repaint;
@@ -553,7 +579,6 @@ static void _librust_qstrs(void) {
   MP_QSTR_reset__threshold_info;
   MP_QSTR_reset__title_backup_is_done;
   MP_QSTR_reset__title_create_wallet;
-  MP_QSTR_reset__title_create_wallet_shamir;
   MP_QSTR_reset__title_group_threshold;
   MP_QSTR_reset__title_number_of_groups;
   MP_QSTR_reset__title_number_of_shares;
@@ -627,7 +652,6 @@ static void _librust_qstrs(void) {
   MP_QSTR_send__title_sending_to;
   MP_QSTR_send__to_the_total_amount;
   MP_QSTR_send__total_amount;
-  MP_QSTR_send__total_amount_colon;
   MP_QSTR_send__transaction_id;
   MP_QSTR_send__transaction_signed;
   MP_QSTR_send__you_are_contributing;
@@ -660,9 +684,13 @@ static void _librust_qstrs(void) {
   MP_QSTR_sign_message__bytes_template;
   MP_QSTR_sign_message__confirm_address;
   MP_QSTR_sign_message__confirm_message;
+  MP_QSTR_sign_message__confirm_without_review;
   MP_QSTR_sign_message__message_size;
   MP_QSTR_sign_message__verify_address;
   MP_QSTR_skip_first_paint;
+  MP_QSTR_start_advertising;
+  MP_QSTR_start_comm;
+  MP_QSTR_stop_advertising;
   MP_QSTR_storage_msg__processing;
   MP_QSTR_storage_msg__starting;
   MP_QSTR_storage_msg__verifying_pin;
@@ -686,26 +714,23 @@ static void _librust_qstrs(void) {
   MP_QSTR_total_len;
   MP_QSTR_touch_event;
   MP_QSTR_trace;
+  MP_QSTR_trezorble;
   MP_QSTR_trezorproto;
   MP_QSTR_trezorui_api;
   MP_QSTR_tutorial;
   MP_QSTR_tutorial__continue;
   MP_QSTR_tutorial__did_you_know;
   MP_QSTR_tutorial__exit;
-  MP_QSTR_tutorial__first_transaction_finish;
-  MP_QSTR_tutorial__first_transaction_intro;
   MP_QSTR_tutorial__first_wallet;
   MP_QSTR_tutorial__get_started;
   MP_QSTR_tutorial__lets_begin;
   MP_QSTR_tutorial__menu;
   MP_QSTR_tutorial__middle_click;
-  MP_QSTR_tutorial__one_more_step;
   MP_QSTR_tutorial__press_and_hold;
   MP_QSTR_tutorial__ready_to_use;
   MP_QSTR_tutorial__ready_to_use_safe5;
   MP_QSTR_tutorial__restart_tutorial;
   MP_QSTR_tutorial__scroll_down;
-  MP_QSTR_tutorial__subtitle_safe5;
   MP_QSTR_tutorial__sure_you_want_skip;
   MP_QSTR_tutorial__swipe_up_and_down;
   MP_QSTR_tutorial__title_easy_navigation;
@@ -722,11 +747,13 @@ static void _librust_qstrs(void) {
   MP_QSTR_tutorial__welcome_safe5;
   MP_QSTR_type_for_name;
   MP_QSTR_type_for_wire;
+  MP_QSTR_unpair;
   MP_QSTR_usb_event;
   MP_QSTR_user_fee_change;
   MP_QSTR_value;
   MP_QSTR_verb;
   MP_QSTR_verb_cancel;
+  MP_QSTR_verb_info;
   MP_QSTR_verify;
   MP_QSTR_version;
   MP_QSTR_wipe__info;
@@ -798,6 +825,7 @@ static void _librust_qstrs(void) {
   MP_QSTR_words__title_threshold;
   MP_QSTR_words__try_again;
   MP_QSTR_words__unknown;
+  MP_QSTR_words__unlocked;
   MP_QSTR_words__warning;
   MP_QSTR_words__writable;
   MP_QSTR_words__yes;
@@ -841,7 +869,6 @@ static void _librust_qstrs(void) {
   MP_QSTR_cardano__collateral_input_index;
   MP_QSTR_cardano__collateral_output_contains_tokens;
   MP_QSTR_cardano__collateral_return;
-  MP_QSTR_cardano__confirm;
   MP_QSTR_cardano__confirm_signing_stake_pool;
   MP_QSTR_cardano__confirm_transaction;
   MP_QSTR_cardano__confirming_a_multisig_transaction;
@@ -1102,10 +1129,15 @@ static void _librust_qstrs(void) {
   MP_QSTR_nem__under_namespace;
   MP_QSTR_nem__unencrypted;
   MP_QSTR_nem__unknown_mosaic;
+  MP_QSTR_nostr__event_kind_template;
   MP_QSTR_ripple__confirm_tag;
   MP_QSTR_ripple__destination_tag_template;
   MP_QSTR_solana__account_index;
   MP_QSTR_solana__associated_token_account;
+  MP_QSTR_solana__base_fee;
+  MP_QSTR_solana__claim;
+  MP_QSTR_solana__claim_question;
+  MP_QSTR_solana__claim_recipient_warning;
   MP_QSTR_solana__confirm_multisig;
   MP_QSTR_solana__expected_fee;
   MP_QSTR_solana__instruction_accounts_template;
@@ -1113,10 +1145,24 @@ static void _librust_qstrs(void) {
   MP_QSTR_solana__instruction_is_multisig;
   MP_QSTR_solana__is_provided_via_lookup_table_template;
   MP_QSTR_solana__lookup_table_address;
+  MP_QSTR_solana__max_fees_rent;
+  MP_QSTR_solana__max_rent_fee;
   MP_QSTR_solana__multiple_signers;
-  MP_QSTR_solana__token_address;
+  MP_QSTR_solana__priority_fee;
+  MP_QSTR_solana__stake;
+  MP_QSTR_solana__stake_account;
+  MP_QSTR_solana__stake_on_question;
+  MP_QSTR_solana__stake_provider;
+  MP_QSTR_solana__stake_question;
+  MP_QSTR_solana__stake_withdrawal_warning;
+  MP_QSTR_solana__stake_withdrawal_warning_title;
+  MP_QSTR_solana__title_token;
   MP_QSTR_solana__transaction_contains_unknown_instructions;
+  MP_QSTR_solana__transaction_fee;
   MP_QSTR_solana__transaction_requires_x_signers_template;
+  MP_QSTR_solana__unstake;
+  MP_QSTR_solana__unstake_question;
+  MP_QSTR_solana__vote_account;
   MP_QSTR_stellar__account_merge;
   MP_QSTR_stellar__account_thresholds;
   MP_QSTR_stellar__add_signer;
@@ -1201,5 +1247,9 @@ static void _librust_qstrs(void) {
   MP_QSTR_u2f__set_template;
   MP_QSTR_u2f__title_get;
   MP_QSTR_u2f__title_set;
+#endif
+#if !PYOPT
+  MP_QSTR_debug__loading_seed;
+  MP_QSTR_debug__loading_seed_not_recommended;
 #endif
 }

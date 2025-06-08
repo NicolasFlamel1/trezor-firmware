@@ -53,21 +53,38 @@ const DEFAULT_BINDGEN_MACROS_COMMON: &[&str] = &[
     "-DUSE_HAPTIC",
     "-DUSE_RGB_LED",
     "-DUSE_BLE",
+    "-DUSE_HW_JPEG_DECODER",
 ];
 
 fn add_bindgen_macros<'a>(
-    clang_args: &mut Vec<&'a str>,
+    clang_args: &mut Vec<String>,
     envvar: Option<&'a str>,
     test_envvar: Option<&'a str>,
 ) {
-    match envvar {
-        Some(envvar) => clang_args.extend(envvar.split(',')),
-        None => {
-            println!("{}", test_envvar.unwrap());
-            let test_macros_env = test_envvar.unwrap().split(',');
-            clang_args.extend(DEFAULT_BINDGEN_MACROS_COMMON.iter());
-            clang_args.extend(test_macros_env);
-        }
+    if let Some(envvar) = envvar {
+        clang_args.extend(envvar.split(',').map(String::from));
+        return;
+    }
+    clang_args.extend(DEFAULT_BINDGEN_MACROS_COMMON.iter().map(|s| s.to_string()));
+    if let Some(envvar) = test_envvar {
+        clang_args.extend(envvar.split(',').map(String::from));
+        return;
+    }
+
+    let mut model_dirs: Vec<&str> = vec![];
+    // always include Bolt as the baseline
+    model_dirs.push("../models/T2T1");
+    #[cfg(feature = "layout_caesar")]
+    model_dirs.push("../models/T3B1");
+    #[cfg(feature = "layout_delizia")]
+    model_dirs.push("../models/T3T1");
+    #[cfg(feature = "layout_eckhart")]
+    model_dirs.push("../models/T3W1");
+    for model_dir in model_dirs {
+        let macros = PathBuf::from(model_dir).join("test_bindgen_macros.txt");
+        let contents = std::fs::read_to_string(&macros)
+            .unwrap_or_else(|_| panic!("Failed to read {:?}", macros));
+        clang_args.extend(contents.split(",\n").map(String::from));
     }
 }
 
@@ -117,7 +134,7 @@ fn prepare_bindings() -> bindgen::Builder {
 
     let build_dir_include = format!("-I{}", build_dir());
 
-    let mut clang_args: Vec<&str> = Vec::new();
+    let mut clang_args: Vec<String> = Vec::new();
 
     let bindgen_macros_env = env::var("BINDGEN_MACROS").ok();
     let test_macros_env = env::var("TEST_BINDGEN_MACROS").ok();
@@ -132,12 +149,12 @@ fn prepare_bindings() -> bindgen::Builder {
         bindings = bindings.clang_args(&["-DFRAMEBUFFER"]);
     }
 
-    clang_args.push(&build_dir_include);
+    clang_args.push(build_dir_include);
 
     // Pass in correct include paths and defines.
     if is_firmware() {
-        clang_args.push("-nostdinc");
-        clang_args.push("-fshort-enums"); // Make sure enums use the same size as in C
+        clang_args.push("-nostdinc".to_string());
+        clang_args.push("-fshort-enums".to_string()); // Make sure enums use the same size as in C
 
         // Append gcc-arm-none-eabi's include paths.
         let cc_output = Command::new("arm-none-eabi-gcc")
@@ -160,7 +177,7 @@ fn prepare_bindings() -> bindgen::Builder {
 
         bindings = bindings.clang_args(include_args);
     } else {
-        clang_args.push("-fno-short-enums");
+        clang_args.push("-fno-short-enums".to_string());
     }
 
     bindings = bindings.clang_args(&clang_args);
@@ -257,6 +274,7 @@ fn generate_micropython_bindings() {
         .allowlist_var("mp_type_OverflowError")
         .allowlist_var("mp_type_ValueError")
         .allowlist_var("mp_type_TypeError")
+        .allowlist_var("mp_type_RuntimeError")
         // time
         .allowlist_function("mp_hal_ticks_ms")
         .allowlist_function("mp_hal_delay_ms")
@@ -358,10 +376,6 @@ fn generate_trezorhal_bindings() {
         .allowlist_function("gfx_mono8_blend_mono1p")
         .allowlist_function("gfx_mono8_blend_mono4")
         .allowlist_function("gfx_bitblt_wait")
-        // fonts
-        .allowlist_type("font_info_t")
-        .allowlist_function("get_font_info")
-        // .allowlist_function("font_get_glyph")
         // uzlib
         .allowlist_function("uzlib_uncompress_init")
         .allowlist_function("uzlib_uncompress")
@@ -381,14 +395,22 @@ fn generate_trezorhal_bindings() {
         // systick
         .allowlist_function("systick_delay_ms")
         .allowlist_function("systick_ms")
+        .allowlist_function("systick_us")
         // toif
         .allowlist_type("toif_format_t")
         //usb
         .allowlist_type("usb_event_t")
         .allowlist_function("usb_get_state")
         // ble
+        .allowlist_var("BLE_PAIRING_CODE_LEN")
+        .allowlist_var("BLE_RX_PACKET_SIZE")
+        .allowlist_var("BLE_TX_PACKET_SIZE")
+        .allowlist_var("BLE_ADV_NAME_LEN")
         .allowlist_function("ble_get_state")
         .allowlist_function("ble_issue_command")
+        .allowlist_function("ble_start")
+        .allowlist_function("ble_write")
+        .allowlist_function("ble_read")
         .allowlist_type("ble_command_t")
         .allowlist_type("ble_state_t")
         // touch
@@ -399,7 +421,20 @@ fn generate_trezorhal_bindings() {
         // haptic
         .allowlist_type("haptic_effect_t")
         .allowlist_function("haptic_play")
-        .allowlist_function("haptic_play_custom");
+        .allowlist_function("haptic_play_custom")
+        // jpegdec
+        .allowlist_var("JPEGDEC_RGBA8888_BUFFER_SIZE")
+        .allowlist_var("JPEGDEC_MONO8_BUFFER_SIZE")
+        .allowlist_type("jpegdec_state_t")
+        .allowlist_type("jpegdec_image_t")
+        .allowlist_type("jpegdec_image_format_t")
+        .allowlist_type("jpegdec_slice_t")
+        .allowlist_function("jpegdec_open")
+        .allowlist_function("jpegdec_close")
+        .allowlist_function("jpegdec_process")
+        .allowlist_function("jpegdec_get_info")
+        .allowlist_function("jpegdec_get_slice_rgba8888")
+        .allowlist_function("jpegdec_get_slice_mono8");
 
     // Write the bindings to a file in the OUR_DIR.
     bindings

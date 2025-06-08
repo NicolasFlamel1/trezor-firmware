@@ -4,20 +4,23 @@ use core::{
     marker::PhantomData,
     ops::{Deref, DerefMut},
 };
+use num_traits::FromPrimitive;
 
 #[cfg(feature = "touch")]
 use crate::ui::{event::TouchEvent, geometry::Direction};
 #[cfg(feature = "touch")]
-use num_traits::{FromPrimitive, ToPrimitive};
+use num_traits::ToPrimitive;
 
-#[cfg(feature = "ble")]
-use crate::micropython::buffer::get_buffer;
 #[cfg(feature = "ble")]
 use crate::ui::event::BLEEvent;
 
 #[cfg(feature = "button")]
-use crate::ui::event::ButtonEvent;
+use crate::{
+    trezorhal::button::{PhysicalButton, PhysicalButtonEvent},
+    ui::event::ButtonEvent,
+};
 
+use super::base::{Layout, LayoutState};
 use crate::{
     error::Error,
     maybe_trace::MaybeTrace,
@@ -45,8 +48,6 @@ use crate::{
         CommonUI, ModelUI,
     },
 };
-
-use super::base::{Layout, LayoutState};
 
 impl AttachType {
     fn to_obj(self) -> Obj {
@@ -371,7 +372,7 @@ impl LayoutObj {
     }
 
     pub fn new_root(root: impl LayoutMaybeTrace + 'static) -> Result<Gc<Self>, Error> {
-        // SAFETY: This is a Python object and hase a base as first element
+        // SAFETY: This is a Python object and has a base as first element
         unsafe {
             Gc::new_with_custom_finaliser(Self {
                 base: Self::obj_type().as_base(),
@@ -443,7 +444,7 @@ impl TryFrom<Obj> for TimerToken {
 
     fn try_from(value: Obj) -> Result<Self, Self::Error> {
         let raw: u32 = value.try_into()?;
-        let this = Self::from_raw(raw);
+        let this = Self::from_raw(raw)?;
         Ok(this)
     }
 }
@@ -516,7 +517,13 @@ extern "C" fn ui_layout_button_event(n_args: usize, args: *const Obj) -> Obj {
             return Err(Error::TypeError);
         }
         let this: Gc<LayoutObj> = args[0].try_into()?;
-        let event = ButtonEvent::new(args[1].try_into()?, args[2].try_into()?)?;
+        let event_type_num: u8 = args[1].try_into()?;
+        let button_num: u8 = args[2].try_into()?;
+
+        let event_type = unwrap!(PhysicalButtonEvent::from_u8(event_type_num));
+        let button = unwrap!(PhysicalButton::from_u8(button_num));
+
+        let event = ButtonEvent::new(event_type, button)?;
         let msg = this.inner_mut().obj_event(Event::Button(event))?;
         Ok(msg)
     };
@@ -536,11 +543,7 @@ extern "C" fn ui_layout_ble_event(n_args: usize, args: *const Obj) -> Obj {
         }
         let this: Gc<LayoutObj> = args[0].try_into()?;
 
-        let data = unsafe { get_buffer(args[2]) };
-
-        let data = unwrap!(data);
-
-        let event = BLEEvent::new(args[1].try_into()?, data)?;
+        let event = BLEEvent::new(args[1].try_into()?, args[2].try_into_option()?)?;
         let msg = this.inner_mut().obj_event(Event::BLE(event))?;
         Ok(msg)
     };

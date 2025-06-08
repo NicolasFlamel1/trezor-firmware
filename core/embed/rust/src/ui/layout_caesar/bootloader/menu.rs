@@ -5,7 +5,7 @@ use crate::{
     ui::{
         component::{Child, Component, Event, EventCtx, Pad},
         constant::screen,
-        display::{Font, Icon},
+        display::Icon,
         geometry::{Alignment, Alignment2D, Offset, Point, Rect},
         layout::simplified::ReturnToC,
         shape,
@@ -14,7 +14,8 @@ use crate::{
 };
 
 use super::super::{
-    component::{ButtonLayout, Choice, ChoiceFactory, ChoicePage},
+    component::{ButtonLayout, Choice, ChoiceFactory, ChoiceMsg, ChoicePage},
+    fonts,
     theme::bootloader::{BLD_BG, BLD_FG, ICON_EXIT, ICON_REDO, ICON_TRASH},
 };
 
@@ -58,17 +59,19 @@ impl Choice for MenuChoice {
             .with_fg(BLD_FG)
             .render(target);
 
-        shape::Text::new(SCREEN_CENTER, self.first_line)
+        shape::Text::new(SCREEN_CENTER, self.first_line, fonts::FONT_NORMAL)
             .with_align(Alignment::Center)
-            .with_font(Font::NORMAL)
             .with_fg(BLD_FG)
             .render(target);
 
-        shape::Text::new(SCREEN_CENTER + Offset::y(10), self.second_line)
-            .with_align(Alignment::Center)
-            .with_font(Font::NORMAL)
-            .with_fg(BLD_FG)
-            .render(target);
+        shape::Text::new(
+            SCREEN_CENTER + Offset::y(10),
+            self.second_line,
+            fonts::FONT_NORMAL,
+        )
+        .with_align(Alignment::Center)
+        .with_fg(BLD_FG)
+        .render(target);
     }
 
     fn btn_layout(&self) -> ButtonLayout {
@@ -137,11 +140,7 @@ impl Menu {
         let choices = MenuChoiceFactory::new(firmware_present);
         Self {
             pad: Pad::with_background(BLD_BG).with_clear(),
-            choice_page: Child::new(
-                ChoicePage::new(choices)
-                    .with_carousel(true)
-                    .with_only_one_item(true),
-            ),
+            choice_page: Child::new(ChoicePage::new(choices).with_only_one_item(true)),
         }
     }
 }
@@ -156,7 +155,10 @@ impl Component for Menu {
     }
 
     fn event(&mut self, ctx: &mut EventCtx, event: Event) -> Option<Self::Msg> {
-        self.choice_page.event(ctx, event).map(|evt| evt.0)
+        match self.choice_page.event(ctx, event) {
+            Some(ChoiceMsg::Choice { item, .. }) => Some(item),
+            _ => None,
+        }
     }
 
     fn render<'s>(&'s self, target: &mut impl Renderer<'s>) {

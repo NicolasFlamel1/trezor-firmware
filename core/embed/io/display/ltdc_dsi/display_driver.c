@@ -30,7 +30,7 @@
 #include <sys/systick.h>
 
 #ifdef USE_BACKLIGHT
-#include "../backlight/backlight_pwm.h"
+#include <io/backlight.h>
 #endif
 
 #include "display_internal.h"
@@ -58,7 +58,7 @@ static bool display_pll_init(void) {
 #elif HSE_VALUE == 16000000
   PLL3InitPeriph.PLL3.PLL3M = 4;
 #endif
-  PLL3InitPeriph.PLL3.PLL3N = 125;
+  PLL3InitPeriph.PLL3.PLL3N = ((DSI_LANE_BYTE_FREQ_HZ * 8) / 4000000);
   PLL3InitPeriph.PLL3.PLL3P = 8;
   PLL3InitPeriph.PLL3.PLL3Q = 8;
   PLL3InitPeriph.PLL3.PLL3R = 24;
@@ -144,11 +144,7 @@ static bool display_dsi_init(display_driver_t *drv) {
   drv->hlcd_dsi.Init.PHYFrequencyRange = DSI_DPHY_FRANGE_450MHZ_510MHZ;
   drv->hlcd_dsi.Init.PHYLowPowerOffset = 0;
 
-#if HSE_VALUE == 32000000
-  PLLInit.PLLNDIV = 62;
-#elif HSE_VALUE == 16000000
-  PLLInit.PLLNDIV = 125;
-#endif
+  PLLInit.PLLNDIV = ((DSI_LANE_BYTE_FREQ_HZ * 8 * 2 * 4) / (2 * HSE_VALUE));
   PLLInit.PLLIDF = 4;
   PLLInit.PLLODF = 2;
   PLLInit.PLLVCORange = DSI_DPHY_VCO_FRANGE_800MHZ_1GHZ;
@@ -360,18 +356,8 @@ bool display_init(display_content_mode_t mode) {
   systick_delay_ms(120);
 #endif
 
-#ifdef DISPLAY_BACKLIGHT_PIN
-  DISPLAY_BACKLIGHT_CLK_ENABLE();
-  /* Configure LCD Backlight Pin */
-  GPIO_InitStructure.Mode = GPIO_MODE_INPUT;
-  GPIO_InitStructure.Pull = GPIO_PULLUP;
-  GPIO_InitStructure.Pin = DISPLAY_BACKLIGHT_PIN;
-  GPIO_InitStructure.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(DISPLAY_BACKLIGHT_PORT, &GPIO_InitStructure);
-#endif
-
 #ifdef USE_BACKLIGHT
-  backlight_pwm_init(BACKLIGHT_RESET);
+  backlight_init(BACKLIGHT_RESET);
 #endif
 
   uint32_t fb_addr = display_fb_init();
@@ -427,32 +413,17 @@ cleanup:
 void display_deinit(display_content_mode_t mode) {
   display_driver_t *drv = &g_display_driver;
 
-  if (mode == DISPLAY_RETAIN_CONTENT) {
-    // This is a temporary workaround for T3W1 to avoid clearing
-    // the display after drawing RSOD screen in `secure_shutdown()`
-    // function. The workaround should be removed once we have
-    // proper replacement for `secure_shutdown()` that resets the
-    // device instead of waiting for manual power off.
-    return;
-  }
-
-  GPIO_InitTypeDef GPIO_InitStructure = {0};
-
   gfx_bitblt_deinit();
 
   NVIC_DisableIRQ(LTDC_IRQn);
   NVIC_DisableIRQ(LTDC_ER_IRQn);
 
-#ifdef DISPLAY_BACKLIGHT_PIN
-  GPIO_InitStructure.Mode = GPIO_MODE_ANALOG;
-  GPIO_InitStructure.Pull = GPIO_NOPULL;
-  GPIO_InitStructure.Speed = GPIO_SPEED_LOW;
-  GPIO_InitStructure.Pin = DISPLAY_BACKLIGHT_PIN;
-  HAL_GPIO_Init(DISPLAY_BACKLIGHT_PORT, &GPIO_InitStructure);
+#ifdef BACKLIGHT_PIN_PIN
+  HAL_GPIO_DeInit(BACKLIGHT_PIN_PORT, BACKLIGHT_PIN_PIN);
 #endif
 
 #ifdef USE_BACKLIGHT
-  backlight_pwm_deinit(BACKLIGHT_RESET);
+  backlight_deinit(BACKLIGHT_RESET);
 #endif
 
   display_dsi_deinit(drv);
@@ -462,22 +433,14 @@ void display_deinit(display_content_mode_t mode) {
 #endif
   display_pll_deinit();
 
-#ifdef DISPLAY_PWREN_PIN
-  // Release PWREN pin and switch display power off
-  GPIO_InitStructure.Mode = GPIO_MODE_ANALOG;
-  GPIO_InitStructure.Pull = GPIO_NOPULL;
-  GPIO_InitStructure.Speed = GPIO_SPEED_LOW;
-  GPIO_InitStructure.Pin = DISPLAY_PWREN_PIN;
-  HAL_GPIO_Init(DISPLAY_PWREN_PORT, &GPIO_InitStructure);
-#endif
-
 #ifdef DISPLAY_RESET_PIN
   // Release the RESET pin
-  GPIO_InitStructure.Mode = GPIO_MODE_ANALOG;
-  GPIO_InitStructure.Pull = GPIO_NOPULL;
-  GPIO_InitStructure.Speed = GPIO_SPEED_LOW;
-  GPIO_InitStructure.Pin = DISPLAY_RESET_PIN;
-  HAL_GPIO_Init(DISPLAY_RESET_PORT, &GPIO_InitStructure);
+  HAL_GPIO_DeInit(DISPLAY_RESET_PORT, DISPLAY_RESET_PIN);
+#endif
+
+#ifdef DISPLAY_PWREN_PIN
+  // Release PWREN pin and switch display power off
+  HAL_GPIO_DeInit(DISPLAY_PWREN_PORT, DISPLAY_PWREN_PIN);
 #endif
 
   memset(drv, 0, sizeof(display_driver_t));
@@ -491,11 +454,11 @@ int display_set_backlight(int level) {
   }
 
 #ifdef USE_BACKLIGHT
-  if (level > backlight_pwm_get()) {
+  if (level > backlight_get()) {
     display_ensure_refreshed();
   }
 
-  return backlight_pwm_set(level);
+  return backlight_set(level);
 #else
   // Just emulation, not doing anything
   drv->backlight_level = level;
@@ -510,7 +473,7 @@ int display_get_backlight(void) {
     return 0;
   }
 #ifdef USE_BACKLIGHT
-  return backlight_pwm_get();
+  return backlight_get();
 #else
   return drv->backlight_level;
 #endif

@@ -23,6 +23,7 @@ from trezorlib.exceptions import TrezorFailure
 from trezorlib.tools import parse_path, unharden
 
 from ...common import parametrize_using_common_fixtures
+from ...definitions import encode_eth_network
 from ...input_flows import (
     InputFlowConfirmAllWarnings,
     InputFlowEthereumSignTxDataGoBack,
@@ -32,7 +33,6 @@ from ...input_flows import (
     InputFlowEthereumSignTxShowFeeInfo,
     InputFlowEthereumSignTxStaking,
 )
-from .common import encode_network
 
 TO_ADDR = "0x1d1c328764a41bda0492b66baa30c4a339ff85ef"
 
@@ -46,7 +46,7 @@ def make_defs(parameters: dict) -> messages.EthereumDefinitions:
     # we generate fake entries so that we can check the signing results.
     address_n = parse_path(parameters["path"])
     slip44 = unharden(address_n[1])
-    network = encode_network(chain_id=parameters["chain_id"], slip44=slip44)
+    network = encode_eth_network(chain_id=parameters["chain_id"], slip44=slip44)
 
     return messages.EthereumDefinitions(encoded_network=network)
 
@@ -130,11 +130,7 @@ def test_signtx_fee_info(client: Client):
     )
 
 
-@pytest.mark.models(
-    "core",
-    skip="delizia",
-    reason="T1 does not support input flows; Delizia can't send Cancel on Summary",
-)
+@pytest.mark.models("core")
 def test_signtx_go_back_from_summary(client: Client):
     input_flow = InputFlowEthereumSignTxGoBackFromSummary(client).get()
     _do_test_signtx(
@@ -220,15 +216,10 @@ def test_data_streaming(client: Client):
     checked in vectorized function above.
     """
     with client:
-        is_t1 = client.model is models.T1B1
         client.set_expected_responses(
             [
                 messages.ButtonRequest(code=messages.ButtonRequestType.SignTx),
-                (is_t1, messages.ButtonRequest(code=messages.ButtonRequestType.SignTx)),
-                (
-                    not is_t1,
-                    messages.ButtonRequest(code=messages.ButtonRequestType.Other),
-                ),
+                messages.ButtonRequest(code=messages.ButtonRequestType.SignTx),
                 messages.ButtonRequest(code=messages.ButtonRequestType.SignTx),
                 message_filters.EthereumTxRequest(
                     data_length=1_024,
@@ -442,7 +433,7 @@ HEXDATA = "0123456789abcd000023456789abcd010003456789abcd020000456789abcd0300000
 @pytest.mark.parametrize(
     "flow", (input_flow_data_skip, input_flow_data_scroll_down, input_flow_data_go_back)
 )
-@pytest.mark.models("core", skip="delizia", reason="Not yet implemented in new UI")
+@pytest.mark.models("core")
 def test_signtx_data_pagination(client: Client, flow):
     def _sign_tx_call():
         ethereum.sign_tx(
@@ -470,17 +461,17 @@ def test_signtx_data_pagination(client: Client, flow):
             _sign_tx_call()
 
 
-@pytest.mark.models("core")
 @parametrize_using_common_fixtures("ethereum/sign_tx_staking.json")
 @pytest.mark.parametrize("chunkify", (True, False))
 def test_signtx_staking(client: Client, chunkify: bool, parameters: dict, result: dict):
-    input_flow = InputFlowEthereumSignTxStaking(client).get()
+    input_flow = None
+    if client.model is not models.T1B1:
+        input_flow = InputFlowEthereumSignTxStaking(client).get()
     _do_test_signtx(
         client, parameters, result, input_flow=input_flow, chunkify=chunkify
     )
 
 
-@pytest.mark.models("core")
 @parametrize_using_common_fixtures("ethereum/sign_tx_staking_data_error.json")
 def test_signtx_staking_bad_inputs(client: Client, parameters: dict, result: dict):
     # result not needed
@@ -501,7 +492,6 @@ def test_signtx_staking_bad_inputs(client: Client, parameters: dict, result: dic
         )
 
 
-@pytest.mark.models("core")
 @parametrize_using_common_fixtures("ethereum/sign_tx_staking_eip1559.json")
 def test_signtx_staking_eip1559(client: Client, parameters: dict, result: dict):
     with client:

@@ -1,4 +1,4 @@
-#[cfg(feature = "translations")]
+#[cfg(all(feature = "micropython", feature = "translations"))]
 mod address_details;
 pub mod bl_confirm;
 mod button;
@@ -29,7 +29,7 @@ mod simple_page;
 mod swipe;
 mod welcome_screen;
 
-#[cfg(feature = "translations")]
+#[cfg(all(feature = "micropython", feature = "translations"))]
 pub use address_details::AddressDetails;
 pub use button::{
     Button, ButtonContent, ButtonMsg, ButtonStyle, ButtonStyleSheet, CancelConfirmMsg,
@@ -49,7 +49,7 @@ pub use keyboard::{
     passphrase::{PassphraseKeyboard, PassphraseKeyboardMsg},
     pin::{PinKeyboard, PinKeyboardMsg},
     slip39::Slip39Input,
-    word_count::{SelectWordCount, SelectWordCountMsg},
+    word_count::{SelectWordCount, SelectWordCountLayout, SelectWordCountMsg},
 };
 pub use loader::{Loader, LoaderMsg, LoaderStyle, LoaderStyleSheet};
 #[cfg(feature = "translations")]

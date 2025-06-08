@@ -5,7 +5,6 @@ from enum import Enum
 
 from trezorlib.debuglink import LayoutType
 
-from .. import buttons
 from .. import translations as TR
 
 if t.TYPE_CHECKING:
@@ -49,36 +48,27 @@ def get_char_category(char: str) -> PassphraseCategory:
 
 def go_next(debug: "DebugLink") -> LayoutContent:
     if debug.layout_type is LayoutType.Bolt:
-        return debug.click(buttons.OK)
+        debug.click(debug.screen_buttons.ok())
     elif debug.layout_type is LayoutType.Caesar:
-        return debug.press_right()
+        debug.press_right()
     elif debug.layout_type is LayoutType.Delizia:
-        return debug.swipe_up()
+        debug.swipe_up()
     else:
         raise RuntimeError("Unknown model")
-
-
-def tap_to_confirm(debug: "DebugLink") -> LayoutContent:
-    if debug.layout_type is LayoutType.Bolt:
-        return debug.read_layout()
-    elif debug.layout_type is LayoutType.Caesar:
-        return debug.read_layout()
-    elif debug.layout_type is LayoutType.Delizia:
-        return debug.click(buttons.TAP_TO_CONFIRM)
-    else:
-        raise RuntimeError("Unknown model")
+    return debug.read_layout()
 
 
 def go_back(debug: "DebugLink", r_middle: bool = False) -> LayoutContent:
     if debug.layout_type in (LayoutType.Bolt, LayoutType.Delizia):
-        return debug.click(buttons.CANCEL)
+        debug.click(debug.screen_buttons.cancel())
     elif debug.layout_type is LayoutType.Caesar:
         if r_middle:
-            return debug.press_middle()
+            debug.press_middle()
         else:
-            return debug.press_left()
+            debug.press_left()
     else:
         raise RuntimeError("Unknown model")
+    return debug.read_layout()
 
 
 def navigate_to_action_and_press(
@@ -108,10 +98,10 @@ def navigate_to_action_and_press(
 
     if steps < 0:
         for _ in range(-steps):
-            layout = debug.press_left()
+            debug.press_left()
     else:
         for _ in range(steps):
-            layout = debug.press_right()
+            debug.press_right()
 
     # Press or hold
     debug.press_middle(hold_ms=hold_ms)
@@ -125,13 +115,14 @@ def _carousel_steps(current_index: int, wanted_index: int, length: int) -> int:
 
 def unlock_gesture(debug: "DebugLink") -> LayoutContent:
     if debug.layout_type is LayoutType.Bolt:
-        return debug.click(buttons.OK)
+        debug.click(debug.screen_buttons.ok())
     elif debug.layout_type is LayoutType.Caesar:
-        return debug.press_right()
+        debug.press_right()
     elif debug.layout_type is LayoutType.Delizia:
-        return debug.click(buttons.TAP_TO_CONFIRM)
+        debug.click(debug.screen_buttons.tap_to_confirm())
     else:
         raise RuntimeError("Unknown model")
+    return debug.read_layout()
 
 
 def _get_action_index(wanted_action: str, all_actions: AllActionsType) -> int:

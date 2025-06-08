@@ -8,6 +8,7 @@ from pathlib import Path
 
 from trezorlib import cosi, device, models
 from trezorlib._internal import translations
+from trezorlib.debuglink import LayoutType
 from trezorlib.debuglink import TrezorClientDebugLink as Client
 
 from . import common
@@ -64,13 +65,15 @@ def build_and_sign_blob(
     return sign_blob(blob)
 
 
-def set_language(client: Client, lang: str):
+def set_language(client: Client, lang: str, *, force: bool = False):
     if lang.startswith("en"):
         language_data = b""
     else:
         language_data = build_and_sign_blob(lang, client)
     with client:
-        device.change_language(client, language_data)  # type: ignore
+        if not client.features.language.startswith(lang) or force:
+            device.change_language(client, language_data)  # type: ignore
+    _CURRENT_TRANSLATION.LAYOUT = client.layout_type
     _CURRENT_TRANSLATION.TR = TRANSLATIONS[lang]
 
 
@@ -91,19 +94,34 @@ class Translation:
         self.lang_json = get_lang_json(lang)
 
     @property
-    def translations(self) -> dict[str, str]:
+    def translations(self) -> dict[str, str | dict[str, str]]:
         return self.lang_json["translations"]
 
     def _translate_raw(self, key: str, _stacklevel: int = 0) -> str:
         tr = self.translations.get(key)
         if tr is not None:
-            return tr
+            # Handle layout-specific translations
+            if isinstance(tr, dict) and hasattr(_CURRENT_TRANSLATION, "LAYOUT"):
+                # Try to get translation for current layout
+                layout_name = _CURRENT_TRANSLATION.LAYOUT.name
+                if layout_name in tr:
+                    return tr[layout_name]
+                # Fall back to any available translation if no match for current layout
+                return next(iter(tr.values()))
+            elif isinstance(tr, str):
+                return tr
+            else:
+                raise ValueError(f"Invalid translation value for key '{key}'")
         if self.lang != "en":
+            # check if the key exists in English first
+            retval = TRANSLATIONS["en"]._translate_raw(key)
+            # if not, a KeyError was raised so we fall through.
+            # otherwise, warn that the key is untranslated in target language.
             warnings.warn(
                 f"Translation key '{key}' not found in '{self.lang}' translation file",
                 stacklevel=_stacklevel + 2,
             )
-            return TRANSLATIONS["en"]._translate_raw(key)
+            return retval
         raise KeyError(key)
 
     def translate(self, key: str, _stacklevel: int = 0) -> str:
@@ -118,6 +136,7 @@ class Translation:
 
 TRANSLATIONS = {lang: Translation(lang) for lang in LANGUAGES}
 _CURRENT_TRANSLATION.TR = TRANSLATIONS["en"]
+_CURRENT_TRANSLATION.LAYOUT = LayoutType.Bolt
 
 
 def translate(key: str, _stacklevel: int = 0) -> str:

@@ -24,7 +24,6 @@ import pytest
 from trezorlib import device, exceptions
 from trezorlib.debuglink import LayoutType
 
-from .. import buttons
 from .. import translations as TR
 from .common import go_back, go_next, navigate_to_action_and_press
 
@@ -139,7 +138,7 @@ def prepare(
 
     if debug.layout_type is LayoutType.Delizia and tap:
         go_next(debug)
-        debug.click(buttons.TAP_TO_CONFIRM)
+        debug.click(debug.screen_buttons.tap_to_confirm())
     else:
         go_next(debug)
 
@@ -154,12 +153,11 @@ def _input_pin(debug: "DebugLink", pin: str, check: bool = False) -> None:
     """Input the PIN"""
     if check:
         before = debug.read_layout().pin()
-
     if debug.layout_type in (LayoutType.Bolt, LayoutType.Delizia):
         digits_order = debug.read_layout().tt_pin_digits_order()
         for digit in pin:
             digit_index = digits_order.index(digit)
-            coords = buttons.pin_passphrase_index(digit_index)
+            coords = debug.screen_buttons.pin_passphrase_index(digit_index)
             debug.click(coords)
     elif debug.layout_type is LayoutType.Caesar:
         for digit in pin:
@@ -173,7 +171,7 @@ def _input_pin(debug: "DebugLink", pin: str, check: bool = False) -> None:
 def _see_pin(debug: "DebugLink") -> None:
     """Navigate to "SHOW" and press it"""
     if debug.layout_type in (LayoutType.Bolt, LayoutType.Delizia):
-        debug.click(buttons.TOP_ROW)
+        debug.click(debug.screen_buttons.pin_passphrase_input())
     elif debug.layout_type is LayoutType.Caesar:
         navigate_to_action_and_press(debug, SHOW, TR_PIN_ACTIONS)
 
@@ -185,7 +183,7 @@ def _delete_pin(debug: "DebugLink", digits_to_delete: int, check: bool = True) -
 
     for _ in range(digits_to_delete):
         if debug.layout_type in (LayoutType.Bolt, LayoutType.Delizia):
-            debug.click(buttons.pin_passphrase_grid(9))
+            debug.click(debug.screen_buttons.pin_passphrase_erase())
         elif debug.layout_type is LayoutType.Caesar:
             navigate_to_action_and_press(debug, DELETE, TR_PIN_ACTIONS)
 
@@ -197,7 +195,10 @@ def _delete_pin(debug: "DebugLink", digits_to_delete: int, check: bool = True) -
 def _delete_all(debug: "DebugLink", check: bool = True) -> None:
     """Navigate to "DELETE" and hold it until all digits are deleted"""
     if debug.layout_type in (LayoutType.Bolt, LayoutType.Delizia):
-        debug.click(buttons.pin_passphrase_grid(9), hold_ms=1500)
+        debug.click(
+            debug.screen_buttons.pin_passphrase_erase(),
+            hold_ms=1500,
+        )
     elif debug.layout_type is LayoutType.Caesar:
         navigate_to_action_and_press(debug, DELETE, TR_PIN_ACTIONS, hold_ms=1000)
 
@@ -212,11 +213,16 @@ def _cancel_pin(debug: "DebugLink") -> None:
     # TODO: implement cancel PIN for TR?
     _delete_pin(debug, 1, check=False)
 
+    # Note: `prepare()` context manager will send a tap after PIN cancellation,
+    # so we make sure the lockscreen is already up to receive it -- otherwise
+    # the input event may get lost in the loop restart.
+    assert debug.read_layout().main_component() != "PinKeyboard"
+
 
 def _confirm_pin(debug: "DebugLink") -> None:
     """Navigate to "ENTER" and press it"""
     if debug.layout_type in (LayoutType.Bolt, LayoutType.Delizia):
-        debug.click(buttons.pin_passphrase_grid(11))
+        debug.click(debug.screen_buttons.pin_confirm())
     elif debug.layout_type is LayoutType.Caesar:
         navigate_to_action_and_press(debug, ENTER, TR_PIN_ACTIONS)
 

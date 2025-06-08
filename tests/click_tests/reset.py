@@ -5,7 +5,6 @@ from shamir_mnemonic import shamir  # type: ignore
 
 from trezorlib.debuglink import LayoutType
 
-from .. import buttons
 from .. import translations as TR
 
 if TYPE_CHECKING:
@@ -15,10 +14,10 @@ if TYPE_CHECKING:
 def confirm_new_wallet(debug: "DebugLink") -> None:
     assert debug.read_layout().title() == TR.reset__title_create_wallet
     if debug.layout_type is LayoutType.Bolt:
-        debug.click(buttons.OK)
+        debug.click(debug.screen_buttons.ok())
     elif debug.layout_type is LayoutType.Delizia:
         debug.swipe_up()
-        debug.click(buttons.TAP_TO_CONFIRM)
+        debug.click(debug.screen_buttons.tap_to_confirm())
     elif debug.layout_type is LayoutType.Caesar:
         debug.press_right()
         debug.press_right()
@@ -32,7 +31,7 @@ def confirm_new_wallet(debug: "DebugLink") -> None:
 
 def confirm_read(debug: "DebugLink", middle_r: bool = False) -> None:
     if debug.layout_type is LayoutType.Bolt:
-        debug.click(buttons.OK)
+        debug.click(debug.screen_buttons.ok())
     elif debug.layout_type is LayoutType.Delizia:
         debug.swipe_up()
     elif debug.layout_type is LayoutType.Caesar:
@@ -50,26 +49,34 @@ def cancel_backup(
     debug: "DebugLink", middle_r: bool = False, confirm: bool = False
 ) -> None:
     if debug.layout_type is LayoutType.Bolt:
-        debug.click(buttons.CANCEL)
-        debug.click(buttons.CANCEL)
+        debug.click(debug.screen_buttons.cancel())
+        debug.click(debug.screen_buttons.cancel())
     elif debug.layout_type is LayoutType.Delizia:
-        debug.click(buttons.CORNER_BUTTON)
-        debug.click(buttons.VERTICAL_MENU[0])
+        debug.click(debug.screen_buttons.menu())
+        debug.click(debug.screen_buttons.vertical_menu_items()[0])
         if confirm:
             debug.swipe_up()
-            debug.click(buttons.TAP_TO_CONFIRM)
+            debug.click(debug.screen_buttons.tap_to_confirm())
     elif debug.layout_type is LayoutType.Caesar:
         debug.press_left()
         debug.press_left()
 
 
-def set_selection(debug: "DebugLink", button: tuple[int, int], diff: int) -> None:
+def set_selection(debug: "DebugLink", diff: int) -> None:
     if debug.layout_type in (LayoutType.Bolt, LayoutType.Delizia):
         assert "NumberInputDialog" in debug.read_layout().all_components()
+
+        button = (
+            debug.screen_buttons.number_input_minus()
+            if diff < 0
+            else debug.screen_buttons.number_input_plus()
+        )
+        diff = abs(diff)
+
         for _ in range(diff):
             debug.click(button)
         if debug.layout_type is LayoutType.Bolt:
-            debug.click(buttons.OK)
+            debug.click(debug.screen_buttons.ok())
         else:
             debug.swipe_up()
     elif debug.layout_type is LayoutType.Caesar:
@@ -79,10 +86,11 @@ def set_selection(debug: "DebugLink", button: tuple[int, int], diff: int) -> Non
             in TR.reset__title_number_of_shares + TR.words__title_threshold
         ):
             # Special info screens
-            layout = debug.press_right()
+            debug.press_right()
+            layout = debug.read_layout()
         assert "NumberInput" in layout.all_components()
-        if button == buttons.reset_minus(debug.model.internal_name):
-            for _ in range(diff):
+        if diff < 0:
+            for _ in range(abs(diff)):
                 debug.press_left()
         else:
             for _ in range(diff):
@@ -102,7 +110,8 @@ def read_words(debug: "DebugLink", do_htc: bool = True) -> list[str]:
     layout = debug.read_layout()
     for _ in range(layout.page_count() - 1):
         words.extend(layout.seed_words())
-        layout = debug.swipe_up()
+        debug.swipe_up()
+        layout = debug.read_layout()
         assert layout is not None
     if debug.layout_type in (LayoutType.Bolt, LayoutType.Delizia):
         words.extend(layout.seed_words())
@@ -113,9 +122,9 @@ def read_words(debug: "DebugLink", do_htc: bool = True) -> list[str]:
     # There is hold-to-confirm button
     if do_htc:
         if debug.layout_type is LayoutType.Bolt:
-            debug.click(buttons.OK, hold_ms=1500)
+            debug.click(debug.screen_buttons.ok(), hold_ms=1500)
         elif debug.layout_type is LayoutType.Delizia:
-            debug.click(buttons.TAP_TO_CONFIRM, hold_ms=1500)
+            debug.click(debug.screen_buttons.tap_to_confirm())
         elif debug.layout_type is LayoutType.Caesar:
             debug.press_right(hold_ms=1200)
     else:
@@ -147,7 +156,8 @@ def confirm_words(debug: "DebugLink", words: list[str]) -> None:
             ]
             wanted_word = words[word_pos - 1].lower()
             button_pos = btn_texts.index(wanted_word)
-            layout = debug.click(buttons.RESET_WORD_CHECK[button_pos])
+            debug.click(debug.screen_buttons.word_check_words()[button_pos])
+            layout = debug.read_layout()
     elif debug.layout_type is LayoutType.Delizia:
         assert TR.regexp("reset__select_word_x_of_y_template").match(layout.subtitle())
         for _ in range(3):
@@ -162,10 +172,12 @@ def confirm_words(debug: "DebugLink", words: list[str]) -> None:
             ]
             wanted_word = words[word_pos - 1].lower()
             button_pos = btn_texts.index(wanted_word)
-            layout = debug.click(buttons.VERTICAL_MENU[button_pos])
+            debug.click(debug.screen_buttons.vertical_menu_items()[button_pos])
+            layout = debug.read_layout()
     elif debug.layout_type is LayoutType.Caesar:
         assert TR.reset__select_correct_word in layout.text_content()
-        layout = debug.press_right()
+        debug.press_right()
+        layout = debug.read_layout()
         for _ in range(3):
             # "SELECT 2ND WORD"
             #         ^
@@ -176,9 +188,11 @@ def confirm_words(debug: "DebugLink", words: list[str]) -> None:
             wanted_word = words[word_pos - 1].lower()
 
             while not layout.get_middle_choice() == wanted_word:
-                layout = debug.press_right()
+                debug.press_right()
+                layout = debug.read_layout()
 
-            layout = debug.press_middle()
+            debug.press_middle()
+            layout = debug.read_layout()
 
 
 def validate_mnemonics(mnemonics: list[str], expected_ems: bytes) -> None:

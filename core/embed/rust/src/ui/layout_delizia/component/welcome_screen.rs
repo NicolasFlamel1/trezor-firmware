@@ -1,17 +1,13 @@
 use crate::ui::{
     component::{Component, Event, EventCtx, Never},
-    display::font::Font,
     geometry::{Alignment, Alignment2D, Offset, Rect},
-    shape,
-    shape::Renderer,
+    shape::{self, Renderer},
 };
 
-use super::theme;
+use super::{super::fonts, theme};
 
 const TEXT_BOTTOM_MARGIN: i16 = 54;
 const ICON_TOP_MARGIN: i16 = 48;
-#[cfg(not(feature = "bootloader"))]
-const MODEL_NAME_FONT: Font = Font::DEMIBOLD;
 
 use crate::trezorhal::model;
 
@@ -50,9 +46,9 @@ impl Component for WelcomeScreen {
         shape::Text::new(
             self.area.bottom_center() - Offset::y(TEXT_BOTTOM_MARGIN),
             model::FULL_NAME,
+            fonts::FONT_DEMIBOLD,
         )
         .with_align(Alignment::Center)
-        .with_font(Font::NORMAL)
         .with_fg(theme::FG)
         .render(target);
     }

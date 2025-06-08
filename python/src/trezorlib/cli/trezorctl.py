@@ -33,6 +33,7 @@ from . import (
     TrezorConnection,
     benchmark,
     binance,
+    ble,
     btc,
     cardano,
     crypto,
@@ -44,6 +45,7 @@ from . import (
     firmware,
     monero,
     nem,
+    nostr,
     ripple,
     settings,
     solana,
@@ -409,6 +411,7 @@ cli.add_command(ethereum.cli)
 cli.add_command(fido.cli)
 cli.add_command(monero.cli)
 cli.add_command(nem.cli)
+cli.add_command(nostr.cli)
 cli.add_command(ripple.cli)
 cli.add_command(settings.cli)
 cli.add_command(solana.cli)
@@ -418,6 +421,7 @@ cli.add_command(tezos.cli)
 cli.add_command(firmware.cli)
 cli.add_command(debug.cli)
 cli.add_command(benchmark.cli)
+cli.add_command(ble.cli)
 
 #
 # Main

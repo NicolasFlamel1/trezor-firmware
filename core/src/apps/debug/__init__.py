@@ -47,7 +47,7 @@ if __debug__:
             # Starting with "refresh00", allowing for 100 emulator restarts
             # without losing the order of the screenshots based on filename.
             display.save(
-                storage.save_screen_directory + f"/refresh{REFRESH_INDEX:0>2}-"
+                f"{storage.save_screen_directory.decode()}/refresh{REFRESH_INDEX:0>2}-"
             )
             return True
         return False
@@ -268,6 +268,11 @@ if __debug__:
     async def dispatch_DebugLinkGetState(
         msg: DebugLinkGetState,
     ) -> DebugLinkState | None:
+        if msg.return_empty_state:
+            from trezor.messages import DebugLinkState
+
+            return DebugLinkState()
+
         if msg.wait_layout == DebugWaitType.IMMEDIATE:
             return _state()
 
@@ -293,7 +298,7 @@ if __debug__:
             # so that the screenshots are not overwritten.
             global REFRESH_INDEX
             REFRESH_INDEX = msg.refresh_index
-            storage.save_screen_directory = msg.target_directory
+            storage.save_screen_directory[:] = msg.target_directory.encode()
             storage.save_screen = True
 
             # force repaint current layout, in order to take an initial screenshot
@@ -352,8 +357,6 @@ if __debug__:
     async def _no_op(_msg: Any) -> Success:
         return Success()
 
-    WIRE_BUFFER_DEBUG = bytearray(1024)
-
     async def handle_session(iface: WireInterface) -> None:
         from trezor import protobuf, wire
         from trezor.wire.codec import codec_v1
@@ -361,7 +364,7 @@ if __debug__:
 
         global DEBUG_CONTEXT
 
-        DEBUG_CONTEXT = ctx = CodecContext(iface, WIRE_BUFFER_DEBUG)
+        DEBUG_CONTEXT = ctx = CodecContext(iface, wire.BufferProvider(1024))
 
         if storage.layout_watcher:
             try:

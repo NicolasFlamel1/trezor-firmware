@@ -286,9 +286,10 @@ if TYPE_CHECKING:
         NEXT_LAYOUT = 1
         CURRENT_LAYOUT = 2
 
-    class EthereumDefinitionType(IntEnum):
-        NETWORK = 0
-        TOKEN = 1
+    class DefinitionType(IntEnum):
+        ETHEREUM_NETWORK = 0
+        ETHEREUM_TOKEN = 1
+        SOLANA_TOKEN = 2
 
     class EthereumDataType(IntEnum):
         UINT = 1
@@ -433,6 +434,7 @@ if TYPE_CHECKING:
         FirmwareUpload = 7
         FirmwareRequest = 8
         ProdTestT1 = 32
+        BleUnpair = 8001
         GetPublicKey = 11
         PublicKey = 12
         SignTx = 15
@@ -655,6 +657,10 @@ if TYPE_CHECKING:
         MimbleWimbleCoinMqsChallengeSignature = 51093
         MimbleWimbleCoinGetLoginChallengeSignature = 50966
         MimbleWimbleCoinLoginChallengeSignature = 51094
+        NostrGetPubkey = 2001
+        NostrPubkey = 2002
+        NostrSignEvent = 2003
+        NostrEventSignature = 2004
         BenchmarkListNames = 9100
         BenchmarkNames = 9101
         BenchmarkRun = 9102

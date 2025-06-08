@@ -17,6 +17,10 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+// Turning off the stack protector for this file improves
+// the performance of syscall dispatching.
+#pragma GCC optimize("no-stack-protector")
+
 #include <trezor_rtl.h>
 
 #include <sys/systask.h>
@@ -25,6 +29,38 @@
 #include "syscall_verifiers.h"
 
 #ifdef SYSCALL_DISPATCH
+
+// Checks if bitblt destination is accessible
+#define CHECK_BB_DST(_bb)                                       \
+  if (!probe_write_access((_bb)->dst_row,                       \
+                          (_bb)->dst_stride * (_bb)->height)) { \
+    goto access_violation;                                      \
+  }
+
+// Checks if bitblt source is accessible
+#define CHECK_BB_SRC(_bb)                                                      \
+  if (!probe_read_access((_bb)->src_row, (_bb)->src_stride * (_bb)->height)) { \
+    goto access_violation;                                                     \
+  }
+
+// ---------------------------------------------------------------------
+
+void sysevents_poll__verified(const sysevents_t *awaited,
+                              sysevents_t *signalled, uint32_t deadline) {
+  if (!probe_read_access(awaited, sizeof(*awaited))) {
+    goto access_violation;
+  }
+
+  if (!probe_write_access(signalled, sizeof(*signalled))) {
+    goto access_violation;
+  }
+
+  sysevents_poll(awaited, signalled, deadline);
+  return;
+
+access_violation:
+  apptask_access_violation();
+}
 
 // ---------------------------------------------------------------------
 
@@ -176,15 +212,9 @@ void display_copy_rgb565__verified(const gfx_bitblt_t *bb) {
 
   gfx_bitblt_t bb_copy = *bb;
 
-  uint8_t *src_ptr = (uint8_t *)bb_copy.src_row;
-  size_t src_len = bb_copy.src_stride * bb_copy.height;
-
-  if (!probe_read_access(src_ptr, src_len)) {
-    goto access_violation;
-  }
+  CHECK_BB_SRC(&bb_copy);
 
   display_copy_rgb565(&bb_copy);
-
   return;
 
 access_violation:
@@ -778,6 +808,354 @@ uint32_t ble_read__verified(uint8_t *data, size_t len) {
 access_violation:
   apptask_access_violation();
   return 0;
+}
+#endif
+
+// ---------------------------------------------------------------------
+
+#ifdef USE_POWERCTL
+
+bool powerctl_get_status__verified(powerctl_status_t *status) {
+  if (!probe_write_access(status, sizeof(*status))) {
+    goto access_violation;
+  }
+
+  powerctl_status_t status_copy = {0};
+  bool retval = powerctl_get_status(&status_copy);
+  *status = status_copy;
+
+  return retval;
+
+access_violation:
+  apptask_access_violation();
+  return false;
+}
+
+#endif
+
+// ---------------------------------------------------------------------
+
+#ifdef USE_HW_JPEG_DECODER
+
+jpegdec_state_t jpegdec_process__verified(jpegdec_input_t *input) {
+  if (!probe_write_access(input, sizeof(*input))) {
+    goto access_violation;
+  }
+
+  return jpegdec_process(input);
+
+access_violation:
+  apptask_access_violation();
+  return JPEGDEC_STATE_ERROR;
+}
+
+bool jpegdec_get_info__verified(jpegdec_image_t *image) {
+  if (!probe_write_access(image, sizeof(*image))) {
+    goto access_violation;
+  }
+
+  return jpegdec_get_info(image);
+
+access_violation:
+  apptask_access_violation();
+  return false;
+}
+
+bool jpegdec_get_slice_rgba8888__verified(void *rgba8888,
+                                          jpegdec_slice_t *slice) {
+  if (!probe_write_access(rgba8888, JPEGDEC_RGBA8888_BUFFER_SIZE)) {
+    goto access_violation;
+  }
+
+  if (!probe_write_access(slice, sizeof(*slice))) {
+    goto access_violation;
+  }
+
+  return jpegdec_get_slice_rgba8888(rgba8888, slice);
+
+access_violation:
+  apptask_access_violation();
+  return false;
+}
+
+bool jpegdec_get_slice_mono8__verified(void *mono8, jpegdec_slice_t *slice) {
+  if (!probe_write_access(mono8, JPEGDEC_RGBA8888_BUFFER_SIZE)) {
+    goto access_violation;
+  }
+
+  if (!probe_write_access(slice, sizeof(*slice))) {
+    goto access_violation;
+  }
+
+  return jpegdec_get_slice_mono8(mono8, slice);
+
+access_violation:
+  apptask_access_violation();
+  return false;
+}
+
+#endif  // USE_HW_JPEG_DECODER
+
+// ---------------------------------------------------------------------
+
+#ifdef USE_DMA2D
+
+bool dma2d_rgb565_fill__verified(const gfx_bitblt_t *bb) {
+  if (!probe_read_access(bb, sizeof(*bb))) {
+    goto access_violation;
+  }
+
+  gfx_bitblt_t bb_copy = *bb;
+
+  CHECK_BB_DST(&bb_copy);
+
+  return dma2d_rgb565_fill(&bb_copy);
+
+access_violation:
+  apptask_access_violation();
+  return false;
+}
+
+bool dma2d_rgb565_copy_mono4__verified(const gfx_bitblt_t *bb) {
+  if (!probe_read_access(bb, sizeof(*bb))) {
+    goto access_violation;
+  }
+
+  gfx_bitblt_t bb_copy = *bb;
+
+  CHECK_BB_DST(&bb_copy);
+  CHECK_BB_SRC(&bb_copy);
+
+  return dma2d_rgb565_copy_mono4(&bb_copy);
+
+access_violation:
+  apptask_access_violation();
+  return false;
+}
+
+bool dma2d_rgb565_copy_rgb565__verified(const gfx_bitblt_t *bb) {
+  if (!probe_read_access(bb, sizeof(*bb))) {
+    goto access_violation;
+  }
+
+  gfx_bitblt_t bb_copy = *bb;
+
+  CHECK_BB_DST(&bb_copy);
+  CHECK_BB_SRC(&bb_copy);
+
+  return dma2d_rgb565_copy_rgb565(&bb_copy);
+
+access_violation:
+  apptask_access_violation();
+  return false;
+}
+
+bool dma2d_rgb565_blend_mono4__verified(const gfx_bitblt_t *bb) {
+  if (!probe_read_access(bb, sizeof(*bb))) {
+    goto access_violation;
+  }
+
+  gfx_bitblt_t bb_copy = *bb;
+
+  CHECK_BB_DST(&bb_copy);
+  CHECK_BB_SRC(&bb_copy);
+
+  return dma2d_rgb565_blend_mono4(&bb_copy);
+
+access_violation:
+  apptask_access_violation();
+  return false;
+}
+
+bool dma2d_rgb565_blend_mono8__verified(const gfx_bitblt_t *bb) {
+  if (!probe_read_access(bb, sizeof(*bb))) {
+    goto access_violation;
+  }
+
+  gfx_bitblt_t bb_copy = *bb;
+
+  CHECK_BB_DST(&bb_copy);
+  CHECK_BB_SRC(&bb_copy);
+
+  return dma2d_rgb565_blend_mono8(&bb_copy);
+
+access_violation:
+  apptask_access_violation();
+  return false;
+}
+
+bool dma2d_rgba8888_fill__verified(const gfx_bitblt_t *bb) {
+  if (!probe_read_access(bb, sizeof(*bb))) {
+    goto access_violation;
+  }
+
+  gfx_bitblt_t bb_copy = *bb;
+
+  CHECK_BB_DST(&bb_copy);
+
+  return dma2d_rgba8888_fill(&bb_copy);
+
+access_violation:
+  apptask_access_violation();
+  return false;
+}
+
+bool dma2d_rgba8888_copy_mono4__verified(const gfx_bitblt_t *bb) {
+  if (!probe_read_access(bb, sizeof(*bb))) {
+    goto access_violation;
+  }
+
+  gfx_bitblt_t bb_copy = *bb;
+
+  CHECK_BB_DST(&bb_copy);
+  CHECK_BB_SRC(&bb_copy);
+
+  return dma2d_rgba8888_copy_mono4(&bb_copy);
+
+access_violation:
+  apptask_access_violation();
+  return false;
+}
+
+bool dma2d_rgba8888_copy_rgb565__verified(const gfx_bitblt_t *bb) {
+  if (!probe_read_access(bb, sizeof(*bb))) {
+    goto access_violation;
+  }
+
+  gfx_bitblt_t bb_copy = *bb;
+
+  CHECK_BB_DST(&bb_copy);
+  CHECK_BB_SRC(&bb_copy);
+
+  return dma2d_rgba8888_copy_rgb565(&bb_copy);
+
+access_violation:
+  apptask_access_violation();
+  return false;
+}
+
+bool dma2d_rgba8888_copy_rgba8888__verified(const gfx_bitblt_t *bb) {
+  if (!probe_read_access(bb, sizeof(*bb))) {
+    goto access_violation;
+  }
+
+  gfx_bitblt_t bb_copy = *bb;
+
+  CHECK_BB_DST(&bb_copy);
+  CHECK_BB_SRC(&bb_copy);
+
+  return dma2d_rgba8888_copy_rgba8888(&bb_copy);
+
+access_violation:
+  apptask_access_violation();
+  return false;
+}
+
+bool dma2d_rgba8888_blend_mono4__verified(const gfx_bitblt_t *bb) {
+  if (!probe_read_access(bb, sizeof(*bb))) {
+    goto access_violation;
+  }
+
+  gfx_bitblt_t bb_copy = *bb;
+
+  CHECK_BB_DST(&bb_copy);
+  CHECK_BB_SRC(&bb_copy);
+
+  return dma2d_rgba8888_blend_mono4(&bb_copy);
+
+access_violation:
+  apptask_access_violation();
+  return false;
+}
+
+bool dma2d_rgba8888_blend_mono8__verified(const gfx_bitblt_t *bb) {
+  if (!probe_read_access(bb, sizeof(*bb))) {
+    goto access_violation;
+  }
+
+  gfx_bitblt_t bb_copy = *bb;
+
+  CHECK_BB_DST(&bb_copy);
+  CHECK_BB_SRC(&bb_copy);
+
+  return dma2d_rgba8888_blend_mono8(&bb_copy);
+
+access_violation:
+  apptask_access_violation();
+  return false;
+}
+
+#endif
+
+// ---------------------------------------------------------------------
+
+#ifdef USE_BUTTON
+
+#include <io/button.h>
+
+bool button_get_event__verified(button_event_t *event) {
+  if (!probe_write_access(event, sizeof(*event))) {
+    goto access_violation;
+  }
+
+  return button_get_event(event);
+
+access_violation:
+  apptask_access_violation();
+  return false;
+}
+
+#endif
+
+#ifdef USE_TROPIC
+#include <sec/tropic.h>
+
+bool tropic_ping__verified(const uint8_t *msg_out, uint8_t *msg_in,
+                           uint16_t msg_len) {
+  if (!probe_read_access(msg_out, msg_len)) {
+    goto access_violation;
+  }
+
+  if (!probe_write_access(msg_in, msg_len)) {
+    goto access_violation;
+  }
+
+  return tropic_ping(msg_out, msg_in, msg_len);
+access_violation:
+  apptask_access_violation();
+  return false;
+}
+
+bool tropic_get_cert__verified(uint8_t *buf, uint16_t buf_size) {
+  if (!probe_write_access(buf, buf_size)) {
+    goto access_violation;
+  }
+
+  return tropic_get_cert(buf, buf_size);
+access_violation:
+  apptask_access_violation();
+  return false;
+}
+
+bool tropic_ecc_key_generate__verified(uint16_t slot_index) {
+  return tropic_ecc_key_generate(slot_index);
+}
+
+bool tropic_ecc_sign__verified(uint16_t key_slot_index, const uint8_t *dig,
+                               uint16_t dig_len, uint8_t *sig,
+                               uint16_t sig_len) {
+  if (!probe_read_access(dig, dig_len)) {
+    goto access_violation;
+  }
+
+  if (!probe_write_access(sig, sig_len)) {
+    goto access_violation;
+  }
+
+  return tropic_ecc_sign(key_slot_index, dig, dig_len, sig, sig_len);
+access_violation:
+  apptask_access_violation();
+  return false;
 }
 #endif
 

@@ -49,6 +49,7 @@ def configure(
 
     if "input" in features_wanted:
         sources += ["embed/io/button/stm32/button.c"]
+        sources += ["embed/io/button/button_fsm.c"]
         paths += ["embed/io/button/inc"]
         features_available.append("button")
         defines += [("USE_BUTTON", "1")]
@@ -96,12 +97,16 @@ def configure(
         paths += ["embed/sec/consumption_mask/inc"]
         defines += [("USE_CONSUMPTION_MASK", "1")]
 
+    if "hw_revision" in features_wanted:
+        defines += [("USE_HW_REVISION", "1")]
+        paths += ["embed/util/hw_revision/inc"]
+        sources += ["embed/util/hw_revision/stm32/hw_revision.c"]
+
     defines += [
         ("USE_HASH_PROCESSOR", "1"),
         ("USE_STORAGE_HWKEY", "1"),
         ("USE_TAMPER", "1"),
         ("USE_FLASH_BURST", "1"),
-        ("USE_RESET_TO_BOOT", "1"),
         ("USE_OEM_KEYS_CHECK", "1"),
         ("USE_PVD", "1"),
     ]

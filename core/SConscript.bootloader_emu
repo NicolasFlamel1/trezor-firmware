@@ -74,7 +74,6 @@ SOURCE_MOD += [
     'embed/gfx/bitblt/gfx_bitblt_rgb565.c',
     'embed/gfx/bitblt/gfx_bitblt_rgba8888.c',
     'embed/gfx/fonts/font_bitmap.c',
-    'embed/gfx/fonts/fonts.c',
     'embed/gfx/gfx_color.c',
     'embed/gfx/gfx_draw.c',
     'embed/gfx/terminal.c',
@@ -100,10 +99,23 @@ SOURCE_NANOPB = [
 SOURCE_BOOTLOADER = [
     'embed/projects/bootloader/bootui.c',
     'embed/projects/bootloader/main.c',
-    'embed/projects/bootloader/messages.c',
-    'embed/projects/bootloader/emulator.c',
+    'embed/projects/bootloader/poll.c',
+    'embed/projects/bootloader/antiglitch.c',
+    'embed/projects/bootloader/workflow/wf_firmware_update.c',
+    'embed/projects/bootloader/workflow/wf_wipe_device.c',
+    'embed/projects/bootloader/workflow/wf_get_features.c',
+    'embed/projects/bootloader/workflow/wf_initialize.c',
+    'embed/projects/bootloader/workflow/wf_ping.c',
+    'embed/projects/bootloader/workflow/wf_bootloader.c',
+    'embed/projects/bootloader/workflow/wf_empty_device.c',
+    'embed/projects/bootloader/workflow/wf_auto_update.c',
+    'embed/projects/bootloader/workflow/wf_host_control.c',
+    'embed/projects/bootloader/wire/codec_v1.c',
+    'embed/projects/bootloader/wire/wire_iface_usb.c',
+    'embed/projects/bootloader/protob/protob.c',
+    'embed/projects/bootloader/protob/pb/messages.pb.c',
     'embed/projects/bootloader/version_check.c',
-    'embed/projects/bootloader/protob/messages.pb.c',
+    'embed/projects/bootloader/emulator.c',
 ]
 
 SOURCE_TREZORHAL = [
@@ -115,7 +127,10 @@ SOURCE_TREZORHAL = [
     'embed/sec/secret/unix/secret.c',
     'embed/sys/mpu/unix/mpu.c',
     'embed/sys/startup/unix/bootutils.c',
+    'embed/sys/task/sysevent.c',
+    'embed/sys/task/unix/sdl_event.c',
     'embed/sys/task/unix/system.c',
+    'embed/sys/task/unix/systask.c',
     'embed/sys/time/unix/systick.c',
     'embed/sys/time/unix/systimer.c',
     'embed/util/flash/unix/flash.c',
@@ -127,7 +142,7 @@ SOURCE_UNIX = [
     'embed/projects/unix/profile.c',
 ]
 
-ui.init_ui(TREZOR_MODEL, "bootloader", CPPDEFINES_MOD, SOURCE_MOD, RUST_UI_FEATURES)
+ui.init_ui(TREZOR_MODEL, "bootloader", RUST_UI_FEATURES)
 
 env = Environment(
     ENV=os.environ,
@@ -137,6 +152,11 @@ env = Environment(
 )
 
 FEATURES_AVAILABLE = models.configure_board(TREZOR_MODEL, HW_REVISION, FEATURES_WANTED, env, CPPDEFINES_HAL, SOURCE_UNIX, PATH_HAL)
+
+if 'optiga' in FEATURES_AVAILABLE:
+    SOURCE_BOOTLOADER += [
+        'embed/projects/bootloader/workflow/wf_unlock_bootloader.c',
+    ]
 
 env.Replace(
     CP='cp',
@@ -187,13 +207,14 @@ ALLPATHS = ['embed/rust',
 env.Replace(
     COPT=env.get('ENV').get('OPTIMIZE', '-Os'),
     CCFLAGS='$COPT '
-    '-g3 '
+    '-g '
     '-nostdlib '
     '-std=gnu11 -Wall -Werror -Wpointer-arith -Wno-missing-braces -fno-common '
     '-fdata-sections -ffunction-sections '
     '-ffreestanding '
     '-fstack-protector-all '
     + CCFLAGS_MOD,
+    LINKFLAGS='',
     CPPPATH=ALLPATHS,
     CPPDEFINES=[
         'BOOTLOADER',
@@ -204,6 +225,11 @@ env.Replace(
         'PB_VALIDATE_UTF8',
     ] + CPPDEFINES_MOD + CPPDEFINES_HAL,
     ASPPFLAGS='$CFLAGS $CCFLAGS', )
+
+try:
+    env.ParseConfig('pkg-config --cflags --libs libjpeg')
+except OSError:
+    print("libjpeg not installed, Emulator build is not possible")
 
 try:
     env.ParseConfig('pkg-config --cflags --libs sdl2 SDL2_image')
@@ -221,55 +247,31 @@ cmake_gen = env.Command(
     action='$MAKECMAKELISTS --sources $ALLSOURCES --dirs $CPPPATH --defs $ALLDEFS',
 )
 
-
 #
 # Rust library
 #
-
-RUST_TARGET = os.popen("rustc -vV | sed -n 's/host: //p'").read().strip()
-RUST_LIB = 'trezor_lib'
-
+env.get("ENV")["RUST_TARGET"] = os.popen("rustc -vV | sed -n 's/host: //p'").read().strip()
+features = ['bootloader',] + FEATURES_AVAILABLE + RUST_UI_FEATURES
 if ARGUMENTS.get('TREZOR_EMULATOR_DEBUGGABLE', '0') == '1':
-    RUST_PROFILE = 'dev'
-    RUST_LIBDIR = f'build/bootloader_emu/rust/{RUST_TARGET}/debug'
+    profile = 'dev'
 else:
-    RUST_PROFILE = 'release'
-    RUST_LIBDIR = f'build/bootloader_emu/rust/{RUST_TARGET}/release'
+    profile = 'release'
 
-RUST_LIBPATH = f'{RUST_LIBDIR}/lib{RUST_LIB}.a'
+rust = tools.add_rust_lib(
+    env=env,
+    build='bootloader_emu',
+    profile=profile,
+    features=features,
+    all_paths=ALLPATHS,
+    build_dir=str(Dir('.').abspath),
+)
 
-def cargo_build():
-    features = []
+env.Append(LINKFLAGS=['-lm'])
 
-    features.extend(RUST_UI_FEATURES)
-    features.append("ui")
-    features.append("bootloader")
-    features.extend(FEATURES_AVAILABLE)
-
-
-    cargo_opts = [
-        f'--target={RUST_TARGET}',
-        '--target-dir=../../build/bootloader_emu/rust',
-        '--no-default-features',
-        '--features ' + ','.join(features),
-        '-Z build-std=core',
-        '-Z build-std-features=panic_immediate_abort',
-    ]
-
-    bindgen_macros = tools.get_bindgen_defines(env.get("CPPDEFINES"), ALLPATHS)
-    build_dir = str(Dir('.').abspath)
-
-    return f'export BINDGEN_MACROS={shlex.quote(bindgen_macros)}; export BUILD_DIR=\'{build_dir}\'; cd embed/rust; cargo build --profile {RUST_PROFILE} ' + ' '.join(cargo_opts)
-
-rust = env.Command(
-    target=RUST_LIBPATH,
-    source='',
-    action=cargo_build(), )
-
-env.Append(LINKFLAGS=f'-L{RUST_LIBDIR}')
-env.Append(LINKFLAGS=f'-l{RUST_LIB}')
-env.Append(LINKFLAGS='-lm')
-env.Append(LINKFLAGS='-Wl,' + ('-dead_strip' if env['PLATFORM'] == 'darwin' else '--gc-sections'))
+if env['PLATFORM'] == 'darwin':
+    env.Append(LINKFLAGS=['-Wl,-dead_strip'])
+else:
+    env.Append(LINKFLAGS=['-Wl,--gc-sections'])
 
 #
 # Program objects
@@ -287,7 +289,7 @@ program_elf = env.Command(
     target='bootloader.elf',
     source=obj_program,
     action=
-    '$CC -o $TARGET $SOURCES $_LIBDIRFLAGS $_LIBFLAGS $LINKFLAGS', )
+    '$CC -o $TARGET $SOURCES $_LIBDIRFLAGS $_LIBFLAGS $LINKFLAGS')
 
 env.Depends(program_elf, rust)
 

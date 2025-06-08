@@ -7,11 +7,10 @@
 
 #include <io/display.h>
 #include <sys/bootargs.h>
-#include <sys/systick.h>
+#include <sys/bootutils.h>
 #include <util/flash.h>
 #include <util/flash_otp.h>
 #include "bootui.h"
-#include "rust_ui.h"
 
 #ifdef USE_OPTIGA
 #include <sec/secret.h>
@@ -111,7 +110,7 @@ static int sdl_event_filter(void *userdata, SDL_Event *event) {
   return 1;
 }
 
-__attribute__((noreturn)) int main(int argc, char **argv) {
+int main(int argc, char **argv) {
   SDL_SetEventFilter(sdl_event_filter, NULL);
 
   display_init(DISPLAY_RESET_CONTENT);
@@ -187,12 +186,16 @@ __attribute__((noreturn)) int main(int argc, char **argv) {
   (void)!flash_otp_write(FLASH_OTP_BLOCK_DEVICE_VARIANT, 0, otp_data,
                          sizeof(otp_data));
 
-  bootloader_main();
-  hal_delay(3000);
-  jump_to(0);
+  int exit_code = bootloader_main();
+
+  char msg[64];
+  snprintf(msg, sizeof(msg), "Exit code: %d", exit_code);
+
+  error_shutdown_ex("BOOTLOADER ERROR", msg, "UNEXPECTED EXIT");
+  return 0;
 }
 
-void jump_to(uint32_t address) {
+void jump_to_next_stage(uint32_t address) {
   bool storage_is_erased =
       storage_empty(&STORAGE_AREAS[0]) && storage_empty(&STORAGE_AREAS[1]);
 

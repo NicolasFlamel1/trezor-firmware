@@ -18,14 +18,14 @@ pub use common_messages::CancelConfirmMsg;
 pub use error::ErrorScreen;
 pub use hold_to_confirm::{HoldToConfirm, HoldToConfirmMsg};
 pub use input_methods::{
-    choice::{Choice, ChoiceFactory, ChoicePage},
+    choice::{Choice, ChoiceControls, ChoiceFactory, ChoiceMsg, ChoicePage},
     choice_item::ChoiceItem,
 };
 pub use loader::{Loader, LoaderMsg, LoaderStyle, LoaderStyleSheet, ProgressLoader};
 pub use result::ResultScreen;
 pub use welcome_screen::WelcomeScreen;
 
-#[cfg(feature = "translations")]
+#[cfg(all(feature = "micropython", feature = "translations"))]
 mod address_details;
 mod changing_text;
 #[cfg(feature = "translations")]
@@ -44,7 +44,7 @@ mod share_words;
 mod show_more;
 mod title;
 
-#[cfg(feature = "translations")]
+#[cfg(all(feature = "micropython", feature = "translations"))]
 pub use address_details::AddressDetails;
 
 pub use changing_text::ChangingTextLine;

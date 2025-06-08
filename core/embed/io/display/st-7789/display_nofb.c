@@ -79,6 +79,27 @@ static inline void set_window(const gfx_bitblt_t* bb) {
                            bb->dst_y + bb->height + 1);
 }
 
+// Checks if the destination rectangle is withing the display bounds
+static inline bool gfx_bitblt_check_dst_xy(const gfx_bitblt_t* bb) {
+  if (bb->dst_x + bb->width < bb->dst_x) {  // overflow check
+    return false;
+  }
+
+  if (bb->dst_x + bb->width > DISPLAY_RESX) {
+    return false;
+  }
+
+  if (bb->dst_y + bb->height < bb->dst_y) {  // overflow check
+    return false;
+  }
+
+  if (bb->dst_y + bb->height > DISPLAY_RESY) {
+    return false;
+  }
+
+  return true;
+}
+
 // For future notice, if we ever want to do a new model using progressive
 // rendering.
 //
@@ -88,6 +109,10 @@ static inline void set_window(const gfx_bitblt_t* bb) {
 // to one with DMA2D while copying the other to the display with DMA.
 
 void display_fill(const gfx_bitblt_t* bb) {
+  if (!gfx_bitblt_check_dst_xy(bb)) {
+    return;
+  }
+
   set_window(bb);
 
   uint16_t height = bb->height;
@@ -100,6 +125,10 @@ void display_fill(const gfx_bitblt_t* bb) {
 }
 
 void display_copy_rgb565(const gfx_bitblt_t* bb) {
+  if (!gfx_bitblt_check_dst_xy(bb) || !gfx_bitblt_check_src_x(bb, 16)) {
+    return;
+  }
+
   set_window(bb);
 
   uint16_t* src_ptr = (uint16_t*)bb->src_row + bb->src_x;
@@ -114,6 +143,10 @@ void display_copy_rgb565(const gfx_bitblt_t* bb) {
 }
 
 void display_copy_mono1p(const gfx_bitblt_t* bb) {
+  if (!gfx_bitblt_check_dst_xy(bb) || !gfx_bitblt_check_src_x(bb, 1)) {
+    return;
+  }
+
   set_window(bb);
 
   uint8_t* src = (uint8_t*)bb->src_row;
@@ -127,25 +160,6 @@ void display_copy_mono1p(const gfx_bitblt_t* bb) {
       ISSUE_PIXEL_DATA((data & mask) ? bb->src_fg : bb->src_bg);
     }
     src_ofs += bb->src_stride;
-  }
-}
-
-void display_copy_mono4(const gfx_bitblt_t* bb) {
-  set_window(bb);
-
-  const gfx_color16_t* gradient =
-      gfx_color16_gradient_a4(bb->src_fg, bb->src_bg);
-
-  uint8_t* src_row = (uint8_t*)bb->src_row;
-  uint16_t height = bb->height;
-
-  while (height-- > 0) {
-    for (int x = 0; x < bb->width; x++) {
-      uint8_t fg_data = src_row[(x + bb->src_x) / 2];
-      uint8_t fg_lum = (x + bb->src_x) & 1 ? fg_data >> 4 : fg_data & 0xF;
-      ISSUE_PIXEL_DATA(gradient[fg_lum]);
-    }
-    src_row += bb->src_stride / sizeof(*src_row);
   }
 }
 

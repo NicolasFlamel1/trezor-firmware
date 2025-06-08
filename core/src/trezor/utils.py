@@ -3,6 +3,7 @@ import sys
 from trezorutils import (  # noqa: F401
     BITCOIN_ONLY,
     EMULATOR,
+    HOMESCREEN_MAXSIZE,
     INTERNAL_MODEL,
     MODEL,
     MODEL_FULL_NAME,
@@ -18,6 +19,7 @@ from trezorutils import (  # noqa: F401
     USE_SD_CARD,
     USE_THP,
     USE_TOUCH,
+    USE_TROPIC,
     VERSION,
     bootloader_locked,
     check_firmware_header,
@@ -35,18 +37,24 @@ from trezorutils import (  # noqa: F401
 from typing import TYPE_CHECKING
 
 if __debug__:
+    from trezorutils import LOG_STACK_USAGE, check_free_heap, check_heap_fragmentation
+
+    if LOG_STACK_USAGE:
+        from trezorutils import estimate_unused_stack, zero_unused_stack  # noqa: F401
+
     if EMULATOR:
         import uos
 
         DISABLE_ANIMATION = uos.getenv("TREZOR_DISABLE_ANIMATION") == "1"
         LOG_MEMORY = uos.getenv("TREZOR_LOG_MEMORY") == "1"
     else:
-        from trezorutils import DISABLE_ANIMATION  # noqa: F401
+        from trezorutils import DISABLE_ANIMATION
 
         LOG_MEMORY = 0
 
 else:
     DISABLE_ANIMATION = False
+    LOG_STACK_USAGE = False
 
 if TYPE_CHECKING:
     from typing import Any, Iterator, Protocol, Sequence, TypeVar
@@ -59,10 +67,8 @@ def unimport_begin() -> set[str]:
 
 
 def unimport_end(mods: set[str], collect: bool = True) -> None:
-    # static check that the size of sys.modules never grows above value of
-    # MICROPY_LOADED_MODULES_DICT_SIZE, so that the sys.modules dict is never
-    # reallocated at run-time
-    assert len(sys.modules) <= 160, "Please bump preallocated size in mpconfigport.h"
+    if __debug__:
+        check_heap_fragmentation()
 
     for mod in sys.modules:  # pylint: disable=consider-using-dict-items
         if mod not in mods:
@@ -88,16 +94,21 @@ def unimport_end(mods: set[str], collect: bool = True) -> None:
 class unimport:
     def __init__(self) -> None:
         self.mods: set[str] | None = None
+        if __debug__:
+            self.free_heap = 0
 
     def __enter__(self) -> None:
         self.mods = unimport_begin()
 
-    def __exit__(self, _exc_type: Any, _exc_value: Any, _tb: Any) -> None:
+    def __exit__(self, exc_type: Any, _exc_value: Any, _tb: Any) -> None:
         assert self.mods is not None
         unimport_end(self.mods, collect=False)
         self.mods.clear()
         self.mods = None
         gc.collect()
+
+        if __debug__ and exc_type is not SystemExit:
+            self.free_heap = check_free_heap(self.free_heap)
 
 
 def presize_module(modname: str, size: int) -> None:
@@ -117,6 +128,13 @@ def presize_module(modname: str, size: int) -> None:
 if __debug__:
     from ubinascii import hexlify
 
+    try:
+        from trezorutils import enable_oom_dump
+
+        enable_oom_dump()
+    except ImportError:
+        pass
+
     def mem_dump(filename: str) -> None:
         from micropython import mem_info
 
@@ -133,7 +151,7 @@ if __debug__:
             mem_info(True)
 
     def get_bytes_as_str(a: bytes) -> str:
-        """Converts the provided bytes to a hexadecimal string (decoded as`utf-8`)."""
+        """Converts the provided bytes to a hexadecimal string (decoded as `utf-8`)."""
         return hexlify(a).decode("utf-8")
 
 

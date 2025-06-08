@@ -2,10 +2,9 @@ from typing import *
 
 
 # upymod/modtrezorutils/modtrezorutils-meminfo.h
-def meminfo(filename: str) -> None:
+def meminfo(filename: str | None) -> None:
     """Dumps map of micropython GC arena to a file.
-    The JSON file can be decoded by analyze.py
-    Only available in the emulator.
+    The JSON file can be decoded by analyze-memory-dump.py
      """
 
 
@@ -89,6 +88,38 @@ def sd_hotswap_enabled() -> bool:
 
 
 # upymod/modtrezorutils/modtrezorutils.c
+def zero_unused_stack() -> None:
+    """
+    Zero unused stack memory.
+    """
+
+
+# upymod/modtrezorutils/modtrezorutils.c
+def estimate_unused_stack() -> int:
+    """
+    Estimate unused stack size.
+    """
+if __debug__:
+    def enable_oom_dump() -> None:
+        """
+        Dump GC info in case of an OOM.
+        """
+if __debug__:
+    def check_free_heap(previous: int) -> int:
+        """
+        Assert that free heap memory doesn't decrease.
+        Returns current free heap memory (in bytes).
+        Enabled only for frozen debug builds.
+        """
+if __debug__:
+    def check_heap_fragmentation() -> None:
+        """
+        Assert known sources for heap fragmentation.
+        Enabled only for frozen debug builds.
+        """
+
+
+# upymod/modtrezorutils/modtrezorutils.c
 def reboot_to_bootloader(
     boot_command : int = 0,
     boot_args : bytes | None = None,
@@ -132,6 +163,8 @@ USE_HAPTIC: bool
 """Whether the hardware supports haptic feedback."""
 USE_OPTIGA: bool
 """Whether the hardware supports Optiga secure element."""
+USE_TROPIC: bool
+"""Whether the hardware supports Tropic Square secure element."""
 USE_TOUCH: bool
 """Whether the hardware supports touch screen."""
 USE_BUTTON: bool
@@ -146,6 +179,8 @@ MODEL_USB_PRODUCT: str
 """USB Product name."""
 INTERNAL_MODEL: str
 """Internal model code."""
+HOMESCREEN_MAXSIZE: int
+"""Maximum size of user-uploaded homescreen in bytes."""
 EMULATOR: bool
 """Whether the firmware is running in the emulator."""
 BITCOIN_ONLY: bool
@@ -157,3 +192,5 @@ USE_THP: bool
 if __debug__:
     DISABLE_ANIMATION: bool
     """Whether the firmware should disable animations."""
+    LOG_STACK_USAGE: bool
+    """Whether the firmware should log estimated stack usage."""

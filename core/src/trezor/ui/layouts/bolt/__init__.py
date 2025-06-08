@@ -476,10 +476,10 @@ async def should_show_payment_request_details(
     result = await interact(
         trezorui_api.confirm_with_info(
             title=TR.send__title_sending,
-            items=[(ui.NORMAL, f"{amount} to\n{recipient_name}")]
-            + [(ui.NORMAL, memo) for memo in memos],
-            button=TR.buttons__confirm,
-            info_button=TR.buttons__details,
+            items=[(f"{amount} to\n{recipient_name}", False)]
+            + [(memo, False) for memo in memos],
+            verb=TR.buttons__confirm,
+            verb_info=TR.buttons__details,
         ),
         "confirm_payment_request",
         ButtonRequestType.ConfirmOutput,
@@ -495,27 +495,24 @@ async def should_show_payment_request_details(
 
 async def should_show_more(
     title: str,
-    para: Iterable[tuple[int, str | bytes]],
+    items: Iterable[tuple[str | bytes, bool]],
     button_text: str | None = None,
     br_name: str = "should_show_more",
     br_code: ButtonRequestType = BR_CODE_OTHER,
-    confirm: str | bytes | None = None,
+    confirm: str | None = None,
 ) -> bool:
     """Return True if the user wants to show more (they click a special button)
     and False when the user wants to continue without showing details.
 
     Raises ActionCancelled if the user cancels.
     """
-    button_text = button_text or TR.buttons__show_all  # def_arg
-    if confirm is None or not isinstance(confirm, str):
-        confirm = TR.buttons__confirm
 
     result = await interact(
         trezorui_api.confirm_with_info(
             title=title,
-            items=para,
-            button=confirm,
-            info_button=button_text,
+            items=items,
+            verb=confirm or TR.buttons__confirm,
+            verb_info=button_text or TR.buttons__show_all,
         ),
         br_name,
         br_code,
@@ -535,6 +532,8 @@ async def _confirm_ask_pagination(
     data: bytes | str,
     description: str,
     br_code: ButtonRequestType,
+    extra_confirmation_if_not_read: bool = False,
+    hold: bool = False,
 ) -> None:
     # TODO: make should_show_more/confirm_more accept bytes directly
     if isinstance(data, (bytes, bytearray, memoryview)):
@@ -546,15 +545,32 @@ async def _confirm_ask_pagination(
         title=title,
         button=TR.buttons__confirm,
         button_style_confirm=True,
-        items=[(ui.MONO, data)],
+        items=[(data, True)],
+        hold=hold,
     )
     while True:
         if not await should_show_more(
             title,
-            para=[(ui.NORMAL, description), (ui.MONO, data)],
+            [(description, False), (data, True)],
             br_name=br_name,
             br_code=br_code,
+            confirm="V" if extra_confirmation_if_not_read else None,
         ):
+            if extra_confirmation_if_not_read:
+                try:
+                    await confirm_value(
+                        title,
+                        TR.sign_message__confirm_without_review,
+                        None,
+                        br_name=br_name,
+                        br_code=br_code,
+                        verb=TR.buttons__confirm,
+                        verb_cancel="^",
+                        hold=True,
+                        is_data=False,
+                    )
+                except ActionCancelled:
+                    continue
             return
 
         result = await interact(
@@ -578,6 +594,7 @@ def confirm_blob(
     hold: bool = False,
     br_code: ButtonRequestType = BR_CODE_OTHER,
     ask_pagination: bool = False,
+    extra_confirmation_if_not_read: bool = False,
     chunkify: bool = False,
     prompt_screen: bool = True,
 ) -> Awaitable[None]:
@@ -597,9 +614,17 @@ def confirm_blob(
     )
 
     if ask_pagination and layout.page_count() > 1:
-        assert not hold
-        return _confirm_ask_pagination(br_name, title, data, description or "", br_code)
+        return _confirm_ask_pagination(
+            br_name,
+            title,
+            data,
+            description or "",
+            br_code,
+            extra_confirmation_if_not_read,
+            hold,
+        )
     else:
+        assert not extra_confirmation_if_not_read
         return raise_if_not_confirmed(
             layout,
             br_name,
@@ -667,11 +692,12 @@ def confirm_amount(
 def confirm_value(
     title: str,
     value: str,
-    description: str,
+    description: str | None,
     br_name: str,
     br_code: ButtonRequestType = BR_CODE_OTHER,
     *,
     verb: str | None = None,
+    verb_cancel: str | None = None,
     subtitle: str | None = None,
     hold: bool = False,
     is_data: bool = True,
@@ -683,9 +709,6 @@ def confirm_value(
 
     if description and value:
         description += ":"
-
-    if not verb and not hold:
-        raise ValueError("Either verb or hold=True must be set")
 
     info_items = info_items or []
     info_layout = trezorui_api.show_info_with_cancel(
@@ -702,6 +725,7 @@ def confirm_value(
             is_data=is_data,
             subtitle=subtitle,
             verb=verb,
+            verb_cancel=verb_cancel,
             info=bool(info_items),
             hold=hold,
         ),
@@ -820,8 +844,8 @@ if not utils.BITCOIN_ONLY:
     async def confirm_ethereum_tx(
         recipient: str | None,
         total_amount: str,
-        _account: str | None,
-        _account_path: str | None,
+        account: str | None,
+        account_path: str | None,
         maximum_fee: str,
         fee_info_items: Iterable[tuple[str, str]],
         is_contract_interaction: bool,
@@ -829,41 +853,52 @@ if not utils.BITCOIN_ONLY:
         br_code: ButtonRequestType = ButtonRequestType.SignTx,
         chunkify: bool = False,
     ) -> None:
-        # NOTE: fee_info used so that info button is shown
+        if not is_contract_interaction:
+            description = f"{TR.words__recipient}:"
+        else:
+            description = f"{TR.ethereum__interaction_contract}:" if recipient else None
+
+        address_layout = trezorui_api.confirm_value(
+            title=TR.words__address,
+            description=description,
+            value=recipient or TR.ethereum__new_contract,
+            verb=TR.buttons__continue,
+            verb_cancel=None,
+            info=True,
+            chunkify=(chunkify if recipient else False),
+        )
+
+        account_info_layout = trezorui_api.show_info_with_cancel(
+            title=TR.send__send_from,
+            items=[
+                (f"{TR.words__account}:", account or ""),
+                (f"{TR.address_details__derivation_path}:", account_path or ""),
+            ],
+        )
+
         total_layout = trezorui_api.confirm_summary(
             amount=total_amount,
             amount_label=f"{TR.words__amount}:",
             fee=maximum_fee,
             fee_label=f"{TR.send__maximum_fee}:",
             title=TR.words__title_summary,
-            extra_items=fee_info_items,
+            extra_items=fee_info_items,  # used so that info button is shown
             extra_title=TR.confirm_total__title_fee,
             verb_cancel="^",
         )
-        info_layout = trezorui_api.show_info_with_cancel(
+
+        fee_info_layout = trezorui_api.show_info_with_cancel(
             title=TR.confirm_total__title_fee,
             items=[(f"{k}:", v) for (k, v) in fee_info_items],
         )
 
-        if not is_contract_interaction:
-            description = TR.words__recipient
-        else:
-            description = TR.ethereum__interaction_contract if recipient else None
-
         while True:
-            # Allowing going back and forth between recipient and summary/details
-            await confirm_blob(
-                br_name,
-                TR.words__address,
-                recipient or TR.ethereum__new_contract,
-                description=description,
-                verb=TR.buttons__continue,
-                chunkify=(chunkify if recipient else False),
-            )
+            await with_info(address_layout, account_info_layout, br_name, br_code)
 
             try:
-                await with_info(total_layout, info_layout, br_name, br_code)
+                await with_info(total_layout, fee_info_layout, br_name, br_code)
             except ActionCancelled:
+                # Allowing going back and forth between recipient and summary
                 continue
             else:
                 break
@@ -921,6 +956,23 @@ if not utils.BITCOIN_ONLY:
             br_code=br_code,
         )
 
+    def confirm_solana_recipient(
+        recipient: str,
+        title: str,
+        items: Iterable[tuple[str, str]] = (),
+        br_name: str = "confirm_solana_recipient",
+        br_code: ButtonRequestType = ButtonRequestType.ConfirmOutput,
+    ) -> Awaitable[None]:
+        return confirm_value(
+            title=title,
+            value=recipient,
+            description="",
+            br_name=br_name,
+            br_code=br_code,
+            verb=TR.buttons__continue,
+            info_items=items,
+        )
+
     def confirm_solana_tx(
         amount: str,
         fee: str,
@@ -934,12 +986,69 @@ if not utils.BITCOIN_ONLY:
             amount_title if amount_title is not None else f"{TR.words__amount}:"
         )  # def_arg
         fee_title = fee_title or TR.words__fee  # def_arg
+        info_title = TR.confirm_total__title_fee
         return _confirm_summary(
             amount,
             amount_title,
             fee,
             fee_title,
             extra_items=items,
+            extra_title=info_title,
+            br_name=br_name,
+            br_code=br_code,
+        )
+
+    async def confirm_solana_staking_tx(
+        title: str,
+        description: str,
+        account: str,
+        account_path: str,
+        vote_account: str,
+        stake_item: tuple[str, str] | None,
+        amount_item: tuple[str, str] | None,
+        fee_item: tuple[str, str],
+        fee_details: Iterable[tuple[str, str]],
+        blockhash_item: tuple[str, str],
+        br_name: str = "confirm_solana_staking_tx",
+        br_code: ButtonRequestType = ButtonRequestType.SignTx,
+    ) -> None:
+        (amount_label, amount) = amount_item or ("", "")
+        (fee_label, fee) = fee_item
+
+        confirm_layout = trezorui_api.confirm_value(
+            title=title,
+            description=description,
+            extra=f"{TR.solana__stake_provider}:" if vote_account else None,
+            value=vote_account,
+            verb=TR.buttons__continue,
+            info=True,
+        )
+
+        items = [
+            (f"{TR.words__account}:", account),
+            (f"{TR.address_details__derivation_path}:", account_path),
+        ]
+        if stake_item is not None:
+            items.append(stake_item)
+        items.append(blockhash_item)
+
+        info_layout = trezorui_api.show_info_with_cancel(
+            title=title,
+            items=items,
+            horizontal=True,
+        )
+
+        await with_info(confirm_layout, info_layout, br_name, br_code)
+
+        await _confirm_summary(
+            amount=amount,
+            amount_label=amount_label,
+            fee=fee,
+            fee_label=fee_label,
+            account_items=None,
+            title=title,
+            extra_title=TR.confirm_total__title_fee,
+            extra_items=fee_details,
             br_name=br_name,
             br_code=br_code,
         )
@@ -1097,6 +1206,9 @@ def confirm_sign_identity(
     )
 
 
+LONG_MSG_PAGE_THRESHOLD = 5
+
+
 async def confirm_signverify(
     message: str,
     address: str,
@@ -1139,17 +1251,10 @@ async def confirm_signverify(
         horizontal=True,
     )
 
-    message_layout = trezorui_api.confirm_value(
-        title=TR.sign_message__confirm_message,
-        description=None,
-        value=message,
-        hold=not verify,
-        verb=TR.buttons__confirm if verify else None,
-    )
-
     while True:
         try:
             await with_info(address_layout, info_layout, br_name, br_code=BR_CODE_OTHER)
+            break
         except ActionCancelled:
             result = await interact(
                 trezorui_api.show_mismatch(title=TR.addr_mismatch__mismatch),
@@ -1163,10 +1268,31 @@ async def confirm_signverify(
             else:
                 continue
 
-        result = await interact(
-            message_layout, br_name, BR_CODE_OTHER, raise_on_cancel=None
-        )
-        if result is CONFIRMED:
+    message_layout = trezorui_api.confirm_value(
+        title=TR.sign_message__confirm_message,
+        description=None,
+        value=message,
+        hold=not verify,
+        verb=TR.buttons__confirm,
+    )
+
+    while True:
+        if message_layout.page_count() <= LONG_MSG_PAGE_THRESHOLD:
+            result = await interact(message_layout, br_name, BR_CODE_OTHER)
+            if result is CONFIRMED:
+                break
+        else:
+            await confirm_blob(
+                br_name,
+                TR.sign_message__confirm_message,
+                message,
+                verb=TR.buttons__confirm,
+                hold=not verify,
+                br_code=BR_CODE_OTHER,
+                ask_pagination=True,
+                extra_confirmation_if_not_read=not verify,
+            )
+
             break
 
 
@@ -1305,13 +1431,24 @@ def confirm_set_new_pin(
     )
 
 
-def confirm_firmware_update(description: str, fingerprint: str) -> Awaitable[None]:
-    return raise_if_not_confirmed(
-        trezorui_api.confirm_firmware_update(
-            description=description, fingerprint=fingerprint
-        ),
-        "firmware_update",
-        BR_CODE_OTHER,
+async def confirm_firmware_update(description: str, fingerprint: str) -> None:
+    main = trezorui_api.confirm_value(
+        title=TR.firmware_update__title,
+        description=description,
+        value="",
+        verb=TR.buttons__install,
+        info=True,
+    )
+    info = trezorui_api.show_info_with_cancel(
+        title=TR.firmware_update__title_fingerprint,
+        items=(("", fingerprint),),
+        chunkify=True,
+    )
+    await with_info(
+        main,
+        info,
+        br_name="firmware_update",
+        br_code=BR_CODE_OTHER,
     )
 
 

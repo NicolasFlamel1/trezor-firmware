@@ -18,10 +18,13 @@ def stm32u5_common_files(env, defines, sources, paths):
         "embed/sec/secret/inc",
         "embed/sec/secure_aes/inc",
         "embed/sec/time_estimate/inc",
-        "embed/sys/irq/inc",
         "embed/sys/bsp/stm32u5",
+        "embed/sys/dbg/inc",
+        "embed/sys/irq/inc",
+        "embed/sys/linker/inc",
         "embed/sys/mpu/inc",
         "embed/sys/pvd/inc",
+        "embed/sys/stack/inc",
         "embed/sys/startup/inc",
         "embed/sys/syscall/inc",
         "embed/sys/tamper/inc",
@@ -58,6 +61,7 @@ def stm32u5_common_files(env, defines, sources, paths):
         "vendor/stm32u5xx_hal_driver/Src/stm32u5xx_hal_i2c.c",
         "vendor/stm32u5xx_hal_driver/Src/stm32u5xx_hal_i2c_ex.c",
         "vendor/stm32u5xx_hal_driver/Src/stm32u5xx_hal_icache.c",
+        "vendor/stm32u5xx_hal_driver/Src/stm32u5xx_hal_lptim.c",
         "vendor/stm32u5xx_hal_driver/Src/stm32u5xx_hal_ltdc.c",
         "vendor/stm32u5xx_hal_driver/Src/stm32u5xx_hal_ltdc_ex.c",
         "vendor/stm32u5xx_hal_driver/Src/stm32u5xx_hal_pcd.c",
@@ -83,9 +87,13 @@ def stm32u5_common_files(env, defines, sources, paths):
         "embed/sec/secret/stm32u5/secret.c",
         "embed/sec/secure_aes/stm32u5/secure_aes.c",
         "embed/sec/time_estimate/stm32/time_estimate.c",
+        "embed/sys/dbg/stm32/dbg_printf.c",
+        "embed/sys/linker/linker_utils.c",
         "embed/sys/mpu/stm32u5/mpu.c",
         "embed/sys/pvd/stm32/pvd.c",
+        "embed/sys/stack/stm32/stack_utils.c",
         "embed/sys/startup/stm32/bootutils.c",
+        "embed/sys/startup/stm32/sysutils.c",
         "embed/sys/startup/stm32u5/reset_flags.c",
         "embed/sys/startup/stm32u5/startup_init.c",
         "embed/sys/startup/stm32u5/vectortable.S",
@@ -100,6 +108,7 @@ def stm32u5_common_files(env, defines, sources, paths):
         "embed/sys/task/stm32/system.c",
         "embed/sys/time/stm32/systick.c",
         "embed/sys/time/stm32/systimer.c",
+        "embed/sys/task/sysevent.c",
         "embed/sys/trustzone/stm32u5/trustzone.c",
         "embed/util/board_capabilities/stm32/board_capabilities.c",
         "embed/util/flash/stm32u5/flash.c",
@@ -110,17 +119,5 @@ def stm32u5_common_files(env, defines, sources, paths):
         "embed/util/tsqueue/tsqueue.c",
         "embed/util/unit_properties/stm32/unit_properties.c",
     ]
-
-    # boardloader needs separate assembler for some function unencumbered by various FW+bootloader hacks
-    # this helps to prevent making a bug in boardloader which may be hard to fix since it's locked with write-protect
-    env_constraints = env.get("CONSTRAINTS")
-    if env_constraints and "limited_util_s" in env_constraints:
-        sources += [
-            "embed/sys/startup/stm32u5/limited_util.S",
-        ]
-    else:
-        sources += [
-            "embed/sys/startup/stm32u5/util.S",
-        ]
 
     env.get("ENV")["SUFFIX"] = "stm32u5"

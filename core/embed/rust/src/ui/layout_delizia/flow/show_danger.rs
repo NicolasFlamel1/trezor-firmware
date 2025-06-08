@@ -6,7 +6,6 @@ use crate::{
         component::{
             swipe_detect::SwipeSettings,
             text::paragraphs::{Paragraph, ParagraphSource},
-            ComponentExt,
         },
         flow::{
             base::{Decision, DecisionBuilder as _},
@@ -17,7 +16,7 @@ use crate::{
 };
 
 use super::super::{
-    component::{Frame, FrameMsg, StatusScreen, SwipeContent, VerticalMenu, VerticalMenuChoiceMsg},
+    component::{Frame, StatusScreen, SwipeContent, VerticalMenu},
     theme,
 };
 
@@ -76,11 +75,10 @@ pub fn new_show_danger(
     .into_paragraphs();
     let content_message = Frame::left_aligned(title, SwipeContent::new(paragraphs))
         .with_menu_button()
-        .with_footer(TR::instructions__swipe_up.into(), Some(verb_cancel))
+        .with_swipeup_footer(Some(verb_cancel))
         .with_danger()
-        .with_swipe(Direction::Up, SwipeSettings::default())
         .with_swipe(Direction::Left, SwipeSettings::default())
-        .map(|msg| matches!(msg, FrameMsg::Button(_)).then_some(FlowMsg::Info));
+        .map_to_button_msg();
     // .one_button_request(ButtonRequestCode::Warning, br_name);
 
     // Menu
@@ -92,10 +90,7 @@ pub fn new_show_danger(
     )
     .with_cancel_button()
     .with_swipe(Direction::Right, SwipeSettings::immediate())
-    .map(|msg| match msg {
-        FrameMsg::Content(VerticalMenuChoiceMsg::Selected(i)) => Some(FlowMsg::Choice(i)),
-        FrameMsg::Button(_) => Some(FlowMsg::Cancelled),
-    });
+    .map(super::util::map_to_choice);
 
     // Cancelled
     let content_cancelled = Frame::left_aligned(
@@ -106,9 +101,9 @@ pub fn new_show_danger(
     .with_result_icon(theme::ICON_BULLET_CHECKMARK, theme::GREY_DARK)
     .map(|_| Some(FlowMsg::Cancelled));
 
-    let res = SwipeFlow::new(&ShowDanger::Message)?
-        .with_page(&ShowDanger::Message, content_message)?
-        .with_page(&ShowDanger::Menu, content_menu)?
-        .with_page(&ShowDanger::Cancelled, content_cancelled)?;
+    let mut res = SwipeFlow::new(&ShowDanger::Message)?;
+    res.add_page(&ShowDanger::Message, content_message)?
+        .add_page(&ShowDanger::Menu, content_menu)?
+        .add_page(&ShowDanger::Cancelled, content_cancelled)?;
     Ok(res)
 }

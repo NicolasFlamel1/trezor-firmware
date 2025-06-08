@@ -154,11 +154,17 @@ impl Loader {
     }
 
     pub fn is_completely_grown(&self, now: Instant) -> bool {
-        matches!(self.progress(now), Some(display::LOADER_MAX))
+        match &self.state {
+            State::Growing(a) => a.finished(now),
+            _ => false,
+        }
     }
 
     pub fn is_completely_shrunk(&self, now: Instant) -> bool {
-        matches!(self.progress(now), Some(display::LOADER_MIN))
+        match &self.state {
+            State::Shrinking(a) => a.finished(now),
+            _ => false,
+        }
     }
 
     pub fn render_loader<'s>(
@@ -197,8 +203,7 @@ impl Loader {
                         style.font.horz_center(self.area.x0, self.area.x1, t),
                         style.font.vert_center(self.area.y0, self.area.y1, "A"),
                     );
-                    shape::Text::new(pt, t)
-                        .with_font(style.font)
+                    shape::Text::new(pt, t, style.font)
                         .with_fg(text_color)
                         .render(target);
                 });

@@ -3,21 +3,20 @@ use crate::{
     strutil::{self, TString},
     ui::{
         component::{
+            paginated::SinglePage,
             text::paragraphs::{Paragraph, Paragraphs},
-            Component, Event, EventCtx, Pad,
+            Component, Event, EventCtx, Never, Pad,
         },
-        display::Font,
-        event::SwipeEvent,
-        geometry::{Alignment, Direction, Grid, Insets, Offset, Rect},
+        event::TouchEvent,
+        geometry::{Alignment, Grid, Insets, Offset, Rect},
         shape::{self, Renderer},
     },
 };
 
-use super::{theme, Button, ButtonMsg};
+use super::{super::fonts::FONT_DEMIBOLD, theme, Button, ButtonMsg};
 
 pub enum NumberInputDialogMsg {
-    Confirmed(u32),
-    Changed(u32),
+    Changed(u16),
 }
 
 pub struct NumberInputDialog {
@@ -28,7 +27,7 @@ pub struct NumberInputDialog {
 }
 
 impl NumberInputDialog {
-    pub fn new(min: u32, max: u32, init_value: u32, text: TString<'static>) -> Result<Self, Error> {
+    pub fn new(min: u16, max: u16, init_value: u16, text: TString<'static>) -> Result<Self, Error> {
         Ok(Self {
             area: Rect::zero(),
             input: NumberInput::new(min, max, init_value),
@@ -37,7 +36,7 @@ impl NumberInputDialog {
         })
     }
 
-    pub fn value(&self) -> u32 {
+    pub fn value(&self) -> u16 {
         self.input.value
     }
 }
@@ -62,14 +61,16 @@ impl Component for NumberInputDialog {
     }
 
     fn event(&mut self, ctx: &mut EventCtx, event: Event) -> Option<Self::Msg> {
-        if let Some(NumberInputMsg::Changed(i)) = self.input.event(ctx, event) {
-            return Some(NumberInputDialogMsg::Changed(i));
-        }
-
-        if let Event::Swipe(SwipeEvent::End(Direction::Up)) = event {
-            return Some(NumberInputDialogMsg::Confirmed(self.input.value));
-        }
+        self.input.event(ctx, event);
         self.paragraphs.event(ctx, event);
+
+        // Consume all touch events to prevent dialog confirmation if not clicking
+        // directly on the Footer
+        if let Event::Touch(TouchEvent::TouchStart(point)) = event {
+            if self.area.contains(point) {
+                return Some(NumberInputDialogMsg::Changed(self.value()));
+            }
+        }
         None
     }
 
@@ -80,6 +81,8 @@ impl Component for NumberInputDialog {
     }
 }
 
+impl SinglePage for NumberInputDialog {}
+
 #[cfg(feature = "ui_debug")]
 impl crate::trace::Trace for NumberInputDialog {
     fn trace(&self, t: &mut dyn crate::trace::Tracer) {
@@ -89,21 +92,17 @@ impl crate::trace::Trace for NumberInputDialog {
     }
 }
 
-pub enum NumberInputMsg {
-    Changed(u32),
-}
-
 pub struct NumberInput {
     area: Rect,
     dec: Button,
     inc: Button,
-    min: u32,
-    max: u32,
-    value: u32,
+    min: u16,
+    max: u16,
+    value: u16,
 }
 
 impl NumberInput {
-    pub fn new(min: u32, max: u32, value: u32) -> Self {
+    pub fn new(min: u16, max: u16, value: u16) -> Self {
         let dec = Button::with_icon(theme::ICON_MINUS).styled(theme::button_counter());
         let inc = Button::with_icon(theme::ICON_PLUS).styled(theme::button_counter());
         let value = value.clamp(min, max);
@@ -116,10 +115,16 @@ impl NumberInput {
             value,
         }
     }
+
+    fn update_button_states(&mut self, ctx: &mut EventCtx) {
+        self.dec.enable_if(ctx, self.value > self.min);
+        self.inc.enable_if(ctx, self.value < self.max);
+        ctx.request_paint();
+    }
 }
 
 impl Component for NumberInput {
-    type Msg = NumberInputMsg;
+    type Msg = Never;
 
     fn place(&mut self, bounds: Rect) -> Rect {
         let grid = Grid::new(bounds, 1, 3).with_spacing(theme::KEYBOARD_SPACING);
@@ -130,21 +135,15 @@ impl Component for NumberInput {
     }
 
     fn event(&mut self, ctx: &mut EventCtx, event: Event) -> Option<Self::Msg> {
-        let mut changed = false;
         if let Some(ButtonMsg::Clicked) = self.dec.event(ctx, event) {
             self.value = self.min.max(self.value.saturating_sub(1));
-            changed = true;
+            self.update_button_states(ctx);
         };
         if let Some(ButtonMsg::Clicked) = self.inc.event(ctx, event) {
             self.value = self.max.min(self.value.saturating_add(1));
-            changed = true;
+            self.update_button_states(ctx);
         };
-        if changed {
-            self.dec.enable_if(ctx, self.value > self.min);
-            self.inc.enable_if(ctx, self.value < self.max);
-            ctx.request_paint();
-            return Some(NumberInputMsg::Changed(self.value));
-        }
+
         None
     }
 
@@ -152,14 +151,13 @@ impl Component for NumberInput {
         let mut buf = [0u8; 10];
 
         if let Some(text) = strutil::format_i64(self.value as i64, &mut buf) {
-            let digit_font = Font::DEMIBOLD;
+            let digit_font = FONT_DEMIBOLD;
             let y_offset = digit_font.text_height() / 2;
 
             shape::Bar::new(self.area).with_bg(theme::BG).render(target);
-            shape::Text::new(self.area.center() + Offset::y(y_offset), text)
+            shape::Text::new(self.area.center() + Offset::y(y_offset), text, digit_font)
                 .with_align(Alignment::Center)
                 .with_fg(theme::FG)
-                .with_font(digit_font)
                 .render(target);
         }
 

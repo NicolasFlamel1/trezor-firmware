@@ -148,7 +148,7 @@ OBJS += protob/messages-management.pb.o
 ifneq ($(BITCOIN_ONLY),1)
 OBJS += ../vendor/trezor-crypto/cash_addr.o
 OBJS += protob/messages-ethereum.pb.o
-OBJS += protob/messages-ethereum-definitions.pb.o
+OBJS += protob/messages-definitions.pb.o
 OBJS += protob/messages-nem.pb.o
 OBJS += protob/messages-stellar.pb.o
 OBJS += protob/messages-mimblewimble-coin.pb.o

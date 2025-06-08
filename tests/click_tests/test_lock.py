@@ -22,7 +22,7 @@ import pytest
 from trezorlib import models
 from trezorlib.debuglink import LayoutType
 
-from .. import buttons, common
+from .. import common
 
 if TYPE_CHECKING:
     from ..device_handler import BackgroundDeviceHandler
@@ -53,6 +53,8 @@ def test_hold_to_lock(device_handler: "BackgroundDeviceHandler"):
     def hold(duration: int) -> None:
         if debug.layout_type is LayoutType.Caesar:
             debug.press_right(hold_ms=duration)
+        elif debug.layout_type is LayoutType.Delizia:
+            debug.click(debug.screen_buttons.tap_to_confirm(), hold_ms=duration)
         else:
             debug.click((13, 37), hold_ms=duration)
 
@@ -79,9 +81,12 @@ def test_hold_to_lock(device_handler: "BackgroundDeviceHandler"):
 
     # unlock by touching
     if debug.layout_type is LayoutType.Caesar:
-        layout = debug.press_right()
+        debug.press_right()
+    elif debug.layout_type is LayoutType.Delizia:
+        debug.click(debug.screen_buttons.tap_to_confirm())
     else:
-        layout = debug.click(buttons.INFO)
+        debug.click(debug.screen_buttons.info())
+    layout = debug.read_layout()
     assert "PinKeyboard" in layout.all_components()
     debug.input("1234")
 

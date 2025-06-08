@@ -12,7 +12,14 @@ mod ffi;
 #[cfg(feature = "haptic")]
 pub mod haptic;
 
-pub mod io;
+#[cfg(feature = "button")]
+pub mod button;
+
+#[cfg(feature = "touch")]
+pub mod touch;
+
+#[cfg(feature = "hw_jpeg_decoder")]
+pub mod jpegdec;
 pub mod model;
 pub mod random;
 #[cfg(feature = "rgb_led")]
@@ -27,8 +34,4 @@ pub mod wordlist;
 
 pub mod secbool;
 
-#[cfg(not(feature = "micropython"))]
 pub mod time;
-
-#[cfg(feature = "micropython")]
-pub use crate::micropython::time;

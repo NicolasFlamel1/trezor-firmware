@@ -17,8 +17,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef TREZORHAL_STWLC38_H
-#define TREZORHAL_STWLC38_H
+#pragma once
 
 #include <trezor_types.h>
 
@@ -27,6 +26,12 @@ typedef enum {
   OP_MODE_RX = 2,
   OP_MODE_TX = 3,
 } stwlc38_op_mode_t;
+
+typedef enum {
+  STWLC38_UNKNOWN_CHIP_REV = 0,
+  STWLC38_CUT_1_2 = 0x3,
+  STWLC38_CUT_1_3 = 0x4,
+} stwlc38_chip_rev_t;
 
 typedef struct {
   uint16_t chip_id;           // Chip ID
@@ -89,7 +94,7 @@ void stwlc38_deinit(void);
 // wireless charging functionality.
 //
 // If the STWLC38 is disabled, it's not self-powered and is unable to
-// communicate over I2C. STWLC38 is disabled by default after initialization.
+// communicate over I2C. STWLC38 is enabled by default after initialization.
 //
 // Returns true if the STWLC38 was successfully enabled or disabled.
 bool stwlc38_enable(bool enable);
@@ -120,5 +125,3 @@ bool stwlc38_patch_and_config();
 
 // Gets the current report from the STWLC38
 bool stwlc38_get_report(stwlc38_report_t* status);
-
-#endif  // TREZORHAL_STWLC38_H

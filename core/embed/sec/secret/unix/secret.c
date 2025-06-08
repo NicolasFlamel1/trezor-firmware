@@ -1,3 +1,22 @@
+/*
+ * This file is part of the Trezor project, https://trezor.io/
+ *
+ * Copyright (c) SatoshiLabs
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 #include <trezor_model.h>
 #include <trezor_rtl.h>
 
@@ -6,6 +25,16 @@
 #include <util/flash.h>
 
 #ifdef KERNEL_MODE
+
+static uint8_t SECRET_TROPIC_TREZOR_PRIVKEY_BYTES[] = {
+    0xf0, 0xc4, 0xaa, 0x04, 0x8f, 0x00, 0x13, 0xa0, 0x96, 0x84, 0xdf,
+    0x05, 0xe8, 0xa2, 0x2e, 0xf7, 0x21, 0x38, 0x98, 0x28, 0x2b, 0xa9,
+    0x43, 0x12, 0xf3, 0x13, 0xdf, 0x2d, 0xce, 0x8d, 0x41, 0x64};
+
+static uint8_t SECRET_TROPIC_PUBKEY_BYTES[] = {
+    0x31, 0xE9, 0x0A, 0xF1, 0x50, 0x45, 0x10, 0xEE, 0x4E, 0xFD, 0x79,
+    0x13, 0x33, 0x41, 0x48, 0x15, 0x89, 0xA2, 0x89, 0x5C, 0xC5, 0xFB,
+    0xB1, 0x3E, 0xD5, 0x71, 0x1C, 0x1E, 0x9B, 0x81, 0x98, 0x72};
 
 static secbool bootloader_locked_set = secfalse;
 static secbool bootloader_locked = secfalse;
@@ -123,7 +152,19 @@ secbool secret_optiga_writable(void) { return secret_wiped(); }
 
 void secret_optiga_erase(void) { secret_erase(); }
 
-void secret_prepare_fw(secbool allow_run_with_secret, secbool _trust_all) {
+secbool secret_tropic_get_trezor_privkey(uint8_t dest[SECRET_TROPIC_KEY_LEN]) {
+  memcpy(dest, &SECRET_TROPIC_TREZOR_PRIVKEY_BYTES, SECRET_TROPIC_KEY_LEN);
+  return sectrue;
+}
+
+secbool secret_tropic_get_tropic_pubkey(uint8_t dest[SECRET_TROPIC_KEY_LEN]) {
+  memcpy(dest, &SECRET_TROPIC_PUBKEY_BYTES, SECRET_TROPIC_KEY_LEN);
+  return sectrue;
+}
+
+void secret_prepare_fw(secbool allow_run_with_secret,
+                       secbool allow_provisioning_access) {
+  (void)allow_provisioning_access;
 #ifdef USE_OPTIGA
   if (sectrue != allow_run_with_secret && sectrue != secret_wiped()) {
     // This function does not return

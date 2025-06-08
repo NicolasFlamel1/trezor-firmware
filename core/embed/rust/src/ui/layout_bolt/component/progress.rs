@@ -9,18 +9,17 @@ use crate::{
     ui::{
         component::{
             base::ComponentExt,
-            paginated::Paginate,
             text::paragraphs::{Paragraph, Paragraphs},
             Child, Component, Event, EventCtx, Label, Never, Pad,
         },
-        display::{Font, LOADER_MAX},
+        display::LOADER_MAX,
         geometry::{Insets, Offset, Rect},
         shape::Renderer,
         util::animation_disabled,
     },
 };
 
-use super::super::constant;
+use super::super::{constant, fonts};
 
 pub struct Progress {
     title: Child<Label<'static>>,
@@ -65,7 +64,7 @@ impl Component for Progress {
             .map(|t| t.chars().filter(|c| *c == '\n').count() as i16);
         let (title, rest) = Self::AREA.split_top(self.title.inner().max_size().y);
         let (loader, description) =
-            rest.split_bottom(Font::NORMAL.line_height() * description_lines);
+            rest.split_bottom(fonts::FONT_NORMAL.line_height() * description_lines);
         let loader = loader.inset(Insets::top(theme::CONTENT_BORDER));
         self.title.place(title);
         self.loader_y_offset = loader.center().y - constant::screen().center().y;
@@ -81,9 +80,8 @@ impl Component for Progress {
                     ctx.request_paint();
                 }
                 self.description.mutate(ctx, |ctx, para| {
-                    if para.inner_mut().content() != &new_description {
-                        para.inner_mut().update(new_description);
-                        para.change_page(0); // Recompute bounding box.
+                    if para.content() != &new_description {
+                        para.update(new_description);
                         ctx.request_paint();
                         self.description_pad.clear();
                     }

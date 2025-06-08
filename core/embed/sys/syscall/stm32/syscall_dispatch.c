@@ -21,6 +21,7 @@
 
 #include <trezor_rtl.h>
 
+#include <gfx/dma2d_bitblt.h>
 #include <io/display.h>
 #include <io/usb.h>
 #include <io/usb_hid.h>
@@ -32,6 +33,7 @@
 #include <sys/bootutils.h>
 #include <sys/irq.h>
 #include <sys/mpu.h>
+#include <sys/sysevent.h>
 #include <sys/systask.h>
 #include <sys/system.h>
 #include <sys/systick.h>
@@ -49,6 +51,10 @@
 
 #ifdef USE_HAPTIC
 #include <io/haptic.h>
+#endif
+
+#ifdef USE_HW_JPEG_DECODER
+#include <gfx/jpegdec.h>
 #endif
 
 #ifdef USE_OPTIGA
@@ -74,20 +80,27 @@
 #include "syscall_internal.h"
 #include "syscall_verifiers.h"
 
+bool g_in_app_callback = false;
+
 static PIN_UI_WAIT_CALLBACK storage_init_callback = NULL;
 
 static secbool storage_init_callback_wrapper(
     uint32_t wait, uint32_t progress, enum storage_ui_message_t message) {
-  return (secbool)invoke_app_callback(wait, progress, message,
-                                      storage_init_callback);
+  secbool result;
+  g_in_app_callback = true;
+  result = invoke_app_callback(wait, progress, message, storage_init_callback);
+  g_in_app_callback = false;
+  return result;
 }
 
 static firmware_hash_callback_t firmware_hash_callback = NULL;
 
 static void firmware_hash_callback_wrapper(void *context, uint32_t progress,
                                            uint32_t total) {
+  g_in_app_callback = true;
   invoke_app_callback((uint32_t)context, progress, total,
                       firmware_hash_callback);
+  g_in_app_callback = false;
 }
 
 __attribute((no_stack_protector)) void syscall_handler(uint32_t *args,
@@ -141,8 +154,13 @@ __attribute((no_stack_protector)) void syscall_handler(uint32_t *args,
       args[1] = cycles >> 32;
     } break;
 
-    case SYSCALL_SECURE_SHUTDOWN: {
-      secure_shutdown();
+    case SYSCALL_SYSEVENTS_POLL: {
+      const sysevents_t *awaited = (sysevents_t *)args[0];
+      sysevents_t *signalled = (sysevents_t *)args[1];
+      uint32_t deadline = args[2];
+      if (!g_in_app_callback) {
+        sysevents_poll__verified(awaited, signalled, deadline);
+      }
     } break;
 
     case SYSCALL_REBOOT_DEVICE: {
@@ -419,7 +437,8 @@ __attribute((no_stack_protector)) void syscall_handler(uint32_t *args,
 
 #ifdef USE_BUTTON
     case SYSCALL_BUTTON_GET_EVENT: {
-      args[0] = button_get_event();
+      button_event_t *event = (button_event_t *)args[0];
+      args[0] = button_get_event__verified(event);
     } break;
 #endif
 
@@ -725,6 +744,138 @@ __attribute((no_stack_protector)) void syscall_handler(uint32_t *args,
 #ifdef USE_POWERCTL
     case SYSCALL_POWERCTL_SUSPEND: {
       powerctl_suspend();
+    } break;
+
+    case SYSCALL_POWERCTL_HIBERNATE: {
+      args[0] = powerctl_hibernate();
+    }
+
+    case SYSCALL_POWERCTL_GET_STATUS: {
+      powerctl_status_t *status = (powerctl_status_t *)args[0];
+      args[0] = powerctl_get_status__verified(status);
+    }
+#endif
+
+#ifdef USE_HW_JPEG_DECODER
+    case SYSCALL_JPEGDEC_OPEN: {
+      args[0] = jpegdec_open();
+    } break;
+
+    case SYSCALL_JPEGDEC_CLOSE: {
+      jpegdec_close();
+    } break;
+
+    case SYSCALL_JPEGDEC_PROCESS: {
+      args[0] = jpegdec_process__verified((jpegdec_input_t *)args[0]);
+    } break;
+
+    case SYSCALL_JPEGDEC_GET_INFO: {
+      args[0] = jpegdec_get_info__verified((jpegdec_image_t *)args[0]);
+      break;
+    }
+
+    case SYSCALL_JPEGDEC_GET_SLICE_RGBA8888: {
+      args[0] = jpegdec_get_slice_rgba8888__verified(
+          (void *)args[0], (jpegdec_slice_t *)args[1]);
+      break;
+    }
+
+    case SYSCALL_JPEGDEC_GET_SLICE_MONO8: {
+      args[0] = jpegdec_get_slice_mono8__verified((void *)args[0],
+                                                  (jpegdec_slice_t *)args[1]);
+      break;
+    }
+#endif  // USE_HW_JPEG_DECODER
+
+#ifdef USE_DMA2D
+    case SYSCALL_DMA2D_WAIT: {
+      dma2d_wait();
+    } break;
+
+    case SYSCALL_DMA2D_RGB565_FILL: {
+      const gfx_bitblt_t *bb = (const gfx_bitblt_t *)args[0];
+      args[0] = dma2d_rgb565_fill__verified(bb);
+    } break;
+
+    case SYSCALL_DMA2D_RGB565_COPY_MONO4: {
+      const gfx_bitblt_t *bb = (const gfx_bitblt_t *)args[0];
+      args[0] = dma2d_rgb565_copy_mono4__verified(bb);
+    } break;
+
+    case SYSCALL_DMA2D_RGB565_COPY_RGB565: {
+      const gfx_bitblt_t *bb = (const gfx_bitblt_t *)args[0];
+      args[0] = dma2d_rgb565_copy_rgb565__verified(bb);
+    } break;
+
+    case SYSCALL_DMA2D_RGB565_BLEND_MONO4: {
+      const gfx_bitblt_t *bb = (const gfx_bitblt_t *)args[0];
+      args[0] = dma2d_rgb565_blend_mono4__verified(bb);
+    } break;
+
+    case SYSCALL_DMA2D_RGB565_BLEND_MONO8: {
+      const gfx_bitblt_t *bb = (const gfx_bitblt_t *)args[0];
+      args[0] = dma2d_rgb565_blend_mono8__verified(bb);
+    } break;
+
+    case SYSCALL_DMA2D_RGBA8888_FILL: {
+      const gfx_bitblt_t *bb = (const gfx_bitblt_t *)args[0];
+      args[0] = dma2d_rgba8888_fill__verified(bb);
+    } break;
+
+    case SYSCALL_DMA2D_RGBA8888_COPY_MONO4: {
+      const gfx_bitblt_t *bb = (const gfx_bitblt_t *)args[0];
+      args[0] = dma2d_rgba8888_copy_mono4__verified(bb);
+    } break;
+
+    case SYSCALL_DMA2D_RGBA8888_COPY_RGB565: {
+      const gfx_bitblt_t *bb = (const gfx_bitblt_t *)args[0];
+      args[0] = dma2d_rgba8888_copy_rgb565__verified(bb);
+    } break;
+
+    case SYSCALL_DMA2D_RGBA8888_COPY_RGBA8888: {
+      const gfx_bitblt_t *bb = (const gfx_bitblt_t *)args[0];
+      args[0] = dma2d_rgba8888_copy_rgba8888__verified(bb);
+    } break;
+
+    case SYSCALL_DMA2D_RGBA8888_BLEND_MONO4: {
+      const gfx_bitblt_t *bb = (const gfx_bitblt_t *)args[0];
+      args[0] = dma2d_rgba8888_blend_mono4__verified(bb);
+    } break;
+
+    case SYSCALL_DMA2D_RGBA8888_BLEND_MONO8: {
+      const gfx_bitblt_t *bb = (const gfx_bitblt_t *)args[0];
+      args[0] = dma2d_rgba8888_blend_mono8__verified(bb);
+    } break;
+#endif  // USE_DMA2D
+
+#ifdef USE_TROPIC
+    case SYSCALL_TROPIC_PING: {
+      const uint8_t *msg_out = (const uint8_t *)args[0];
+      uint8_t *msg_in = (uint8_t *)args[1];
+      uint16_t msg_len = (uint16_t)args[2];
+      args[0] = tropic_ping__verified(msg_out, msg_in, msg_len);
+    } break;
+
+    case SYSCALL_TROPIC_GET_CERT: {
+      uint8_t *buf = (uint8_t *)args[0];
+      uint16_t buf_size = (uint16_t)args[1];
+      args[0] = tropic_get_cert__verified(buf, buf_size);
+    } break;
+    case SYSCALL_TROPIC_ECC_KEY_GENERATE: {
+      uint16_t slot_index = (uint16_t)args[0];
+      args[0] = tropic_ecc_key_generate__verified(slot_index);
+
+    } break;
+    case SYSCALL_TROPIC_ECC_SIGN: {
+      uint16_t key_slot_index = (uint16_t)args[0];
+      const uint8_t *dig = (const uint8_t *)args[1];
+      uint16_t dig_len = (uint16_t)args[2];
+      uint8_t *sig = (uint8_t *)args[3];
+      uint16_t sig_len = (uint16_t)args[4];
+
+      args[0] =
+          tropic_ecc_sign__verified(key_slot_index, dig, dig_len, sig, sig_len);
+
     } break;
 #endif
 

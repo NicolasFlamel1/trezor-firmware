@@ -20,6 +20,9 @@
 #include <trezor_model.h>
 #include <trezor_rtl.h>
 
+#if MICROPY_OOM_CALLBACK
+#include <py/gc.h>
+#endif
 #include "py/objstr.h"
 #include "py/runtime.h"
 
@@ -40,6 +43,10 @@
 
 #if USE_OPTIGA && !defined(TREZOR_EMULATOR)
 #include <sec/secret.h>
+#endif
+
+#if !PYOPT && LOG_STACK_USAGE
+#include <sys/stack_utils.h>
 #endif
 
 static void ui_progress(void *context, uint32_t current, uint32_t total) {
@@ -239,6 +246,128 @@ STATIC mp_obj_t mod_trezorutils_sd_hotswap_enabled(void) {
 STATIC MP_DEFINE_CONST_FUN_OBJ_0(mod_trezorutils_sd_hotswap_enabled_obj,
                                  mod_trezorutils_sd_hotswap_enabled);
 
+#if !PYOPT
+#if LOG_STACK_USAGE
+/// def zero_unused_stack() -> None:
+///     """
+///     Zero unused stack memory.
+///     """
+STATIC mp_obj_t mod_trezorutils_zero_unused_stack(void) {
+  clear_unused_stack();
+  return mp_const_none;
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_0(mod_trezorutils_zero_unused_stack_obj,
+                                 mod_trezorutils_zero_unused_stack);
+
+/// def estimate_unused_stack() -> int:
+///     """
+///     Estimate unused stack size.
+///     """
+STATIC mp_obj_t mod_trezorutils_estimate_unused_stack(void) {
+  const uint8_t *stack_top = (const uint8_t *)MP_STATE_THREAD(stack_top);
+  size_t stack_limit = MP_STATE_THREAD(stack_limit);
+
+  const uint8_t *stack = stack_top - stack_limit;
+  size_t offset = 0;
+  for (; offset < stack_limit; ++offset) {
+    if (stack[offset] != 0) {
+      break;
+    }
+  }
+  return mp_obj_new_int_from_uint(offset);
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_0(mod_trezorutils_estimate_unused_stack_obj,
+                                 mod_trezorutils_estimate_unused_stack);
+
+#endif  // LOG_STACK_USAGE
+
+#if MICROPY_OOM_CALLBACK
+static void gc_oom_callback(void) {
+  gc_dump_info();
+#if BLOCK_ON_VCP
+  dump_meminfo_json(NULL);  // dump to stdout
+#endif
+}
+
+/// if __debug__:
+///     def enable_oom_dump() -> None:
+///         """
+///         Dump GC info in case of an OOM.
+///         """
+STATIC mp_obj_t mod_trezorutils_enable_oom_dump(void) {
+  gc_set_oom_callback(gc_oom_callback);
+  return mp_const_none;
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_0(mod_trezorutils_enable_oom_dump_obj,
+                                 mod_trezorutils_enable_oom_dump);
+#endif  // MICROPY_OOM_CALLBACK
+
+/// if __debug__:
+///     def check_free_heap(previous: int) -> int:
+///         """
+///         Assert that free heap memory doesn't decrease.
+///         Returns current free heap memory (in bytes).
+///         Enabled only for frozen debug builds.
+///         """
+STATIC mp_obj_t mod_trezorutils_check_free_heap(mp_obj_t arg) {
+  mp_uint_t free_heap = trezor_obj_get_uint(arg);
+#if MICROPY_MODULE_FROZEN_MPY
+  gc_info_t info;
+  gc_info(&info);
+  if (free_heap > info.free) {
+    gc_dump_info();
+    mp_raise_msg_varg(&mp_type_AssertionError,
+                      "Free heap decreased by " UINT_FMT " bytes",
+                      free_heap - info.free);
+  }
+  free_heap = info.free;  // current free heap
+#endif
+  return mp_obj_new_int_from_uint(free_heap);
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_1(mod_trezorutils_check_free_heap_obj,
+                                 mod_trezorutils_check_free_heap);
+
+/// if __debug__:
+///     def check_heap_fragmentation() -> None:
+///         """
+///         Assert known sources for heap fragmentation.
+///         Enabled only for frozen debug builds.
+///         """
+STATIC mp_obj_t mod_trezorutils_check_heap_fragmentation(void) {
+#if MICROPY_MODULE_FROZEN_MPY
+  mp_obj_dict_t *modules = &MP_STATE_VM(mp_loaded_modules_dict);
+  if (modules->map.alloc > MICROPY_LOADED_MODULES_DICT_SIZE) {
+    mp_raise_msg(&mp_type_AssertionError, "sys.modules dict is reallocated");
+  }
+#ifdef TREZOR_EMULATOR
+  // when profiling, __main__ module is `prof`, not `main`
+  mp_obj_t main = mp_obj_dict_get(modules, MP_OBJ_NEW_QSTR(MP_QSTR_main));
+  size_t main_map_alloc = mp_obj_module_get_globals(main)->map.alloc;
+#else
+  // `main.py` is executed (not imported), so there is no `main` module
+  size_t main_map_alloc = MP_STATE_VM(dict_main).map.alloc;
+#endif
+  if (main_map_alloc > MICROPY_MAIN_DICT_SIZE) {
+    mp_raise_msg(&mp_type_AssertionError, "main globals dict is reallocated");
+  }
+
+  size_t n_pool, n_qstr, n_str_data_bytes, n_total_bytes;
+  qstr_pool_info(&n_pool, &n_qstr, &n_str_data_bytes, &n_total_bytes);
+  if (n_pool) {
+    qstr_dump_data();
+    mp_raise_msg_varg(&mp_type_AssertionError,
+                      "Runtime QSTR allocation: " UINT_FMT " pools, " UINT_FMT
+                      " strings, " UINT_FMT " data bytes, " UINT_FMT
+                      " total bytes",
+                      n_pool, n_qstr, n_str_data_bytes, n_total_bytes);
+  }
+#endif  // MICROPY_MODULE_FROZEN_MPY
+  return mp_const_none;
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_0(mod_trezorutils_check_heap_fragmentation_obj,
+                                 mod_trezorutils_check_heap_fragmentation);
+#endif  // !PYOPT
+
 /// def reboot_to_bootloader(
 ///     boot_command : int = 0,
 ///     boot_args : bytes | None = None,
@@ -391,6 +520,8 @@ STATIC mp_obj_tuple_t mod_trezorutils_version_obj = {
 /// """Whether the hardware supports haptic feedback."""
 /// USE_OPTIGA: bool
 /// """Whether the hardware supports Optiga secure element."""
+/// USE_TROPIC: bool
+/// """Whether the hardware supports Tropic Square secure element."""
 /// USE_TOUCH: bool
 /// """Whether the hardware supports touch screen."""
 /// USE_BUTTON: bool
@@ -405,6 +536,8 @@ STATIC mp_obj_tuple_t mod_trezorutils_version_obj = {
 /// """USB Product name."""
 /// INTERNAL_MODEL: str
 /// """Internal model code."""
+/// HOMESCREEN_MAXSIZE: int
+/// """Maximum size of user-uploaded homescreen in bytes."""
 /// EMULATOR: bool
 /// """Whether the firmware is running in the emulator."""
 /// BITCOIN_ONLY: bool
@@ -416,6 +549,8 @@ STATIC mp_obj_tuple_t mod_trezorutils_version_obj = {
 /// if __debug__:
 ///     DISABLE_ANIMATION: bool
 ///     """Whether the firmware should disable animations."""
+///     LOG_STACK_USAGE: bool
+///     """Whether the firmware should log estimated stack usage."""
 
 STATIC const mp_rom_map_elem_t mp_module_trezorutils_globals_table[] = {
     {MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR_trezorutils)},
@@ -438,6 +573,22 @@ STATIC const mp_rom_map_elem_t mp_module_trezorutils_globals_table[] = {
      MP_ROM_PTR(&mod_trezorutils_unit_packaging_obj)},
     {MP_ROM_QSTR(MP_QSTR_unit_btconly),
      MP_ROM_PTR(&mod_trezorutils_unit_btconly_obj)},
+#if !PYOPT
+#if LOG_STACK_USAGE
+    {MP_ROM_QSTR(MP_QSTR_zero_unused_stack),
+     MP_ROM_PTR(&mod_trezorutils_zero_unused_stack_obj)},
+    {MP_ROM_QSTR(MP_QSTR_estimate_unused_stack),
+     MP_ROM_PTR(&mod_trezorutils_estimate_unused_stack_obj)},
+#endif
+#if MICROPY_OOM_CALLBACK
+    {MP_ROM_QSTR(MP_QSTR_enable_oom_dump),
+     MP_ROM_PTR(&mod_trezorutils_enable_oom_dump_obj)},
+#endif
+    {MP_ROM_QSTR(MP_QSTR_check_free_heap),
+     MP_ROM_PTR(&mod_trezorutils_check_free_heap_obj)},
+    {MP_ROM_QSTR(MP_QSTR_check_heap_fragmentation),
+     MP_ROM_PTR(&mod_trezorutils_check_heap_fragmentation_obj)},
+#endif
     {MP_ROM_QSTR(MP_QSTR_sd_hotswap_enabled),
      MP_ROM_PTR(&mod_trezorutils_sd_hotswap_enabled_obj)},
     // various built-in constants
@@ -469,6 +620,11 @@ STATIC const mp_rom_map_elem_t mp_module_trezorutils_globals_table[] = {
 #else
     {MP_ROM_QSTR(MP_QSTR_USE_OPTIGA), mp_const_false},
 #endif
+#ifdef USE_TROPIC
+    {MP_ROM_QSTR(MP_QSTR_USE_TROPIC), mp_const_true},
+#else
+    {MP_ROM_QSTR(MP_QSTR_USE_TROPIC), mp_const_false},
+#endif
 #ifdef USE_TOUCH
     {MP_ROM_QSTR(MP_QSTR_USE_TOUCH), mp_const_true},
 #else
@@ -488,9 +644,10 @@ STATIC const mp_rom_map_elem_t mp_module_trezorutils_globals_table[] = {
      MP_ROM_PTR(&mod_trezorutils_model_usb_product_obj)},
     {MP_ROM_QSTR(MP_QSTR_INTERNAL_MODEL),
      MP_ROM_QSTR(MODEL_INTERNAL_NAME_QSTR)},
+    {MP_ROM_QSTR(MP_QSTR_HOMESCREEN_MAXSIZE),
+     MP_ROM_INT(MODEL_HOMESCREEN_MAXSIZE)},
 #ifdef TREZOR_EMULATOR
     {MP_ROM_QSTR(MP_QSTR_EMULATOR), mp_const_true},
-    MEMINFO_DICT_ENTRIES
 #else
     {MP_ROM_QSTR(MP_QSTR_EMULATOR), mp_const_false},
 #endif
@@ -514,11 +671,17 @@ STATIC const mp_rom_map_elem_t mp_module_trezorutils_globals_table[] = {
 #error Unknown layout
 #endif
 #if !PYOPT
+    MEMINFO_DICT_ENTRIES
 #if DISABLE_ANIMATION
     {MP_ROM_QSTR(MP_QSTR_DISABLE_ANIMATION), mp_const_true},
 #else
     {MP_ROM_QSTR(MP_QSTR_DISABLE_ANIMATION), mp_const_false},
 #endif  // TREZOR_DISABLE_ANIMATION
+#if LOG_STACK_USAGE
+    {MP_ROM_QSTR(MP_QSTR_LOG_STACK_USAGE), mp_const_true},
+#else
+    {MP_ROM_QSTR(MP_QSTR_LOG_STACK_USAGE), mp_const_false},
+#endif  // LOG_STACK_USAGE
 #endif  // PYOPT
 };
 

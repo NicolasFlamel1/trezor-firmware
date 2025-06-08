@@ -16,24 +16,24 @@
 
 import math
 import time
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Tuple
 
 import pytest
 
 from trezorlib import btc, device, exceptions, messages
-from trezorlib.debuglink import LayoutType
+from trezorlib.debuglink import DebugLink, LayoutType
 from trezorlib.protobuf import MessageType
 from trezorlib.tools import parse_path
 
-from .. import buttons, common
+from .. import common
 from .. import translations as TR
 from ..device_tests.bitcoin.payment_req import make_coinjoin_request
 from ..tx_cache import TxCache
 from . import recovery
-from .common import go_next, tap_to_confirm, unlock_gesture
+from .common import go_next, unlock_gesture
 
 if TYPE_CHECKING:
-    from trezorlib.debuglink import DebugLink, LayoutContent
+    from trezorlib.debuglink import LayoutContent
 
     from ..device_handler import BackgroundDeviceHandler
 
@@ -52,8 +52,16 @@ TXHASH_d5f65e = bytes.fromhex(
 
 PIN4 = "1234"
 
-WORDS_20 = buttons.grid34(2, 2)
-CENTER_BUTTON = buttons.grid35(1, 2)
+
+def _passphrase_j(debug: DebugLink) -> Tuple[int, int]:
+    if debug.layout_type is LayoutType.Bolt:
+        return debug.screen_buttons.pin_passphrase_grid(1, 1)
+    else:
+        return debug.screen_buttons.pin_passphrase_grid(0, 1)
+
+
+def _center_button(debug: DebugLink) -> Tuple[int, int]:
+    return debug.screen_buttons.pin_passphrase_grid(1, 1)
 
 
 def set_autolock_delay(device_handler: "BackgroundDeviceHandler", delay_ms: int):
@@ -71,7 +79,8 @@ def set_autolock_delay(device_handler: "BackgroundDeviceHandler", delay_ms: int)
 
     layout = go_next(debug)
     if debug.layout_type is LayoutType.Delizia:
-        layout = tap_to_confirm(debug)
+        debug.click(debug.screen_buttons.tap_to_confirm())
+        layout = debug.read_layout()
     assert layout.main_component() == "Homescreen"
     device_handler.result()
 
@@ -105,18 +114,21 @@ def test_autolock_interrupts_signing(device_handler: "BackgroundDeviceHandler"):
     )
 
     if debug.layout_type is LayoutType.Bolt:
-        debug.click(buttons.OK)
-        layout = debug.click(buttons.OK)
+        debug.click(debug.screen_buttons.ok())
+        debug.click(debug.screen_buttons.ok())
+        layout = debug.read_layout()
         assert TR.send__total_amount in layout.text_content()
         assert "0.0039 BTC" in layout.text_content()
     elif debug.layout_type is LayoutType.Delizia:
         debug.swipe_up()
-        layout = debug.swipe_up()
+        debug.swipe_up()
+        layout = debug.read_layout()
         assert TR.send__total_amount in layout.text_content()
         assert "0.0039 BTC" in layout.text_content()
     elif debug.layout_type is LayoutType.Caesar:
         debug.press_right()
-        layout = debug.press_right()
+        debug.press_right()
+        layout = debug.read_layout()
         assert TR.send__total_amount in layout.text_content()
         assert "0.0039 BTC" in layout.text_content()
 
@@ -157,19 +169,22 @@ def test_autolock_does_not_interrupt_signing(device_handler: "BackgroundDeviceHa
     )
 
     if debug.layout_type is LayoutType.Bolt:
-        debug.click(buttons.OK)
-        layout = debug.click(buttons.OK)
+        debug.click(debug.screen_buttons.ok())
+        debug.click(debug.screen_buttons.ok())
+        layout = debug.read_layout()
         assert TR.send__total_amount in layout.text_content()
         assert "0.0039 BTC" in layout.text_content()
     elif debug.layout_type is LayoutType.Delizia:
         debug.swipe_up()
-        layout = debug.swipe_up()
+        debug.swipe_up()
+        layout = debug.read_layout()
         assert TR.send__total_amount in layout.text_content()
         assert "0.0039 BTC" in layout.text_content()
         debug.swipe_up()
     elif debug.layout_type is LayoutType.Caesar:
         debug.press_right()
-        layout = debug.press_right()
+        debug.press_right()
+        layout = debug.read_layout()
         assert TR.send__total_amount in layout.text_content()
         assert "0.0039 BTC" in layout.text_content()
 
@@ -181,17 +196,12 @@ def test_autolock_does_not_interrupt_signing(device_handler: "BackgroundDeviceHa
     with device_handler.client:
         device_handler.client.set_filter(messages.TxAck, sleepy_filter)
         # confirm transaction
-        # In all cases we set wait=False to avoid waiting for the screen and triggering
-        # the layout deadlock detection. In reality there is no deadlock but the
-        # `sleepy_filter` delays the response by 10 secs while the layout deadlock
-        # timeout is 3. In this test we don't need the result of the input event so
-        # waiting for it is not necessary.
         if debug.layout_type is LayoutType.Bolt:
-            debug.click(buttons.OK, wait=False)
+            debug.click(debug.screen_buttons.ok())
         elif debug.layout_type is LayoutType.Delizia:
-            debug.click(buttons.TAP_TO_CONFIRM, wait=False)
+            debug.click(debug.screen_buttons.tap_to_confirm())
         elif debug.layout_type is LayoutType.Caesar:
-            debug.press_middle(wait=False)
+            debug.press_middle()
 
         signatures, tx = device_handler.result()
         assert len(signatures) == 1
@@ -217,12 +227,9 @@ def test_autolock_passphrase_keyboard(device_handler: "BackgroundDeviceHandler")
     # enter passphrase - slowly
     # keep clicking for long enough to trigger the autolock if it incorrectly ignored key presses
     for _ in range(math.ceil(11 / 1.5)):
-        if debug.layout_type is LayoutType.Bolt:
+        if debug.layout_type in (LayoutType.Bolt, LayoutType.Delizia):
             # click at "j"
-            debug.click(CENTER_BUTTON)
-        elif debug.layout_type is LayoutType.Delizia:
-            # click at "j"
-            debug.click((20, 120))
+            debug.click(_passphrase_j(debug))
         elif debug.layout_type is LayoutType.Caesar:
             # just go right
             # NOTE: because of passphrase randomization it would be a pain to input
@@ -231,10 +238,8 @@ def test_autolock_passphrase_keyboard(device_handler: "BackgroundDeviceHandler")
         time.sleep(1.5)
 
     # Send the passphrase to the client (TT has it clicked already, TR needs to input it)
-    if debug.layout_type is LayoutType.Bolt:
-        debug.click(buttons.OK)
-    elif debug.layout_type is LayoutType.Delizia:
-        debug.click(buttons.CORNER_BUTTON)
+    if debug.layout_type in (LayoutType.Bolt, LayoutType.Delizia):
+        debug.click(debug.screen_buttons.passphrase_confirm())
     elif debug.layout_type is LayoutType.Caesar:
         debug.input("j" * 8)
 
@@ -260,7 +265,7 @@ def test_autolock_interrupts_passphrase(device_handler: "BackgroundDeviceHandler
     # autolock must activate even if we pressed some buttons
     for _ in range(math.ceil(6 / 1.5)):
         if debug.layout_type in (LayoutType.Bolt, LayoutType.Delizia):
-            debug.click(CENTER_BUTTON)
+            debug.click(_center_button(debug))
         elif debug.layout_type is LayoutType.Caesar:
             debug.press_middle()
         time.sleep(1.5)
@@ -277,7 +282,8 @@ def unlock_dry_run(debug: "DebugLink") -> "LayoutContent":
     layout = go_next(debug)
     assert "PinKeyboard" in layout.all_components()
 
-    layout = debug.input(PIN4)
+    debug.input(PIN4)
+    layout = debug.read_layout()
     assert layout is not None
     return layout
 
@@ -307,7 +313,8 @@ def test_dryrun_locks_at_number_of_words(device_handler: "BackgroundDeviceHandle
     layout = unlock_gesture(debug)
 
     assert "PinKeyboard" in layout.all_components()
-    layout = debug.input(PIN4)
+    debug.input(PIN4)
+    layout = debug.read_layout()
     assert layout is not None
 
     # we are back at homescreen
@@ -330,7 +337,8 @@ def test_dryrun_locks_at_word_entry(device_handler: "BackgroundDeviceHandler"):
         layout = go_next(debug)
         assert layout.main_component() == "MnemonicKeyboard"
     elif debug.layout_type is LayoutType.Caesar:
-        layout = debug.press_right()
+        debug.press_right()
+        layout = debug.read_layout()
         assert "MnemonicKeyboard" in layout.all_components()
 
     # make sure keyboard locks
@@ -353,31 +361,36 @@ def test_dryrun_enter_word_slowly(device_handler: "BackgroundDeviceHandler"):
     recovery.select_number_of_words(debug, 20)
 
     if debug.layout_type is LayoutType.Bolt:
-        layout = debug.click(buttons.OK)
+        debug.click(debug.screen_buttons.ok())
+        layout = debug.read_layout()
         assert layout.main_component() == "MnemonicKeyboard"
 
         # type the word OCEAN slowly
-        for coords in buttons.type_word("ocea", is_slip39=True):
+        for coords in debug.button_actions.type_word("ocea", is_slip39=True):
             time.sleep(9)
             debug.click(coords)
-        layout = debug.click(buttons.CONFIRM_WORD)
+        debug.click(debug.screen_buttons.mnemonic_confirm())
+        layout = debug.read_layout()
         # should not have locked, even though we took 9 seconds to type each letter
         assert layout.main_component() == "MnemonicKeyboard"
 
     elif debug.layout_type is LayoutType.Delizia:
-        layout = debug.swipe_up()
+        debug.swipe_up()
+        layout = debug.read_layout()
         assert layout.main_component() == "MnemonicKeyboard"
 
         # type the word OCEAN slowly
-        for coords in buttons.type_word("ocea", is_slip39=True):
+        for coords in debug.button_actions.type_word("ocea", is_slip39=True):
             time.sleep(9)
             debug.click(coords)
-        layout = debug.click(buttons.CONFIRM_WORD)
+        debug.click(debug.screen_buttons.mnemonic_confirm())
+        layout = debug.read_layout()
         # should not have locked, even though we took 9 seconds to type each letter
         assert layout.main_component() == "MnemonicKeyboard"
 
     elif debug.layout_type is LayoutType.Caesar:
-        layout = debug.press_right()
+        debug.press_right()
+        layout = debug.read_layout()
         assert "MnemonicKeyboard" in layout.all_components()
 
         # pressing middle button three times

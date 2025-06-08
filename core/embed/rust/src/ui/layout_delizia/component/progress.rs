@@ -4,11 +4,10 @@ use crate::{
     strutil::TString,
     ui::{
         component::{
-            paginated::Paginate,
             text::paragraphs::{Paragraph, Paragraphs},
             Component, Event, EventCtx, Label, Never, Pad,
         },
-        display::{Font, LOADER_MAX},
+        display::LOADER_MAX,
         geometry::{Insets, Offset, Rect},
         shape::Renderer,
         util::animation_disabled,
@@ -18,7 +17,7 @@ use crate::{
 use super::super::{
     constant,
     cshape::{render_loader, LoaderRange},
-    theme,
+    fonts, theme,
 };
 
 pub struct Progress {
@@ -62,7 +61,7 @@ impl Component for Progress {
             .map(|t| t.chars().filter(|c| *c == '\n').count() as i16);
         let (title, rest) = Self::AREA.split_top(self.title.max_size().y);
         let (loader, description) =
-            rest.split_bottom(Font::NORMAL.line_height() * description_lines);
+            rest.split_bottom(fonts::FONT_DEMIBOLD.line_height() * description_lines);
         let loader = loader.inset(Insets::top(theme::CONTENT_BORDER));
         self.title.place(title);
         self.loader_y_offset = loader.center().y - constant::screen().center().y;
@@ -77,9 +76,8 @@ impl Component for Progress {
                 if !animation_disabled() {
                     ctx.request_paint();
                 }
-                if self.description.inner_mut().content() != &new_description {
-                    self.description.inner_mut().update(new_description);
-                    self.description.change_page(0); // Recompute bounding box.
+                if self.description.content() != &new_description {
+                    self.description.update(new_description);
                     ctx.request_paint();
                     self.description_pad.clear();
                 }

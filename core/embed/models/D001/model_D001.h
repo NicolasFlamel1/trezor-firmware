@@ -10,6 +10,7 @@
 #define MODEL_INTERNAL_NAME_QSTR MP_QSTR_D001
 #define MODEL_USB_MANUFACTURER "Trezor DIY"
 #define MODEL_USB_PRODUCT MODEL_FULL_NAME
+#define MODEL_HOMESCREEN_MAXSIZE 16384
 
 /*** Discovery uses DEV keys in any build variant ***/
 #define MODEL_BOARDLOADER_KEYS \
@@ -101,9 +102,6 @@
 #define K_MAIN_STACK_START 0x10000000
 #define K_MAIN_STACK_SIZE (8 * 1024)
 
-#define K_AUX2_RAM_START 0x10002000
-#define K_AUX2_RAM_SIZE (40 * 1024)
-
 #define K_FB1_RAM_START 0x1000C000
 #define K_FB1_RAM_SIZE (0)
 
@@ -119,6 +117,9 @@
 
 #define AUX1_RAM_START (0x20000400)
 #define AUX1_RAM_SIZE (191 * 1024)
+
+#define AUX2_RAM_START 0x10002000
+#define AUX2_RAM_SIZE (40 * 1024)
 
 // misc
 #define CODE_ALIGNMENT 0x200

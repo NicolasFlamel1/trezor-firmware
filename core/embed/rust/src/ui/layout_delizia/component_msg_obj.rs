@@ -10,10 +10,7 @@ use crate::{
     error::Error,
     micropython::obj::Obj,
     ui::{
-        component::{
-            text::paragraphs::{ParagraphSource, Paragraphs},
-            Component, Never, Timeout,
-        },
+        component::{paginated::PaginateFull, Component, Never},
         flow::Swipable,
         layout::{
             obj::ComponentMsgObj,
@@ -22,12 +19,19 @@ use crate::{
     },
 };
 
+#[cfg(not(feature = "clippy"))]
+use crate::ui::component::{
+    text::paragraphs::{ParagraphSource, Paragraphs},
+    Timeout,
+};
+
 impl TryFrom<SelectWordCountMsg> for Obj {
     type Error = Error;
 
     fn try_from(value: SelectWordCountMsg) -> Result<Self, Self::Error> {
         match value {
             SelectWordCountMsg::Selected(i) => i.try_into(),
+            SelectWordCountMsg::Cancelled => Ok(CANCELLED.as_obj()),
         }
     }
 }
@@ -71,7 +75,7 @@ where
 
 impl<T> ComponentMsgObj for Frame<T>
 where
-    T: ComponentMsgObj,
+    T: ComponentMsgObj + PaginateFull,
 {
     fn msg_try_into_obj(&self, msg: Self::Msg) -> Result<Obj, Error> {
         match msg {
@@ -84,6 +88,7 @@ where
 impl ComponentMsgObj for SelectWordCount {
     fn msg_try_into_obj(&self, msg: Self::Msg) -> Result<Obj, Error> {
         match msg {
+            SelectWordCountMsg::Cancelled => Ok(CANCELLED.as_obj()),
             SelectWordCountMsg::Selected(n) => n.try_into(),
         }
     }

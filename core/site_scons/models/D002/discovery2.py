@@ -48,9 +48,16 @@ def configure(
     ]
     paths += ["embed/io/display/inc"]
 
+    features_available.append("backlight")
+    defines += [("USE_BACKLIGHT", "1")]
+    sources += ["embed/io/backlight/stm32/backlight_pin.c"]
+    paths += ["embed/io/backlight/inc"]
+
     if "input" in features_wanted:
         sources += ["embed/io/i2c_bus/stm32u5/i2c_bus.c"]
+        sources += ["embed/io/touch/sitronix/touch.c"]
         sources += ["embed/io/touch/sitronix/sitronix.c"]
+        sources += ["embed/io/touch/touch_fsm.c"]
         paths += ["embed/io/i2c_bus/inc"]
         paths += ["embed/io/touch/inc"]
         features_available.append("touch")
@@ -97,7 +104,6 @@ def configure(
         "USE_TAMPER=1",
         "USE_FLASH_BURST=1",
         "USE_OEM_KEYS_CHECK=1",
-        "USE_RESET_TO_BOOT=1",
     ]
 
     env.get("ENV")["LINKER_SCRIPT"] = linker_script

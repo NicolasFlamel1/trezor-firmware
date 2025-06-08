@@ -16,7 +16,7 @@ use crate::{
             paginated::{PageMsg, Paginate},
             placed::GridPlaced,
             text::paragraphs::{ParagraphSource, Paragraphs},
-            Component, FormattedText, Never, Timeout,
+            Component, FormattedText, Never,
         },
         layout::{
             obj::ComponentMsgObj,
@@ -24,6 +24,9 @@ use crate::{
         },
     },
 };
+
+#[cfg(not(feature = "clippy"))]
+use crate::ui::component::Timeout;
 
 impl TryFrom<CancelConfirmMsg> for Obj {
     type Error = Error;
@@ -64,6 +67,7 @@ impl TryFrom<SelectWordCountMsg> for Obj {
     fn try_from(value: SelectWordCountMsg) -> Result<Self, Self::Error> {
         match value {
             SelectWordCountMsg::Selected(i) => i.try_into(),
+            SelectWordCountMsg::Cancelled => Ok(CANCELLED.as_obj()),
         }
     }
 }

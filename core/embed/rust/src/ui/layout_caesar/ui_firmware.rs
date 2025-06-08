@@ -4,7 +4,7 @@ use crate::{
     error::Error,
     io::BinaryData,
     maybe_trace::MaybeTrace,
-    micropython::{gc::Gc, iter::IterBuf, list::List, obj::Obj, util},
+    micropython::{buffer::StrBuffer, gc::Gc, iter::IterBuf, list::List, obj::Obj, util},
     strutil::TString,
     translations::TR,
     ui::{
@@ -20,14 +20,14 @@ use crate::{
             },
             Component, ComponentExt, Empty, FormattedText, Label, LineBreaking, Paginate, Timeout,
         },
-        display::Font,
         geometry,
         layout::{
             obj::{LayoutMaybeTrace, LayoutObj, RootComponent},
             util::{ConfirmValueParams, RecoveryType},
         },
         ui_firmware::{
-            FirmwareUI, MAX_CHECKLIST_ITEMS, MAX_GROUP_SHARE_LINES, MAX_WORD_QUIZ_ITEMS,
+            FirmwareUI, ERROR_NOT_IMPLEMENTED, MAX_CHECKLIST_ITEMS, MAX_GROUP_SHARE_LINES,
+            MAX_WORD_QUIZ_ITEMS,
         },
         ModelUI,
     },
@@ -35,12 +35,12 @@ use crate::{
 
 use super::{
     component::{
-        AddressDetails, ButtonActions, ButtonDetails, ButtonLayout, ButtonPage, CoinJoinProgress,
-        ConfirmHomescreen, Flow, FlowPages, Frame, Homescreen, Lockscreen, NumberInput, Page,
-        PassphraseEntry, PinEntry, Progress, ScrollableFrame, ShareWords, ShowMore, SimpleChoice,
-        WordlistEntry, WordlistType,
+        AddressDetails, ButtonActions, ButtonDetails, ButtonLayout, ButtonPage, ChoiceControls,
+        CoinJoinProgress, ConfirmHomescreen, Flow, FlowPages, Frame, Homescreen, Lockscreen,
+        NumberInput, Page, PassphraseEntry, PinEntry, Progress, ScrollableFrame, ShareWords,
+        ShowMore, SimpleChoice, WordlistEntry, WordlistType,
     },
-    constant, theme, UICaesar,
+    constant, fonts, theme, UICaesar,
 };
 
 use heapless::Vec;
@@ -116,13 +116,13 @@ impl FirmwareUI for UICaesar {
                 if chunkify {
                     ops = ops.chunkify_text(None);
                 }
-                ops = ops.text_normal(label).newline();
+                ops = ops.text(label, fonts::FONT_NORMAL).newline();
             }
             if chunkify {
                 // Chunkifying the address into smaller pieces when requested
                 ops = ops.chunkify_text(Some((theme::MONO_CHUNKS, 2)));
             }
-            ops = ops.text_mono(address);
+            ops = ops.text(address, fonts::FONT_MONO);
             let formatted = FormattedText::new(ops).vertically_centered();
             Page::new(btn_layout, btn_actions, formatted).with_title(title)
         };
@@ -181,9 +181,10 @@ impl FirmwareUI for UICaesar {
         _subtitle: Option<TString<'static>>,
         _verb: Option<TString<'static>>,
         _verb_cancel: Option<TString<'static>>,
+        _hold: bool,
         _chunkify: bool,
     ) -> Result<Gc<LayoutObj>, Error> {
-        Err::<Gc<LayoutObj>, Error>(Error::ValueError(c"confirm_value_intro not implemented"))
+        Err::<Gc<LayoutObj>, Error>(ERROR_NOT_IMPLEMENTED)
     }
 
     fn confirm_homescreen(
@@ -222,9 +223,7 @@ impl FirmwareUI for UICaesar {
         _items: Obj,
         _verb: Option<TString<'static>>,
     ) -> Result<impl LayoutMaybeTrace, Error> {
-        Err::<RootComponent<Empty, ModelUI>, Error>(Error::ValueError(
-            c"confirm_emphasized not implemented",
-        ))
+        Err::<RootComponent<Empty, ModelUI>, Error>(ERROR_NOT_IMPLEMENTED)
     }
 
     fn confirm_fido(
@@ -271,9 +270,9 @@ impl FirmwareUI for UICaesar {
 
             let ops = OpTextLayout::new(theme::TEXT_NORMAL)
                 .newline()
-                .text_normal(app_name)
+                .text(app_name, fonts::FONT_NORMAL)
                 .newline()
-                .text_bold(account);
+                .text(account, fonts::FONT_BOLD);
             let formatted = FormattedText::new(ops);
 
             Page::new(btn_layout, btn_actions, formatted)
@@ -385,13 +384,19 @@ impl FirmwareUI for UICaesar {
         title: TString<'static>,
         button: TString<'static>,
         _button_style_confirm: bool,
+        _hold: bool,
         items: Obj,
     ) -> Result<impl LayoutMaybeTrace, Error> {
         let mut paragraphs = ParagraphVecLong::new();
 
         for para in IterBuf::new().try_iterate(items)? {
-            let [font, text]: [Obj; 2] = util::iter_into_array(para)?;
-            let style: &TextStyle = theme::textstyle_number(font.try_into()?);
+            let [text, is_data]: [Obj; 2] = util::iter_into_array(para)?;
+            let is_data = is_data.try_into()?;
+            let style: &TextStyle = if is_data {
+                &theme::TEXT_MONO_DATA
+            } else {
+                &theme::TEXT_NORMAL
+            };
             let text: TString = text.try_into()?;
             paragraphs.add(Paragraph::new(style, text));
         }
@@ -468,11 +473,11 @@ impl FirmwareUI for UICaesar {
             )
         };
         let ops = OpTextLayout::new(theme::TEXT_NORMAL)
-            .text_normal(TR::reset__by_continuing)
+            .text(TR::reset__by_continuing, fonts::FONT_NORMAL)
             .next_page()
-            .text_normal(TR::reset__more_info_at)
+            .text(TR::reset__more_info_at, fonts::FONT_NORMAL)
             .newline()
-            .text_bold(TR::reset__tos_link);
+            .text(TR::reset__tos_link, fonts::FONT_BOLD);
         let formatted = FormattedText::new(ops).vertically_centered();
 
         content_in_button_page(title, formatted, button, Some("".into()), false)
@@ -483,7 +488,7 @@ impl FirmwareUI for UICaesar {
         amount_label: TString<'static>,
         fee: TString<'static>,
         fee_label: TString<'static>,
-        _title: Option<TString<'static>>,
+        title: Option<TString<'static>>,
         account_items: Option<Obj>,
         extra_items: Option<Obj>,
         extra_title: Option<TString<'static>>,
@@ -509,7 +514,7 @@ impl FirmwareUI for UICaesar {
             let right_btn = has_pages_after.then(|| {
                 ButtonDetails::text("i".into())
                     .with_fixed_width(theme::BUTTON_ICON_WIDTH)
-                    .with_font(Font::NORMAL)
+                    .with_font(fonts::FONT_NORMAL)
             });
             let middle_btn = Some(ButtonDetails::armed_text(TR::buttons__confirm.into()));
 
@@ -544,15 +549,23 @@ impl FirmwareUI for UICaesar {
                     // Total amount + fee
                     let (btn_layout, btn_actions) = btns_summary_page(!info_pages.is_empty());
 
-                    let ops = OpTextLayout::new(theme::TEXT_MONO)
-                        .text_bold(amount_label)
+                    let mut ops = OpTextLayout::new(theme::TEXT_MONO);
+                    if let Some(title) = title {
+                        ops = ops.text(title, fonts::FONT_BOLD_UPPER).newline();
+                    }
+                    ops = ops
+                        .text(amount_label, fonts::FONT_BOLD)
                         .newline()
-                        .text_mono(amount)
-                        .newline()
-                        .newline()
-                        .text_bold(fee_label)
-                        .newline()
-                        .text_mono(fee);
+                        .text(amount, fonts::FONT_MONO);
+
+                    if !fee_label.is_empty() || !fee.is_empty() {
+                        ops = ops
+                            .newline()
+                            .newline()
+                            .text(fee_label, fonts::FONT_BOLD)
+                            .newline()
+                            .text(fee, fonts::FONT_MONO);
+                    }
 
                     let formatted = FormattedText::new(ops);
                     Page::new(btn_layout, btn_actions, formatted)
@@ -571,9 +584,9 @@ impl FirmwareUI for UICaesar {
                             ops = ops.next_page();
                         }
                         ops = ops
-                            .text_bold(unwrap!(TString::try_from(key)))
+                            .text(unwrap!(TString::try_from(key)), fonts::FONT_BOLD)
                             .newline()
-                            .text_mono(unwrap!(TString::try_from(value)));
+                            .text(unwrap!(TString::try_from(value)), fonts::FONT_MONO);
                     }
 
                     let formatted = FormattedText::new(ops).vertically_centered();
@@ -591,16 +604,21 @@ impl FirmwareUI for UICaesar {
 
     fn confirm_with_info(
         title: TString<'static>,
-        button: TString<'static>,
-        _info_button: TString<'static>,
-        verb_cancel: Option<TString<'static>>,
         items: Obj,
+        verb: TString<'static>,
+        _verb_info: TString<'static>,
+        verb_cancel: Option<TString<'static>>,
     ) -> Result<impl LayoutMaybeTrace, Error> {
         let mut paragraphs = ParagraphVecShort::new();
 
         for para in IterBuf::new().try_iterate(items)? {
-            let [font, text]: [Obj; 2] = util::iter_into_array(para)?;
-            let style: &TextStyle = theme::textstyle_number(font.try_into()?);
+            let [text, is_data]: [Obj; 2] = util::iter_into_array(para)?;
+            let is_data = is_data.try_into()?;
+            let style: &TextStyle = if is_data {
+                &theme::TEXT_MONO_DATA_WITH_CLASSIC_ELLIPSIS
+            } else {
+                &theme::TEXT_NORMAL
+            };
             let text: TString = text.try_into()?;
             paragraphs.add(Paragraph::new(style, text));
             if paragraphs.is_full() {
@@ -613,7 +631,7 @@ impl FirmwareUI for UICaesar {
             ShowMore::<Paragraphs<ParagraphVecShort>>::new(
                 paragraphs.into_paragraphs(),
                 verb_cancel,
-                button,
+                verb,
             ),
         ));
         Ok(layout)
@@ -665,16 +683,19 @@ impl FirmwareUI for UICaesar {
     fn flow_confirm_output(
         _title: Option<TString<'static>>,
         _subtitle: Option<TString<'static>>,
+        _description: Option<TString<'static>>,
+        _extra: Option<TString<'static>>,
         _message: Obj,
         _amount: Option<Obj>,
         _chunkify: bool,
         _text_mono: bool,
+        _account_title: TString<'static>,
         _account: Option<TString<'static>>,
         _account_path: Option<TString<'static>>,
         _br_code: u16,
         _br_name: TString<'static>,
-        _address: Option<Obj>,
-        _address_title: Option<TString<'static>>,
+        _address_item: Option<(TString<'static>, Obj)>,
+        _extra_item: Option<(TString<'static>, Obj)>,
         _summary_items: Option<Obj>,
         _fee_items: Option<Obj>,
         _summary_title: Option<TString<'static>>,
@@ -682,18 +703,14 @@ impl FirmwareUI for UICaesar {
         _summary_br_name: Option<TString<'static>>,
         _cancel_text: Option<TString<'static>>,
     ) -> Result<impl LayoutMaybeTrace, Error> {
-        Err::<RootComponent<Empty, ModelUI>, Error>(Error::ValueError(
-            c"flow_confirm_output not supported",
-        ))
+        Err::<RootComponent<Empty, ModelUI>, Error>(ERROR_NOT_IMPLEMENTED)
     }
 
     fn flow_confirm_set_new_pin(
         _title: TString<'static>,
         _description: TString<'static>,
     ) -> Result<impl LayoutMaybeTrace, Error> {
-        Err::<RootComponent<Empty, ModelUI>, Error>(Error::ValueError(
-            c"flow_confirm_set_new_pin not supported",
-        ))
+        Err::<RootComponent<Empty, ModelUI>, Error>(ERROR_NOT_IMPLEMENTED)
     }
 
     fn flow_get_address(
@@ -711,9 +728,7 @@ impl FirmwareUI for UICaesar {
         _br_code: u16,
         _br_name: TString<'static>,
     ) -> Result<impl LayoutMaybeTrace, Error> {
-        Err::<RootComponent<Empty, ModelUI>, Error>(Error::ValueError(
-            c"flow_get_address not supported",
-        ))
+        Err::<RootComponent<Empty, ModelUI>, Error>(ERROR_NOT_IMPLEMENTED)
     }
 
     fn multiple_pages_texts(
@@ -757,7 +772,7 @@ impl FirmwareUI for UICaesar {
                 )
             };
 
-            let ops = OpTextLayout::new(theme::TEXT_NORMAL).text_normal(text);
+            let ops = OpTextLayout::new(theme::TEXT_NORMAL).text(text, fonts::FONT_NORMAL);
             let formatted = FormattedText::new(ops).vertically_centered();
 
             Page::new(btn_layout, btn_actions, formatted)
@@ -774,9 +789,9 @@ impl FirmwareUI for UICaesar {
                 let btn_layout = ButtonLayout::text_none_arrow_wide(TR::buttons__skip.into());
                 let btn_actions = ButtonActions::cancel_none_next();
                 let ops = OpTextLayout::new(theme::TEXT_NORMAL)
-                    .text_normal(TR::backup__new_wallet_created)
+                    .text(TR::backup__new_wallet_created, fonts::FONT_NORMAL)
                     .newline()
-                    .text_normal(TR::backup__it_should_be_backed_up_now);
+                    .text(TR::backup__it_should_be_backed_up_now, fonts::FONT_NORMAL);
                 let formatted = FormattedText::new(ops).vertically_centered();
                 Page::new(btn_layout, btn_actions, formatted)
                     .with_title(TR::words__title_success.into())
@@ -784,8 +799,8 @@ impl FirmwareUI for UICaesar {
             1 => {
                 let btn_layout = ButtonLayout::up_arrow_none_text(TR::buttons__back_up.into());
                 let btn_actions = ButtonActions::prev_none_confirm();
-                let ops =
-                    OpTextLayout::new(theme::TEXT_NORMAL).text_normal(TR::backup__recover_anytime);
+                let ops = OpTextLayout::new(theme::TEXT_NORMAL)
+                    .text(TR::backup__recover_anytime, fonts::FONT_NORMAL);
                 let formatted = FormattedText::new(ops).vertically_centered();
                 Page::new(btn_layout, btn_actions, formatted)
                     .with_title(TR::backup__title_backup_wallet.into())
@@ -873,7 +888,7 @@ impl FirmwareUI for UICaesar {
         let layout = RootComponent::new(
             Frame::new(
                 description,
-                SimpleChoice::new(words, false)
+                SimpleChoice::new(words, ChoiceControls::Carousel)
                     .with_show_incomplete()
                     .with_return_index(),
             )
@@ -890,20 +905,20 @@ impl FirmwareUI for UICaesar {
             } else {
                 &["12", "18", "20", "24", "33"]
             };
-
             nums.iter().map(|&num| num.into()).collect()
         };
-
         let layout = RootComponent::new(
-            Frame::new(title, SimpleChoice::new(choices, false)).with_title_centered(),
+            Frame::new(
+                title,
+                SimpleChoice::new(choices, ChoiceControls::Cancellable),
+            )
+            .with_title_centered(),
         );
         Ok(layout)
     }
 
     fn set_brightness(_current_brightness: Option<u8>) -> Result<impl LayoutMaybeTrace, Error> {
-        Err::<RootComponent<Empty, ModelUI>, Error>(Error::ValueError(
-            c"setting brightness not supported",
-        ))
+        Err::<RootComponent<Empty, ModelUI>, Error>(ERROR_NOT_IMPLEMENTED)
     }
 
     fn show_address_details(
@@ -918,7 +933,7 @@ impl FirmwareUI for UICaesar {
         let mut ad = AddressDetails::new(address, case_sensitive, account, path)?;
 
         for i in IterBuf::new().try_iterate(xpubs)? {
-            let [xtitle, text]: [TString; 2] = util::iter_into_array(i)?;
+            let [xtitle, text]: [StrBuffer; 2] = util::iter_into_array(i)?;
             ad.add_xpub(xtitle, text)?;
         }
 
@@ -968,7 +983,7 @@ impl FirmwareUI for UICaesar {
         _value: TString<'static>,
         _verb_cancel: Option<TString<'static>>,
     ) -> Result<impl LayoutMaybeTrace, Error> {
-        Err::<RootComponent<Empty, ModelUI>, Error>(Error::ValueError(c"show_danger not supported"))
+        Err::<RootComponent<Empty, ModelUI>, Error>(ERROR_NOT_IMPLEMENTED)
     }
 
     fn show_error(
@@ -978,7 +993,7 @@ impl FirmwareUI for UICaesar {
         _allow_cancel: bool,
         _time_ms: u32,
     ) -> Result<Gc<LayoutObj>, Error> {
-        Err::<Gc<LayoutObj>, Error>(Error::ValueError(c"show error not supported"))
+        Err::<Gc<LayoutObj>, Error>(ERROR_NOT_IMPLEMENTED)
     }
 
     fn show_group_share_success(
@@ -1039,9 +1054,7 @@ impl FirmwareUI for UICaesar {
         _horizontal: bool,
         _chunkify: bool,
     ) -> Result<impl LayoutMaybeTrace, Error> {
-        Err::<RootComponent<Empty, ModelUI>, Error>(Error::ValueError(
-            c"show_info_with_cancel not supported",
-        ))
+        Err::<RootComponent<Empty, ModelUI>, Error>(ERROR_NOT_IMPLEMENTED)
     }
 
     fn show_lockscreen(
@@ -1060,12 +1073,12 @@ impl FirmwareUI for UICaesar {
             let btn_layout = ButtonLayout::arrow_none_text(TR::buttons__quit.into());
             let btn_actions = ButtonActions::cancel_none_confirm();
             let ops = OpTextLayout::new(theme::TEXT_NORMAL)
-                .text_bold_upper(title)
+                .text(title, fonts::FONT_BOLD_UPPER)
                 .newline()
                 .newline_half()
-                .text_normal(TR::addr_mismatch__contact_support_at)
+                .text(TR::addr_mismatch__contact_support_at, fonts::FONT_NORMAL)
                 .newline()
-                .text_bold(TR::addr_mismatch__support_url);
+                .text(TR::addr_mismatch__support_url, fonts::FONT_BOLD);
             let formatted = FormattedText::new(ops);
             Page::new(btn_layout, btn_actions, formatted)
         };
@@ -1131,13 +1144,11 @@ impl FirmwareUI for UICaesar {
         _text_footer: Option<TString<'static>>,
         _text_confirm: TString<'static>,
     ) -> Result<impl LayoutMaybeTrace, Error> {
-        Err::<RootComponent<Empty, ModelUI>, Error>(Error::ValueError(c"use show_share_words"))
+        Err::<RootComponent<Empty, ModelUI>, Error>(ERROR_NOT_IMPLEMENTED)
     }
 
     fn show_remaining_shares(_pages_iterable: Obj) -> Result<impl LayoutMaybeTrace, Error> {
-        Err::<RootComponent<Empty, ModelUI>, Error>(Error::ValueError(
-            c"show remaining shares not supported",
-        ))
+        Err::<RootComponent<Empty, ModelUI>, Error>(ERROR_NOT_IMPLEMENTED)
     }
 
     fn show_simple(
@@ -1158,11 +1169,12 @@ impl FirmwareUI for UICaesar {
         _allow_cancel: bool,
         _time_ms: u32,
     ) -> Result<Gc<LayoutObj>, Error> {
-        Err::<Gc<LayoutObj>, Error>(Error::ValueError(c"show success not supported"))
+        Err::<Gc<LayoutObj>, Error>(ERROR_NOT_IMPLEMENTED)
     }
 
     fn show_wait_text(text: TString<'static>) -> Result<impl LayoutMaybeTrace, Error> {
-        let layout = RootComponent::new(Connect::new(text, theme::FG, theme::BG));
+        let layout =
+            RootComponent::new(Connect::new(text, fonts::FONT_NORMAL, theme::FG, theme::BG));
         Ok(layout)
     }
 
@@ -1184,13 +1196,13 @@ impl FirmwareUI for UICaesar {
             let mut ops = OpTextLayout::new(theme::TEXT_NORMAL);
             ops = ops.alignment(geometry::Alignment::Center);
             if !value.is_empty() {
-                ops = ops.text_bold_upper(value);
+                ops = ops.text(value, fonts::FONT_BOLD_UPPER);
                 if !description.is_empty() {
                     ops = ops.newline();
                 }
             }
             if !description.is_empty() {
-                ops = ops.text_normal(description);
+                ops = ops.text(description, fonts::FONT_NORMAL);
             }
             let formatted = FormattedText::new(ops).vertically_centered();
             Page::new(btn_layout, btn_actions, formatted)
@@ -1319,7 +1331,7 @@ fn tutorial_screen(
     btn_layout: ButtonLayout,
     btn_actions: ButtonActions,
 ) -> Page {
-    let ops = OpTextLayout::new(theme::TEXT_NORMAL).text_normal(text);
+    let ops = OpTextLayout::new(theme::TEXT_NORMAL).text(text, fonts::FONT_NORMAL);
     let formatted = FormattedText::new(ops).vertically_centered();
     Page::new(btn_layout, btn_actions, formatted).with_title(title)
 }

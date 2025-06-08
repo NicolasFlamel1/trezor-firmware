@@ -30,6 +30,7 @@ const MENU_ITEM_CANCEL: usize = 0;
 const MENU_ITEM_FEE_INFO: usize = 1;
 const MENU_ITEM_ADDRESS_INFO: usize = 2;
 const MENU_ITEM_ACCOUNT_INFO: usize = 3;
+const MENU_ITEM_EXTRA_INFO: usize = 4;
 
 #[derive(Copy, Clone, PartialEq, Eq)]
 pub enum ConfirmOutput {
@@ -123,6 +124,7 @@ pub enum ConfirmOutputWithSummary {
     HoldMenu,
     HoldMenuCancel,
     AccountInfo,
+    ExtraInfo,
 }
 
 impl FlowController for ConfirmOutputWithSummary {
@@ -144,6 +146,7 @@ impl FlowController for ConfirmOutputWithSummary {
             (Self::Summary, Direction::Down) => Self::Main.swipe(direction),
             (Self::SummaryMenu, Direction::Right) => Self::Summary.swipe(direction),
             (Self::SummaryMenuCancel, Direction::Right) => Self::SummaryMenu.swipe(direction),
+            (Self::ExtraInfo, Direction::Right) => Self::SummaryMenu.swipe(direction),
             (Self::FeeInfo, Direction::Right) => Self::SummaryMenu.swipe(direction),
             (Self::Hold, Direction::Left) => Self::HoldMenu.swipe(direction),
             (Self::Hold, Direction::Down) => Self::Summary.swipe(direction),
@@ -161,7 +164,8 @@ impl FlowController for ConfirmOutputWithSummary {
             }
             (Self::AccountInfo, FlowMsg::Cancelled) => Self::MainMenu.goto(),
             (Self::MainMenuCancel, FlowMsg::Cancelled) => Self::MainMenu.goto(),
-            (Self::AddressInfo, FlowMsg::Info) => Self::MainMenu.goto(),
+            (Self::AddressInfo, FlowMsg::Cancelled) => Self::MainMenu.goto(),
+            (Self::ExtraInfo, FlowMsg::Cancelled) => Self::SummaryMenu.goto(),
             (Self::Summary, FlowMsg::Info) => Self::SummaryMenu.goto(),
             (Self::SummaryMenu, FlowMsg::Choice(MENU_ITEM_CANCEL)) => {
                 Self::SummaryMenuCancel.swipe_left()
@@ -173,6 +177,9 @@ impl FlowController for ConfirmOutputWithSummary {
             }
             (Self::HoldMenuCancel, FlowMsg::Cancelled) => Self::HoldMenu.goto(),
             (Self::SummaryMenu, FlowMsg::Choice(MENU_ITEM_FEE_INFO)) => Self::FeeInfo.swipe_left(),
+            (Self::SummaryMenu, FlowMsg::Choice(MENU_ITEM_EXTRA_INFO)) => {
+                Self::ExtraInfo.swipe_left()
+            }
             (Self::MainMenu, FlowMsg::Choice(MENU_ITEM_ADDRESS_INFO)) => {
                 Self::AddressInfo.swipe_left()
             }
@@ -205,23 +212,20 @@ fn get_cancel_page(
     .with_cancel_button()
     .with_footer(TR::instructions__tap_to_confirm.into(), None)
     .with_swipe(Direction::Right, SwipeSettings::default())
-    .map(|msg| match msg {
-        FrameMsg::Content(PromptMsg::Confirmed) => Some(FlowMsg::Confirmed),
-        FrameMsg::Button(_) => Some(FlowMsg::Cancelled),
-        _ => None,
-    })
+    .map(super::util::map_to_confirm)
 }
 
 #[allow(clippy::too_many_arguments)]
 pub fn new_confirm_output(
     confirm_main: ConfirmValue,
+    account_title: TString<'static>,
     account: Option<TString<'static>>,
     account_path: Option<TString<'static>>,
     br_name: TString<'static>,
     br_code: u16,
     confirm_amount: Option<ConfirmValue>,
     confirm_address: Option<ConfirmValue>,
-    address_title: TString<'static>,
+    confirm_extra: Option<ConfirmValue>,
     summary_items_params: Option<ShowInfoParams>,
     fee_items_params: ShowInfoParams,
     summary_br_name: Option<TString<'static>>,
@@ -236,8 +240,8 @@ pub fn new_confirm_output(
     // MainMenu
     let mut main_menu = VerticalMenu::empty();
     let mut main_menu_items = Vec::<usize, 3>::new();
-    if confirm_address.is_some() {
-        main_menu = main_menu.item(theme::ICON_CHEVRON_RIGHT, address_title);
+    if let Some(ref confirm_address) = confirm_address {
+        main_menu = main_menu.item(theme::ICON_CHEVRON_RIGHT, confirm_address.title());
         unwrap!(main_menu_items.push(MENU_ITEM_ADDRESS_INFO));
     }
     if account.is_some() && account_path.is_some() {
@@ -256,15 +260,14 @@ pub fn new_confirm_output(
         .with_cancel_button()
         .with_swipe(Direction::Right, SwipeSettings::immediate())
         .map(move |msg| match msg {
-            FrameMsg::Content(VerticalMenuChoiceMsg::Selected(i)) => {
+            VerticalMenuChoiceMsg::Selected(i) => {
                 let selected_item = main_menu_items[i];
                 Some(FlowMsg::Choice(selected_item))
             }
-            FrameMsg::Button(_) => Some(FlowMsg::Cancelled),
         });
 
     // AccountInfo
-    let ac = AddressDetails::new(TR::send__send_from.into(), account, account_path)?;
+    let ac = AddressDetails::new(account_title, account, account_path)?;
     let account_content = ac.map(|_| Some(FlowMsg::Cancelled));
 
     let res = if let Some(confirm_amount) = confirm_amount {
@@ -272,12 +275,13 @@ pub fn new_confirm_output(
             .into_layout()?
             .one_button_request(ButtonRequest::from_num(br_code, br_name));
 
-        SwipeFlow::new(&ConfirmOutputWithAmount::Address)?
-            .with_page(&ConfirmOutputWithAmount::Address, main_content)?
-            .with_page(&ConfirmOutputWithAmount::Amount, confirm_amount)?
-            .with_page(&ConfirmOutputWithAmount::Menu, content_main_menu)?
-            .with_page(&ConfirmOutputWithAmount::AccountInfo, account_content)?
-            .with_page(&ConfirmOutputWithAmount::CancelTap, get_cancel_page())?
+        let mut flow = SwipeFlow::new(&ConfirmOutputWithAmount::Address)?;
+        flow.add_page(&ConfirmOutputWithAmount::Address, main_content)?
+            .add_page(&ConfirmOutputWithAmount::Amount, confirm_amount)?
+            .add_page(&ConfirmOutputWithAmount::Menu, content_main_menu)?
+            .add_page(&ConfirmOutputWithAmount::AccountInfo, account_content)?
+            .add_page(&ConfirmOutputWithAmount::CancelTap, get_cancel_page())?;
+        flow
     } else if let Some(summary_items_params) = summary_items_params {
         // Summary
         let content_summary = summary_items_params
@@ -297,11 +301,7 @@ pub fn new_confirm_output(
         .with_footer(TR::instructions__hold_to_sign.into(), None)
         .with_swipe(Direction::Down, SwipeSettings::default())
         .with_swipe(Direction::Left, SwipeSettings::default())
-        .map(|msg| match msg {
-            FrameMsg::Content(PromptMsg::Confirmed) => Some(FlowMsg::Confirmed),
-            FrameMsg::Button(_) => Some(FlowMsg::Info),
-            _ => None,
-        });
+        .map(super::util::map_to_confirm);
 
         // FeeInfo
         let has_fee_info = !fee_items_params.is_empty();
@@ -309,7 +309,11 @@ pub fn new_confirm_output(
 
         // SummaryMenu
         let mut summary_menu = VerticalMenu::empty();
-        let mut summary_menu_items = Vec::<usize, 2>::new();
+        let mut summary_menu_items = Vec::<usize, 3>::new();
+        if let Some(ref confirm_extra) = confirm_extra {
+            summary_menu = summary_menu.item(theme::ICON_CHEVRON_RIGHT, confirm_extra.title());
+            unwrap!(summary_menu_items.push(MENU_ITEM_EXTRA_INFO));
+        }
         if has_fee_info {
             summary_menu = summary_menu.item(
                 theme::ICON_CHEVRON_RIGHT,
@@ -326,11 +330,10 @@ pub fn new_confirm_output(
             .with_cancel_button()
             .with_swipe(Direction::Right, SwipeSettings::immediate())
             .map(move |msg| match msg {
-                FrameMsg::Content(VerticalMenuChoiceMsg::Selected(i)) => {
+                VerticalMenuChoiceMsg::Selected(i) => {
                     let selected_item = summary_menu_items[i];
                     Some(FlowMsg::Choice(selected_item))
                 }
-                FrameMsg::Button(_) => Some(FlowMsg::Cancelled),
             });
 
         // HoldMenu
@@ -341,46 +344,47 @@ pub fn new_confirm_output(
         let content_hold_menu = Frame::left_aligned(TString::empty(), hold_menu)
             .with_cancel_button()
             .with_swipe(Direction::Right, SwipeSettings::immediate())
-            .map(move |msg| match msg {
-                FrameMsg::Content(VerticalMenuChoiceMsg::Selected(_)) => {
-                    Some(FlowMsg::Choice(MENU_ITEM_CANCEL))
-                }
-                FrameMsg::Button(_) => Some(FlowMsg::Cancelled),
-            });
+            .map(super::util::map_to_choice);
 
-        let mut flow = SwipeFlow::new(&ConfirmOutputWithSummary::Main)?
-            .with_page(&ConfirmOutputWithSummary::Main, main_content)?
-            .with_page(&ConfirmOutputWithSummary::MainMenu, content_main_menu)?
-            .with_page(&ConfirmOutputWithSummary::MainMenuCancel, get_cancel_page())?;
+        let mut flow = SwipeFlow::new(&ConfirmOutputWithSummary::Main)?;
+        flow.add_page(&ConfirmOutputWithSummary::Main, main_content)?
+            .add_page(&ConfirmOutputWithSummary::MainMenu, content_main_menu)?
+            .add_page(&ConfirmOutputWithSummary::MainMenuCancel, get_cancel_page())?;
         if let Some(confirm_address) = confirm_address {
             let address_content = confirm_address.into_layout()?;
-            flow = flow.with_page(&ConfirmOutputWithSummary::AddressInfo, address_content)?;
+            flow.add_page(&ConfirmOutputWithSummary::AddressInfo, address_content)?;
         } else {
             // dummy page - this will never be shown since there is no menu item pointing to
             // it, but the page has to exist in the flow
-            flow = flow.with_page(
+            flow.add_page(
                 &ConfirmOutputWithSummary::AddressInfo,
                 Frame::left_aligned(TString::empty(), VerticalMenu::empty())
                     .map(|_| Some(FlowMsg::Cancelled)),
             )?;
         }
-        flow.with_page(&ConfirmOutputWithSummary::Summary, content_summary)?
-            .with_page(&ConfirmOutputWithSummary::SummaryMenu, content_summary_menu)?
-            .with_page(
+        flow.add_page(&ConfirmOutputWithSummary::Summary, content_summary)?
+            .add_page(&ConfirmOutputWithSummary::SummaryMenu, content_summary_menu)?
+            .add_page(
                 &ConfirmOutputWithSummary::SummaryMenuCancel,
                 get_cancel_page(),
             )?
-            .with_page(&ConfirmOutputWithSummary::FeeInfo, content_fee)?
-            .with_page(&ConfirmOutputWithSummary::Hold, content_hold)?
-            .with_page(&ConfirmOutputWithSummary::HoldMenu, content_hold_menu)?
-            .with_page(&ConfirmOutputWithSummary::HoldMenuCancel, get_cancel_page())?
-            .with_page(&ConfirmOutputWithSummary::AccountInfo, account_content)?
+            .add_page(&ConfirmOutputWithSummary::FeeInfo, content_fee)?
+            .add_page(&ConfirmOutputWithSummary::Hold, content_hold)?
+            .add_page(&ConfirmOutputWithSummary::HoldMenu, content_hold_menu)?
+            .add_page(&ConfirmOutputWithSummary::HoldMenuCancel, get_cancel_page())?
+            .add_page(&ConfirmOutputWithSummary::AccountInfo, account_content)?;
+        if let Some(confirm_extra) = confirm_extra {
+            let extra_content = confirm_extra.into_layout()?;
+            flow.add_page(&ConfirmOutputWithSummary::ExtraInfo, extra_content)?;
+        }
+        flow
     } else {
-        SwipeFlow::new(&ConfirmOutput::Address)?
-            .with_page(&ConfirmOutput::Address, main_content)?
-            .with_page(&ConfirmOutput::Menu, content_main_menu)?
-            .with_page(&ConfirmOutput::AccountInfo, account_content)?
-            .with_page(&ConfirmOutput::CancelTap, get_cancel_page())?
+        let mut flow = SwipeFlow::new(&ConfirmOutput::Address)?;
+        flow.add_page(&ConfirmOutput::Address, main_content)?
+            .add_page(&ConfirmOutput::Menu, content_main_menu)?
+            .add_page(&ConfirmOutput::AccountInfo, account_content)?
+            .add_page(&ConfirmOutput::CancelTap, get_cancel_page())?;
+        flow
     };
 
     Ok(res)

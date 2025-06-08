@@ -55,14 +55,15 @@ def configure(
     sources += ["embed/io/display/st-7789/panels/lx154a2422.c"]
     paths += ["embed/io/display/inc"]
 
-    sources += ["embed/io/display/backlight/stm32/backlight_pwm.c"]
-
     features_available.append("backlight")
     defines += [("USE_BACKLIGHT", "1")]
+    sources += ["embed/io/backlight/stm32/tps61043.c"]
+    paths += ["embed/io/backlight/inc"]
 
     if "input" in features_wanted:
         sources += ["embed/io/i2c_bus/stm32f4/i2c_bus.c"]
         sources += ["embed/io/touch/ft6x36/ft6x36.c"]
+        sources += ["embed/io/touch/touch_fsm.c"]
         paths += ["embed/io/i2c_bus/inc"]
         paths += ["embed/io/touch/inc"]
         features_available.append("touch")

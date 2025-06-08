@@ -54,9 +54,10 @@ def configure(
     sources += ["embed/io/display/fb_queue/fb_queue.c"]
     paths += ["embed/io/display/inc"]
 
-    sources += ["embed/io/display/backlight/stm32/backlight_pwm.c"]
     features_available.append("backlight")
     defines += [("USE_BACKLIGHT", "1")]
+    sources += ["embed/io/backlight/stm32/tps61043.c"]
+    paths += ["embed/io/backlight/inc"]
 
     env_constraints = env.get("CONSTRAINTS")
     if not (env_constraints and "limited_util_s" in env_constraints):
@@ -65,6 +66,7 @@ def configure(
     if "input" in features_wanted:
         sources += ["embed/io/i2c_bus/stm32u5/i2c_bus.c"]
         sources += ["embed/io/touch/ft6x36/ft6x36.c"]
+        sources += ["embed/io/touch/touch_fsm.c"]
         sources += ["embed/io/touch/ft6x36/panels/lx154a2422cpt23.c"]
         paths += ["embed/io/i2c_bus/inc"]
         paths += ["embed/io/touch/inc"]
@@ -128,12 +130,16 @@ def configure(
         features_available.append("optiga")
         defines += [("USE_OPTIGA", "1")]
 
+    if "hw_revision" in features_wanted:
+        defines += [("USE_HW_REVISION", "1")]
+        paths += ["embed/util/hw_revision/inc"]
+        sources += ["embed/util/hw_revision/stm32/hw_revision.c"]
+
     defines += [
         ("USE_HASH_PROCESSOR", "1"),
         ("USE_STORAGE_HWKEY", "1"),
         ("USE_TAMPER", "1"),
         ("USE_FLASH_BURST", "1"),
-        ("USE_RESET_TO_BOOT", "1"),
         ("USE_OEM_KEYS_CHECK", "1"),
         ("USE_PVD", "1"),
     ]

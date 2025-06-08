@@ -22,6 +22,9 @@ class LayoutObj(Generic[T]):
     if utils.USE_BUTTON:
         def button_event(self, event: int, button: int) -> LayoutState | None:
             """Receive a button event `event` for button `button`."""
+    if utils.USE_BLE:
+        def ble_event(self, event: int, data: bytes) -> LayoutState | None:
+            """Receive a BLE events."""
     def progress_event(self, value: int, description: str) -> LayoutState | None:
         """Receive a progress event."""
     def usb_event(self, connected: bool) -> LayoutState | None:
@@ -154,6 +157,7 @@ def confirm_value_intro(
     subtitle: str | None = None,
     verb: str | None = None,
     verb_cancel: str | None = None,
+    hold: bool = False,
     chunkify: bool = False,
 ) -> LayoutObj[UiResult]:
     """Similar to `confirm_value`, but only the first page is shown.
@@ -241,7 +245,8 @@ def confirm_more(
     title: str,
     button: str,
     button_style_confirm: bool = False,
-    items: Iterable[tuple[int, str | bytes]],
+    hold: bool = False,
+    items: Iterable[tuple[str | bytes, bool]],
 ) -> LayoutObj[UiResult]:
     """Confirm long content with the possibility to go back from any page.
     Meant to be used with confirm_with_info on UI Bolt and Caesar."""
@@ -283,10 +288,10 @@ def confirm_summary(
 def confirm_with_info(
     *,
     title: str,
-    button: str,
-    info_button: str,
+    items: Iterable[tuple[str | bytes, bool]],
+    verb: str,
+    verb_info: str,
     verb_cancel: str | None = None,
-    items: Iterable[tuple[int, str | bytes]],
 ) -> LayoutObj[UiResult]:
     """Confirm given items but with third button. Always single page
     without scrolling. In Delizia, the button is placed in
@@ -312,15 +317,18 @@ def flow_confirm_output(
     title: str | None,
     subtitle: str | None,
     message: str,
+    description: str | None,
+    extra: str | None,
     amount: str | None,
     chunkify: bool,
     text_mono: bool,
+    account_title: str,
     account: str | None,
     account_path: str | None,
     br_code: ButtonRequestType,
     br_name: str,
-    address: str | None,
-    address_title: str | None,
+    address_item: (str, str) | None,
+    extra_item: (str, str) | None,
     summary_items: Iterable[tuple[str, str]] | None = None,
     fee_items: Iterable[tuple[str, str]] | None = None,
     summary_title: str | None = None,
@@ -444,9 +452,9 @@ def select_word(
 def select_word_count(
     *,
     recovery_type: RecoveryType,
-) -> LayoutObj[int | str]:  # TR returns str
+) -> LayoutObj[int | str | UIResult]:  # TR returns str
     """Select a mnemonic word count from the options: 12, 18, 20, 24, or 33.
-    For unlocking a repeated backup, select from 20 or 33."""
+    For unlocking a repeated backup, select between 20 and 33."""
 
 
 # rust/src/ui/api/firmware_micropython.rs

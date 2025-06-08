@@ -44,8 +44,10 @@ def generate(env):
         btc_only = env["bitcoin_only"] == "1"
         backlight = env["backlight"]
         optiga = env["optiga"]
+        tropic = env["tropic"]
         touch = env["use_touch"]
         button = env["use_button"]
+        ble = env["use_ble"]
         layout_bolt = env["ui_layout"] == "UI_LAYOUT_BOLT"
         layout_caesar = env["ui_layout"] == "UI_LAYOUT_CAESAR"
         layout_delizia = env["ui_layout"] == "UI_LAYOUT_DELIZIA"
@@ -55,9 +57,11 @@ def generate(env):
             rf"-e 's/utils\.BITCOIN_ONLY/{btc_only}/g'",
             rf"-e 's/utils\.USE_BACKLIGHT/{backlight}/g'",
             rf"-e 's/utils\.USE_OPTIGA/{optiga}/g'",
+            rf"-e 's/utils\.USE_TROPIC/{tropic}/g'",
             rf"-e 's/utils\.UI_LAYOUT == \"BOLT\"/{layout_bolt}/g'",
             rf"-e 's/utils\.UI_LAYOUT == \"CAESAR\"/{layout_caesar}/g'",
             rf"-e 's/utils\.UI_LAYOUT == \"DELIZIA\"/{layout_delizia}/g'",
+            rf"-e 's/utils\.USE_BLE/{ble}/g'",
             rf"-e 's/utils\.USE_BUTTON/{button}/g'",
             rf"-e 's/utils\.USE_TOUCH/{touch}/g'",
             rf"-e 's/utils\.USE_THP/{thp}/g'",

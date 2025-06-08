@@ -17,6 +17,10 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+// Turning off the stack protector for this file significantly improves
+// the performance of the syscall dispatching and interrupt handling.
+#pragma GCC optimize("no-stack-protector")
+
 #include <trezor_bsp.h>
 #include <trezor_model.h>
 #include <trezor_rtl.h>
@@ -59,6 +63,11 @@ typedef struct {
   bool initialized;
   // Current mode
   mpu_mode_t mode;
+  // Address of the active framebuffer
+  // (if set to 0, the framebuffer is not accessible)
+  uint32_t active_fb_addr;
+  // Size of the framebuffer in bytes
+  size_t active_fb_size;
 
 } mpu_driver_t;
 
@@ -70,6 +79,19 @@ mpu_driver_t g_mpu_driver = {
 _Static_assert(NORCOW_SECTOR_SIZE == STORAGE_1_MAXSIZE, "norcow misconfigured");
 _Static_assert(NORCOW_SECTOR_SIZE == STORAGE_2_MAXSIZE, "norcow misconfigured");
 _Static_assert(NORCOW_SECTOR_SIZE == SIZE_64K, "norcow misconfigured");
+
+static inline void mpu_disable(void) {
+  __DMB();
+  SCB->SHCSR &= ~SCB_SHCSR_MEMFAULTENA_Msk;
+  MPU->CTRL = 0;
+}
+
+static inline void mpu_enable(void) {
+  MPU->CTRL = LL_MPU_CTRL_HARDFAULT_NMI | MPU_CTRL_ENABLE_Msk;
+  SCB->SHCSR |= SCB_SHCSR_MEMFAULTENA_Msk;
+  __DSB();
+  __ISB();
+}
 
 static void mpu_init_fixed_regions(void) {
   // Regions #0 to #4 are fixed for all targets
@@ -178,7 +200,7 @@ void mpu_init(void) {
 
   irq_key_t irq_key = irq_lock();
 
-  HAL_MPU_Disable();
+  mpu_disable();
 
   mpu_init_fixed_regions();
 
@@ -198,8 +220,38 @@ mpu_mode_t mpu_get_mode(void) {
   return drv->mode;
 }
 
-void mpu_set_active_fb(void* addr, size_t size) {
-  // Not implemented on STM32F4
+void mpu_set_active_fb(const void* addr, size_t size) {
+  mpu_driver_t* drv = &g_mpu_driver;
+
+  if (!drv->initialized) {
+    return;
+  }
+
+  irq_key_t lock = irq_lock();
+
+  drv->active_fb_addr = (uint32_t)addr;
+  drv->active_fb_size = size;
+
+  irq_unlock(lock);
+}
+
+bool mpu_inside_active_fb(const void* addr, size_t size) {
+  mpu_driver_t* drv = &g_mpu_driver;
+
+  if (!drv->initialized) {
+    return false;
+  }
+
+  irq_key_t lock = irq_lock();
+
+  bool result =
+      ((uintptr_t)addr + size >= (uintptr_t)addr) &&  // overflow check
+      ((uintptr_t)addr >= drv->active_fb_addr) &&
+      ((uintptr_t)addr + size <= drv->active_fb_addr + drv->active_fb_size);
+
+  irq_unlock(lock);
+
+  return result;
 }
 
 // STM32F4xx memory map
@@ -230,7 +282,7 @@ mpu_mode_t mpu_reconfig(mpu_mode_t mode) {
 
   irq_key_t irq_key = irq_lock();
 
-  HAL_MPU_Disable();
+  mpu_disable();
 
   // Region #5 and #6 are banked
 
@@ -331,7 +383,10 @@ mpu_mode_t mpu_reconfig(mpu_mode_t mode) {
 
     default:
       DIS_REGION( 5 );
-      DIS_REGION( 6 );
+      // Assets (Privileged, Read-Only, Non-Executable)
+      // Subregion: 32KB = 64KB except 2/8 at start and 2/8 at end
+      // By default, the kernel needs to have the same access to assets as the app
+      SET_REGION( 6, FLASH_BASE + 0x104000, SIZE_64KB, 0xC3, FLASH_DATA, PRIV_RO );
       break;
   }
   // clang-format on
@@ -347,11 +402,6 @@ mpu_mode_t mpu_reconfig(mpu_mode_t mode) {
       SET_REGION( 7, 0x00000000,            SIZE_4GB,  0xBB, SRAM,     FULL_ACCESS );
     break;
 #else
-    case MPU_MODE_APP:
-      // Dma2D (Unprivileged, Read-Write, Non-Executable)
-      // 3KB = 4KB except 1/4 at end
-      SET_REGION( 7, 0x4002B000,            SIZE_4KB,  0xC0, PERIPH,     FULL_ACCESS );
-      break;
     default:
       // All Peripherals (Privileged, Read-Write, Non-Executable)
       SET_REGION( 7, PERIPH_BASE,           SIZE_1GB,  0x00, PERIPH,     PRIV_RW );
@@ -361,7 +411,7 @@ mpu_mode_t mpu_reconfig(mpu_mode_t mode) {
   // clang-format on
 
   if (mode != MPU_MODE_DISABLED) {
-    HAL_MPU_Enable(LL_MPU_CTRL_HARDFAULT_NMI);
+    mpu_enable();
   }
 
   mpu_mode_t prev_mode = drv->mode;

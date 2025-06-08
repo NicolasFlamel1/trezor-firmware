@@ -23,7 +23,7 @@ import typing as t
 import click
 import requests
 
-from .. import debuglink, device, exceptions, messages, ui
+from .. import authentication, debuglink, device, exceptions, messages, ui
 from ..tools import format_path
 from . import ChoiceType, with_client
 
@@ -310,10 +310,7 @@ def sd_protect(
 @cli.command()
 @click.pass_obj
 def reboot_to_bootloader(obj: "TrezorConnection") -> None:
-    """Reboot device into bootloader mode.
-
-    Currently only supported on Trezor Model One.
-    """
+    """Reboot device into bootloader mode."""
     # avoid using @with_client because it closes the session afterwards,
     # which triggers double prompt on device
     with obj.client_context() as client:
@@ -393,10 +390,6 @@ def authenticate(
     authenticity. By default, it will also check the public keys against a whitelist
     downloaded from Trezor servers. You can skip this check with the --skip-whitelist
     option.
-
-    \b
-    When not using --raw, 'cryptography' library is required. You can install it via:
-      pip3 install trezor[authentication]
     """
     if hex_challenge is None:
         hex_challenge = secrets.token_hex(32)
@@ -412,15 +405,6 @@ def authenticate(
         for cert in msg.certificates[1:]:
             click.echo(f"CA certificate: {cert.hex()}")
         return
-
-    try:
-        from .. import authentication
-    except ImportError as e:
-        click.echo("Failed to import the authentication module.")
-        click.echo(f"Error: {e}")
-        click.echo("Make sure you have the required dependencies:")
-        click.echo("  pip3 install trezor[authentication]")
-        sys.exit(4)
 
     if root is not None:
         root_bytes = root.read()

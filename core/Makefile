@@ -32,6 +32,7 @@ BITCOIN_ONLY ?= 0
 BOOTLOADER_QA ?= 0
 BOOTLOADER_DEVEL ?= 0
 DISABLE_OPTIGA ?= 0
+DISABLE_TROPIC ?= 1
 TREZOR_MODEL ?= T2T1
 TREZOR_MEMPERF ?= 0
 ADDRESS_SANITIZER ?= 0
@@ -40,11 +41,16 @@ PYTEST_TIMEOUT ?= 500
 TEST_LANG ?= "en"
 THP ?= 0
 BENCHMARK ?= 0
+LOG_STACK_USAGE ?= 0
 TREZOR_EMULATOR_DEBUGGABLE ?= 0
 QUIET_MODE ?= 0
 TREZOR_DISABLE_ANIMATION ?= $(if $(filter 0,$(PYOPT)),1,0)
 STORAGE_INSECURE_TESTING_MODE ?= 0
-RUST_PRINT_TYPES_SIZES ?= 0
+UI_DEBUG_OVERLAY ?= 0
+
+# If set, VCP writes will be blocking, in order to allow reliable debug data transmission over VCP.
+# Disabled by default, to prevent debug firmware from getting stuck while writing log messages (if the host is not reading them).
+BLOCK_ON_VCP ?= 0
 
 # OpenOCD interface default. Alternative: ftdi/olimex-arm-usb-tiny-h
 OPENOCD_INTERFACE ?= stlink
@@ -120,10 +126,12 @@ SCONS_VARS = \
 	CFLAGS="$(CFLAGS)" \
 	CMAKELISTS="$(CMAKELISTS)" \
 	DISABLE_OPTIGA="$(DISABLE_OPTIGA)" \
+	DISABLE_TROPIC="$(DISABLE_TROPIC)" \
+	HW_REVISION="$(HW_REVISION)" \
+	LOG_STACK_USAGE="$(LOG_STACK_USAGE)" \
 	PRODUCTION="$(PRODUCTION)" \
 	PYOPT="$(PYOPT)" \
 	QUIET_MODE="$(QUIET_MODE)" \
-	RUST_PRINT_TYPES_SIZES="$(RUST_PRINT_TYPES_SIZES)" \
 	SCM_REVISION="$(SCM_REVISION)" \
 	STORAGE_INSECURE_TESTING_MODE="$(STORAGE_INSECURE_TESTING_MODE)" \
 	THP="$(THP)" \
@@ -131,7 +139,9 @@ SCONS_VARS = \
 	TREZOR_EMULATOR_ASAN="$(ADDRESS_SANITIZER)" \
 	TREZOR_EMULATOR_DEBUGGABLE=$(TREZOR_EMULATOR_DEBUGGABLE) \
 	TREZOR_MEMPERF="$(TREZOR_MEMPERF)" \
-	TREZOR_MODEL="$(TREZOR_MODEL)"
+	TREZOR_MODEL="$(TREZOR_MODEL)" \
+	UI_DEBUG_OVERLAY="$(UI_DEBUG_OVERLAY)" \
+	BLOCK_ON_VCP="$(BLOCK_ON_VCP)"
 
 SCONS_OPTS = -Q -j $(JOBS)
 ifeq ($(QUIET_MODE),1)
@@ -139,6 +149,9 @@ SCONS_OPTS += --quiet
 endif
 
 SCONS = scons $(SCONS_OPTS) $(SCONS_VARS)
+
+# LD_LIBRARY_PATH workaround: https://discourse.nixos.org/t/nixpkgs-nixos-unstable-many-package-fail-with-glibc-2-38-not-found/35078 https://github.com/NixOS/nixpkgs/issues/287764
+unexport LD_LIBRARY_PATH
 
 ## help commands:
 
@@ -204,12 +217,12 @@ test_emu_persistence_ui: ## run persistence tests with UI testing
 
 test_emu_ui: ## run ui integration tests
 	$(EMU_TEST) $(PYTEST) $(TESTPATH)/device_tests $(TESTOPTS) \
-		--ui=test --ui-check-missing --record-text-layout --do-master-diff \
+		--ui=test --ui-check-missing --do-master-diff \
 		--lang=$(TEST_LANG)
 
 test_emu_ui_multicore: ## run ui integration tests using multiple cores
 	$(PYTEST) -n $(MULTICORE) $(TESTPATH)/device_tests $(TESTOPTS) --timeout $(PYTEST_TIMEOUT) \
-		--ui=test --ui-check-missing --record-text-layout --do-master-diff \
+		--ui=test --ui-check-missing --do-master-diff \
 		--control-emulators --model=core --random-order-seed=$(RANDOM) \
 		--lang=$(TEST_LANG)
 

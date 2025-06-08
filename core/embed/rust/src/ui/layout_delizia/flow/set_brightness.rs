@@ -6,7 +6,7 @@ use crate::{
     translations::TR,
     trezorhal::display,
     ui::{
-        component::{base::ComponentExt, swipe_detect::SwipeSettings, FlowMsg},
+        component::{swipe_detect::SwipeSettings, EventCtx, FlowMsg},
         flow::{
             base::{Decision, DecisionBuilder as _},
             FlowController, SwipeFlow,
@@ -18,8 +18,7 @@ use crate::{
 use super::super::{
     component::{
         number_input_slider::{NumberInputSliderDialog, NumberInputSliderDialogMsg},
-        Frame, FrameMsg, PromptMsg, PromptScreen, StatusScreen, SwipeContent, VerticalMenu,
-        VerticalMenuChoiceMsg,
+        Footer, Frame, PromptMsg, PromptScreen, StatusScreen, SwipeContent, VerticalMenu,
     },
     theme,
 };
@@ -64,6 +63,20 @@ impl FlowController for SetBrightness {
 
 static BRIGHTNESS: AtomicU8 = AtomicU8::new(0);
 
+fn footer_update_fn(
+    content: &NumberInputSliderDialog,
+    ctx: &mut EventCtx,
+    footer: &mut Footer<'static>,
+) {
+    if content.value() == content.init_value() || content.touching() {
+        footer.update_instruction(ctx, TR::instructions__swipe_horizontally);
+        footer.update_description(ctx, TR::setting__adjust);
+    } else {
+        footer.update_instruction(ctx, TR::instructions__tap_to_continue);
+        footer.update_description(ctx, TR::setting__apply);
+    }
+}
+
 pub fn new_set_brightness(brightness: Option<u8>) -> Result<SwipeFlow, Error> {
     let brightness = brightness.unwrap_or(theme::backlight::get_backlight_normal());
     let content_slider = Frame::left_aligned(
@@ -77,13 +90,17 @@ pub fn new_set_brightness(brightness: Option<u8>) -> Result<SwipeFlow, Error> {
     .with_subtitle(TR::homescreen__settings_subtitle.into())
     .with_menu_button()
     .with_swipe(Direction::Up, SwipeSettings::default())
+    .with_footer(
+        TR::instructions__swipe_horizontally.into(),
+        Some(TR::setting__adjust.into()),
+    )
+    .register_footer_update_fn(footer_update_fn)
     .map(|msg| match msg {
-        FrameMsg::Content(NumberInputSliderDialogMsg::Changed(n)) => {
+        NumberInputSliderDialogMsg::Changed(n) => {
             display::backlight(n as _);
             BRIGHTNESS.store(n as u8, Ordering::Relaxed);
             None
         }
-        FrameMsg::Button(_) => Some(FlowMsg::Info),
     });
 
     let content_menu = Frame::left_aligned(
@@ -92,10 +109,7 @@ pub fn new_set_brightness(brightness: Option<u8>) -> Result<SwipeFlow, Error> {
     )
     .with_cancel_button()
     .with_swipe(Direction::Right, SwipeSettings::immediate())
-    .map(move |msg| match msg {
-        FrameMsg::Content(VerticalMenuChoiceMsg::Selected(i)) => Some(FlowMsg::Choice(i)),
-        FrameMsg::Button(_) => Some(FlowMsg::Cancelled),
-    });
+    .map(super::util::map_to_choice);
 
     let content_confirm = Frame::left_aligned(
         TR::brightness__change_title.into(),
@@ -106,11 +120,10 @@ pub fn new_set_brightness(brightness: Option<u8>) -> Result<SwipeFlow, Error> {
     .with_swipe(Direction::Down, SwipeSettings::default())
     .with_swipe(Direction::Left, SwipeSettings::default())
     .map(move |msg| match msg {
-        FrameMsg::Content(PromptMsg::Confirmed) => {
+        PromptMsg::Confirmed => {
             let _ = storage::set_brightness(BRIGHTNESS.load(Ordering::Relaxed));
             Some(FlowMsg::Confirmed)
         }
-        FrameMsg::Button(_) => Some(FlowMsg::Info),
         _ => None,
     });
 
@@ -121,16 +134,15 @@ pub fn new_set_brightness(brightness: Option<u8>) -> Result<SwipeFlow, Error> {
         ))
         .with_no_attach_anim(),
     )
-    .with_footer(TR::instructions__swipe_up.into(), None)
-    .with_swipe(Direction::Up, SwipeSettings::default())
+    .with_swipeup_footer(None)
     .with_result_icon(theme::ICON_BULLET_CHECKMARK, theme::GREEN_LIGHT)
     .map(move |_msg| Some(FlowMsg::Confirmed));
 
-    let res = SwipeFlow::new(&SetBrightness::Slider)?
-        .with_page(&SetBrightness::Slider, content_slider)?
-        .with_page(&SetBrightness::Menu, content_menu)?
-        .with_page(&SetBrightness::Confirm, content_confirm)?
-        .with_page(&SetBrightness::Confirmed, content_confirmed)?;
+    let mut res = SwipeFlow::new(&SetBrightness::Slider)?;
+    res.add_page(&SetBrightness::Slider, content_slider)?
+        .add_page(&SetBrightness::Menu, content_menu)?
+        .add_page(&SetBrightness::Confirm, content_confirm)?
+        .add_page(&SetBrightness::Confirmed, content_confirmed)?;
 
     Ok(res)
 }

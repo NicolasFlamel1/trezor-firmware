@@ -117,7 +117,7 @@ bool display_init(display_content_mode_t mode) {
 #ifdef TREZOR_EMULATOR_RASPI
                        SDL_WINDOW_SHOWN | SDL_WINDOW_FULLSCREEN
 #else
-                       SDL_WINDOW_SHOWN | SDL_WINDOW_ALLOW_HIGHDPI
+                       SDL_WINDOW_SHOWN
 #endif
       );
   free(window_title_alloc);
@@ -278,18 +278,20 @@ int display_get_orientation(void) {
 bool display_get_frame_buffer(display_fb_info_t *fb) {
   display_driver_t *drv = &g_display_driver;
 
+  memset(fb, 0, sizeof(display_fb_info_t));
+
   if (!drv->initialized) {
-    fb->ptr = NULL;
-    fb->stride = 0;
     return false;
   }
 
 #ifdef DISPLAY_MONO
   fb->ptr = drv->mono_framebuf;
   fb->stride = DISPLAY_RESX;
+  fb->size = DISPLAY_RESX * DISPLAY_RESY;
 #else
   fb->ptr = drv->buffer->pixels;
   fb->stride = DISPLAY_RESX * PIXEL_SIZE;
+  fb->size = DISPLAY_RESX * DISPLAY_RESY * PIXEL_SIZE;
 #endif
   return true;
 }
@@ -410,25 +412,6 @@ void display_copy_mono1p(const gfx_bitblt_t *bb) {
   gfx_rgba8888_copy_mono1p(&bb_new);
 #else
   gfx_rgb565_copy_mono1p(&bb_new);
-#endif
-}
-
-void display_copy_mono4(const gfx_bitblt_t *bb) {
-  display_driver_t *drv = &g_display_driver;
-
-  if (!drv->initialized) {
-    return;
-  }
-
-  gfx_bitblt_t bb_new = *bb;
-  bb_new.dst_row =
-      (uint8_t *)drv->buffer->pixels + (drv->buffer->pitch * bb_new.dst_y);
-  bb_new.dst_stride = drv->buffer->pitch;
-
-#ifdef UI_COLOR_32BIT
-  gfx_rgba8888_copy_mono4(&bb_new);
-#else
-  gfx_rgb565_copy_mono4(&bb_new);
 #endif
 }
 

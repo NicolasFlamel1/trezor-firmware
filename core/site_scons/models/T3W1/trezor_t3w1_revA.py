@@ -36,7 +36,11 @@ def configure(
         ("HW_REVISION", str(hw_revision)),
         ("HSE_VALUE", "32000000"),
         ("USE_HSE", "1"),
+        ("USE_LSE", "1"),
         ("FIXED_HW_DEINIT", "1"),
+        ("TERMINAL_FONT_SCALE", "2"),
+        ("TERMINAL_X_PADDING", "4"),
+        ("TERMINAL_Y_PADDING", "12"),
     ]
 
     sources += [
@@ -46,18 +50,22 @@ def configure(
         "embed/io/display/ltdc_dsi/display_fb_rgb888.c",
         "embed/io/display/ltdc_dsi/display_gfxmmu.c",
         "embed/io/display/fb_queue/fb_queue.c",
-        "embed/io/display/backlight/stm32/backlight_pwm.c",
     ]
-
     paths += ["embed/io/display/inc"]
+
     features_available.append("backlight")
     defines += [("USE_BACKLIGHT", "1")]
+    sources += ["embed/io/backlight/stm32u5/tps61062.c"]
+    paths += ["embed/io/backlight/inc"]
 
     if "input" in features_wanted:
         sources += ["embed/io/touch/ft6x36/ft6x36.c"]
+        sources += ["embed/io/touch/ft6x36/panels/lx250a2410a.c"]
+        sources += ["embed/io/touch/touch_fsm.c"]
         paths += ["embed/io/touch/inc"]
         features_available.append("touch")
         sources += ["embed/io/button/stm32/button.c"]
+        sources += ["embed/io/button/button_fsm.c"]
         paths += ["embed/io/button/inc"]
         features_available.append("button")
         defines += [
@@ -83,12 +91,42 @@ def configure(
         features_available.append("ble")
         defines += [("USE_BLE", "1")]
         sources += ["embed/io/nrf/stm32u5/nrf.c"]
+        sources += ["embed/io/nrf/stm32u5/nrf_test.c"]
         sources += ["embed/io/nrf/crc8.c"]
         paths += ["embed/io/nrf/inc"]
         sources += [
             "vendor/stm32u5xx_hal_driver/Src/stm32u5xx_hal_uart.c",
             "vendor/stm32u5xx_hal_driver/Src/stm32u5xx_hal_uart_ex.c",
         ]
+
+    if "nfc" in features_wanted:
+        sources += ["embed/io/nfc/st25r3916b/nfc.c"]
+        sources += ["embed/io/nfc/st25r3916b/ndef.c"]
+        sources += ["embed/io/nfc/st25r3916b/card_emulation.c"]
+        sources += ["embed/io/nfc/rfal/source/st25r3916/rfal_rfst25r3916.c"]
+        sources += ["embed/io/nfc/rfal/source/rfal_analogConfig.c"]
+        sources += ["embed/io/nfc/rfal/source/rfal_nfc.c"]
+        sources += ["embed/io/nfc/rfal/source/rfal_nfca.c"]
+        sources += ["embed/io/nfc/rfal/source/rfal_nfcb.c"]
+        sources += ["embed/io/nfc/rfal/source/rfal_nfcf.c"]
+        sources += ["embed/io/nfc/rfal/source/rfal_nfcv.c"]
+        sources += ["embed/io/nfc/rfal/source/rfal_isoDep.c"]
+        sources += ["embed/io/nfc/rfal/source/rfal_nfcDep.c"]
+        sources += ["embed/io/nfc/rfal/source/rfal_st25tb.c"]
+        sources += ["embed/io/nfc/rfal/source/rfal_t1t.c"]
+        sources += ["embed/io/nfc/rfal/source/rfal_t2t.c"]
+        sources += ["embed/io/nfc/rfal/source/rfal_iso15693_2.c"]
+        sources += ["embed/io/nfc/rfal/source/rfal_crc.c"]
+        sources += ["embed/io/nfc/rfal/source/st25r3916/st25r3916.c"]
+        sources += ["embed/io/nfc/rfal/source/st25r3916/st25r3916_com.c"]
+        sources += ["embed/io/nfc/rfal/source/st25r3916/st25r3916_led.c"]
+        sources += ["embed/io/nfc/rfal/source/st25r3916/st25r3916_irq.c"]
+        paths += ["embed/io/nfc/inc/"]
+        paths += ["embed/io/nfc/st25r3916b/"]
+        paths += ["embed/io/nfc/rfal/source"]
+        paths += ["embed/io/nfc/rfal/source/st25r3916"]
+        paths += ["embed/io/nfc/rfal/include/"]
+        defines += [("USE_NFC", "1")]
 
     if "optiga" in features_wanted:
         sources += ["embed/sec/optiga/stm32/optiga_hal.c"]
@@ -100,6 +138,36 @@ def configure(
         paths += ["embed/sec/optiga/inc"]
         features_available.append("optiga")
         defines += [("USE_OPTIGA", "1")]
+
+    if "tropic" in features_wanted:
+        sources += ["embed/sec/tropic/tropic.c"]
+        sources += ["embed/sec/tropic/stm32/tropic01.c"]
+        sources += ["vendor/libtropic/src/libtropic.c"]
+        sources += ["vendor/libtropic/src/lt_crc16.c"]
+        sources += ["vendor/libtropic/src/lt_l1_port_wrap.c"]
+        sources += ["vendor/libtropic/src/lt_l1.c"]
+        sources += ["vendor/libtropic/src/lt_l2.c"]
+        sources += ["vendor/libtropic/src/lt_l2_frame_check.c"]
+        sources += ["vendor/libtropic/src/lt_l3.c"]
+        sources += ["vendor/libtropic/src/lt_hkdf.c"]
+        sources += ["vendor/libtropic/src/lt_random.c"]
+        sources += [
+            "vendor/libtropic/hal/crypto/trezor_crypto/lt_crypto_trezor_aesgcm.c"
+        ]
+        sources += [
+            "vendor/libtropic/hal/crypto/trezor_crypto/lt_crypto_trezor_ed25519.c"
+        ]
+        sources += [
+            "vendor/libtropic/hal/crypto/trezor_crypto/lt_crypto_trezor_sha256.c"
+        ]
+        sources += [
+            "vendor/libtropic/hal/crypto/trezor_crypto/lt_crypto_trezor_x25519.c"
+        ]
+        paths += ["embed/sec/tropic/inc"]
+        paths += ["vendor/libtropic/include"]
+        paths += ["vendor/libtropic/src"]
+        defines += [("USE_TROPIC", "1")]
+        defines += [("LT_USE_TREZOR_CRYPTO", "1")]
 
     if "sbu" in features_wanted:
         sources += ["embed/io/sbu/stm32/sbu.c"]
@@ -147,13 +215,18 @@ def configure(
     features_available.append("dma2d")
     sources += ["embed/gfx/bitblt/stm32/dma2d_bitblt.c"]
 
+    defines += ["USE_HW_JPEG_DECODER"]
+    features_available.append("hw_jpeg_decoder")
+    sources += [
+        "embed/gfx/jpegdec/stm32u5/jpegdec.c",
+    ]
+
     defines += [
         ("USE_HASH_PROCESSOR", "1"),
         ("USE_STORAGE_HWKEY", "1"),
         ("USE_TAMPER", "1"),
         ("USE_FLASH_BURST", "1"),
         ("USE_OEM_KEYS_CHECK", "1"),
-        ("USE_RESET_TO_BOOT", "1"),
     ]
 
     sources += [

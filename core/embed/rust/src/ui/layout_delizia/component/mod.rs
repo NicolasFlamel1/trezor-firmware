@@ -1,4 +1,4 @@
-#[cfg(feature = "translations")]
+#[cfg(all(feature = "micropython", feature = "translations"))]
 mod address_details;
 #[cfg(feature = "ui_overlay")]
 mod binary_selection;
@@ -29,7 +29,6 @@ mod progress;
 #[cfg(feature = "translations")]
 mod prompt_screen;
 mod result;
-mod scroll;
 #[cfg(feature = "translations")]
 mod share_words;
 mod status_screen;
@@ -41,7 +40,7 @@ mod tap_to_confirm;
 mod updatable_more_info;
 mod welcome_screen;
 
-#[cfg(feature = "translations")]
+#[cfg(all(feature = "micropython", feature = "translations"))]
 pub use address_details::AddressDetails;
 #[cfg(feature = "ui_overlay")]
 pub use binary_selection::{BinarySelection, BinarySelectionMsg};
@@ -64,7 +63,7 @@ pub use keyboard::{
     passphrase::{PassphraseKeyboard, PassphraseKeyboardMsg},
     pin::{PinKeyboard, PinKeyboardMsg},
     slip39::Slip39Input,
-    word_count::{SelectWordCount, SelectWordCountMsg},
+    word_count::{SelectWordCount, SelectWordCountLayout, SelectWordCountMsg},
 };
 pub use loader::{Loader, LoaderMsg, LoaderStyle, LoaderStyleSheet};
 #[cfg(feature = "translations")]
@@ -75,11 +74,10 @@ pub use progress::Progress;
 #[cfg(feature = "translations")]
 pub use prompt_screen::{PromptMsg, PromptScreen};
 pub use result::{ResultFooter, ResultScreen, ResultStyle};
-pub use scroll::ScrollBar;
 #[cfg(feature = "translations")]
 pub use share_words::ShareWords;
 pub use status_screen::StatusScreen;
-pub use swipe_content::{InternallySwipable, InternallySwipableContent, SwipeContent};
+pub use swipe_content::{InternallySwipableContent, SwipeContent};
 #[cfg(feature = "translations")]
 pub use swipe_up_screen::{SwipeUpScreen, SwipeUpScreenMsg};
 #[cfg(feature = "translations")]

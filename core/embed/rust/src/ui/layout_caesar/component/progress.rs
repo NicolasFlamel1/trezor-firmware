@@ -4,12 +4,11 @@ use crate::{
     strutil::TString,
     ui::{
         component::{
-            paginated::Paginate,
             text::paragraphs::{Paragraph, Paragraphs},
             Child, Component, Event, EventCtx, Label, Never, Pad,
         },
         constant,
-        display::{Font, Icon, LOADER_MAX},
+        display::{Icon, LOADER_MAX},
         geometry::{Alignment2D, Offset, Rect},
         shape,
         shape::Renderer,
@@ -17,7 +16,7 @@ use crate::{
     },
 };
 
-use super::super::{cshape, theme};
+use super::super::{cshape, fonts, theme};
 
 const BOTTOM_DESCRIPTION_MARGIN: i16 = 10;
 const LOADER_Y_OFFSET_TITLE: i16 = -10;
@@ -99,7 +98,7 @@ impl Component for Progress {
         };
 
         let (_loader, description) = rest.split_bottom(
-            BOTTOM_DESCRIPTION_MARGIN + Font::NORMAL.line_height() * description_lines,
+            BOTTOM_DESCRIPTION_MARGIN + fonts::FONT_NORMAL.line_height() * description_lines,
         );
         self.title.place(title);
         self.loader_y_offset = loader_y_offset;
@@ -119,9 +118,8 @@ impl Component for Progress {
             self.description.mutate(ctx, |ctx, para| {
                 // NOTE: not doing any change for empty new descriptions
                 // (currently, there is no use-case for deleting the description)
-                if !new_description.is_empty() && para.inner_mut().content() != &new_description {
-                    para.inner_mut().update(new_description);
-                    para.change_page(0); // Recompute bounding box.
+                if !new_description.is_empty() && para.content() != &new_description {
+                    para.update(new_description);
                     ctx.request_paint();
                     self.description_pad.clear();
                 }

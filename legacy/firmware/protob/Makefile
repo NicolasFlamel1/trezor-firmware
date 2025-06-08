@@ -11,15 +11,17 @@ SKIPPED_MESSAGES := Binance Cardano DebugMonero Eos Monero Ontology Ripple SdPro
 	UnlockBootloader AuthenticateDevice AuthenticityProof \
 	Solana StellarClaimClaimableBalanceOp \
 	ChangeLanguage TranslationDataRequest TranslationDataAck \
-	SetBrightness DebugLinkOptigaSetSecMax EntropyCheckReady EntropyCheckContinue \
-	BenchmarkListNames BenchmarkRun BenchmarkNames BenchmarkResult
+	SetBrightness DebugLinkOptigaSetSecMax \
+	BenchmarkListNames BenchmarkRun BenchmarkNames BenchmarkResult \
+	NostrGetPubkey NostrPubkey NostrSignEvent NostrEventSignature \
+	BleUnpair
 
 ifeq ($(BITCOIN_ONLY), 1)
 SKIPPED_MESSAGES += Ethereum NEM Stellar MimbleWimbleCoin
 endif
 
 PROTO_NAMES = messages messages-bitcoin messages-common messages-crypto messages-debug \
-	messages-ethereum messages-ethereum-definitions messages-management messages-nem \
+	messages-ethereum messages-definitions messages-management messages-nem \
 	messages-stellar messages-mimblewimble-coin options
 
 PROTO_OPTIONS = $(PROTO_NAMES:=.options)

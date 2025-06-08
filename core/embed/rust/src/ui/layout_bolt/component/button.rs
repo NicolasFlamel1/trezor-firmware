@@ -30,7 +30,7 @@ pub struct Button {
     content: ButtonContent,
     styles: ButtonStyleSheet,
     state: State,
-    long_press: Option<Duration>,
+    long_press: Duration,
     long_timer: Timer,
     haptics: bool,
 }
@@ -47,7 +47,7 @@ impl Button {
             touch_expand: None,
             styles: theme::button_default(),
             state: State::Initial,
-            long_press: None,
+            long_press: Duration::ZERO,
             long_timer: Timer::new(),
             haptics: true,
         }
@@ -84,7 +84,7 @@ impl Button {
     }
 
     pub fn with_long_press(mut self, duration: Duration) -> Self {
-        self.long_press = Some(duration);
+        self.long_press = duration;
         self
     }
 
@@ -186,8 +186,7 @@ impl Button {
                     + Offset::new(-width / 2, height / 2)
                     + Offset::y(Self::BASELINE_OFFSET);
                 text.map(|text| {
-                    shape::Text::new(start_of_baseline, text)
-                        .with_font(style.font)
+                    shape::Text::new(start_of_baseline, text, style.font)
                         .with_fg(style.text_color)
                         .render(target);
                 });
@@ -245,8 +244,8 @@ impl Component for Button {
                                 haptic::play(HapticEffect::ButtonPress);
                             }
                             self.set(ctx, State::Pressed);
-                            if let Some(duration) = self.long_press {
-                                self.long_timer.start(ctx, duration)
+                            if self.long_press != Duration::ZERO {
+                                self.long_timer.start(ctx, self.long_press)
                             }
                             return Some(ButtonMsg::Pressed);
                         }
@@ -411,19 +410,17 @@ impl Button {
     }
 
     pub fn cancel_info_confirm(
-        confirm: TString<'static>,
-        info: TString<'static>,
+        confirm: Button,
+        verb_info: TString<'static>,
     ) -> CancelInfoConfirm<
         impl Fn(ButtonMsg) -> Option<CancelInfoConfirmMsg>,
         impl Fn(ButtonMsg) -> Option<CancelInfoConfirmMsg>,
         impl Fn(ButtonMsg) -> Option<CancelInfoConfirmMsg>,
     > {
-        let right = Button::with_text(confirm)
-            .styled(theme::button_confirm())
-            .map(|msg| {
-                (matches!(msg, ButtonMsg::Clicked)).then(|| CancelInfoConfirmMsg::Confirmed)
-            });
-        let top = Button::with_text(info)
+        let right = confirm.map(|msg| {
+            (matches!(msg, ButtonMsg::Clicked)).then(|| CancelInfoConfirmMsg::Confirmed)
+        });
+        let top = Button::with_text(verb_info)
             .styled(theme::button_moreinfo())
             .map(|msg| (matches!(msg, ButtonMsg::Clicked)).then(|| CancelInfoConfirmMsg::Info));
         let left = Button::with_icon(theme::ICON_CANCEL).map(|msg| {
@@ -548,8 +545,7 @@ impl IconText {
         }
 
         if use_text {
-            shape::Text::new(text_pos, self.text)
-                .with_font(style.font)
+            shape::Text::new(text_pos, self.text, style.font)
                 .with_fg(style.text_color)
                 .render(target);
         }

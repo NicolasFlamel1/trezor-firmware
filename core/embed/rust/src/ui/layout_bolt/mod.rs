@@ -1,9 +1,13 @@
 use super::{geometry::Rect, CommonUI};
 
+#[cfg(feature = "ui_debug_overlay")]
+use super::{shape, DebugOverlay};
+
 #[cfg(feature = "bootloader")]
 pub mod bootloader;
 pub mod component;
 pub mod constant;
+pub mod fonts;
 pub mod theme;
 
 #[cfg(feature = "backlight")]
@@ -21,6 +25,9 @@ pub struct UIBolt;
 
 #[cfg(feature = "micropython")]
 pub mod ui_firmware;
+
+#[cfg(feature = "prodtest")]
+pub mod prodtest;
 
 impl CommonUI for UIBolt {
     #[cfg(feature = "backlight")]
@@ -68,8 +75,13 @@ impl CommonUI for UIBolt {
         show(&mut frame, false);
     }
 
-    fn screen_boot_stage_2() {
+    fn screen_boot_stage_2(fade_in: bool) {
         let mut frame = WelcomeScreen::new(false);
-        show(&mut frame, false);
+        show(&mut frame, fade_in);
+    }
+
+    #[cfg(feature = "ui_debug_overlay")]
+    fn render_debug_overlay<'s>(_target: &mut impl shape::Renderer<'s>, _info: DebugOverlay) {
+        // Not implemented
     }
 }
