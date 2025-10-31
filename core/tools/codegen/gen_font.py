@@ -4,21 +4,21 @@
 
 from __future__ import annotations
 
+import json
 import unicodedata
 from dataclasses import dataclass
 from pathlib import Path
+
 import click
-import json
 
 # pip install freetype-py
 import freetype
-from mako.template import Template
-
 from foreign_chars import all_languages
+from mako.template import Template
 
 
 def _normalize(s: str) -> str:
-    return unicodedata.normalize("NFKC", s)
+    return unicodedata.normalize("NFC", s)
 
 
 HERE = Path(__file__).parent
@@ -177,12 +177,12 @@ class Glyph:
             else:
                 raise ValueError(f"Negative bearingX for character '{c}'")
         bearingY = metrics.horiBearingY // 64
-        assert advance >= 0 and advance <= 255
-        assert bearingX >= 0 and bearingX <= 255
+        assert 0 <= advance <= 255
+        assert 0 <= bearingX <= 255
         if bearingY < 0:  # HACK
             print(f"normalizing bearingY {bearingY} for '{c}'")
             bearingY = 0
-        assert bearingY >= 0 and bearingY <= 255
+        assert 0 <= bearingY <= 255
 
         buf = list(bitmap.buffer)
         # discard non-space pixels on the left side
@@ -309,6 +309,17 @@ class FaceProcessor:
                     c = c.upper()
                 assert len(c) == 1
                 assert len(map_from) == 1
+
+                if not self._char_supported(c):
+                    if c == "º":
+                        c = "o"
+                        print(
+                            f"Character 'º' not supported ⚠️ in font {self.name} {self.style}, using fallback glyph {c}"
+                        )
+                    else:
+                        print(
+                            f"Character '{c}' not supported ❌ in font {self.name} {self.style}, using unknown glyph"
+                        )
                 self._load_char(c)
                 glyph = Glyph.from_face(self.face, c, self.shaveX)
                 glyph.print_metrics()
@@ -342,6 +353,9 @@ class FaceProcessor:
         with open(filename, "w", encoding="utf-8") as f:
             json_content = json.dumps(widths, indent=2, ensure_ascii=False)
             f.write(json_content + "\n")
+
+    def _char_supported(self, c: str) -> bool:
+        return self.face.get_char_index(ord(c)) != 0
 
     def _load_char(self, c: str) -> None:
         self.face.load_char(c, freetype.FT_LOAD_RENDER | freetype.FT_LOAD_TARGET_NORMAL)  # type: ignore
@@ -529,7 +543,7 @@ def gen_layout_caesar():
 def gen_layout_delizia():
     global LAYOUT_NAME
     LAYOUT_NAME = "Delizia"
-    # FIXME: BIG font id not needed
+    # FIXME: BIG font idx not needed
     FaceProcessor("TTSatoshi", "DemiBold", 42, ext="otf", font_idx=1).write_files()
     FaceProcessor("TTSatoshi", "DemiBold", 21, ext="otf", font_idx=1).write_files()
     FaceProcessor("TTSatoshi", "DemiBold", 18, ext="otf", font_idx=8).write_files()
@@ -545,10 +559,24 @@ def gen_layout_delizia():
     ).write_files()
 
 
+def gen_layout_eckhart():
+    global LAYOUT_NAME
+    LAYOUT_NAME = "eckhart"
+    # FIXME: BIG font idx not needed
+    FaceProcessor("TTSatoshi", "ExtraLight", 72, ext="otf", font_idx=1).write_files()
+    FaceProcessor("TTSatoshi", "ExtraLight", 46, ext="otf", font_idx=1).write_files()
+    FaceProcessor("TTSatoshi", "Regular", 38, ext="otf", font_idx=2).write_files()
+    FaceProcessor("TTSatoshi", "Medium", 26, ext="otf", font_idx=3).write_files()
+    FaceProcessor("TTSatoshi", "Regular", 22, ext="otf", font_idx=4).write_files()
+    FaceProcessor("RobotoMono", "Medium", 38, font_idx=5).write_files()
+    FaceProcessor("RobotoMono", "Light", 30, font_idx=6).write_files()
+
+
 LAYOUTS = {
     "Bolt": gen_layout_bolt,
     "Caesar": gen_layout_caesar,
     "Delizia": gen_layout_delizia,
+    "Eckhart": gen_layout_eckhart,
 }
 
 

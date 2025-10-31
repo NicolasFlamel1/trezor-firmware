@@ -25,7 +25,7 @@
 #include <sys/systick.h>
 #include <sys/tamper.h>
 
-#ifdef KERNEL_MODE
+#ifdef SECURE_MODE
 
 // Fixes a typo in CMSIS Device library for STM32U5
 #undef TAMP_CR3_ITAMP7NOER_Msk
@@ -213,7 +213,7 @@ void TAMP_IRQHandler(void) {
   TAMP->SCR = sr;
 
 #ifdef BOARDLOADER
-  error_shutdown_ex("INTERNAL TAMPER", NULL, NULL);
+  error_shutdown_ex("TAMPER", NULL, NULL);
 #else
   const char* reason = "UNKNOWN";
   if (sr & TAMP_SR_TAMP1F) {
@@ -243,8 +243,8 @@ void TAMP_IRQHandler(void) {
   } else if (sr & TAMP_SR_ITAMP13F) {
     reason = "ANALOG WDG3";
   }
-  error_shutdown_ex("INTERNAL TAMPER", reason, NULL);
+  error_shutdown_ex("TAMPER", reason, NULL);
 #endif
 }
 
-#endif  // KERNEL_MODE
+#endif  // SECURE_MODE

@@ -37,6 +37,9 @@
 #include <unistd.h>
 
 #include <io/display.h>
+#include <io/usb_config.h>
+#include <sec/secret.h>
+#include <sys/dbg_console.h>
 #include <sys/system.h>
 #include <sys/systimer.h>
 #include <util/flash.h>
@@ -57,7 +60,6 @@
 #endif
 
 #ifdef USE_TROPIC
-#include <sec/secret.h>
 #include <sec/tropic.h>
 #endif
 
@@ -83,9 +85,8 @@ long heap_size = 1024 * 1024 * (sizeof(mp_uint_t) / 4);
 
 STATIC void stderr_print_strn(void *env, const char *str, size_t len) {
   (void)env;
-  ssize_t dummy = write(STDERR_FILENO, str, len);
+  dbg_console_write(str, len);
   mp_uos_dupterm_tx_strn(str, len);
-  (void)dummy;
 }
 
 const mp_print_t mp_stderr_print = {NULL, stderr_print_strn};
@@ -504,9 +505,33 @@ static int sdl_event_filter(void *userdata, SDL_Event *event) {
 }
 
 void drivers_init() {
+  flash_init();
+  flash_otp_init();
+
+  unit_properties_init();
+
+  display_init(DISPLAY_RESET_CONTENT);
+
+#if USE_TOUCH
+  touch_init();
+#endif
+
+#ifdef USE_BUTTON
+  button_init();
+#endif
+
 #ifdef USE_TROPIC
   tropic_init();
 #endif
+
+  usb_configure(NULL);
+}
+
+// Initialize the system and drivers for running tests in the Rust code.
+// The function is called from the Rust before the test main function is run.
+void rust_tests_c_setup(void) {
+  system_init(NULL);
+  drivers_init();
 }
 
 MP_NOINLINE int main_(int argc, char **argv) {
@@ -528,27 +553,15 @@ MP_NOINLINE int main_(int argc, char **argv) {
 
   pre_process_options(argc, argv);
 
+#ifdef LOCKABLE_BOOTLOADER
+  secret_lock_bootloader();
+#endif
+
   system_init(&rsod_panic_handler);
 
   drivers_init();
 
   SDL_SetEventFilter(sdl_event_filter, NULL);
-
-  display_init(DISPLAY_RESET_CONTENT);
-
-#if USE_TOUCH
-  touch_init();
-#endif
-
-#ifdef USE_BUTTON
-  button_init();
-#endif
-
-  // Map trezor.flash to memory.
-  flash_init();
-  flash_otp_init();
-
-  unit_properties_init();
 
 #if MICROPY_ENABLE_GC
   char *heap = malloc(heap_size);

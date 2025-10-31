@@ -34,10 +34,20 @@ typedef struct {
 
 } protob_io_t;
 
+typedef struct {
+  protob_io_t ifaces[2];
+  size_t count;
+} protob_ios_t;
+
 secbool send_user_abort(protob_io_t *iface, const char *msg);
 
-secbool send_msg_features(protob_io_t *iface, const vendor_header *const vhdr,
-                          const image_header *const hdr);
+typedef struct {
+  const vendor_header *vhdr;
+  const image_header *hdr;
+  secbool firmware_present;
+} fw_info_t;
+
+secbool send_msg_features(protob_io_t *iface, const fw_info_t *fw);
 
 secbool send_msg_failure(protob_io_t *iface, FailureType type, const char *msg);
 

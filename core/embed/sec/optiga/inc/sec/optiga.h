@@ -22,11 +22,13 @@
 
 #include <trezor_types.h>
 
+#include <sec/storage.h>
+
 #include "optiga_common.h"
-#include "storage.h"
 
 #define OPTIGA_DEVICE_CERT_INDEX 1
 #define OPTIGA_DEVICE_ECC_KEY_INDEX 0
+#define OPTIGA_FIDO_ECC_KEY_INDEX 2
 
 typedef enum _optiga_pin_result {
   OPTIGA_PIN_SUCCESS = 0,       // The operation completed successfully.
@@ -46,9 +48,9 @@ typedef enum _optiga_sign_result {
 #define OPTIGA_PIN_SECRET_SIZE 32
 
 optiga_sign_result __wur optiga_sign(uint8_t index, const uint8_t *digest,
-                                     size_t digest_size, uint8_t *signature,
-                                     size_t max_sig_size, size_t *sig_size);
-
+                                     size_t digest_size, uint8_t *der_signature,
+                                     size_t max_der_signature_size,
+                                     size_t *der_signature_size);
 bool __wur optiga_cert_size(uint8_t index, size_t *cert_size);
 
 bool __wur optiga_read_cert(uint8_t index, uint8_t *cert, size_t max_cert_size,
@@ -60,13 +62,25 @@ void optiga_set_sec_max(void);
 
 bool __wur optiga_random_buffer(uint8_t *dest, size_t size);
 
-bool __wur optiga_pin_set(optiga_ui_progress_t ui_progress,
-                          uint8_t stretched_pin[OPTIGA_PIN_SECRET_SIZE]);
+bool __wur optiga_pin_init(optiga_ui_progress_t ui_progress);
 
-uint32_t optiga_estimate_time_ms(storage_pin_op_t op);
+bool optiga_pin_stretch_cmac_ecdh(
+    optiga_ui_progress_t ui_progress,
+    uint8_t stretched_pin[OPTIGA_PIN_SECRET_SIZE]);
+
+bool __wur optiga_pin_set(
+    optiga_ui_progress_t ui_progress,
+    uint8_t stretched_pins[STRETCHED_PIN_COUNT][OPTIGA_PIN_SECRET_SIZE],
+    uint8_t hmac_reset_key[OPTIGA_PIN_SECRET_SIZE]);
+
+bool __wur
+optiga_pin_reset_hmac_counter(optiga_ui_progress_t ui_progress,
+                              const uint8_t reset_key[OPTIGA_PIN_SECRET_SIZE]);
+
+uint32_t optiga_estimate_time_ms(storage_pin_op_t op, uint8_t slot_index);
 
 optiga_pin_result __wur
-optiga_pin_verify(optiga_ui_progress_t ui_progress,
+optiga_pin_verify(optiga_ui_progress_t ui_progress, uint8_t index,
                   uint8_t stretched_pin[OPTIGA_PIN_SECRET_SIZE]);
 
 optiga_pin_result __wur

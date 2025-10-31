@@ -1,10 +1,38 @@
 {
   "current": {
-    "merkle_root": "cf835159e227117eb1c2cd8a784c259b523c5b9489e408a4cefa169601437af6",
-    "datetime": "2025-04-29T09:29:38.532833",
-    "commit": "af2c36a22ffa4d6326a6161b2ce3037560f5eb7d"
+    "merkle_root": "6b4461a670ae38cb0ec2fb6b253fcd3f07228851f7009c974db58c6cf7074a79",
+    "datetime": "2025-10-07T15:58:24.570362+00:00",
+    "commit": "eec5801e39a22e0c670eb85c3fa0134d76c083fa"
   },
   "history": [
+    {
+      "signature": "03e31c456a0c87ccfbc3d5058588a9a6079c3909977517ac8458077e80bd3e2c7bf6c55fdec780022439257b42022feb46bb605047fe1aceaf3548718301e4a003",
+      "version": "2.9.2.0",
+      "merkle_root": "d83452bcbd293dadbe58e63101a596fe54b03a8df002746241cc4c206201de7c",
+      "datetime": "2025-09-29T07:49:38.232088+00:00",
+      "commit": "ff1c4a31d6ee3cc7663a0e3361b761cd1b3aea90"
+    },
+    {
+      "signature": "03a08067b4238f6100140aa7f8bfc4b75effc35c05eb256d29ccad78e3f2276de78f519141364432679f2bbe4e8f182aa9700747bfd62c12f1494eac31b2058205",
+      "version": "2.9.1.0",
+      "merkle_root": "8831f35419234e4ff06e269d941c33cd364118e9ca935ee4587611172bd8612a",
+      "datetime": "2025-09-01T22:53:11.984120+00:00",
+      "commit": "acd56d0113a547e9b5983510b0ce9de079e30e05"
+    },
+    {
+      "signature": "0349ccb4cc6200fefc1bc0d51a2488075b7a7ce834bbf20403eeee2aa5dee619fb84e9c9c8b7de094419ee192f23d570ae508ac393596d27eb022232ff34af540f",
+      "version": "2.9.0.0",
+      "merkle_root": "573382353f65c94ec29edd03419317d7c9a2d023f3e3a30cca591151a905e108",
+      "datetime": "2025-07-01T10:28:52.824214+00:00",
+      "commit": "a09e6f04d4204607d821d9b742dcf7ffe9c4e2f5"
+    },
+    {
+      "signature": "0309f4f95fa152310e8a984e3b105cd899d12e37a7510057f37f20a72955635e0ff1605da8c44a847c86f8b0aa0afada995f0c628234fa910d0aa275fbaef8f504",
+      "version": "2.8.10.0",
+      "merkle_root": "cf835159e227117eb1c2cd8a784c259b523c5b9489e408a4cefa169601437af6",
+      "datetime": "2025-05-12T07:36:20.997218",
+      "commit": "2a65d18200580005dc419b9569ed97fae440806a"
+    },
     {
       "signature": "03a0f2df5f468356b0444a24050a60789bff459a90328533b0aa9693666ca3145c8df72adc23f5b7a52d0814ef58c44ebec0b4f4482d12fa137b6c9a8858374209",
       "version": "2.8.9.0",

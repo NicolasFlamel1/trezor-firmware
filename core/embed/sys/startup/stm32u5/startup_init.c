@@ -91,7 +91,15 @@ void lsi_init(void) {
 
   uint32_t bdcr_temp = RCC->BDCR;
 
-  if (RCC_LSI_DIV1 != (bdcr_temp & RCC_BDCR_LSIPREDIV)) {
+#if LSI_VALUE == 32000
+  uint32_t lsi_div = RCC_LSI_DIV1;
+#elif LSI_VALUE == 250
+  uint32_t lsi_div = RCC_LSI_DIV128;
+#else
+#error Unsupported LSI frequency
+#endif
+
+  if (lsi_div != (bdcr_temp & RCC_BDCR_LSIPREDIV)) {
     if (((bdcr_temp & RCC_BDCR_LSIRDY) == RCC_BDCR_LSIRDY) &&
         ((bdcr_temp & RCC_BDCR_LSION) != RCC_BDCR_LSION)) {
       // If LSIRDY is set while LSION is not enabled, LSIPREDIV can't be updated
@@ -110,7 +118,7 @@ void lsi_init(void) {
     }
 
     // Set LSI division factor
-    MODIFY_REG(RCC->BDCR, RCC_BDCR_LSIPREDIV, 0);
+    MODIFY_REG(RCC->BDCR, RCC_BDCR_LSIPREDIV, lsi_div);
   }
 
   // Enable the Internal Low Speed oscillator (LSI)
@@ -241,6 +249,13 @@ void SystemInit(void) {
   // Disable the internal Pull-Up in Dead Battery pins of UCPD peripheral
   HAL_PWREx_DisableUCPDDeadBattery();
 
+#ifdef USE_BACKUP_RAM
+  // Enable backup domain retention
+  // This bit can be written only when the regulator is LDO,
+  // which must be configured before switching to SMPS.
+  PWR->BDCR1 |= PWR_BDCR1_BREN;
+#endif
+
 #ifdef USE_SMPS
   // Switch to SMPS regulator instead of LDO
   SET_BIT(PWR->CR3, PWR_CR3_REGSEL);
@@ -254,7 +269,9 @@ void SystemInit(void) {
 
 #ifdef USE_LSE
   lse_init();
-#else
+#endif
+
+#if defined(USE_LSI) || !defined(USE_LSE)
   lsi_init();
 #endif
 
@@ -317,18 +334,21 @@ __attribute((no_stack_protector)) void reset_handler(void) {
   // contain random values and will be rewritten in the succesive
   // code
 
+#ifdef SECURE_MODE
   // Initialize system clocks
   SystemInit();
+#endif
 
   // Clear unused part of stack
   clear_unused_stack();
 
+#ifdef SECURE_MODE
   // Initialize random number generator
   rng_init();
 
   // Clear all memory except stack.
   // Keep also bootargs in bootloader and boardloader.
-  memregion_t region = MEMREGION_ALL_ACCESSIBLE_RAM;
+  memregion_t region = MEMREGION_ALL_STARTUP_RAM;
 
   MEMREGION_DEL_SECTION(&region, _stack_section);
 #if defined BOARDLOADER || defined BOOTLOADER
@@ -339,6 +359,7 @@ __attribute((no_stack_protector)) void reset_handler(void) {
   memregion_fill(&region, rng_get());
 #endif
   memregion_fill(&region, 0);
+#endif  // SECURE_MODE
 
   // Initialize .bss, .data, ...
   init_linker_sections();

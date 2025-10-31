@@ -20,13 +20,16 @@ def configure(
         "FRAMEBUFFER",
         ("DISPLAY_RESX", "128"),
         ("DISPLAY_RESY", "64"),
+        ("LOCKABLE_BOOTLOADER", "1"),
     ]
     features_available.append("framebuffer")
     features_available.append("display_mono")
 
     mcu = "STM32F427xx"
 
-    stm32f4_common_files(env, defines, sources, paths)
+    features_available += stm32f4_common_files(
+        env, features_wanted, defines, sources, paths
+    )
 
     env.get("ENV")[
         "CPU_ASFLAGS"
@@ -45,12 +48,14 @@ def configure(
         ("USE_HSE", "1"),
     ]
 
-    sources += ["embed/io/display/vg-2864/display_driver.c"]
-    paths += ["embed/io/display/inc"]
+    if "display" in features_wanted:
+        sources += ["embed/io/display/vg-2864/display_driver.c"]
+        paths += ["embed/io/display/inc"]
+        defines += [("USE_DISPLAY", "1")]
 
     if "input" in features_wanted:
         sources += ["embed/io/button/stm32/button.c"]
-        sources += ["embed/io/button/button_fsm.c"]
+        sources += ["embed/io/button/button_poll.c"]
         paths += ["embed/io/button/inc"]
         features_available.append("button")
         defines += [("USE_BUTTON", "1")]
@@ -68,22 +73,6 @@ def configure(
         ]
         paths += ["embed/sec/consumption_mask/inc"]
         defines += [("USE_CONSUMPTION_MASK", "1")]
-
-    if "usb" in features_wanted:
-        sources += [
-            "embed/io/usb/stm32/usb_class_hid.c",
-            "embed/io/usb/stm32/usb_class_vcp.c",
-            "embed/io/usb/stm32/usb_class_webusb.c",
-            "embed/io/usb/stm32/usb.c",
-            "embed/io/usb/stm32/usbd_conf.c",
-            "embed/io/usb/stm32/usbd_core.c",
-            "embed/io/usb/stm32/usbd_ctlreq.c",
-            "embed/io/usb/stm32/usbd_ioreq.c",
-            "vendor/micropython/lib/stm32lib/STM32F4xx_HAL_Driver/Src/stm32f4xx_ll_usb.c",
-        ]
-        features_available.append("usb")
-        paths += ["embed/io/usb/inc"]
-        defines += [("USE_USB", "1")]
 
     if "optiga" in features_wanted:
         sources += ["embed/io/i2c_bus/stm32f4/i2c_bus.c"]

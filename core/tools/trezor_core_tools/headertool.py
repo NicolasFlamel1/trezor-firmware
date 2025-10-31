@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
+from typing import List, Tuple
+
 import click
 
 from trezorlib import cosi, firmware
 from trezorlib._internal import firmware_headers
-
-from typing import List, Sequence, Tuple
 
 # =========================== signing =========================
 
@@ -28,6 +28,8 @@ def do_rehash(fw: firmware_headers.SignableImageProto) -> None:
     """Recalculate the code hashes inside the header."""
     if isinstance(fw, firmware.FirmwareImage):
         fw.header.hashes = fw.code_hashes()
+    if isinstance(fw, firmware.SecmonImage):
+        fw.header.hash = fw.code_hash()
     elif isinstance(fw, firmware_headers.VendorFirmware):
         fw.firmware.header.hashes = fw.firmware.code_hashes()
     # else: do nothing, other kinds of images do not need rehashing
@@ -45,6 +47,11 @@ def do_replace_vendorheader(fw, vh_file) -> None:
         raise click.ClickException("New vendor header must have the same size.")
 
     fw.vendor_header = vh
+
+
+def no_echo(*args, **kwargs):
+    """A no-op function to replace click.echo when quiet mode is enabled."""
+    pass
 
 
 @click.command()
@@ -95,8 +102,8 @@ def cli(
     """Manage firmware headers.
 
     This tool supports three types of files: raw vendor headers (TRZV), bootloader
-    images (TRZB), and firmware images which are prefixed with a vendor header
-    (TRZV+TRZF).
+    images (TRZB), firmware images which are prefixed with a vendor header
+    (TRZV+TRZF), and secmon images (TSEC).
 
     Run with no options on a file to dump information about that file.
 
@@ -132,7 +139,7 @@ def cli(
         traceback.print_exc()
         magic = firmware_data[:4]
         raise click.ClickException(
-            "Could not parse file (magic bytes: {!r})".format(magic)
+            f"Could not parse file (magic bytes: {magic})"
         ) from e
 
     digest = fw.digest()
@@ -141,7 +148,7 @@ def cli(
         return
 
     if quiet:
-        echo = lambda *args, **kwargs: None
+        echo = no_echo
     else:
         echo = click.echo
 

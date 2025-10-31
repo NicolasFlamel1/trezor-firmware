@@ -4,7 +4,7 @@ use crate::{
     ui::{
         component::{
             base::AttachType,
-            paginated::PaginateFull,
+            paginated::Paginate,
             swipe_detect::{SwipeConfig, SwipeSettings},
             text::TextStyle,
             Component,
@@ -93,6 +93,7 @@ pub struct Frame<T> {
     swipe: SwipeConfig,
     horizontal_swipe: HorizontalSwipe,
     margin: usize,
+    has_menu: bool,
 }
 
 pub enum FrameMsg<T> {
@@ -102,7 +103,7 @@ pub enum FrameMsg<T> {
 
 impl<T> Frame<T>
 where
-    T: Component + PaginateFull,
+    T: Component + Paginate,
 {
     pub const fn new(alignment: Alignment, title: TString<'static>, content: T) -> Self {
         Self {
@@ -115,6 +116,7 @@ where
             swipe: SwipeConfig::new(),
             horizontal_swipe: HorizontalSwipe::new(),
             margin: 0,
+            has_menu: false,
         }
     }
 
@@ -168,6 +170,14 @@ where
             .button_styled(theme::button_danger())
     }
 
+    // TODO: currently used to gradually introduce multi-item menus (#5189).
+    // After the migration, this flag should be set in `with_button()`.
+    pub fn with_external_menu(mut self) -> Self {
+        // Allow visiting this menu automatically by tests
+        self.has_menu = true;
+        self
+    }
+
     pub fn title_styled(mut self, style: TextStyle) -> Self {
         self.header = self.header.styled(style);
         self
@@ -199,11 +209,19 @@ where
     }
 
     #[cfg(feature = "translations")]
+    pub fn with_tap_footer(self, description: Option<TString<'static>>) -> Self {
+        use crate::translations::TR;
+
+        self.with_footer(TR::instructions__tap.into(), description)
+            .with_swipe(Direction::Up, SwipeSettings::Default)
+    }
+
+    #[cfg(feature = "translations")]
     pub fn with_swipeup_footer(self, description: Option<TString<'static>>) -> Self {
         use crate::translations::TR;
 
         self.with_footer(TR::instructions__tap_to_continue.into(), description)
-            .with_swipe(Direction::Up, SwipeSettings::default())
+            .with_swipe(Direction::Up, SwipeSettings::Default)
     }
 
     #[inline(never)]
@@ -311,7 +329,7 @@ where
 
 impl<T> Component for Frame<T>
 where
-    T: Component + PaginateFull,
+    T: Component + Paginate,
 {
     type Msg = FrameMsg<T::Msg>;
 
@@ -402,13 +420,11 @@ fn frame_place(
     bounds: Rect,
     margin: usize,
 ) -> Rect {
-    let (mut header_area, mut content_area) = bounds.split_top(TITLE_HEIGHT);
-    content_area = content_area
+    let header_area = header.place(bounds);
+    let mut content_area = bounds
+        .inset(Insets::top(header_area.height().max(TITLE_HEIGHT)))
         .inset(Insets::top(theme::SPACING))
         .inset(Insets::top(margin as i16));
-    header_area = header_area.inset(Insets::sides(theme::SPACING));
-
-    header.place(header_area);
 
     if let Some(footer) = footer {
         // FIXME: spacer at the bottom might be applied also for usage without footer
@@ -422,7 +438,7 @@ fn frame_place(
 }
 
 #[cfg(feature = "micropython")]
-impl<T: PaginateFull> crate::ui::flow::Swipable for Frame<T> {
+impl<T: Paginate> crate::ui::flow::Swipable for Frame<T> {
     fn get_swipe_config(&self) -> SwipeConfig {
         self.swipe
     }
@@ -445,5 +461,7 @@ where
         if let Some(footer) = &self.footer {
             t.child("footer", footer);
         }
+
+        t.bool("has_menu", self.has_menu);
     }
 }

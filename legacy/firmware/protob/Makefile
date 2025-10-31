@@ -2,19 +2,21 @@ ifneq ($(V),1)
 Q := @
 endif
 
-SKIPPED_MESSAGES := Binance Cardano DebugMonero Eos Monero Ontology Ripple SdProtect Tezos WebAuthn \
-	DebugLinkRecordScreen DebugLinkEraseSdCard DebugLinkWatchLayout \
+SKIPPED_MESSAGES := Cardano DebugMonero Eos Monero Ontology Ripple SdProtect Tezos WebAuthn \
+	DebugLinkGetPairingInfo DebugLinkPairingInfo DebugLinkGetGcInfo DebugLinkGcInfoItem \
+	DebugLinkGcInfo DebugLinkRecordScreen DebugLinkEraseSdCard DebugLinkWatchLayout \
 	DebugLinkLayout DebugLinkResetDebugEvents GetNonce \
-	TxAckInput TxAckOutput TxAckPrev TxAckPaymentRequest \
+	TxAckInput TxAckOutput TxAckPrev PaymentRequest \
 	EthereumSignTypedData EthereumTypedDataStructRequest EthereumTypedDataStructAck \
 	EthereumTypedDataValueRequest EthereumTypedDataValueAck ShowDeviceTutorial \
 	UnlockBootloader AuthenticateDevice AuthenticityProof \
 	Solana StellarClaimClaimableBalanceOp \
-	ChangeLanguage TranslationDataRequest TranslationDataAck \
+	ChangeLanguage DataChunkRequest DataChunkAck Thp \
 	SetBrightness DebugLinkOptigaSetSecMax \
 	BenchmarkListNames BenchmarkRun BenchmarkNames BenchmarkResult \
 	NostrGetPubkey NostrPubkey NostrSignEvent NostrEventSignature \
-	BleUnpair
+	BleUnpair PaymentNotification EvoluGetNode EvoluNode \
+	GetSerialNumber SerialNumber
 
 ifeq ($(BITCOIN_ONLY), 1)
 SKIPPED_MESSAGES += Ethereum NEM Stellar MimbleWimbleCoin

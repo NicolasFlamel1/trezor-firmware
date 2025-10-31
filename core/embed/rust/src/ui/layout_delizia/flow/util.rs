@@ -1,7 +1,6 @@
 use crate::{
     error::Error,
     maybe_trace::MaybeTrace,
-    micropython::obj::Obj,
     strutil::TString,
     translations::TR,
     ui::{
@@ -13,7 +12,10 @@ use crate::{
             },
             Component,
         },
-        flow::{FlowMsg, Swipable, SwipeFlow, SwipePage},
+        flow::{
+            base::{Decision, DecisionBuilder},
+            FlowController, FlowMsg, Swipable, SwipeFlow, SwipePage,
+        },
         geometry::Direction,
         layout::util::{ConfirmValueParams, StrOrBytes},
     },
@@ -33,7 +35,7 @@ pub struct ConfirmValue {
     subtitle: Option<TString<'static>>,
     footer_instruction: Option<TString<'static>>,
     footer_description: Option<TString<'static>>,
-    value: Obj,
+    value: StrOrBytes,
     description: Option<TString<'static>>,
     description_font: &'static TextStyle,
     extra: Option<TString<'static>>,
@@ -55,10 +57,15 @@ pub struct ConfirmValue {
     swipe_right: bool,
     frame_margin: usize,
     cancel: bool,
+    external_menu: bool,
 }
 
 impl ConfirmValue {
-    pub fn new(title: TString<'static>, value: Obj, description: Option<TString<'static>>) -> Self {
+    pub fn new(
+        title: TString<'static>,
+        value: StrOrBytes,
+        description: Option<TString<'static>>,
+    ) -> Self {
         Self {
             title,
             subtitle: None,
@@ -86,6 +93,7 @@ impl ConfirmValue {
             swipe_right: false,
             frame_margin: 0,
             cancel: false,
+            external_menu: false,
         }
     }
 
@@ -149,11 +157,6 @@ impl ConfirmValue {
         self
     }
 
-    pub const fn with_swipe_right(mut self) -> Self {
-        self.swipe_right = true;
-        self
-    }
-
     pub const fn with_frame_margin(mut self, frame_margin: usize) -> Self {
         self.frame_margin = frame_margin;
         self
@@ -170,6 +173,11 @@ impl ConfirmValue {
     pub const fn with_cancel(mut self, cancel: bool) -> Self {
         self.cancel = cancel;
         self
+    }
+
+    pub const fn with_external_menu(mut self, external_menu: bool) -> Self {
+        self.external_menu = external_menu;
+        self.with_menu_button()
     }
 
     pub const fn with_footer(
@@ -223,22 +231,18 @@ impl ConfirmValue {
     pub fn into_layout(
         self,
     ) -> Result<impl Component<Msg = FlowMsg> + Swipable + MaybeTrace, Error> {
+        let value_len = self.value.as_str_offset(0).len();
         let paragraphs = ConfirmValueParams {
             description: self.description.unwrap_or("".into()),
             extra: self.extra.unwrap_or("".into()),
-            value: if self.value != Obj::const_none() {
-                self.value.try_into()?
-            } else {
-                StrOrBytes::Str("".into())
-            },
+            value: self.value,
             font: if self.chunkify {
-                let value: TString = self.value.try_into()?;
-                theme::get_chunkified_text_style(value.len())
+                theme::get_chunkified_text_style(value_len)
             } else if self.text_mono {
                 if self.classic_ellipsis {
                     &theme::TEXT_MONO_WITH_CLASSIC_ELLIPSIS
                 } else {
-                    &theme::TEXT_MONO
+                    &theme::TEXT_MONO_DATA
                 }
             } else {
                 &theme::TEXT_NORMAL
@@ -261,19 +265,18 @@ impl ConfirmValue {
         }
         if let Some(instruction) = self.footer_instruction {
             frame = frame.with_footer(instruction, self.footer_description);
-            frame = frame.with_swipe(Direction::Left, SwipeSettings::default());
         }
 
         if self.swipe_up {
-            frame = frame.with_swipe(Direction::Up, SwipeSettings::default());
+            frame = frame.with_swipe(Direction::Up, SwipeSettings::Default);
         }
 
         if self.swipe_down {
-            frame = frame.with_swipe(Direction::Down, SwipeSettings::default());
+            frame = frame.with_swipe(Direction::Down, SwipeSettings::Default);
         }
 
         if self.swipe_right {
-            frame = frame.with_swipe(Direction::Right, SwipeSettings::default());
+            frame = frame.with_swipe(Direction::Right, SwipeSettings::Default);
         }
 
         frame = frame.with_vertical_pages();
@@ -282,18 +285,18 @@ impl ConfirmValue {
     }
 
     pub fn into_flow(self) -> Result<SwipeFlow, Error> {
+        let value_len = self.value.as_str_offset(0).len();
         let paragraphs = ConfirmValueParams {
             description: self.description.unwrap_or("".into()),
             extra: self.extra.unwrap_or("".into()),
-            value: self.value.try_into()?,
+            value: self.value,
             font: if self.chunkify {
-                let value: TString = self.value.try_into()?;
-                theme::get_chunkified_text_style(value.len())
+                theme::get_chunkified_text_style(value_len)
             } else if self.text_mono {
                 if self.classic_ellipsis {
                     &theme::TEXT_MONO_WITH_CLASSIC_ELLIPSIS
                 } else {
-                    &theme::TEXT_MONO
+                    &theme::TEXT_MONO_DATA
                 }
             } else {
                 &theme::TEXT_NORMAL
@@ -303,7 +306,9 @@ impl ConfirmValue {
         }
         .into_paragraphs();
 
-        let confirm_extra = if self.cancel {
+        let confirm_extra = if self.external_menu {
+            ConfirmActionExtra::ExternalMenu
+        } else if self.cancel {
             ConfirmActionExtra::Cancel
         } else {
             ConfirmActionExtra::Menu(
@@ -342,7 +347,6 @@ pub struct ShowInfoParams {
     cancel_button: bool,
     footer_instruction: Option<TString<'static>>,
     footer_description: Option<TString<'static>>,
-    chunkify: bool,
     swipe_up: bool,
     swipe_down: bool,
     items: Vec<(TString<'static>, TString<'static>), 4>,
@@ -357,7 +361,6 @@ impl ShowInfoParams {
             cancel_button: false,
             footer_instruction: None,
             footer_description: None,
-            chunkify: false,
             swipe_up: false,
             swipe_down: false,
             items: Vec::new(),
@@ -439,14 +442,7 @@ impl ShowInfoParams {
             }
             first = false;
             paragraphs.add(Paragraph::new(&theme::TEXT_SUB_GREY, item.0).no_break());
-            if self.chunkify {
-                paragraphs.add(Paragraph::new(
-                    theme::get_chunkified_text_style(item.1.len()),
-                    item.1,
-                ));
-            } else {
-                paragraphs.add(Paragraph::new(&theme::TEXT_MONO_GREY_LIGHT, item.1));
-            }
+            paragraphs.add(Paragraph::new(&theme::TEXT_MONO_GREY_LIGHT, item.1));
         }
 
         let mut frame = Frame::left_aligned(
@@ -459,22 +455,20 @@ impl ShowInfoParams {
         if self.cancel_button {
             frame = frame
                 .with_cancel_button()
-                .with_swipe(Direction::Right, SwipeSettings::immediate());
+                .with_swipe(Direction::Right, SwipeSettings::Immediate);
         } else if self.menu_button {
-            frame = frame
-                .with_menu_button()
-                .with_swipe(Direction::Left, SwipeSettings::default());
+            frame = frame.with_menu_button()
         }
         if let Some(instruction) = self.footer_instruction {
             frame = frame.with_footer(instruction, self.footer_description);
         }
 
         if self.swipe_up {
-            frame = frame.with_swipe(Direction::Up, SwipeSettings::default());
+            frame = frame.with_swipe(Direction::Up, SwipeSettings::Default);
         }
 
         if self.swipe_down {
-            frame = frame.with_swipe(Direction::Down, SwipeSettings::default());
+            frame = frame.with_swipe(Direction::Down, SwipeSettings::Default);
         }
 
         frame = frame.with_vertical_pages();
@@ -501,4 +495,32 @@ pub fn map_to_choice(msg: VerticalMenuChoiceMsg) -> Option<FlowMsg> {
     match msg {
         VerticalMenuChoiceMsg::Selected(i) => Some(FlowMsg::Choice(i)),
     }
+}
+
+enum SinglePage {
+    Show,
+}
+
+impl FlowController for SinglePage {
+    #[inline]
+    fn index(&'static self) -> usize {
+        0
+    }
+
+    fn handle_swipe(&'static self, _direction: Direction) -> Decision {
+        self.do_nothing()
+    }
+
+    fn handle_event(&'static self, msg: FlowMsg) -> Decision {
+        self.return_msg(msg)
+    }
+}
+
+pub fn single_page<T>(layout: T) -> Result<SwipeFlow, Error>
+where
+    T: Component<Msg = FlowMsg> + Swipable + MaybeTrace + 'static,
+{
+    let mut flow = SwipeFlow::new(&SinglePage::Show)?;
+    flow.add_page(&SinglePage::Show, layout)?;
+    Ok(flow)
 }

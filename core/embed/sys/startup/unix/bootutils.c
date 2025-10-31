@@ -61,6 +61,18 @@ __attribute__((noreturn)) void reboot_device(void) {
   exit(3);
 }
 
+__attribute__((noreturn)) void reboot_to_bootloader(void) {
+  printf("reboot (to bootloader)\n");
+
+  exit(3);
+}
+
+__attribute__((noreturn)) void reboot_to_off(void) {
+  printf("reboot (power off)\n");
+
+  exit(3);
+}
+
 __attribute__((noreturn)) void reboot_or_halt_after_rsod(void) {
   printf("reboot (with timeout)\n");
 

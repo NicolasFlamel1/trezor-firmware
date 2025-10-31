@@ -1,13 +1,12 @@
 #!/usr/bin/env python3
 
 import datetime
-from pathlib import Path
 import re
 import subprocess
+from pathlib import Path
+from typing import Iterator
 
 import click
-
-from typing import Iterator
 
 LINK_RE = re.compile(r"\[#(\d+)\]")
 ISSUE_URL = "https://github.com/trezor/trezor-firmware/pull/{issue}"
@@ -132,9 +131,10 @@ def filter_changelog(changelog_file: Path, internal_name: str):
             return None
 
     destination_file = changelog_file.with_suffix(f".{internal_name}.md")
-    with open(changelog_file, "r") as changelog, open(
-        destination_file, "w"
-    ) as destination:
+    with (
+        open(changelog_file, "r") as changelog,
+        open(destination_file, "w") as destination,
+    ):
         for line in changelog:
             res = filter_line(line)
             if res is not None:
@@ -265,7 +265,7 @@ def generate(project, version, date, check, only_models):
 
     if only_models:
         generate_filtered(project, changelog)
-        return 0
+        return
 
     args = ["towncrier", "build", "--yes", "--version", version, "--date", date]
     if check:

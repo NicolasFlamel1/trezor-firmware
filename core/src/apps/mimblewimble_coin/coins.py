@@ -755,7 +755,7 @@ def getCoinInfo(coinType: MimbleWimbleCoinCoinType, networkType: MimbleWimbleCoi
 				"MQS",
 			)
 	
-	# Otherwise check if model is Trezor model T3W1 (TODO waiting for official name)
+	# Otherwise check if model is Trezor Safe 7
 	elif INTERNAL_MODEL == "T3W1":
 
 		# Check if coin info is requested

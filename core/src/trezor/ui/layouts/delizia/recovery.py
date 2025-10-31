@@ -4,8 +4,10 @@ import trezorui_api
 from trezor import TR
 from trezor.enums import ButtonRequestType, RecoveryType
 
+from apps.common import backup_types
+
 from ..common import interact
-from . import raise_if_not_confirmed
+from . import raise_if_cancelled
 
 CONFIRMED = trezorui_api.CONFIRMED  # global_import_cache
 CANCELLED = trezorui_api.CANCELLED  # global_import_cache
@@ -21,6 +23,7 @@ async def request_word_count(recovery_type: RecoveryType) -> int:
         "recovery_word_count",
         ButtonRequestType.MnemonicWordCount,
     )
+    assert isinstance(count, (int, str))
     return int(count)
 
 
@@ -88,7 +91,7 @@ def format_remaining_shares_info(
 
 
 async def show_group_share_success(share_index: int, group_index: int) -> None:
-    await raise_if_not_confirmed(
+    await raise_if_cancelled(
         trezorui_api.show_group_share_success(
             lines=[
                 TR.recovery__you_have_entered,
@@ -130,6 +133,45 @@ async def continue_recovery(
     return result is CONFIRMED
 
 
+async def show_invalid_mnemonic(word_count: int) -> None:
+    if backup_types.is_slip39_word_count(word_count):
+        await show_recovery_warning(
+            "warning_invalid_share",
+            TR.words__please_try_again,
+            TR.recovery__invalid_share_entered,
+        )
+    else:
+        await show_recovery_warning(
+            "warning_invalid_seed",
+            TR.words__please_try_again,
+            TR.recovery__invalid_wallet_backup_entered,
+        )
+
+
+async def show_identifier_mismatch() -> None:
+    await show_recovery_warning(
+        "warning_mismatched_share",
+        "",
+        TR.recovery__share_from_another_multi_share_backup,
+    )
+
+
+async def show_already_added() -> None:
+    await show_recovery_warning(
+        "warning_known_share",
+        TR.recovery__share_already_entered,
+        TR.recovery__enter_different_share,
+    )
+
+
+async def show_group_thresholod() -> None:
+    await show_recovery_warning(
+        "warning_group_threshold",
+        TR.recovery__group_threshold_reached,
+        TR.recovery__enter_share_from_diff_group,
+    )
+
+
 async def show_recovery_warning(
     br_name: str,
     content: str,
@@ -138,7 +180,7 @@ async def show_recovery_warning(
     br_code: ButtonRequestType = ButtonRequestType.Warning,
 ) -> None:
     button = button or TR.buttons__try_again  # def_arg
-    await raise_if_not_confirmed(
+    await raise_if_cancelled(
         trezorui_api.show_warning(
             title=content or TR.words__warning,
             value=subheader or "",
@@ -149,3 +191,24 @@ async def show_recovery_warning(
         br_name,
         br_code,
     )
+
+
+async def show_dry_run_result(result: bool, is_slip39: bool) -> None:
+    from trezor.ui.layouts import show_success
+
+    if result:
+        if is_slip39:
+            text = TR.recovery__dry_run_slip39_valid_match
+        else:
+            text = TR.recovery__dry_run_bip39_valid_match
+        await show_success(
+            "success_dry_recovery", text, button=TR.instructions__tap_to_continue
+        )
+    else:
+        if is_slip39:
+            text = TR.recovery__dry_run_slip39_valid_mismatch
+        else:
+            text = TR.recovery__dry_run_bip39_valid_mismatch
+        await show_recovery_warning(
+            "warning_dry_recovery", "", text, button=TR.buttons__continue
+        )

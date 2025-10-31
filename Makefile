@@ -6,12 +6,13 @@ help: ## show this help
 ## style commands:
 
 PY_FILES = $(shell find . -type f -name '*.py'   | sed 'sO^\./OO' | grep -f ./tools/style.py.include | grep -v -f ./tools/style.py.exclude ) common/protob/pb2py
+PY_FILES_LIMITED = $(shell find . -type f -name '*.py'   | sed 'sO^\./OO' | grep -f ./tools/style.py.include | grep -v -f ./tools/style.py.exclude | grep -v -f ./tools/style.py.typecheck.exclude ) common/protob/pb2py
 C_FILES =  $(shell find . -type f -name '*.[ch]' | grep -f ./tools/style.c.include  | grep -v -f ./tools/style.c.exclude )
 
 
-style_check: pystyle_check ruststyle_check cstyle_check changelog_check yaml_check docs_summary_check editor_check ## run all style checks
+style_check: pystyle_check ruststyle_check cstyle_check changelog_check translations_style_check yaml_check docs_summary_check editor_check ## run all style checks
 
-style: pystyle ruststyle cstyle changelog_style ## apply all code styles (C+Rust+Py+Changelog)
+style: pystyle ruststyle cstyle changelog_style translations_style ## apply all code styles (C+Rust+Py+Changelog+translation JSON)
 
 pystyle_check: ## run code style check on application sources and tests
 	flake8 --version
@@ -22,7 +23,9 @@ pystyle_check: ## run code style check on application sources and tests
 	@echo [TYPECHECK]
 	@make -C core typecheck
 	@echo [FLAKE8]
-	@flake8 $(PY_FILES)
+	@flake8 $(PY_FILES_LIMITED)
+	@echo [FLAKE8 - limited]
+	@flake8 --extend-ignore=ANN $(PY_FILES)
 	@echo [ISORT]
 	@isort --check-only $(PY_FILES)
 	@echo [BLACK]
@@ -45,7 +48,9 @@ pystyle: ## apply code style on application sources and tests
 	@echo [TYPECHECK]
 	@make -C core typecheck
 	@echo [FLAKE8]
-	@flake8 $(PY_FILES)
+	@flake8 $(PY_FILES_LIMITED)
+	@echo [FLAKE8 - limited]
+	@flake8 --extend-ignore=ANN $(PY_FILES)
 	@echo [PYLINT]
 	@pylint $(PY_FILES)
 	@echo [PYTHON]
@@ -56,6 +61,14 @@ changelog_check: ## check changelog format
 
 changelog_style: ## fix changelog format
 	./tools/changelog.py style
+
+translations_style: ## Format translation files
+	@echo [TRANSLATIONS-STYLE]
+	@./core/tools/translations/sort_keys.py
+
+translations_style_check: ## Check that translation files are properly formatted
+	@echo [TRANSLATIONS-STYLE-CHECK]
+	@./core/tools/translations/sort_keys.py check
 
 yaml_check: ## check yaml formatting
 	yamllint .
@@ -139,12 +152,12 @@ vendorheader_check: ## check that vendor header is up to date
 	./core/tools/generate_vendorheader.sh --quiet --check
 
 bootloader_hashes: ## generate bootloader hashes
-	./core/tools/bootloader_hashes.py
+	bootloader_hashes
 
 bootloader_hashes_check: ## check generated bootloader hashes
-	./core/tools/bootloader_hashes.py --check
+	bootloader_hashes --check
 
-lsgen: ## generate linker scripts hashes
+lsgen: ## generate linker scripts
 	lsgen
 
 lsgen_check: ## check generated linker scripts

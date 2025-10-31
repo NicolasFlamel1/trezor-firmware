@@ -35,23 +35,91 @@
 
 #include <io/display.h>
 #include <sys/linker_utils.h>
+#include <sys/notify.h>
 #include <sys/systask.h>
 #include <sys/system.h>
+#include <util/boot_image.h>
 #include <util/rsod.h>
 #include "rust_ui_common.h"
+
+#include <blake2s.h>
+
+#include "sys/bootutils.h"
 
 #ifdef USE_SECP256K1_ZKP
 #include "zkp_context.h"
 #endif
 
-int main(uint32_t cmd, void *arg) {
+#ifdef USE_BLE
+#include <io/ble.h>
+#endif
+
+#ifdef USE_NRF
+#include <io/nrf.h>
+
+extern const void nrf_app_start;
+extern const void nrf_app_end;
+extern const void nrf_app_size;
+
+#endif
+
+int main_func(uint32_t cmd, void *arg) {
   if (cmd == 1) {
     systask_postmortem_t *info = (systask_postmortem_t *)arg;
     rsod_gui(info);
     system_exit(0);
   }
 
-  screen_boot_stage_2(DISPLAY_JUMP_BEHAVIOR == DISPLAY_RESET_CONTENT);
+  bool fading = DISPLAY_JUMP_BEHAVIOR == DISPLAY_RESET_CONTENT;
+
+  bool update_required = false;
+
+#if PRODUCTION || BOOTLOADER_QA
+  // Check if the bootloader is valid and replace it if not
+  bool bl_update_required = boot_image_check(boot_image_get_embdata());
+  update_required = update_required || bl_update_required;
+#endif
+
+#ifdef USE_NRF
+  bool nrf_update_required_ =
+      nrf_update_required(&nrf_app_start, (size_t)&nrf_app_size);
+  update_required = update_required || nrf_update_required_;
+#endif
+
+  if (update_required) {
+    screen_update();
+    fading = true;
+
+#if PRODUCTION || BOOTLOADER_QA
+    if (bl_update_required) {
+      boot_image_replace(boot_image_get_embdata());
+    }
+#endif
+
+#ifdef USE_NRF
+    if (nrf_update_required_) {
+      nrf_update(&nrf_app_start, (size_t)&nrf_app_size);
+    }
+#endif
+  }
+
+#if PRODUCTION || BOOTLOADER_QA
+  if (bl_update_required) {
+    reboot_device();
+  }
+#endif
+
+#ifdef USE_NRF
+#if PRODUCTION
+  if (!nrf_authenticate()) {
+    error_shutdown("Bluetooth authentication failed");
+  }
+#endif
+#endif
+
+  screen_boot_stage_2(fading);
+
+  notify_send(NOTIFY_BOOT);
 
 #ifdef USE_SECP256K1_ZKP
   ensure(sectrue * (zkp_context_init() == 0), NULL);
@@ -125,7 +193,7 @@ __attribute((no_stack_protector)) void reset_handler(uint32_t cmd, void *arg,
   // Now everything is perfectly initialized and we can do anything
   // in C code
 
-  int main_result = main(cmd, arg);
+  int main_result = main_func(cmd, arg);
 
   system_exit(main_result);
 }

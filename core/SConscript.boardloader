@@ -6,8 +6,17 @@ import tools, models
 TREZOR_MODEL = ARGUMENTS.get('TREZOR_MODEL', 'T2T1')
 CMAKELISTS = int(ARGUMENTS.get('CMAKELISTS', 0))
 HW_REVISION = ARGUMENTS.get('HW_REVISION', None)
+DBG_CONSOLE = ARGUMENTS.get('DBG_CONSOLE', '')
 
-FEATURES_WANTED = ["sd_card"]
+FEATURES_WANTED = [
+    "boot_ucb",
+    "display",
+    "kernel_mode",
+    "pmic",
+    "sd_card",
+    "secure_domain",
+    "secure_mode",
+    ]
 
 CCFLAGS_MOD = ''
 CPPPATH_MOD = []
@@ -18,22 +27,31 @@ CPPDEFINES_HAL = []
 SOURCE_HAL = []
 PATH_HAL = []
 
+if DBG_CONSOLE != "":
+    FEATURES_WANTED += ["dbg_console"]
+
+env = Environment(ENV=os.environ,
+    CFLAGS='%s -DPRODUCTION=%s' % (ARGUMENTS.get('CFLAGS', ''), ARGUMENTS.get('PRODUCTION', '0')),
+    CPPDEFINES_IMPLICIT=[],
+    CPPDEFPREFIX="-D'",
+    CPPDEFSUFFIX="'",
+    DBG_CONSOLE=DBG_CONSOLE,
+)
+
+FEATURES_AVAILABLE = models.configure_board(TREZOR_MODEL, HW_REVISION, FEATURES_WANTED, env, CPPDEFINES_HAL, SOURCE_HAL, PATH_HAL)
+
 # modtrezorcrypto
 CCFLAGS_MOD += '-Wno-sequence-point '
 CPPPATH_MOD += [
     'vendor/trezor-crypto',
-    'vendor/trezor-storage',
 ]
 CPPDEFINES_MOD += [
-    'KERNEL_MODE',
     'AES_128',
     'AES_192',
     'USE_KECCAK',
     'ED25519_NO_PRECOMP',
 ]
-SOURCE_MOD += [
-    'vendor/trezor-storage/flash_area.c',
-]
+
 SOURCE_MOD_CRYPTO += [
     'vendor/trezor-crypto/blake2s.c',
     'vendor/trezor-crypto/ed25519-donna/curve25519-donna-32bit.c',
@@ -45,6 +63,20 @@ SOURCE_MOD_CRYPTO += [
     'vendor/trezor-crypto/memzero.c',
     'vendor/trezor-crypto/sha2.c',
 ]
+
+if 'boot_ucb' in FEATURES_AVAILABLE:
+    PQ_SIGNATURE_PATH = 'vendor/sphincsplus/ref/'
+    CCFLAGS_MOD += '-DPARAMS=sphincs-sha2-128s '
+    PQ_SIGNATURE_SOURCE = [
+        'vendor/sphincsplus/ref/address.c',
+        'vendor/sphincsplus/ref/fors.c',
+        'vendor/sphincsplus/ref/hash_sha2.c',
+        'vendor/sphincsplus/ref/sha2.c',
+        'vendor/sphincsplus/ref/sign.c',
+        'vendor/sphincsplus/ref/thash_sha2_simple.c',
+        'vendor/sphincsplus/ref/utils.c',
+        'vendor/sphincsplus/ref/wots.c',
+    ]
 
 # modtrezorui
 CPPPATH_MOD += [
@@ -67,16 +99,6 @@ SOURCE_MOD += [
     'embed/rtl/error_handling.c',
     'embed/rtl/mini_printf.c',
 ]
-
-env = Environment(ENV=os.environ,
-    CFLAGS='%s -DPRODUCTION=%s' % (ARGUMENTS.get('CFLAGS', ''), ARGUMENTS.get('PRODUCTION', '0')),
-    CONSTRAINTS=["limited_util_s"],
-    CPPDEFINES_IMPLICIT=[],
-    CPPDEFPREFIX="-D'",
-    CPPDEFSUFFIX="'",
-)
-
-FEATURES_AVAILABLE = models.configure_board(TREZOR_MODEL, HW_REVISION, FEATURES_WANTED, env, CPPDEFINES_HAL, SOURCE_HAL, PATH_HAL)
 
 SOURCE_BOARDLOADER = [
     'embed/projects/boardloader/main.c',
@@ -160,6 +182,11 @@ obj_program += env.Object(source=SOURCE_MOD)
 obj_program += env.Object(source=SOURCE_MOD_CRYPTO, CCFLAGS='$CCFLAGS -ftrivial-auto-var-init=zero')
 obj_program += env.Object(source=SOURCE_BOARDLOADER)
 obj_program += env.Object(source=SOURCE_HAL)
+
+if 'boot_ucb' in FEATURES_AVAILABLE:
+    obj_program += env.Object(
+        source=PQ_SIGNATURE_SOURCE, CCFLAGS="$CCFLAGS -Wno-incompatible-pointer-types"
+    )
 
 linkerscript_gen = env.Command(
     target='memory.ld',

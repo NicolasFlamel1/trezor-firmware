@@ -19,31 +19,109 @@
 
 #pragma once
 
+#ifdef USE_STORAGE
+#include <sec/storage.h>
+#endif
 #include <trezor_types.h>
 
-#ifdef KERNEL_MODE
+#include "ed25519-donna/ed25519.h"
 
-#define TROPIC_CHIP_ID_SIZE 128
-#define TROPIC_RISCV_FW_SIZE 4
-#define TROPIC_SPECT_FW_SIZE 4
+// FIDO attestation key and certificate.
+#define TROPIC_FIDO_CERT_FIRST_SLOT 0
+#define TROPIC_FIDO_CERT_SLOT_COUNT 3
+#define TROPIC_FIDO_KEY_SLOT 1  // ECC_SLOT_1
+
+// Device attestation key and certificate.
+#define TROPIC_DEVICE_CERT_FIRST_SLOT 3
+#define TROPIC_DEVICE_CERT_SLOT_COUNT 3
+#define TROPIC_DEVICE_KEY_SLOT 0  // ECC_SLOT_0
+
+#ifdef USE_STORAGE
+// KEK masks used in PIN verification
+#define TROPIC_KEK_MASKS_PRIVILEGED_SLOT 128
+#define TROPIC_KEK_MASKS_UNPRIVILEGED_SLOT 256
+
+// Mac-and-destroy slots used in PIN verification
+#define TROPIC_FIRST_MAC_AND_DESTROY_SLOT_PRIVILEGED 0
+#define TROPIC_FIRST_MAC_AND_DESTROY_SLOT_UNPRIVILEGED 64
+#endif
+
+// Pairing key used by prodtest to inject the privileged and unprivileged
+// pairing keys.
+#define TROPIC_FACTORY_PAIRING_KEY_SLOT 0  // PAIRING_KEY_SLOT_INDEX_0
+
+// Pairing key used by the HSM to inject the attestation FIDO key and generate
+// the device key, and by unofficial firwmare.
+#define TROPIC_UNPRIVILEGED_PAIRING_KEY_SLOT 1  // PAIRING_KEY_SLOT_INDEX_1
+
+// Pairing key used by official firmware.
+#define TROPIC_PRIVILEGED_PAIRING_KEY_SLOT 2  // PAIRING_KEY_SLOT_INDEX_2
+
+#define TROPIC_MAC_AND_DESTROY_SIZE 32
+
+#ifdef KERNEL_MODE
 
 bool tropic_init(void);
 
 void tropic_deinit(void);
 
-bool tropic_get_spect_fw_version(uint8_t* version_buffer, uint16_t max_len);
+#ifdef TREZOR_PRODTEST
+#include "libtropic.h"
+lt_handle_t* tropic_get_handle(void);
 
-bool tropic_get_riscv_fw_version(uint8_t* version_buffer, uint16_t max_len);
+lt_ret_t tropic_start_custom_session(const uint8_t* stpub,
+                                     const pkey_index_t pkey_index,
+                                     const uint8_t* shipriv,
+                                     const uint8_t* shipub);
 
-bool tropic_get_chip_id(uint8_t* chip_id, uint16_t max_len);
+bool tropic_wait_for_ready(void);
+#endif
 
 #endif
 
-bool tropic_ping(const uint8_t* msg_out, uint8_t* msg_in, uint16_t msg_len);
+typedef secbool (*tropic_ui_progress_t)(void);
 
-bool tropic_get_cert(uint8_t* buf, uint16_t buf_size);
+void tropic_get_factory_privkey(curve25519_key privkey);
+
+bool tropic_ping(const uint8_t* msg_out, uint8_t* msg_in, uint16_t msg_len);
 
 bool tropic_ecc_key_generate(uint16_t slot_index);
 
 bool tropic_ecc_sign(uint16_t key_slot_index, const uint8_t* dig,
-                     uint16_t dig_len, uint8_t* sig, uint16_t sig_len);
+                     uint16_t dig_len, uint8_t* sig);
+
+bool tropic_data_read(uint16_t udata_slot, uint8_t* data, uint16_t* size);
+
+bool tropic_data_multi_size(uint16_t first_slot, size_t* data_length);
+
+bool tropic_data_multi_read(uint16_t first_slot, uint16_t slot_count,
+                            uint8_t* data, size_t max_data_length,
+                            size_t* data_length);
+
+bool tropic_random_buffer(void* buffer, size_t length);
+
+#ifdef USE_STORAGE
+bool tropic_pin_stretch(tropic_ui_progress_t ui_progress, uint16_t pin_index,
+                        uint8_t stretched_pin[TROPIC_MAC_AND_DESTROY_SIZE]);
+
+bool tropic_pin_reset_slots(
+    tropic_ui_progress_t ui_progress, uint16_t pin_index,
+    const uint8_t reset_key[TROPIC_MAC_AND_DESTROY_SIZE]);
+
+bool tropic_pin_set(
+    tropic_ui_progress_t ui_progress,
+    uint8_t stretched_pins[PIN_MAX_TRIES][TROPIC_MAC_AND_DESTROY_SIZE],
+    uint8_t reset_key[TROPIC_MAC_AND_DESTROY_SIZE]);
+
+bool tropic_pin_set_kek_masks(
+    tropic_ui_progress_t ui_progress,
+    const uint8_t kek[TROPIC_MAC_AND_DESTROY_SIZE],
+    const uint8_t stretched_pins[PIN_MAX_TRIES][TROPIC_MAC_AND_DESTROY_SIZE]);
+
+bool tropic_pin_unmask_kek(
+    tropic_ui_progress_t ui_progress, uint16_t pin_index,
+    const uint8_t stretched_pin[TROPIC_MAC_AND_DESTROY_SIZE],
+    uint8_t kek[TROPIC_MAC_AND_DESTROY_SIZE]);
+
+uint32_t tropic_estimate_time_ms(storage_pin_op_t op, uint16_t pin_index);
+#endif

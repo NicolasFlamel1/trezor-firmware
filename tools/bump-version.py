@@ -1,17 +1,17 @@
 #!/usr/bin/env python3
 
-from pathlib import Path
 import re
 import subprocess
+from pathlib import Path
 
 import click
 
 VERSION_RE = re.compile(r"^(\d+)[.](\d+)[.](\d+)$")
 HEADER_LINE_RE = re.compile(r"^#define ([A-Z_]+) \S+$")
-PYTHON_VERSION_RE = re.compile(r'^__version__ = "\d+[.]\d+[.]\d+"$', flags=re.MULTILINE)
+VERSION_FILE_LINE_RE = re.compile(r"^([A-Z_]+) = \S+$")
 
 
-def bump_header(filename, **kwargs):
+def bump_header(filename: Path, **kwargs):
     result_lines = []
 
     with open(filename, "r+") as fh:
@@ -29,18 +29,30 @@ def bump_header(filename, **kwargs):
             fh.write(line)
 
 
-def bump_python(filename, new_version):
+def bump_version_file(filename: Path, **kwargs):
+    result_lines = []
+
     with open(filename, "r+") as fh:
-        contents = fh.read()
-        result = PYTHON_VERSION_RE.sub(f'__version__ = "{new_version}"', contents)
+        for line in fh:
+            m = VERSION_FILE_LINE_RE.match(line)
+            if m is not None and m[1] in kwargs:
+                symbol = m[1]
+                result_lines.append(f"{symbol} = {kwargs[symbol]}\n")
+            else:
+                result_lines.append(line)
 
         fh.seek(0)
         fh.truncate(0)
-        fh.write(result)
+        for line in result_lines:
+            fh.write(line)
+
+
+def bump_python(subdir: Path, new_version: str):
+    subprocess.check_call(["uv", "version", new_version], cwd=subdir)
 
 
 def hex_lit(version):
-    return r'"\x{:02X}"'.format(int(version))
+    return rf'"\x{int(version):02X}"'
 
 
 @click.command()
@@ -54,7 +66,7 @@ def hex_lit(version):
 )
 def cli(project, version):
     """Bump version for given project (core, python, legacy/firmware,
-    legacy/bootloader).
+    legacy/bootloader, core/embed/projects/prodtest, nordic/trezor/trezor-ble).
     """
     project = Path(project)
 
@@ -65,7 +77,14 @@ def cli(project, version):
     major, minor, patch = m.group(1, 2, 3)
 
     parts = project.parts
-    if (project / "version.h").is_file():
+    if (project / "VERSION").is_file():
+        bump_version_file(
+            project / "VERSION",
+            VERSION_MAJOR=major,
+            VERSION_MINOR=minor,
+            PATCHLEVEL=patch,
+        )
+    elif (project / "version.h").is_file():
         bump_header(
             project / "version.h",
             VERSION_MAJOR=major,
@@ -89,9 +108,7 @@ def cli(project, version):
             VERSION_PATCH=patch,
         )
     elif parts[-1] == "python":
-        bump_python(
-            project / "src" / "trezorlib" / "__init__.py", f"{major}.{minor}.{patch}"
-        )
+        bump_python(project / "python", f"{major}.{minor}.{patch}")
     else:
         raise click.ClickException(f"Unknown project {project}.")
 

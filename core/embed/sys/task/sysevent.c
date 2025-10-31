@@ -17,14 +17,16 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifdef KERNEL_MODE
-
-#include <trezor_bsp.h>
 #include <trezor_rtl.h>
+
+#include <sys/sysevent.h>
+#include <sys/systick.h>
+
+#ifdef KERNEL_MODE
 
 #include <sys/sysevent_source.h>
 #include <sys/systask.h>
-#include <sys/systick.h>
+#include <trezor_bsp.h>
 
 #ifdef TREZOR_EMULATOR
 #include <sys/unix/sdl_event.h>
@@ -79,6 +81,39 @@ void syshandle_unregister(syshandle_t handle) {
     dispatcher->sources[handle].vmt = NULL;
     dispatcher->sources[handle].context = NULL;
   }
+}
+
+ssize_t syshandle_read(syshandle_t handle, void *buffer, size_t buffer_size) {
+  if (handle >= SYSHANDLE_COUNT) {
+    return -1;
+  }
+
+  sysevent_dispatcher_t *dispatcher = &g_sysevent_dispatcher;
+
+  const sysevent_source_t *source = &dispatcher->sources[handle];
+
+  if (source->vmt == NULL || source->vmt->read == NULL) {
+    return -1;
+  }
+
+  return source->vmt->read(source->context, buffer, buffer_size);
+}
+
+ssize_t syshandle_write(syshandle_t handle, const void *data,
+                        size_t data_size) {
+  if (handle >= SYSHANDLE_COUNT) {
+    return false;
+  }
+
+  sysevent_dispatcher_t *dispatcher = &g_sysevent_dispatcher;
+
+  const sysevent_source_t *source = &dispatcher->sources[handle];
+
+  if (source->vmt == NULL || source->vmt->write == NULL) {
+    return -1;
+  }
+
+  return source->vmt->write(source->context, data, data_size);
 }
 
 void syshandle_signal_read_ready(syshandle_t handle, void *param) {
@@ -277,3 +312,48 @@ void sysevents_notify_task_killed(systask_t *task) {
 }
 
 #endif  // KERNEL_MODE
+
+ssize_t syshandle_read_blocking(syshandle_t handle, void *buffer,
+                                size_t buffer_size, uint32_t timeout) {
+  if (timeout > 0) {
+    sysevents_t awaited = {.read_ready = 1 << handle};
+    sysevents_t signalled = {0};
+    sysevents_poll(&awaited, &signalled, ticks_timeout(timeout));
+  }
+  return syshandle_read(handle, buffer, buffer_size);
+}
+
+ssize_t syshandle_write_blocking(syshandle_t handle, const void *data,
+                                 size_t data_size, uint32_t timeout) {
+  if (timeout == 0) {
+    return syshandle_write(handle, data, data_size);
+  } else {
+    ticks_t deadline = ticks_timeout(timeout);
+
+    const uint8_t *ptr = (const uint8_t *)data;
+    size_t remaining = data_size;
+
+    // Send data in a loop until all data is sent or timeout occurs
+    while (remaining > 0) {
+      sysevents_t awaited = {.write_ready = 1 << handle};
+      sysevents_t signalled = {0};
+      sysevents_poll(&awaited, &signalled, deadline);
+
+      if (signalled.write_ready == 0) {
+        // Timeout
+        break;
+      }
+
+      ssize_t written = syshandle_write(handle, ptr, remaining);
+
+      if (written < 0) {
+        return remaining == data_size ? written : data_size - remaining;
+      }
+
+      ptr += written;
+      remaining -= written;
+    }
+
+    return data_size - remaining;
+  }
+}

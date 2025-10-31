@@ -69,6 +69,7 @@ french_chars = (
 )
 
 spanish_chars = (
+    "º",
     "Á",
     "É",
     "Í",
@@ -131,22 +132,6 @@ portugese_chars = (
 )
 
 
-turkish_chars = (
-    "Ç",
-    "Ö",
-    "Ü",
-    "ç",
-    "ö",
-    "ü",
-    "Ğ",
-    "ğ",
-    "İ",
-    "ı",
-    "Ş",
-    "ş",
-)
-
-
 all_languages = {
     "cs": czech_chars,
     "fr": french_chars,
@@ -154,5 +139,4 @@ all_languages = {
     "de": german_chars,
     "it": italian_chars,
     "pt": portugese_chars,
-    "tr": turkish_chars,
 }

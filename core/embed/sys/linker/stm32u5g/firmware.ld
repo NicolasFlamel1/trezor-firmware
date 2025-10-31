@@ -1,9 +1,7 @@
-INCLUDE "./embed/sys/linker/stm32u5g/memory.ld";
-
 ENTRY(reset_handler)
 
 MEMORY {
-  FLASH  (rx)  : ORIGIN = KERNEL_START, LENGTH = FIRMWARE_MAXSIZE
+  FLASH  (rx)  : ORIGIN = FIRMWARE_START, LENGTH = FIRMWARE_MAXSIZE
   AUX1_RAM (wal) : ORIGIN = AUX1_RAM_START, LENGTH = AUX1_RAM_SIZE
 }
 
@@ -23,8 +21,6 @@ _confidential_section_start = ADDR(.confidential);
 _confidential_section_end = ADDR(.confidential) + SIZEOF(.confidential);
 
 _codelen = SIZEOF(.padding) + SIZEOF(.flash) + SIZEOF(.data) + SIZEOF(.confidential);
-_flash_start = ORIGIN(FLASH);
-_flash_end = ORIGIN(FLASH) + LENGTH(FLASH);
 _heap_start = ADDR(.heap);
 _heap_end = ADDR(.heap) + SIZEOF(.heap);
 
@@ -50,6 +46,12 @@ SECTIONS {
     *(.text*);
     . = ALIGN(4);
     *(.rodata*);
+    . = ALIGN(4);
+    KEEP(*(.nrf_app));
+    *(.nrf_app*);
+    . = ALIGN(4);
+    KEEP(*(.bootloader));
+    *(.bootloader*);
     . = ALIGN(512);
   } >FLASH AT>FLASH
 

@@ -5,7 +5,7 @@ from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.x509 import extensions as ext
 
 from trezorlib import device, models
-from trezorlib.debuglink import TrezorClientDebugLink as Client
+from trezorlib.debuglink import SessionDebugWrapper as Session
 
 from ..common import compact_size
 
@@ -21,6 +21,9 @@ ROOT_PUBLIC_KEY = {
     models.T3B1: bytes.fromhex(
         "047f77368dea2d4d61e989f474a56723c3212dacf8a808d8795595ef38441427c4389bc454f02089d7f08b873005e4c28d432468997871c0bf286fd3861e21e96a"
     ),
+    models.T3W1: bytes.fromhex(
+        "04521192e173a9da4e3023f747d836563725372681eba3079c56ff11b2fc137ab189eb4155f371127651b5594f8c332fc1e9c0f3b80d4212822668b63189706578"
+    ),
 }
 
 
@@ -35,16 +38,19 @@ ROOT_PUBLIC_KEY = {
         ),
     ),
 )
-def test_authenticate_device(client: Client, challenge: bytes) -> None:
+def test_authenticate_device(session: Session, challenge: bytes) -> None:
     # NOTE Applications must generate a random challenge for each request.
 
+    if not session.features.bootloader_locked:
+        pytest.xfail("unlocked bootloader")
+
     # Issue an AuthenticateDevice challenge to Trezor.
-    proof = device.authenticate(client, challenge)
-    certs = [x509.load_der_x509_certificate(cert) for cert in proof.certificates]
+    proof = device.authenticate(session, challenge)
+    certs = [x509.load_der_x509_certificate(cert) for cert in proof.optiga_certificates]
 
     # Verify the last certificate in the certificate chain against trust anchor.
     root_public_key = ec.EllipticCurvePublicKey.from_encoded_point(
-        ec.SECP256R1(), ROOT_PUBLIC_KEY[client.model]
+        ec.SECP256R1(), ROOT_PUBLIC_KEY[session.model]
     )
     root_public_key.verify(
         certs[-1].signature,
@@ -78,8 +84,10 @@ def test_authenticate_device(client: Client, challenge: bytes) -> None:
 
     # Verify that the common name matches the Trezor model.
     common_name = cert.subject.get_attributes_for_oid(x509.oid.NameOID.COMMON_NAME)[0]
-    assert common_name.value.startswith(client.model.internal_name)
+    assert common_name.value.startswith(session.model.internal_name)
 
     # Verify the signature of the challenge.
     data = b"\x13AuthenticateDevice:" + compact_size(len(challenge)) + challenge
-    certs[0].public_key().verify(proof.signature, data, ec.ECDSA(hashes.SHA256()))
+    certs[0].public_key().verify(
+        proof.optiga_signature, data, ec.ECDSA(hashes.SHA256())
+    )

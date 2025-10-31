@@ -33,17 +33,23 @@ const DEFAULT_BINDGEN_MACROS_COMMON: &[&str] = &[
     "-I../../../storage",
     "-I../../vendor/micropython",
     "-I../../vendor/micropython/lib/uzlib",
+    "-I../../vendor/",
     "-I../rtl/inc",
     "-I../gfx/inc",
     "-I../io/ble/inc",
     "-I../io/button/inc",
     "-I../io/display/inc",
     "-I../io/haptic/inc",
+    "-I../io/nrf/inc",
     "-I../io/touch/inc",
     "-I../io/rgb_led/inc",
     "-I../io/usb/inc",
-    "-I../sec/entropy/inc",
+    "-I../sec/storage/inc",
     "-I../sys/time/inc",
+    "-I../sys/task/inc",
+    "-I../sys/power_manager/inc",
+    "-I../sys/suspend/inc",
+    "-I../sys/irq/inc",
     "-I../util/flash/inc",
     "-I../util/translations/inc",
     "-I../models",
@@ -53,7 +59,10 @@ const DEFAULT_BINDGEN_MACROS_COMMON: &[&str] = &[
     "-DUSE_HAPTIC",
     "-DUSE_RGB_LED",
     "-DUSE_BLE",
+    "-DUSE_POWER_MANAGER",
+    "-DUSE_NRF",
     "-DUSE_HW_JPEG_DECODER",
+    "-DUSE_STORAGE",
 ];
 
 fn add_bindgen_macros<'a>(
@@ -218,6 +227,7 @@ fn generate_micropython_bindings() {
         .allowlist_function("mp_obj_new_attrtuple")
         .allowlist_function("mp_obj_get_int_maybe")
         .allowlist_function("mp_obj_is_true")
+        .allowlist_function("mp_obj_get_type_str")
         .allowlist_function("mp_call_function_n_kw")
         .allowlist_function("trezor_obj_get_ll_checked")
         .allowlist_function("trezor_obj_str_from_rom_text")
@@ -275,11 +285,13 @@ fn generate_micropython_bindings() {
         .allowlist_var("mp_type_ValueError")
         .allowlist_var("mp_type_TypeError")
         .allowlist_var("mp_type_RuntimeError")
+        .allowlist_var("mp_type_NotImplementedError")
         // time
         .allowlist_function("mp_hal_ticks_ms")
         .allowlist_function("mp_hal_delay_ms")
         // debug
         .allowlist_function("mp_print_strn")
+        .allowlist_function("str_modulo_format")
         .allowlist_var("mp_plat_print")
         // typ
         .allowlist_var("mp_type_type")
@@ -315,19 +327,14 @@ fn generate_trezorhal_bindings() {
         // model
         .allowlist_var("MODEL_INTERNAL_NAME")
         .allowlist_var("MODEL_FULL_NAME")
-        // entropy
-        .allowlist_var("HW_ENTROPY_LEN")
-        .allowlist_function("entropy_get")
         // secbool
         .allowlist_type("secbool")
         .must_use_type("secbool")
         .allowlist_var("sectrue")
         .allowlist_var("secfalse")
-        // flash
-        .allowlist_function("flash_init")
         // storage
         .allowlist_var("EXTERNAL_SALT_SIZE")
-        .allowlist_function("storage_init")
+        .allowlist_function("storage_setup")
         .allowlist_function("storage_wipe")
         .allowlist_function("storage_is_unlocked")
         .allowlist_function("storage_lock")
@@ -357,6 +364,8 @@ fn generate_trezorhal_bindings() {
         .allowlist_function("display_get_frame_buffer")
         .allowlist_function("display_fill")
         .allowlist_function("display_copy_rgb565")
+        .allowlist_function("display_is_recording")
+        .allowlist_function("display_record_screen")
         // gfx_bitblt
         .allowlist_type("gfx_bitblt_t")
         .allowlist_function("gfx_rgb565_fill")
@@ -391,7 +400,12 @@ fn generate_trezorhal_bindings() {
         // random
         .allowlist_function("random_uniform")
         // rgb led
+        .allowlist_type("rgb_led_effect_type_t")
         .allowlist_function("rgb_led_set_color")
+        .allowlist_function("rgb_led_effect_start")
+        .allowlist_function("rgb_led_effect_stop")
+        .allowlist_function("rgb_led_effect_ongoing")
+        .allowlist_function("rgb_led_effect_get_type")
         // systick
         .allowlist_function("systick_delay_ms")
         .allowlist_function("systick_ms")
@@ -402,21 +416,39 @@ fn generate_trezorhal_bindings() {
         .allowlist_type("usb_event_t")
         .allowlist_function("usb_get_state")
         // ble
+        .allowlist_var("BLE_MAX_BONDS")
         .allowlist_var("BLE_PAIRING_CODE_LEN")
         .allowlist_var("BLE_RX_PACKET_SIZE")
         .allowlist_var("BLE_TX_PACKET_SIZE")
         .allowlist_var("BLE_ADV_NAME_LEN")
         .allowlist_function("ble_get_state")
-        .allowlist_function("ble_issue_command")
+        .allowlist_function("ble_get_event")
+        .allowlist_function("ble_switch_on")
+        .allowlist_function("ble_switch_off")
+        .allowlist_function("ble_enter_pairing_mode")
+        .allowlist_function("ble_disconnect")
+        .allowlist_function("ble_set_name")
+        .allowlist_function("ble_erase_bonds")
+        .allowlist_function("ble_allow_pairing")
+        .allowlist_function("ble_reject_pairing")
         .allowlist_function("ble_start")
         .allowlist_function("ble_write")
         .allowlist_function("ble_read")
+        .allowlist_function("ble_set_name")
+        .allowlist_function("ble_unpair")
+        .allowlist_function("ble_get_bond_list")
+        .allowlist_function("ble_set_high_speed")
+        .allowlist_function("ble_set_enabled")
+        .allowlist_function("ble_get_enabled")
         .allowlist_type("ble_command_t")
         .allowlist_type("ble_state_t")
+        .allowlist_type("ble_event_t")
+        .allowlist_type("bt_le_addr_t")
         // touch
         .allowlist_function("touch_get_event")
         // button
         .allowlist_type("button_t")
+        .allowlist_type("button_event_t")
         .allowlist_function("button_get_event")
         // haptic
         .allowlist_type("haptic_effect_t")
@@ -434,7 +466,24 @@ fn generate_trezorhal_bindings() {
         .allowlist_function("jpegdec_process")
         .allowlist_function("jpegdec_get_info")
         .allowlist_function("jpegdec_get_slice_rgba8888")
-        .allowlist_function("jpegdec_get_slice_mono8");
+        .allowlist_function("jpegdec_get_slice_mono8")
+        // sysevent
+        .allowlist_type("syshandle_t")
+        .allowlist_type("sysevents_t")
+        .allowlist_function("sysevents_poll")
+        // power manager
+        .allowlist_type("pm_event_t")
+        .allowlist_function("pm_get_events")
+        .allowlist_function("pm_get_state")
+        .allowlist_function("pm_suspend")
+        .allowlist_function("pm_hibernate")
+        // irq
+        .allowlist_function("irq_lock_fn")
+        .allowlist_function("irq_unlock_fn")
+        // nrf
+        .allowlist_function("nrf_send_uart_data")
+        // c_layout
+        .allowlist_type("c_layout_t");
 
     // Write the bindings to a file in the OUR_DIR.
     bindings
@@ -517,4 +566,7 @@ fn link_core_objects() {
 
     println!("cargo:rustc-link-lib=SDL2");
     println!("cargo:rustc-link-lib=SDL2_image");
+
+    #[cfg(any(feature = "ui_jpeg", feature = "hw_jpeg_decoder"))]
+    println!("cargo:rustc-link-lib=jpeg");
 }

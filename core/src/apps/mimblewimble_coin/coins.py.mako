@@ -215,7 +215,7 @@ def getCoinInfo(coinType: MimbleWimbleCoinCoinType, networkType: MimbleWimbleCoi
 			)
 % endfor
 	
-	# Otherwise check if model is Trezor model T3W1 (TODO waiting for official name)
+	# Otherwise check if model is Trezor Safe 7
 	elif INTERNAL_MODEL == "T3W1":
 % for c in supported_on("T3W1", mimblewimble_coin):
 

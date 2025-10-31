@@ -5,6 +5,8 @@ from storage import common
 from trezor import utils
 
 if TYPE_CHECKING:
+    from buffer_types import AnyBytes
+
     from trezor.enums import BackupType, DisplayRotation
     from typing_extensions import Literal
 
@@ -36,11 +38,17 @@ _SAFETY_CHECK_LEVEL        = const(0x14)  # int
 _EXPERIMENTAL_FEATURES     = const(0x15)  # bool (0x01 or empty)
 _HIDE_PASSPHRASE_FROM_HOST = const(0x16)  # bool (0x01 or empty)
 if utils.USE_THP:
-    _DEVICE_SECRET         = const(0x17)  # bytes
-    _CRED_AUTH_KEY_COUNTER = const(0x18)  # bytes
+    DEVICE_SECRET         = const(0x17)  # bytes
+    CRED_AUTH_KEY_COUNTER = const(0x18)  # bytes
 # unused from python:
 # _BRIGHTNESS                = const(0x19)  # int
 _DISABLE_HAPTIC_FEEDBACK   = const(0x20)  # bool (0x01 or empty)
+_DISABLE_RGB_LED           = const(0x21)  # bool (0x01 or empty)
+if utils.USE_THP:
+    _THP_PAIRED_CACHE    = const(0x22)  # bytes
+if utils.USE_POWER_MANAGER:
+    _AUTOLOCK_DELAY_BATT_MS    = const(0x23)  # int
+_DISABLE_BLUETOOTH        = const(0x24)  # bool (0x01 or empty)
 
 
 SAFETY_CHECK_LEVEL_STRICT  : Literal[0] = const(0)
@@ -53,12 +61,20 @@ if TYPE_CHECKING:
 LABEL_MAXLENGTH = const(32)
 
 if __debug__:
-    AUTOLOCK_DELAY_MINIMUM = 10 * 1000  # 10 seconds
+    AUTOLOCK_DELAY_USB_MIN_MS = 10 * 1000  # 10 seconds
 else:
-    AUTOLOCK_DELAY_MINIMUM = 60 * 1000  # 1 minute
-AUTOLOCK_DELAY_DEFAULT = const(10 * 60 * 1000)  # 10 minutes
+    AUTOLOCK_DELAY_USB_MIN_MS = 60 * 1000  # 1 minute
+
+AUTOLOCK_DELAY_USB_DEFAULT_MS = const(10 * 60 * 1000)  # 10 minutes
 # autolock intervals larger than AUTOLOCK_DELAY_MAXIMUM cause issues in the scheduler
-AUTOLOCK_DELAY_MAXIMUM = const(0x2000_0000)  # ~6 days
+AUTOLOCK_DELAY_USB_MAX_MS = const(0x2000_0000)  # ~6 days
+
+if utils.USE_POWER_MANAGER:
+    AUTODIM_DELAY_MS = 30 * 1000  # 30 seconds
+    AUTOLOCK_DELAY_BATT_MIN_MS = 30 * 1000  # 30 seconds
+    AUTOLOCK_DELAY_BATT_DEFAULT_MS = const(40 * 1000)  # 40 seconds
+    AUTOLOCK_DELAY_BATT_MAX_MS = const(10 * 60 * 1000)  # 10 minutes
+
 
 # Length of SD salt auth tag.
 # Other SD-salt-related constants are in sd_salt.py
@@ -169,7 +185,7 @@ def set_passphrase_enabled(enable: bool) -> None:
         set_passphrase_always_on_device(False)
 
 
-def set_homescreen(homescreen: bytes) -> None:
+def set_homescreen(homescreen: AnyBytes) -> None:
     if len(homescreen) > utils.HOMESCREEN_MAXSIZE:
         raise ValueError  # homescreen too large
     common.set(_NAMESPACE, _HOMESCREEN, homescreen, public=True)
@@ -241,16 +257,20 @@ def set_flags(flags: int) -> None:
         common.set(_NAMESPACE, _FLAGS, flags.to_bytes(4, "big"))
 
 
-def _normalize_autolock_delay(delay_ms: int) -> int:
-    delay_ms = max(delay_ms, AUTOLOCK_DELAY_MINIMUM)
-    delay_ms = min(delay_ms, AUTOLOCK_DELAY_MAXIMUM)
+def _normalize_autolock_delay(
+    delay_ms: int,
+    min_ms: int = AUTOLOCK_DELAY_USB_MIN_MS,
+    max_ms: int = AUTOLOCK_DELAY_USB_MAX_MS,
+) -> int:
+    delay_ms = max(delay_ms, min_ms)
+    delay_ms = min(delay_ms, max_ms)
     return delay_ms
 
 
 def get_autolock_delay_ms() -> int:
     b = common.get(_NAMESPACE, _AUTOLOCK_DELAY_MS)
     if b is None:
-        return AUTOLOCK_DELAY_DEFAULT
+        return AUTOLOCK_DELAY_USB_DEFAULT_MS
     else:
         return _normalize_autolock_delay(int.from_bytes(b, "big"))
 
@@ -258,6 +278,33 @@ def get_autolock_delay_ms() -> int:
 def set_autolock_delay_ms(delay_ms: int) -> None:
     delay_ms = _normalize_autolock_delay(delay_ms)
     common.set(_NAMESPACE, _AUTOLOCK_DELAY_MS, delay_ms.to_bytes(4, "big"))
+
+
+if utils.USE_POWER_MANAGER:
+
+    def get_autolock_delay_battery_ms() -> int:
+        b = common.get(_NAMESPACE, _AUTOLOCK_DELAY_BATT_MS, public=True)
+        if b is None:
+            return AUTOLOCK_DELAY_BATT_DEFAULT_MS
+        else:
+            return _normalize_autolock_delay(
+                int.from_bytes(b, "big"),
+                min_ms=AUTOLOCK_DELAY_BATT_MIN_MS,
+                max_ms=AUTOLOCK_DELAY_BATT_MAX_MS,
+            )
+
+    def set_autolock_delay_battery_ms(delay_ms: int) -> None:
+        delay_ms = _normalize_autolock_delay(
+            delay_ms,
+            min_ms=AUTOLOCK_DELAY_BATT_MIN_MS,
+            max_ms=AUTOLOCK_DELAY_BATT_MAX_MS,
+        )
+        common.set(
+            _NAMESPACE,
+            _AUTOLOCK_DELAY_BATT_MS,
+            delay_ms.to_bytes(4, "big"),
+            public=True,
+        )
 
 
 def next_u2f_counter() -> int:
@@ -364,21 +411,21 @@ if utils.USE_THP:
         """
         Device secret is used to derive keys that are independent of the seed.
         """
-        device_secret = common.get(_NAMESPACE, _DEVICE_SECRET)
+        device_secret = common.get(_NAMESPACE, DEVICE_SECRET)
         if not device_secret:
             from trezor.crypto import random
 
             device_secret = random.bytes(16, True)
-            common.set(_NAMESPACE, _DEVICE_SECRET, device_secret)
+            common.set(_NAMESPACE, DEVICE_SECRET, device_secret)
         return device_secret
 
     def get_cred_auth_key_counter() -> bytes:
-        return common.get(_NAMESPACE, _CRED_AUTH_KEY_COUNTER) or bytes(4)
+        return common.get(_NAMESPACE, CRED_AUTH_KEY_COUNTER) or bytes(4)
 
     def increment_cred_auth_key_counter() -> None:
         counter = int.from_bytes(get_cred_auth_key_counter(), "big")
         utils.ensure(counter < 0xFFFFFFFF, "Overflow of cred_auth_key_counter")
-        common.set(_NAMESPACE, _CRED_AUTH_KEY_COUNTER, (counter + 1).to_bytes(4, "big"))
+        common.set(_NAMESPACE, CRED_AUTH_KEY_COUNTER, (counter + 1).to_bytes(4, "big"))
 
 
 def set_haptic_feedback(enable: bool) -> None:
@@ -393,3 +440,46 @@ def get_haptic_feedback() -> bool:
     Get haptic feedback enable, default to true if not set.
     """
     return not common.get_bool(_NAMESPACE, _DISABLE_HAPTIC_FEEDBACK, True)
+
+
+def set_ble(enable: bool) -> None:
+    """
+    Enable or disable Bluetooth.
+    """
+    common.set_bool(_NAMESPACE, _DISABLE_BLUETOOTH, not enable, True)
+
+
+def get_ble() -> bool:
+    """
+    Get Bluetooth enable, default to true if not set.
+    """
+    return not common.get_bool(_NAMESPACE, _DISABLE_BLUETOOTH, True)
+
+
+def set_rgb_led(enable: bool) -> None:
+    """
+    Enable or disable RGB LED.
+    """
+    common.set_bool(_NAMESPACE, _DISABLE_RGB_LED, not enable, True)
+
+
+def get_rgb_led() -> bool:
+    """
+    Get RGB LED enable, default to true if not set.
+    """
+    return not common.get_bool(_NAMESPACE, _DISABLE_RGB_LED, True)
+
+
+if utils.USE_THP:
+
+    def set_thp_paired_cache(blob: AnyBytes) -> None:
+        """
+        Set THP paired entries' cache (using protobuf serialization).
+        """
+        common.set(_NAMESPACE, _THP_PAIRED_CACHE, blob)
+
+    def get_thp_paired_cache() -> bytes | None:
+        """
+        Get THP paired entries' cache (using protobuf serialization).
+        """
+        return common.get(_NAMESPACE, _THP_PAIRED_CACHE)

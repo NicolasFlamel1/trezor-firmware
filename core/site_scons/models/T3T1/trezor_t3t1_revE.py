@@ -24,12 +24,16 @@ def configure(
         ("USE_RGB_COLORS", "1"),
         ("DISPLAY_RESX", "240"),
         ("DISPLAY_RESY", "240"),
+        ("LOCKABLE_BOOTLOADER", "1"),
     ]
 
     mcu = "STM32U585xx"
     linker_script = """embed/sys/linker/stm32u58/{target}.ld"""
+    memory_layout = "memory.ld"
 
-    stm32u5_common_files(env, defines, sources, paths)
+    features_available += stm32u5_common_files(
+        env, features_wanted, defines, sources, paths
+    )
 
     env.get("ENV")[
         "CPU_ASFLAGS"
@@ -46,27 +50,29 @@ def configure(
         ("HW_REVISION", str(hw_revision)),
     ]
 
-    sources += ["embed/io/display/st-7789/display_fb.c"]
-    sources += ["embed/io/display/st-7789/display_driver.c"]
-    sources += ["embed/io/display/st-7789/display_io.c"]
-    sources += ["embed/io/display/st-7789/display_panel.c"]
-    sources += ["embed/io/display/st-7789/panels/lx154a2482.c"]
-    sources += ["embed/io/display/fb_queue/fb_queue.c"]
-    paths += ["embed/io/display/inc"]
+    if "display" in features_wanted:
+        sources += ["embed/io/display/st-7789/display_fb.c"]
+        sources += ["embed/io/display/st-7789/display_driver.c"]
+        sources += ["embed/io/display/st-7789/display_io.c"]
+        sources += ["embed/io/display/st-7789/display_panel.c"]
+        sources += ["embed/io/display/st-7789/panels/lx154a2482.c"]
+        sources += ["embed/io/display/fb_queue/fb_queue.c"]
+        paths += ["embed/io/display/inc"]
+        defines += [("USE_DISPLAY", "1")]
 
-    features_available.append("backlight")
-    defines += [("USE_BACKLIGHT", "1")]
-    sources += ["embed/io/backlight/stm32/tps61043.c"]
-    paths += ["embed/io/backlight/inc"]
+        features_available.append("backlight")
+        defines += [("USE_BACKLIGHT", "1")]
+        sources += ["embed/io/backlight/stm32/tps61043.c"]
+        paths += ["embed/io/backlight/inc"]
 
-    env_constraints = env.get("CONSTRAINTS")
-    if not (env_constraints and "limited_util_s" in env_constraints):
-        sources += ["embed/io/display/bg_copy/stm32u5/bg_copy.c"]
+        env_constraints = env.get("CONSTRAINTS")
+        if not (env_constraints and "limited_util_s" in env_constraints):
+            sources += ["embed/io/display/bg_copy/stm32u5/bg_copy.c"]
 
     if "input" in features_wanted:
         sources += ["embed/io/i2c_bus/stm32u5/i2c_bus.c"]
         sources += ["embed/io/touch/ft6x36/ft6x36.c"]
-        sources += ["embed/io/touch/touch_fsm.c"]
+        sources += ["embed/io/touch/touch_poll.c"]
         sources += ["embed/io/touch/ft6x36/panels/lx154a2422cpt23.c"]
         paths += ["embed/io/i2c_bus/inc"]
         paths += ["embed/io/touch/inc"]
@@ -97,22 +103,6 @@ def configure(
         paths += ["embed/io/sbu/inc"]
         features_available.append("sbu")
         defines += [("USE_SBU", "1")]
-
-    if "usb" in features_wanted:
-        sources += [
-            "embed/io/usb/stm32/usb_class_hid.c",
-            "embed/io/usb/stm32/usb_class_vcp.c",
-            "embed/io/usb/stm32/usb_class_webusb.c",
-            "embed/io/usb/stm32/usb.c",
-            "embed/io/usb/stm32/usbd_conf.c",
-            "embed/io/usb/stm32/usbd_core.c",
-            "embed/io/usb/stm32/usbd_ctlreq.c",
-            "embed/io/usb/stm32/usbd_ioreq.c",
-            "vendor/stm32u5xx_hal_driver/Src/stm32u5xx_ll_usb.c",
-        ]
-        features_available.append("usb")
-        paths += ["embed/io/usb/inc"]
-        defines += [("USE_USB", "1")]
 
     if "dma2d" in features_wanted:
         defines += [("USE_DMA2D", "1")]
@@ -147,8 +137,6 @@ def configure(
     env.get("ENV")["TREZOR_BOARD"] = board
     env.get("ENV")["MCU_TYPE"] = mcu
     env.get("ENV")["LINKER_SCRIPT"] = linker_script
-
-    defs = env.get("CPPDEFINES_IMPLICIT")
-    defs += ["__ARM_FEATURE_CMSE=3"]
+    env.get("ENV")["MEMORY_LAYOUT"] = memory_layout
 
     return features_available

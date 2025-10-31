@@ -1,4 +1,5 @@
 from typing import *
+from buffer_types import *
 from enum import IntEnum, IntFlag
 from trezorcrypto.bip32 import HDNode
 from apps.mimblewimble_coin.coins import CoinInfo
