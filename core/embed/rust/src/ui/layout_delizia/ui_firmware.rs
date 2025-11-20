@@ -9,7 +9,6 @@ use crate::{
     translations::TR,
     ui::{
         component::{
-            connect::Connect,
             swipe_detect::SwipeSettings,
             text::{
                 op::OpTextLayout,
@@ -1111,10 +1110,7 @@ impl FirmwareUI for UIDelizia {
             let value: TString = value.try_into()?;
             paragraphs.add(Paragraph::new(&theme::TEXT_SUB_GREY, key).no_break());
             if chunkify {
-                paragraphs.add(Paragraph::new(
-                    theme::get_chunkified_text_style(value.len()),
-                    value,
-                ));
+                paragraphs.add(Paragraph::new(&theme::TEXT_MONO_ADDRESS_CHUNKS, value));
             } else {
                 paragraphs.add(Paragraph::new(&theme::TEXT_MONO_DATA, value));
             }
@@ -1304,13 +1300,9 @@ impl FirmwareUI for UIDelizia {
     }
 
     fn show_wait_text(text: TString<'static>) -> Result<impl LayoutMaybeTrace, Error> {
-        let layout = RootComponent::new(Connect::new(
-            text,
-            fonts::FONT_DEMIBOLD,
-            theme::FG,
-            theme::BG,
-        ));
-        Ok(layout)
+        Ok(RootComponent::new(
+            Paragraph::new(&theme::TEXT_DEMIBOLD, text).into_paragraphs(),
+        ))
     }
 
     fn show_warning(

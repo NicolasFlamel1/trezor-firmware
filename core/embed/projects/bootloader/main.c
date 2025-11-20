@@ -80,12 +80,16 @@
 #ifdef USE_IWDG
 #include <sec/iwdg.h>
 #endif
+#ifdef USE_NRF
+#include <io/nrf.h>
+#endif
 
 #ifdef USE_BLE
 #include "wire/wire_iface_ble.h"
 #endif
 
 #include "bootui.h"
+#include "ui_helpers.h"
 #include "version_check.h"
 #include "wire/wire_iface_usb.h"
 #include "workflow/workflow.h"
@@ -97,8 +101,8 @@
 
 void failed_jump_to_firmware(void);
 
-CONFIDENTIAL volatile secbool dont_optimize_out_true = sectrue;
-CONFIDENTIAL void (*volatile firmware_jump_fn)(void) = failed_jump_to_firmware;
+volatile secbool dont_optimize_out_true = sectrue;
+void (*volatile firmware_jump_fn)(void) = failed_jump_to_firmware;
 
 static secbool is_manufacturing_mode(vendor_header *vhdr) {
   unit_properties_init();
@@ -165,7 +169,8 @@ static secbool boot_sequence(void) {
 
   bool turn_on =
       (cmd == BOOT_COMMAND_INSTALL_UPGRADE || cmd == BOOT_COMMAND_REBOOT ||
-       cmd == BOOT_COMMAND_SHOW_RSOD || cmd == BOOT_COMMAND_STOP_AND_WAIT);
+       cmd == BOOT_COMMAND_SHOW_RSOD || cmd == BOOT_COMMAND_WIPE ||
+       cmd == BOOT_COMMAND_STOP_AND_WAIT);
 
   if (cmd != BOOT_COMMAND_POWER_OFF) {
     turn_on = true;
@@ -178,16 +183,7 @@ static secbool boot_sequence(void) {
   if (cmd == BOOT_COMMAND_POWER_OFF) {
 #ifdef USE_BLE
     ble_init();
-
-    uint32_t timeout = ticks_timeout(5000);
-    ble_state_t state = {0};
-    do {
-      ble_get_state(&state);
-      if (state.state_known) {
-        break;
-      }
-    } while (!ticks_expired(timeout));
-
+    ble_wait_until_ready();
     ble_switch_off();
 #endif
   }
@@ -530,6 +526,31 @@ int bootloader_main(void) {
   }
 #endif  // USE_BOOTARGS_RSOD
 
+  if (bootargs_get_command() == BOOT_COMMAND_WIPE) {
+#ifdef LAZY_DISPLAY_INIT
+    display_init(DISPLAY_RESET_CONTENT);
+#endif
+
+    erase_storage(NULL);
+
+#ifdef USE_BLE
+    ble_init();
+    ble_wait_until_ready();
+    wipe_bonds(NULL);
+#endif
+
+#ifdef USE_BACKUP_RAM
+    backup_ram_erase_protected();
+#endif
+
+    // wipe info was left in bootargs
+    boot_args_t args;
+    bootargs_get_args(&args);
+
+    show_wipe_info(&args.wipeinfo);
+    reboot_or_halt_after_rsod();
+  }
+
   ui_screen_boot_stage_1(false);
 
 #ifdef TREZOR_EMULATOR
@@ -719,10 +740,16 @@ int bootloader_main(void) {
     }
 
     switch (result) {
-      case WF_OK_FIRMWARE_INSTALLED:
       case WF_OK_REBOOT_SELECTED:
+#ifdef USE_BLE
+        ble_switch_off();
+#endif
+#ifdef USE_NRF
+        nrf_reboot();
+#endif
         reboot_with_fade();
         break;
+      case WF_OK_FIRMWARE_INSTALLED:
       case WF_OK_DEVICE_WIPED:
       case WF_OK_BOOTLOADER_UNLOCKED:
         reboot_with_fade();

@@ -24,7 +24,7 @@ use heapless::Vec;
 
 use super::{
     super::{
-        component::{Frame, PromptMsg, SwipeContent, VerticalMenuChoiceMsg},
+        component::{Frame, PromptMsg, SwipeContent, VerticalMenu, VerticalMenuChoiceMsg},
         flow, theme,
     },
     ConfirmActionExtra, ConfirmActionMenuStrings, ConfirmActionStrings,
@@ -231,13 +231,12 @@ impl ConfirmValue {
     pub fn into_layout(
         self,
     ) -> Result<impl Component<Msg = FlowMsg> + Swipable + MaybeTrace, Error> {
-        let value_len = self.value.as_str_offset(0).len();
         let paragraphs = ConfirmValueParams {
             description: self.description.unwrap_or("".into()),
             extra: self.extra.unwrap_or("".into()),
             value: self.value,
             font: if self.chunkify {
-                theme::get_chunkified_text_style(value_len)
+                &theme::TEXT_MONO_ADDRESS_CHUNKS
             } else if self.text_mono {
                 if self.classic_ellipsis {
                     &theme::TEXT_MONO_WITH_CLASSIC_ELLIPSIS
@@ -285,13 +284,12 @@ impl ConfirmValue {
     }
 
     pub fn into_flow(self) -> Result<SwipeFlow, Error> {
-        let value_len = self.value.as_str_offset(0).len();
         let paragraphs = ConfirmValueParams {
             description: self.description.unwrap_or("".into()),
             extra: self.extra.unwrap_or("".into()),
             value: self.value,
             font: if self.chunkify {
-                theme::get_chunkified_text_style(value_len)
+                &theme::TEXT_MONO_ADDRESS_CHUNKS
             } else if self.text_mono {
                 if self.classic_ellipsis {
                     &theme::TEXT_MONO_WITH_CLASSIC_ELLIPSIS
@@ -523,4 +521,8 @@ where
     let mut flow = SwipeFlow::new(&SinglePage::Show)?;
     flow.add_page(&SinglePage::Show, layout)?;
     Ok(flow)
+}
+
+pub fn dummy_page() -> impl Component<Msg = FlowMsg> + Swipable + MaybeTrace {
+    Frame::left_aligned(TString::empty(), VerticalMenu::empty()).map(|_| Some(FlowMsg::Cancelled))
 }

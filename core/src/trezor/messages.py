@@ -258,7 +258,7 @@ if TYPE_CHECKING:
         nonce: "AnyBytes | None"
         recipient_name: "str"
         memos: "list[PaymentRequestMemo]"
-        amount: "int | None"
+        amount: "AnyBytes | None"
         signature: "AnyBytes"
 
         def __init__(
@@ -268,7 +268,7 @@ if TYPE_CHECKING:
             signature: "AnyBytes",
             memos: "list[PaymentRequestMemo] | None" = None,
             nonce: "AnyBytes | None" = None,
-            amount: "int | None" = None,
+            amount: "AnyBytes | None" = None,
         ) -> None:
             pass
 
@@ -2094,6 +2094,8 @@ if TYPE_CHECKING:
         firmware_corrupted: "bool | None"
         auto_lock_delay_battery_ms: "int | None"
         led: "bool | None"
+        usb_connected: "bool | None"
+        wireless_connected: "bool | None"
 
         def __init__(
             self,
@@ -2153,6 +2155,8 @@ if TYPE_CHECKING:
             firmware_corrupted: "bool | None" = None,
             auto_lock_delay_battery_ms: "int | None" = None,
             led: "bool | None" = None,
+            usb_connected: "bool | None" = None,
+            wireless_connected: "bool | None" = None,
         ) -> None:
             pass
 

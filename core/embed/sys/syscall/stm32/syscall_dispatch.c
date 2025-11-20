@@ -213,7 +213,7 @@ __attribute((no_stack_protector)) void syscall_handler(uint32_t *args,
     } break;
 
     case SYSCALL_DISPLAY_SET_BACKLIGHT: {
-      int level = (int)args[0];
+      uint8_t level = (uint8_t)args[0];
       args[0] = display_set_backlight(level);
     } break;
 
@@ -714,6 +714,10 @@ __attribute((no_stack_protector)) void syscall_handler(uint32_t *args,
 
     case SYSCALL_NRF_AUTHENTICATE: {
       args[0] = nrf_authenticate();
+    } break;
+
+    case SYSCALL_NRF_REBOOT: {
+      nrf_reboot();
     } break;
 
 #endif

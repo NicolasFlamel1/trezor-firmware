@@ -516,7 +516,7 @@ impl FirmwareUI for UIEckhart {
             .with_subtitle(subtitle.unwrap_or(TString::empty()))
             .with_action_bar(action_bar);
         if page_counter {
-            screen = screen.with_pagination_hint();
+            screen = screen.with_hint(Hint::new_page_counter())
         } else if let Some(warning_footer) = warning_footer {
             screen = screen.with_hint(Hint::new_warning_caution(warning_footer));
         }
@@ -1051,12 +1051,12 @@ impl FirmwareUI for UIEckhart {
                 // Set the brightness immediately so it is applied in the `_first_paint` UI
                 // layout function
                 unwrap!(storage::set_brightness(value));
-                value.into()
+                value
             }
-            None => theme::backlight::get_backlight_normal().into(),
+            None => theme::backlight::get_backlight_normal(),
         };
-        let min = theme::backlight::get_backlight_min().into();
-        let max = theme::backlight::get_backlight_max().into();
+        let min = theme::backlight::get_backlight_min();
+        let max = theme::backlight::get_backlight_max();
 
         let screen = SetBrightnessScreen::new(min, max, init_value);
         let layout = RootComponent::new(screen);
@@ -1616,7 +1616,9 @@ impl FirmwareUI for UIEckhart {
     }
 
     fn show_wait_text(text: TString<'static>) -> Result<impl LayoutMaybeTrace, Error> {
-        let paragraphs = Paragraph::new(&theme::TEXT_REGULAR, text).into_paragraphs();
+        let paragraphs = Paragraph::new(&theme::TEXT_REGULAR, text)
+            .into_paragraphs()
+            .with_placement(LinearPlacement::vertical());
         let screen = TextScreen::new(paragraphs);
         let layout = RootComponent::new(screen);
         Ok(layout)
@@ -1651,7 +1653,7 @@ impl FirmwareUI for UIEckhart {
         let action_bar = if allow_cancel {
             ActionBar::new_double(
                 Button::with_icon(theme::ICON_CROSS),
-                Button::with_single_line_text(button),
+                Button::with_text(button),
             )
         } else {
             ActionBar::new_single(Button::with_text(button))

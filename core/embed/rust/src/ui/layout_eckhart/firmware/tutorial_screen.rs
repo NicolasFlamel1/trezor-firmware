@@ -2,7 +2,7 @@ use crate::{
     time::{Duration, Stopwatch},
     translations::TR,
     ui::{
-        component::{swipe_detect::SwipeConfig, Component, Event, EventCtx, Label, Timeout},
+        component::{swipe_detect::SwipeConfig, Component, Event, EventCtx, Label},
         display::{toif::Toif, Color},
         flow::Swipable,
         geometry::{Alignment, Alignment2D, Insets, Offset, Point, Rect},
@@ -10,9 +10,6 @@ use crate::{
         util::{animation_disabled, Pager},
     },
 };
-
-#[cfg(feature = "rgb_led")]
-use crate::trezorhal::rgb_led;
 
 use super::{
     super::{
@@ -23,6 +20,9 @@ use super::{
     },
     ActionBar, ActionBarMsg,
 };
+
+#[cfg(feature = "rgb_led")]
+use crate::ui::led::LedState;
 
 // Duration of the loader animation
 const LOADER_DURATION: Duration = Duration::from_secs(3);
@@ -41,9 +41,6 @@ pub enum TutorialWelcomeScreenMsg {
 pub struct TutorialWelcomeScreen {
     text: Label<'static>,
     action_bar: ActionBar,
-    /// Timer for the led color change
-    #[cfg(feature = "rgb_led")]
-    timer: Timeout,
     /// Stopwatch for the loader animation
     stopwatch: Stopwatch,
     border: ScreenBorder,
@@ -59,12 +56,6 @@ impl TutorialWelcomeScreen {
             )
             .top_aligned(),
             action_bar: ActionBar::new_timeout(Button::empty(), TOTAL_DURATION),
-            #[cfg(feature = "rgb_led")]
-            timer: Timeout::new(if animation_disabled() {
-                0
-            } else {
-                LOADER_DURATION.to_millis()
-            }),
             stopwatch: Stopwatch::new_started(),
             border: ScreenBorder::new(theme::GREEN_LIME),
         }
@@ -88,16 +79,7 @@ impl Component for TutorialWelcomeScreen {
 
     fn event(&mut self, ctx: &mut EventCtx, event: Event) -> Option<Self::Msg> {
         if let Some(ActionBarMsg::Confirmed) = self.action_bar.event(ctx, event) {
-            // Turn off the LED when the screen is destroyed
-            #[cfg(feature = "rgb_led")]
-            rgb_led::set_color(0);
             return Some(TutorialWelcomeScreenMsg::Confirmed);
-        }
-
-        #[cfg(feature = "rgb_led")]
-        if self.timer.event(ctx, event).is_some() {
-            rgb_led::set_color(LED_COLOR.to_u32());
-            return None;
         }
 
         // TutorialWelcomeScreen reacts to ANIM_FRAME_TIMER
@@ -124,8 +106,12 @@ impl Component for TutorialWelcomeScreen {
             .bottom_center()
             .ofs(Offset::new(0, -theme::ACTION_BAR_HEIGHT / 2));
 
-        if !self.stopwatch.is_running_within(LOADER_DURATION) {
+        let loader_running = self.stopwatch.is_running_within(LOADER_DURATION);
+
+        #[cfg(feature = "rgb_led")]
+        if !loader_running {
             ScreenBackground::new(Some(LED_COLOR), None).render(target);
+            target.set_led_state(LedState::Static(LED_COLOR));
         }
 
         self.text.render(target);
@@ -147,7 +133,7 @@ impl Component for TutorialWelcomeScreen {
         .with_fg(theme::GREY_EXTRA_LIGHT)
         .render(target);
 
-        if self.stopwatch.is_running_within(LOADER_DURATION) {
+        if loader_running {
             let progress = self.stopwatch.elapsed() / LOADER_DURATION;
             let loader_val = (progress * LOADER_MAX_VAL as f32) as u16;
             render_loader_indeterminate(loader_val, &self.border, target);

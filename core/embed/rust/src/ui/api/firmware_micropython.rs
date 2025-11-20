@@ -35,7 +35,7 @@ use crate::{
 use heapless::Vec;
 
 #[cfg(feature = "backlight")]
-use crate::ui::display::{backlight, fade_backlight_duration, set_backlight};
+use crate::ui::display::{fade_backlight_duration, get_backlight, set_backlight};
 
 /// Dummy implementation so that we can use `Empty` in a return type of
 /// unimplemented trait function
@@ -1321,7 +1321,7 @@ pub extern "C" fn upy_backlight_get() -> Obj {
     let block = || {
         #[cfg(feature = "backlight")]
         {
-            let backlight_level = backlight();
+            let backlight_level = get_backlight();
             Ok(Obj::from(backlight_level))
         }
         #[cfg(not(feature = "backlight"))]
@@ -1976,8 +1976,8 @@ pub static mp_module_trezorui_api: Module = obj_module! {
     ///     haptics_enabled: bool | None,
     ///     led_enabled: bool | None,
     ///     about_items: Sequence[tuple[str | None, StrOrBytes | None, bool | None]],
-    /// ) -> LayoutObj[UiResult | DeviceMenuResult | tuple[DeviceMenuResult, int]]:
-    ///     """Show the device menu."""
+    /// ) -> LayoutObj[UiResult | tuple[int, int | None, int]]:
+    ///     """Show the device menu. Result is either CANCELLED or a tuple (action, action_arg, parent_menu_id)."""
     Qstr::MP_QSTR_show_device_menu => obj_fn_kw!(0, new_show_device_menu).as_obj(),
 
     /// def show_pairing_device_name(
@@ -2190,27 +2190,27 @@ pub static mp_module_trezorui_api: Module = obj_module! {
 
     /// class DeviceMenuResult:
     ///     """Result of a device menu operation."""
-    ///     ReviewFailedBackup: ClassVar[DeviceMenuResult]
-    ///     DisconnectDevice: ClassVar[DeviceMenuResult]
-    ///     PairDevice: ClassVar[DeviceMenuResult]
-    ///     UnpairDevice: ClassVar[DeviceMenuResult]
-    ///     UnpairAllDevices: ClassVar[DeviceMenuResult]
-    ///     ToggleBluetooth: ClassVar[DeviceMenuResult]
-    ///     SetOrChangePin: ClassVar[DeviceMenuResult]
-    ///     RemovePin: ClassVar[DeviceMenuResult]
-    ///     SetAutoLockBattery: ClassVar[DeviceMenuResult]
-    ///     SetAutoLockUSB: ClassVar[DeviceMenuResult]
-    ///     SetOrChangeWipeCode: ClassVar[DeviceMenuResult]
-    ///     RemoveWipeCode: ClassVar[DeviceMenuResult]
-    ///     CheckBackup: ClassVar[DeviceMenuResult]
-    ///     SetDeviceName: ClassVar[DeviceMenuResult]
-    ///     SetBrightness: ClassVar[DeviceMenuResult]
-    ///     ToggleHaptics: ClassVar[DeviceMenuResult]
-    ///     ToggleLed: ClassVar[DeviceMenuResult]
-    ///     WipeDevice: ClassVar[DeviceMenuResult]
-    ///     Reboot: ClassVar[DeviceMenuResult]
-    ///     RebootToBootloader: ClassVar[DeviceMenuResult]
-    ///     TurnOff: ClassVar[DeviceMenuResult]
-    ///     RefreshMenu: ClassVar[DeviceMenuResult]
+    ///     ReviewFailedBackup: ClassVar[int]
+    ///     DisconnectDevice: ClassVar[int]
+    ///     PairDevice: ClassVar[int]
+    ///     UnpairDevice: ClassVar[int]
+    ///     UnpairAllDevices: ClassVar[int]
+    ///     ToggleBluetooth: ClassVar[int]
+    ///     SetOrChangePin: ClassVar[int]
+    ///     RemovePin: ClassVar[int]
+    ///     SetAutoLockBattery: ClassVar[int]
+    ///     SetAutoLockUSB: ClassVar[int]
+    ///     SetOrChangeWipeCode: ClassVar[int]
+    ///     RemoveWipeCode: ClassVar[int]
+    ///     CheckBackup: ClassVar[int]
+    ///     SetDeviceName: ClassVar[int]
+    ///     SetBrightness: ClassVar[int]
+    ///     ToggleHaptics: ClassVar[int]
+    ///     ToggleLed: ClassVar[int]
+    ///     WipeDevice: ClassVar[int]
+    ///     Reboot: ClassVar[int]
+    ///     RebootToBootloader: ClassVar[int]
+    ///     TurnOff: ClassVar[int]
+    ///     RefreshMenu: ClassVar[int]
     Qstr::MP_QSTR_DeviceMenuResult => DEVICE_MENU_RESULT.as_obj(),
 };

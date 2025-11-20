@@ -972,7 +972,7 @@ class PaymentRequest(protobuf.MessageType):
         1: protobuf.Field("nonce", "bytes", repeated=False, required=False, default=None),
         2: protobuf.Field("recipient_name", "string", repeated=False, required=True),
         3: protobuf.Field("memos", "PaymentRequestMemo", repeated=True, required=False, default=None),
-        4: protobuf.Field("amount", "uint64", repeated=False, required=False, default=None),
+        6: protobuf.Field("amount", "bytes", repeated=False, required=False, default=None),
         5: protobuf.Field("signature", "bytes", repeated=False, required=True),
     }
 
@@ -983,7 +983,7 @@ class PaymentRequest(protobuf.MessageType):
         signature: "bytes",
         memos: Optional[Sequence["PaymentRequestMemo"]] = None,
         nonce: Optional["bytes"] = None,
-        amount: Optional["int"] = None,
+        amount: Optional["bytes"] = None,
     ) -> None:
         self.memos: Sequence["PaymentRequestMemo"] = memos if memos is not None else []
         self.recipient_name = recipient_name
@@ -3313,6 +3313,8 @@ class Features(protobuf.MessageType):
         56: protobuf.Field("firmware_corrupted", "bool", repeated=False, required=False, default=None),
         57: protobuf.Field("auto_lock_delay_battery_ms", "uint32", repeated=False, required=False, default=None),
         58: protobuf.Field("led", "bool", repeated=False, required=False, default=None),
+        59: protobuf.Field("usb_connected", "bool", repeated=False, required=False, default=None),
+        60: protobuf.Field("wireless_connected", "bool", repeated=False, required=False, default=None),
     }
 
     def __init__(
@@ -3374,6 +3376,8 @@ class Features(protobuf.MessageType):
         firmware_corrupted: Optional["bool"] = None,
         auto_lock_delay_battery_ms: Optional["int"] = None,
         led: Optional["bool"] = None,
+        usb_connected: Optional["bool"] = None,
+        wireless_connected: Optional["bool"] = None,
     ) -> None:
         self.capabilities: Sequence["Capability"] = capabilities if capabilities is not None else []
         self.major_version = major_version
@@ -3431,6 +3435,8 @@ class Features(protobuf.MessageType):
         self.firmware_corrupted = firmware_corrupted
         self.auto_lock_delay_battery_ms = auto_lock_delay_battery_ms
         self.led = led
+        self.usb_connected = usb_connected
+        self.wireless_connected = wireless_connected
 
 
 class LockDevice(protobuf.MessageType):

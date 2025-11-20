@@ -26,12 +26,12 @@
 #include "rust_ui_bootloader.h"
 
 #ifdef TREZOR_MODEL_T3W1
-#define BACKLIGHT_NORMAL 85
+#define BACKLIGHT_NORMAL 155
+#define BACKLIGHT_LOW 116
 #else
 #define BACKLIGHT_NORMAL 150
-#endif
-
 #define BACKLIGHT_LOW 45
+#endif
 
 // Displays a warning screen before jumping to the untrusted firmware
 //
@@ -44,12 +44,6 @@
 //   < 0 show a message like "press button to continue"
 void ui_screen_boot(const vendor_header* const vhdr,
                     const image_header* const hdr, int wait);
-
-// Waits until the user confirms the untrusted firmware
-//
-// Implementation is device specific - it wait's until
-// the user presses a button, touches the display
-void ui_click(void);
 
 uint32_t ui_screen_intro(const vendor_header* const vhdr,
                          const image_header* const hdr, bool fw_ok);

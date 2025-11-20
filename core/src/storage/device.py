@@ -45,10 +45,12 @@ if utils.USE_THP:
 _DISABLE_HAPTIC_FEEDBACK   = const(0x20)  # bool (0x01 or empty)
 _DISABLE_RGB_LED           = const(0x21)  # bool (0x01 or empty)
 if utils.USE_THP:
-    _THP_PAIRED_CACHE    = const(0x22)  # bytes
+    THP_PAIRED_NAMES       = const(0x22)  # bytes
 if utils.USE_POWER_MANAGER:
     _AUTOLOCK_DELAY_BATT_MS    = const(0x23)  # int
 _DISABLE_BLUETOOTH        = const(0x24)  # bool (0x01 or empty)
+if not utils.BITCOIN_ONLY:
+    _BINARY_MNEMONIC = const(0x25)  # bytes
 
 
 SAFETY_CHECK_LEVEL_STRICT  : Literal[0] = const(0)
@@ -151,6 +153,67 @@ def get_mnemonic_secret() -> bytes | None:
     return common.get(_NAMESPACE, _MNEMONIC_SECRET)
 
 
+def store_mnemonic_secret(
+    secret: bytes,
+    needs_backup: bool = False,
+    no_backup: bool = False,
+    allow_derivation_fail: bool = False,
+) -> None:
+    set_version(common.STORAGE_VERSION_CURRENT)
+    common.set(_NAMESPACE, _MNEMONIC_SECRET, secret)
+    common.set_true_or_delete(_NAMESPACE, _NO_BACKUP, no_backup)
+    common.set_bool(_NAMESPACE, INITIALIZED, True, public=True)
+    if not no_backup:
+        common.set_true_or_delete(_NAMESPACE, _NEEDS_BACKUP, needs_backup)
+
+    if not utils.BITCOIN_ONLY:
+        store_binary_mnemonic(secret, allow_derivation_fail)
+
+
+if not utils.BITCOIN_ONLY:
+
+    def get_binary_mnemonic() -> bytes | None:
+        """
+        Get the binary representation of mnemonic (including checksum).
+        """
+        return common.get(_NAMESPACE, _BINARY_MNEMONIC)
+
+    def store_binary_mnemonic(
+        secret: bytes,
+        allow_derivation_fail: bool = False,
+    ) -> None:
+        """
+        Store the binary representation of mnemonic (including checksum) for Cardano
+        Icarus derivation. Works only for BIP-39.
+
+        If `allow_derivation_fail` is True, exception during derivation is ignored.
+        """
+        from trezorcrypto import bip39
+
+        from trezor.enums import BackupType
+
+        if get_backup_type() == BackupType.Bip39:
+            try:
+                binary_mnemonic = bip39.mnemonic_to_bits(secret.decode())
+            except ValueError:
+                if __debug__ and allow_derivation_fail:
+                    # There is a possibility to load device with mnemonics that cannot
+                    # be used for Caradno derivation. These mnemonics are not generated
+                    # by Trezor and user must actively choose them. For exmample, see
+                    # `tests/device_tests/test_msg_loaddevice.py::test_load_device_utf`.
+                    # We do not want to raise an exception for them. But we cannot
+                    # derive Cardano secrets either.
+                    return
+                else:
+                    raise
+
+            common.set(
+                _NAMESPACE,
+                _BINARY_MNEMONIC,
+                binary_mnemonic,
+            )
+
+
 def get_backup_type() -> BackupType:
     from trezor.enums import BackupType
 
@@ -189,19 +252,6 @@ def set_homescreen(homescreen: AnyBytes) -> None:
     if len(homescreen) > utils.HOMESCREEN_MAXSIZE:
         raise ValueError  # homescreen too large
     common.set(_NAMESPACE, _HOMESCREEN, homescreen, public=True)
-
-
-def store_mnemonic_secret(
-    secret: bytes,
-    needs_backup: bool = False,
-    no_backup: bool = False,
-) -> None:
-    set_version(common.STORAGE_VERSION_CURRENT)
-    common.set(_NAMESPACE, _MNEMONIC_SECRET, secret)
-    common.set_true_or_delete(_NAMESPACE, _NO_BACKUP, no_backup)
-    common.set_bool(_NAMESPACE, INITIALIZED, True, public=True)
-    if not no_backup:
-        common.set_true_or_delete(_NAMESPACE, _NEEDS_BACKUP, needs_backup)
 
 
 def needs_backup() -> bool:
@@ -472,14 +522,17 @@ def get_rgb_led() -> bool:
 
 if utils.USE_THP:
 
-    def set_thp_paired_cache(blob: AnyBytes) -> None:
+    def set_thp_paired_names(blob: AnyBytes) -> None:
         """
         Set THP paired entries' cache (using protobuf serialization).
         """
-        common.set(_NAMESPACE, _THP_PAIRED_CACHE, blob)
+        common.set(_NAMESPACE, THP_PAIRED_NAMES, blob)
 
-    def get_thp_paired_cache() -> bytes | None:
+    def get_thp_paired_names() -> bytes | None:
         """
         Get THP paired entries' cache (using protobuf serialization).
+
+        Please note that while THP calls this a cache, it is persisted
+        across reboots, unlike storage.cache.
         """
-        return common.get(_NAMESPACE, _THP_PAIRED_CACHE)
+        return common.get(_NAMESPACE, THP_PAIRED_NAMES)

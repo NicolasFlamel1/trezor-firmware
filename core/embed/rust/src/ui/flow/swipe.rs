@@ -58,7 +58,7 @@ where
     }
 
     fn render(&'s self, target: &mut R) {
-        <Self as Component>::render(self, target)
+        <Self as Component>::render(self, target);
     }
 
     #[cfg(feature = "ui_debug")]
@@ -313,6 +313,10 @@ impl Layout<Result<Obj, Error>> for SwipeFlow {
         let overflow: bool = false;
         render_on_display(None, Some(Color::black()), |target| {
             self.current_page().render(target);
+
+            #[cfg(feature = "rgb_led")]
+            target.led_state().set();
+
             #[cfg(feature = "ui_debug")]
             if target.should_raise_overflow_exception() {
                 overflow = true;

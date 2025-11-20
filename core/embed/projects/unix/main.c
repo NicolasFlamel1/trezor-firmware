@@ -59,6 +59,10 @@
 #include <io/touch.h>
 #endif
 
+#ifdef USE_BLE
+#include <io/ble.h>
+#endif
+
 #ifdef USE_TROPIC
 #include <sec/tropic.h>
 #endif
@@ -504,7 +508,7 @@ static int sdl_event_filter(void *userdata, SDL_Event *event) {
   return 1;
 }
 
-void drivers_init() {
+void drivers_init(uint16_t tropic_model_port) {
   flash_init();
   flash_otp_init();
 
@@ -521,17 +525,21 @@ void drivers_init() {
 #endif
 
 #ifdef USE_TROPIC
-  tropic_init();
+  tropic_init(tropic_model_port);
 #endif
 
   usb_configure(NULL);
+
+#ifdef USE_BLE
+  ble_init();
+#endif
 }
 
 // Initialize the system and drivers for running tests in the Rust code.
 // The function is called from the Rust before the test main function is run.
 void rust_tests_c_setup(void) {
   system_init(NULL);
-  drivers_init();
+  drivers_init(28992);
 }
 
 MP_NOINLINE int main_(int argc, char **argv) {
@@ -559,7 +567,23 @@ MP_NOINLINE int main_(int argc, char **argv) {
 
   system_init(&rsod_panic_handler);
 
-  drivers_init();
+  char *tropic_model_port_str = getenv("TROPIC_MODEL_PORT");
+  uint16_t tropic_model_port;
+  if (tropic_model_port_str == NULL) {
+    tropic_model_port = 28992;
+  } else {
+    char *endptr;
+    long port_long = strtol(tropic_model_port_str, &endptr, 10);
+
+    if (*endptr != '\0' || port_long < 0 || port_long > 65535) {
+      printf("FATAL: invalid TROPIC_MODEL_PORT\n");
+      exit(1);
+    }
+
+    tropic_model_port = (uint16_t)port_long;
+  }
+
+  drivers_init(tropic_model_port);
 
   SDL_SetEventFilter(sdl_event_filter, NULL);
 

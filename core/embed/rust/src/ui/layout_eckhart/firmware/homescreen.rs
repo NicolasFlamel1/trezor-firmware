@@ -1,6 +1,3 @@
-#[cfg(feature = "rgb_led")]
-use crate::trezorhal::rgb_led;
-
 use crate::{
     error::Error,
     io::BinaryData,
@@ -25,6 +22,9 @@ use super::{
     theme::{self, firmware::button_homebar_style, ScreenBackground},
     ActionBar, ActionBarMsg, Hint,
 };
+
+#[cfg(feature = "rgb_led")]
+use crate::ui::led::LedState;
 
 /// Full-screen component for the homescreen and lockscreen.
 pub struct Homescreen {
@@ -150,14 +150,6 @@ impl Homescreen {
     }
 }
 
-impl Drop for Homescreen {
-    fn drop(&mut self) {
-        // Turn off the LED when homescreen is destroyed
-        #[cfg(feature = "rgb_led")]
-        rgb_led::set_color(0);
-    }
-}
-
 impl Component for Homescreen {
     type Msg = HomescreenMsg;
 
@@ -220,11 +212,9 @@ impl Component for Homescreen {
         }
 
         #[cfg(feature = "rgb_led")]
-        if let Some(rgb_led) = self.led_color {
-            rgb_led::set_color(rgb_led.to_u32());
-        } else {
-            rgb_led::set_color(0);
-        }
+        target.set_led_state(LedState::Static(
+            self.led_color.unwrap_or_else(Color::black),
+        ));
     }
 }
 

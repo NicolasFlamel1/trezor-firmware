@@ -353,7 +353,7 @@ bool display_init(display_content_mode_t mode) {
 #endif
 
 #ifdef USE_BACKLIGHT
-  backlight_init(BACKLIGHT_RESET);
+  backlight_init(BACKLIGHT_RESET, GAMMA_EXP);
 #endif
 
   uint32_t fb_addr = display_fb_init();
@@ -442,15 +442,15 @@ void display_deinit(display_content_mode_t mode) {
   memset(drv, 0, sizeof(display_driver_t));
 }
 
-int display_set_backlight(int level) {
+bool display_set_backlight(uint8_t level) {
   display_driver_t *drv = &g_display_driver;
 
   if (!drv->initialized) {
-    return 0;
+    return false;
   }
 
 #ifdef USE_BACKLIGHT
-  if (level > backlight_get()) {
+  if (level > 0 && backlight_get() == 0) {
     display_ensure_refreshed();
   }
 
@@ -458,11 +458,11 @@ int display_set_backlight(int level) {
 #else
   // Just emulation, not doing anything
   drv->backlight_level = level;
-  return level;
+  return true;
 #endif
 }
 
-int display_get_backlight(void) {
+uint8_t display_get_backlight(void) {
   display_driver_t *drv = &g_display_driver;
 
   if (!drv->initialized) {

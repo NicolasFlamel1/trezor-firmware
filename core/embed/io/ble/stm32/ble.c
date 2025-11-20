@@ -27,6 +27,7 @@
 
 #include <io/ble.h>
 #include <io/nrf.h>
+#include <sys/backup_ram.h>
 #include <sys/irq.h>
 #include <sys/sysevent_source.h>
 #include <sys/systick.h>
@@ -50,6 +51,11 @@
 
 #define BLE_DATA_HEADER_SIZE 7
 #define BLE_DATA_SIZE (BLE_RX_PACKET_SIZE + BLE_DATA_HEADER_SIZE)
+
+typedef struct {
+  uint8_t version;
+  bool enabled;
+} ble_recovery_data_t;
 
 typedef struct {
   ble_mode_t mode_requested;
@@ -659,8 +665,16 @@ bool ble_init(void) {
     goto cleanup;
   }
 
-  drv->power_level = BLE_TX_POWER_PLUS_4_DBM;
   drv->enabled = true;
+  ble_recovery_data_t backup_data;
+  if (backup_ram_read(BACKUP_RAM_KEY_BLE_SETTINGS, &backup_data,
+                      sizeof(backup_data), NULL)) {
+    if (backup_data.version == 1) {
+      drv->enabled = backup_data.enabled;
+    }
+  }
+
+  drv->power_level = BLE_TX_POWER_PLUS_4_DBM;
   drv->initialized = true;
   return true;
 
@@ -989,10 +1003,6 @@ static void ble_event_flush(void) {
 }
 
 bool ble_enter_pairing_mode(const uint8_t *name, size_t name_len) {
-  if (name == NULL || name_len == 0 || name_len > BLE_ADV_NAME_LEN) {
-    return false;
-  }
-
   ble_driver_t *drv = &g_ble_driver;
 
   if (!drv->initialized || !drv->enabled) {
@@ -1001,8 +1011,13 @@ bool ble_enter_pairing_mode(const uint8_t *name, size_t name_len) {
 
   irq_key_t key = irq_lock();
 
-  memset(drv->adv_name, 0, sizeof(drv->adv_name));
-  memcpy(drv->adv_name, name, name_len);
+  if (name != NULL && name_len > 0 && name_len <= BLE_ADV_NAME_LEN) {
+    memset(drv->adv_name, 0, sizeof(drv->adv_name));
+    memcpy(drv->adv_name, name, name_len);
+  } else if (name != NULL && name_len > BLE_ADV_NAME_LEN) {
+    return false;
+  }
+
   drv->restart_adv_on_disconnect = true;
   bool connected = drv->connected;
 
@@ -1356,6 +1371,11 @@ void ble_set_enabled(bool enabled) {
   }
 
   drv->enabled = enabled;
+
+  ble_recovery_data_t data = {.version = 1, .enabled = enabled};
+
+  backup_ram_write(BACKUP_RAM_KEY_BLE_SETTINGS, BACKUP_RAM_ITEM_PROTECTED,
+                   &data, sizeof(data));
 }
 
 bool ble_get_enabled(void) {
@@ -1447,5 +1467,18 @@ static const syshandle_vmt_t ble_handle_vmt = {
     .check_write_ready = NULL,
     .poll = on_ble_poll,
 };
+
+bool ble_wait_until_ready(void) {
+  uint32_t timeout = ticks_timeout(5000);
+  ble_state_t state = {0};
+  do {
+    ble_get_state(&state);
+    if (state.state_known) {
+      return true;
+    }
+  } while (!ticks_expired(timeout));
+
+  return false;
+}
 
 #endif

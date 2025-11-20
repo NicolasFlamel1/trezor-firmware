@@ -33,7 +33,7 @@
   },
   "header": {
     "language": "cs-CZ",
-    "version": "2.9.3"
+    "version": "2.9.4"
   },
   "translations": {
     "addr_mismatch__contact_support_at": {
@@ -81,7 +81,7 @@
     "address_details__derivation_path_colon": "Derivační cesta:",
     "address_details__title_receive_address": "Přijímací adresa",
     "address_details__title_receiving_to": "Příjem",
-    "authenticate__confirm_template": "Povolit připojenému počítači potvrdit pravost vašeho {0}?",
+    "authenticate__confirm_template": "Povolit připojené aplikaci potvrdit pravost vašeho {0}?",
     "authenticate__header": "Ověřit zařízení",
     "auto_lock__change_template": "Automaticky zamknout Trezor po {0} nečinnosti?",
     "auto_lock__description": "Nastavte dobu, po které se Trezor automaticky uzamkne.",
@@ -99,11 +99,31 @@
     },
     "auto_lock__title": "Prodleva auto zámku",
     "auto_lock__turned_on": "Automatické uzamčení zapnuto",
-    "backup__can_back_up_anytime": "Svůj Trezor můžete kdykoli zálohovat.",
+    "backup__can_back_up_anytime": {
+      "Bolt": "Svůj Trezor můžete kdykoli zálohovat.",
+      "Caesar": "Svůj Trezor můžete kdykoli zálohovat.",
+      "Delizia": "Svůj Trezor můžete kdykoli zálohovat.",
+      "Eckhart": "Svůj Trezor můžete zálohovat kdykoliv."
+    },
     "backup__create_backup_to_prevent_loss": "Vytvořte si zálohu, abyste neztratili přístup ke svým prostředkům.",
-    "backup__info_multi_share_backup": "Záloha peněženky obsahuje několik seznamů slov v určitém pořadí (části).",
-    "backup__info_single_share_backup": "Záloha peněženky obsahuje slova ({0}) v určitém pořadí.",
-    "backup__it_should_be_backed_up": "Novou peněženku byste si měli ihned zálohovat.",
+    "backup__info_multi_share_backup": {
+      "Bolt": "Záloha peněženky obsahuje několik seznamů slov v určitém pořadí (části).",
+      "Caesar": "Záloha peněženky obsahuje několik seznamů slov v určitém pořadí (části).",
+      "Delizia": "Záloha peněženky obsahuje několik seznamů slov v určitém pořadí (části).",
+      "Eckhart": "Vaše záloha peněženky obsahuje několik seznamů slov v určitém pořadí (podílů)."
+    },
+    "backup__info_single_share_backup": {
+      "Bolt": "Záloha peněženky obsahuje slova ({0}) v určitém pořadí.",
+      "Caesar": "Záloha peněženky obsahuje slova ({0}) v určitém pořadí.",
+      "Delizia": "Záloha peněženky obsahuje slova ({0}) v určitém pořadí.",
+      "Eckhart": "Vaše záloha peněženky obsahuje {0} slov v určitém pořadí."
+    },
+    "backup__it_should_be_backed_up": {
+      "Bolt": "Novou peněženku byste si měli ihned zálohovat.",
+      "Caesar": "Novou peněženku byste si měli ihned zálohovat.",
+      "Delizia": "Novou peněženku byste si měli ihned zálohovat.",
+      "Eckhart": "Novou peněženku byste měli ihned zálohovat."
+    },
     "backup__it_should_be_backed_up_now": "Měli byste ji hned zálohovat!",
     "backup__new_wallet_created": "Peněženka byla vytvořena.\n",
     "backup__new_wallet_successfully_created": "Peněženka byla vytvořena.",
@@ -181,7 +201,7 @@
       "Bolt": "",
       "Caesar": "",
       "Delizia": "",
-      "Eckhart": "Všichni hostitelé odstraněni."
+      "Eckhart": "Všechna připojení odstraněna."
     },
     "ble__forget_this_description": {
       "Bolt": "",
@@ -199,13 +219,13 @@
       "Bolt": "",
       "Caesar": "",
       "Delizia": "",
-      "Eckhart": "Hostitel odstraněn."
+      "Eckhart": "Propojení odstraněno."
     },
     "ble__host_info": {
       "Bolt": "",
       "Caesar": "",
       "Delizia": "",
-      "Eckhart": "Více o hostiteli"
+      "Eckhart": "Více o připojení"
     },
     "ble__limit_reached": {
       "Bolt": "",
@@ -217,7 +237,7 @@
       "Bolt": "",
       "Caesar": "",
       "Delizia": "",
-      "Eckhart": "MAC Adresa"
+      "Eckhart": "MAC adresa"
     },
     "ble__manage_paired": {
       "Bolt": "",
@@ -225,13 +245,24 @@
       "Delizia": "",
       "Eckhart": "Spravovat spárovaná zařízení"
     },
+    "ble__must_be_enabled": {
+      "Bolt": "",
+      "Caesar": "",
+      "Delizia": "",
+      "Eckhart": "Zapněte Bluetooth pro připojení nového zařízení."
+    },
     "ble__pair_new": {
       "Bolt": "",
       "Caesar": "",
       "Delizia": "",
       "Eckhart": "Spárovat nové zařízení"
     },
-    "ble__pair_title": "Spárovat a připojit",
+    "ble__pair_title": {
+      "Bolt": "",
+      "Caesar": "",
+      "Delizia": "",
+      "Eckhart": "Spárovat a připojit"
+    },
     "ble__pairing_match": {
       "Bolt": "",
       "Caesar": "",
@@ -244,15 +275,35 @@
       "Delizia": "",
       "Eckhart": "Párování Bluetooth"
     },
-    "ble__unpair_all": "Zrušit spárování všech zařízení Bluetooth",
-    "ble__unpair_current": "Zrušit spárování připojeného zařízení",
-    "ble__unpair_title": "Zrušit spárování",
-    "ble__version": "Verze Bluetooth",
+    "ble__unpair_all": {
+      "Bolt": "",
+      "Caesar": "",
+      "Delizia": "",
+      "Eckhart": "Zrušit spárování všech zařízení Bluetooth"
+    },
+    "ble__unpair_current": {
+      "Bolt": "",
+      "Caesar": "",
+      "Delizia": "",
+      "Eckhart": "Zrušit spárování připojeného zařízení"
+    },
+    "ble__unpair_title": {
+      "Bolt": "",
+      "Caesar": "",
+      "Delizia": "",
+      "Eckhart": "Zrušit spárování"
+    },
+    "ble__version": {
+      "Bolt": "",
+      "Caesar": "",
+      "Delizia": "",
+      "Eckhart": "Verze Bluetooth"
+    },
     "ble__waiting_for_host": {
       "Bolt": "",
       "Caesar": "",
       "Delizia": "",
-      "Eckhart": "Čekání na hostitele..."
+      "Eckhart": "Čekání na připojení..."
     },
     "brightness__change_title": "Změnit jas displeje",
     "brightness__changed_title": "Jas displeje byl změněn",
@@ -444,45 +495,240 @@
     "device_name__title": "Název zařízení",
     "entropy__send": "Opravdu chcete odeslat entropii?",
     "entropy__title_confirm": "Potvrdit entropii",
-    "eos__about_to_sign_template": "Chystáte se podepsat {0}.",
-    "eos__action_name": "Název akce:",
-    "eos__arbitrary_data": "Libovolná data",
-    "eos__buy_ram": "Koupit RAM",
-    "eos__bytes": "Bajty:",
-    "eos__cancel_vote": "Zrušit hlas",
-    "eos__checksum": "Kontrolní součet:",
-    "eos__code": "Kód:",
-    "eos__contract": "Kontrakt:",
-    "eos__cpu": "Procesor:",
-    "eos__creator": "Tvůrce:",
-    "eos__delegate": "Delegovat",
-    "eos__delete_auth": "Odstranit ověření",
-    "eos__from": "Od:",
-    "eos__link_auth": "Spojit ověření",
-    "eos__memo": "Poznámka",
-    "eos__name": "Název:",
-    "eos__net": "SÍŤ:",
-    "eos__new_account": "Nový účet",
-    "eos__owner": "Vlastník:",
-    "eos__parent": "Nadřazená entita:",
-    "eos__payer": "Plátce:",
-    "eos__permission": "Oprávnění:",
-    "eos__proxy": "Proxy:",
-    "eos__receiver": "Příjemce:",
-    "eos__refund": "Vrácení peněz",
-    "eos__requirement": "Požadavek:",
-    "eos__sell_ram": "Prodat RAM",
-    "eos__sender": "Odesílatel:",
-    "eos__threshold": "Počet částí zálohy pro obnovu:",
-    "eos__to": "Komu:",
-    "eos__transfer": "Převod:",
-    "eos__type": "Typ:",
-    "eos__undelegate": "Zrušit delegaci",
-    "eos__unlink_auth": "Odpojit ověření",
-    "eos__update_auth": "Aktualizovat ověření",
-    "eos__vote_for_producers": "Hlasovat pro výrobce",
-    "eos__vote_for_proxy": "Hlasovat pro proxy",
-    "eos__voter": "Hlasující osoba:",
+    "eos__about_to_sign_template": {
+      "Bolt": "Chystáte se podepsat {0}.",
+      "Caesar": "",
+      "Delizia": "",
+      "Eckhart": ""
+    },
+    "eos__action_name": {
+      "Bolt": "Název akce:",
+      "Caesar": "",
+      "Delizia": "",
+      "Eckhart": ""
+    },
+    "eos__arbitrary_data": {
+      "Bolt": "Libovolná data",
+      "Caesar": "",
+      "Delizia": "",
+      "Eckhart": ""
+    },
+    "eos__buy_ram": {
+      "Bolt": "Koupit RAM",
+      "Caesar": "",
+      "Delizia": "",
+      "Eckhart": ""
+    },
+    "eos__bytes": {
+      "Bolt": "Bajty:",
+      "Caesar": "",
+      "Delizia": "",
+      "Eckhart": ""
+    },
+    "eos__cancel_vote": {
+      "Bolt": "Zrušit hlas",
+      "Caesar": "",
+      "Delizia": "",
+      "Eckhart": ""
+    },
+    "eos__checksum": {
+      "Bolt": "Kontrolní součet:",
+      "Caesar": "",
+      "Delizia": "",
+      "Eckhart": ""
+    },
+    "eos__code": {
+      "Bolt": "Kód:",
+      "Caesar": "",
+      "Delizia": "",
+      "Eckhart": ""
+    },
+    "eos__contract": {
+      "Bolt": "Kontrakt:",
+      "Caesar": "",
+      "Delizia": "",
+      "Eckhart": ""
+    },
+    "eos__cpu": {
+      "Bolt": "Procesor:",
+      "Caesar": "",
+      "Delizia": "",
+      "Eckhart": ""
+    },
+    "eos__creator": {
+      "Bolt": "Tvůrce:",
+      "Caesar": "",
+      "Delizia": "",
+      "Eckhart": ""
+    },
+    "eos__delegate": {
+      "Bolt": "Delegovat",
+      "Caesar": "",
+      "Delizia": "",
+      "Eckhart": ""
+    },
+    "eos__delete_auth": {
+      "Bolt": "Odstranit ověření",
+      "Caesar": "",
+      "Delizia": "",
+      "Eckhart": ""
+    },
+    "eos__from": {
+      "Bolt": "Od:",
+      "Caesar": "",
+      "Delizia": "",
+      "Eckhart": ""
+    },
+    "eos__link_auth": {
+      "Bolt": "Spojit ověření",
+      "Caesar": "",
+      "Delizia": "",
+      "Eckhart": ""
+    },
+    "eos__memo": {
+      "Bolt": "Poznámka",
+      "Caesar": "",
+      "Delizia": "",
+      "Eckhart": ""
+    },
+    "eos__name": {
+      "Bolt": "Název:",
+      "Caesar": "",
+      "Delizia": "",
+      "Eckhart": ""
+    },
+    "eos__net": {
+      "Bolt": "SÍŤ:",
+      "Caesar": "",
+      "Delizia": "",
+      "Eckhart": ""
+    },
+    "eos__new_account": {
+      "Bolt": "Nový účet",
+      "Caesar": "",
+      "Delizia": "",
+      "Eckhart": ""
+    },
+    "eos__owner": {
+      "Bolt": "Vlastník:",
+      "Caesar": "",
+      "Delizia": "",
+      "Eckhart": ""
+    },
+    "eos__parent": {
+      "Bolt": "Nadřazená entita:",
+      "Caesar": "",
+      "Delizia": "",
+      "Eckhart": ""
+    },
+    "eos__payer": {
+      "Bolt": "Plátce:",
+      "Caesar": "",
+      "Delizia": "",
+      "Eckhart": ""
+    },
+    "eos__permission": {
+      "Bolt": "Oprávnění:",
+      "Caesar": "",
+      "Delizia": "",
+      "Eckhart": ""
+    },
+    "eos__proxy": {
+      "Bolt": "Proxy:",
+      "Caesar": "",
+      "Delizia": "",
+      "Eckhart": ""
+    },
+    "eos__receiver": {
+      "Bolt": "Příjemce:",
+      "Caesar": "",
+      "Delizia": "",
+      "Eckhart": ""
+    },
+    "eos__refund": {
+      "Bolt": "Vrácení peněz",
+      "Caesar": "",
+      "Delizia": "",
+      "Eckhart": ""
+    },
+    "eos__requirement": {
+      "Bolt": "Požadavek:",
+      "Caesar": "",
+      "Delizia": "",
+      "Eckhart": ""
+    },
+    "eos__sell_ram": {
+      "Bolt": "Prodat RAM",
+      "Caesar": "",
+      "Delizia": "",
+      "Eckhart": ""
+    },
+    "eos__sender": {
+      "Bolt": "Odesílatel:",
+      "Caesar": "",
+      "Delizia": "",
+      "Eckhart": ""
+    },
+    "eos__threshold": {
+      "Bolt": "Počet částí zálohy pro obnovu:",
+      "Caesar": "",
+      "Delizia": "",
+      "Eckhart": ""
+    },
+    "eos__to": {
+      "Bolt": "Komu:",
+      "Caesar": "",
+      "Delizia": "",
+      "Eckhart": ""
+    },
+    "eos__transfer": {
+      "Bolt": "Převod:",
+      "Caesar": "",
+      "Delizia": "",
+      "Eckhart": ""
+    },
+    "eos__type": {
+      "Bolt": "Typ:",
+      "Caesar": "",
+      "Delizia": "",
+      "Eckhart": ""
+    },
+    "eos__undelegate": {
+      "Bolt": "Zrušit delegaci",
+      "Caesar": "",
+      "Delizia": "",
+      "Eckhart": ""
+    },
+    "eos__unlink_auth": {
+      "Bolt": "Odpojit ověření",
+      "Caesar": "",
+      "Delizia": "",
+      "Eckhart": ""
+    },
+    "eos__update_auth": {
+      "Bolt": "Aktualizovat ověření",
+      "Caesar": "",
+      "Delizia": "",
+      "Eckhart": ""
+    },
+    "eos__vote_for_producers": {
+      "Bolt": "Hlasovat pro výrobce",
+      "Caesar": "",
+      "Delizia": "",
+      "Eckhart": ""
+    },
+    "eos__vote_for_proxy": {
+      "Bolt": "Hlasovat pro proxy",
+      "Caesar": "",
+      "Delizia": "",
+      "Eckhart": ""
+    },
+    "eos__voter": {
+      "Bolt": "Hlasující osoba:",
+      "Caesar": "",
+      "Delizia": "",
+      "Eckhart": ""
+    },
     "ethereum__amount_sent": "Odeslaná částka:",
     "ethereum__approve": "Povolit",
     "ethereum__approve_amount_allowance": "Limit částky",
@@ -568,16 +814,31 @@
     "firmware_update__restart": "Po aktualizaci se Trezor restartuje.",
     "firmware_update__title": "Aktual. firmware",
     "firmware_update__title_fingerprint": "Otisk firmwaru",
-    "haptic_feedback__disable": "Vypnout haptickou zpětnou vazbu?",
-    "haptic_feedback__enable": "Zapnout haptickou zpětnou vazbu?",
-    "haptic_feedback__subtitle": "Nastavení",
-    "haptic_feedback__title": "Haptická zpětná vazba",
-    "homescreen__backup_needed_info": {
+    "haptic_feedback__disable": {
       "Bolt": "",
       "Caesar": "",
-      "Delizia": "",
-      "Eckhart": "Otevřete Trezor Suite a vytvořte si zálohu peněženky. Toto je jediný způsob jak obnovit přístup k vašemu kryptu."
+      "Delizia": "Vypnout haptickou zpětnou vazbu?",
+      "Eckhart": "Vypnout haptickou zpětnou vazbu?"
     },
+    "haptic_feedback__enable": {
+      "Bolt": "",
+      "Caesar": "",
+      "Delizia": "Zapnout haptickou zpětnou vazbu?",
+      "Eckhart": "Zapnout haptickou zpětnou vazbu?"
+    },
+    "haptic_feedback__subtitle": {
+      "Bolt": "",
+      "Caesar": "",
+      "Delizia": "Nastavení",
+      "Eckhart": "Nastavení"
+    },
+    "haptic_feedback__title": {
+      "Bolt": "",
+      "Caesar": "",
+      "Delizia": "Haptická zpětná vazba",
+      "Eckhart": "Haptická zpětná vazba"
+    },
+    "homescreen__backup_needed_info": "Otevřete Trezor Suite a vytvořte si zálohu peněženky. Toto je jediný způsob jak obnovit přístup k vašemu kryptu.",
     "homescreen__click_to_connect": "Kliknutím se připojíte",
     "homescreen__click_to_unlock": "Kliknutím odemknete",
     "homescreen__firmware_type": "Typ firmwaru",
@@ -593,14 +854,54 @@
     "homescreen__title_pin_not_set": "Není nastaven PIN",
     "homescreen__title_seedless": "Bez seedu",
     "homescreen__title_set": "Změnit domov. obr.?",
-    "inputs__back": "ZPĚT",
-    "inputs__cancel": "ZRUŠIT",
-    "inputs__delete": "ODSTRANIT",
-    "inputs__enter": "ZADAT",
-    "inputs__previous": "PŘEDCHOZÍ",
-    "inputs__return": "VRÁTIT",
-    "inputs__show": "ZOBRAZIT",
-    "inputs__space": "ROZDĚLENÍ",
+    "inputs__back": {
+      "Bolt": "",
+      "Caesar": "ZPĚT",
+      "Delizia": "",
+      "Eckhart": ""
+    },
+    "inputs__cancel": {
+      "Bolt": "",
+      "Caesar": "ZRUŠIT",
+      "Delizia": "",
+      "Eckhart": ""
+    },
+    "inputs__delete": {
+      "Bolt": "",
+      "Caesar": "ODSTRANIT",
+      "Delizia": "",
+      "Eckhart": ""
+    },
+    "inputs__enter": {
+      "Bolt": "",
+      "Caesar": "ZADAT",
+      "Delizia": "",
+      "Eckhart": ""
+    },
+    "inputs__previous": {
+      "Bolt": "",
+      "Caesar": "PŘEDCHOZÍ",
+      "Delizia": "",
+      "Eckhart": ""
+    },
+    "inputs__return": {
+      "Bolt": "",
+      "Caesar": "VRÁTIT",
+      "Delizia": "",
+      "Eckhart": ""
+    },
+    "inputs__show": {
+      "Bolt": "",
+      "Caesar": "ZOBRAZIT",
+      "Delizia": "",
+      "Eckhart": ""
+    },
+    "inputs__space": {
+      "Bolt": "",
+      "Caesar": "MEZERA",
+      "Delizia": "",
+      "Eckhart": ""
+    },
     "instructions__continue_holding": {
       "Bolt": "",
       "Caesar": "",
@@ -637,19 +938,29 @@
       "Eckhart": "Změna jazyka..."
     },
     "language__title": "Nastavení jazyka",
-    "led__disable": "Vypnout LED?",
-    "led__enable": "Zapnout LED?",
-    "led__title": "LED",
+    "led__disable": {
+      "Bolt": "",
+      "Caesar": "",
+      "Delizia": "",
+      "Eckhart": "Vypnout LED?"
+    },
+    "led__enable": {
+      "Bolt": "",
+      "Caesar": "",
+      "Delizia": "",
+      "Eckhart": "Zapnout LED?"
+    },
+    "led__title": {
+      "Bolt": "",
+      "Caesar": "",
+      "Delizia": "",
+      "Eckhart": "LED"
+    },
     "lockscreen__tap_to_connect": "Klepnutím se připojíte",
     "lockscreen__tap_to_unlock": "Klepnutím odemknete",
     "lockscreen__title_locked": "Uzamčeno",
     "lockscreen__title_not_connected": "Nepřipojeno",
-    "lockscreen__unlock": {
-      "Bolt": "",
-      "Caesar": "",
-      "Delizia": "",
-      "Eckhart": "Odemknout"
-    },
+    "lockscreen__unlock": "Odemknout",
     "misc__decrypt_value": "Dešifrovat hodnotu",
     "misc__enable_labeling": "Povolit popisky?",
     "misc__encrypt_value": "Zašifrovat hodnotu",
@@ -723,65 +1034,325 @@
     "monero__wanna_export_watchkey": "Opravdu chcete exportovat údaje pouze pro sledování?",
     "monero__wanna_start_refresh": "Opravdu chcete zahájit\nobnovení?",
     "monero__wanna_sync_key_images": "Opravdu chcete\nsynchronizovat obrazy klíče?",
-    "nem__absolute": "absolutní",
-    "nem__activate": "Aktivovat",
-    "nem__add": "Přidat",
-    "nem__confirm_action": "Potvrďte akci",
-    "nem__confirm_address": "Potvrďte adresu",
-    "nem__confirm_creation_fee": "Potvrďte poplatek za vytvoření",
-    "nem__confirm_mosaic": "Potvrďte mozaiku",
-    "nem__confirm_multisig_fee": "Potvrďte poplatek za multisig",
-    "nem__confirm_namespace": "Potvrďte obor názvů",
-    "nem__confirm_payload": "Potvrďte datovou část",
-    "nem__confirm_properties": "Potvrďte vlastnosti",
-    "nem__confirm_rental_fee": "Potvrďte poplatek za pronájem",
-    "nem__confirm_transfer_of": "Potvrďte převod",
-    "nem__convert_account_to_multisig": "Převést účet na multisig?",
-    "nem__cosign_transaction_for": "Spolupodepsat transakci za",
-    "nem__cosignatory": " další podepisující osoba",
-    "nem__create_mosaic": "Vytvořit mozaiku",
-    "nem__create_namespace": "Vytvořit obor názvů",
-    "nem__deactivate": "Deaktivovat",
-    "nem__decrease": "Snížit",
-    "nem__description": "Popis:",
-    "nem__divisibility_and_levy_cannot_be_shown": "Dělitelnost a daň nelze zobrazit pro neznámé mozaiky",
-    "nem__encrypted": "Zašifrováno",
-    "nem__final_confirm": "Konečné potvrzení",
-    "nem__immutable": "neměnné",
-    "nem__increase": "Zvýšit",
-    "nem__initial_supply": "Počáteční zdroj:",
-    "nem__initiate_transaction_for": "Zahájit transakci",
-    "nem__levy_divisibility": "Dělitelnost daně:",
-    "nem__levy_fee": "Daň:",
-    "nem__levy_fee_of": "Potvrdit daň mosaiky pro",
-    "nem__levy_mosaic": "Mozaika daně:",
-    "nem__levy_namespace": "Obor názvů daně:",
-    "nem__levy_recipient": "Příjemce daně:",
-    "nem__levy_type": "Typ daně:",
-    "nem__modify_supply_for": "Upravit zdroj pro",
-    "nem__modify_the_number_of_cosignatories_by": "Upravit počet dalších podepisujících osob o ",
-    "nem__mutable": "proměnlivé",
-    "nem__of": "z",
-    "nem__percentile": "percentil",
-    "nem__raw_units_template": "{0} nezpracovaných jednotek",
-    "nem__remote_harvesting": " vzdálená sklizeň?",
-    "nem__remove": "Odstranit",
-    "nem__set_minimum_cosignatories_to": "Nastavit min. počet dalších podepisujících osob na ",
-    "nem__sign_tx_fee_template": "Podepsat transakci\na zaplatit {0}\njako síťový poplatek?",
-    "nem__supply_change": "Změna zdrojů",
-    "nem__supply_units_template": "{0} zdroj o {1} celých jednotek?",
-    "nem__transferable": "Přenosné?",
-    "nem__under_namespace": "v rámci oboru názvů",
-    "nem__unencrypted": "Nezašifrováno",
-    "nem__unknown_mosaic": "Neznámá mozaika!",
+    "nem__absolute": {
+      "Bolt": "absolutní",
+      "Caesar": "",
+      "Delizia": "",
+      "Eckhart": ""
+    },
+    "nem__activate": {
+      "Bolt": "Aktivovat",
+      "Caesar": "",
+      "Delizia": "",
+      "Eckhart": ""
+    },
+    "nem__add": {
+      "Bolt": "Přidat",
+      "Caesar": "",
+      "Delizia": "",
+      "Eckhart": ""
+    },
+    "nem__confirm_action": {
+      "Bolt": "Potvrďte akci",
+      "Caesar": "",
+      "Delizia": "",
+      "Eckhart": ""
+    },
+    "nem__confirm_address": {
+      "Bolt": "Potvrďte adresu",
+      "Caesar": "",
+      "Delizia": "",
+      "Eckhart": ""
+    },
+    "nem__confirm_creation_fee": {
+      "Bolt": "Potvrďte poplatek za vytvoření",
+      "Caesar": "",
+      "Delizia": "",
+      "Eckhart": ""
+    },
+    "nem__confirm_mosaic": {
+      "Bolt": "Potvrďte mozaiku",
+      "Caesar": "",
+      "Delizia": "",
+      "Eckhart": ""
+    },
+    "nem__confirm_multisig_fee": {
+      "Bolt": "Potvrďte poplatek za multisig",
+      "Caesar": "",
+      "Delizia": "",
+      "Eckhart": ""
+    },
+    "nem__confirm_namespace": {
+      "Bolt": "Potvrďte obor názvů",
+      "Caesar": "",
+      "Delizia": "",
+      "Eckhart": ""
+    },
+    "nem__confirm_payload": {
+      "Bolt": "Potvrďte datovou část",
+      "Caesar": "",
+      "Delizia": "",
+      "Eckhart": ""
+    },
+    "nem__confirm_properties": {
+      "Bolt": "Potvrďte vlastnosti",
+      "Caesar": "",
+      "Delizia": "",
+      "Eckhart": ""
+    },
+    "nem__confirm_rental_fee": {
+      "Bolt": "Potvrďte poplatek za pronájem",
+      "Caesar": "",
+      "Delizia": "",
+      "Eckhart": ""
+    },
+    "nem__confirm_transfer_of": {
+      "Bolt": "Potvrďte převod",
+      "Caesar": "",
+      "Delizia": "",
+      "Eckhart": ""
+    },
+    "nem__convert_account_to_multisig": {
+      "Bolt": "Převést účet na multisig?",
+      "Caesar": "",
+      "Delizia": "",
+      "Eckhart": ""
+    },
+    "nem__cosign_transaction_for": {
+      "Bolt": "Spolupodepsat transakci za",
+      "Caesar": "",
+      "Delizia": "",
+      "Eckhart": ""
+    },
+    "nem__cosignatory": {
+      "Bolt": " další podepisující osoba",
+      "Caesar": "",
+      "Delizia": "",
+      "Eckhart": ""
+    },
+    "nem__create_mosaic": {
+      "Bolt": "Vytvořit mozaiku",
+      "Caesar": "",
+      "Delizia": "",
+      "Eckhart": ""
+    },
+    "nem__create_namespace": {
+      "Bolt": "Vytvořit obor názvů",
+      "Caesar": "",
+      "Delizia": "",
+      "Eckhart": ""
+    },
+    "nem__deactivate": {
+      "Bolt": "Deaktivovat",
+      "Caesar": "",
+      "Delizia": "",
+      "Eckhart": ""
+    },
+    "nem__decrease": {
+      "Bolt": "Snížit",
+      "Caesar": "",
+      "Delizia": "",
+      "Eckhart": ""
+    },
+    "nem__description": {
+      "Bolt": "Popis:",
+      "Caesar": "",
+      "Delizia": "",
+      "Eckhart": ""
+    },
+    "nem__divisibility_and_levy_cannot_be_shown": {
+      "Bolt": "Dělitelnost a daň nelze zobrazit pro neznámé mozaiky",
+      "Caesar": "",
+      "Delizia": "",
+      "Eckhart": ""
+    },
+    "nem__encrypted": {
+      "Bolt": "Zašifrováno",
+      "Caesar": "",
+      "Delizia": "",
+      "Eckhart": ""
+    },
+    "nem__final_confirm": {
+      "Bolt": "Konečné potvrzení",
+      "Caesar": "",
+      "Delizia": "",
+      "Eckhart": ""
+    },
+    "nem__immutable": {
+      "Bolt": "neměnné",
+      "Caesar": "",
+      "Delizia": "",
+      "Eckhart": ""
+    },
+    "nem__increase": {
+      "Bolt": "Zvýšit",
+      "Caesar": "",
+      "Delizia": "",
+      "Eckhart": ""
+    },
+    "nem__initial_supply": {
+      "Bolt": "Počáteční zdroj:",
+      "Caesar": "",
+      "Delizia": "",
+      "Eckhart": ""
+    },
+    "nem__initiate_transaction_for": {
+      "Bolt": "Zahájit transakci",
+      "Caesar": "",
+      "Delizia": "",
+      "Eckhart": ""
+    },
+    "nem__levy_divisibility": {
+      "Bolt": "Dělitelnost daně:",
+      "Caesar": "",
+      "Delizia": "",
+      "Eckhart": ""
+    },
+    "nem__levy_fee": {
+      "Bolt": "Daň:",
+      "Caesar": "",
+      "Delizia": "",
+      "Eckhart": ""
+    },
+    "nem__levy_fee_of": {
+      "Bolt": "Potvrdit daň mosaiky pro",
+      "Caesar": "",
+      "Delizia": "",
+      "Eckhart": ""
+    },
+    "nem__levy_mosaic": {
+      "Bolt": "Mozaika daně:",
+      "Caesar": "",
+      "Delizia": "",
+      "Eckhart": ""
+    },
+    "nem__levy_namespace": {
+      "Bolt": "Obor názvů daně:",
+      "Caesar": "",
+      "Delizia": "",
+      "Eckhart": ""
+    },
+    "nem__levy_recipient": {
+      "Bolt": "Příjemce daně:",
+      "Caesar": "",
+      "Delizia": "",
+      "Eckhart": ""
+    },
+    "nem__levy_type": {
+      "Bolt": "Typ daně:",
+      "Caesar": "",
+      "Delizia": "",
+      "Eckhart": ""
+    },
+    "nem__modify_supply_for": {
+      "Bolt": "Upravit zdroj pro",
+      "Caesar": "",
+      "Delizia": "",
+      "Eckhart": ""
+    },
+    "nem__modify_the_number_of_cosignatories_by": {
+      "Bolt": "Upravit počet dalších podepisujících osob o ",
+      "Caesar": "",
+      "Delizia": "",
+      "Eckhart": ""
+    },
+    "nem__mutable": {
+      "Bolt": "proměnlivé",
+      "Caesar": "",
+      "Delizia": "",
+      "Eckhart": ""
+    },
+    "nem__of": {
+      "Bolt": "z",
+      "Caesar": "",
+      "Delizia": "",
+      "Eckhart": ""
+    },
+    "nem__percentile": {
+      "Bolt": "percentil",
+      "Caesar": "",
+      "Delizia": "",
+      "Eckhart": ""
+    },
+    "nem__raw_units_template": {
+      "Bolt": "{0} nezpracovaných jednotek",
+      "Caesar": "",
+      "Delizia": "",
+      "Eckhart": ""
+    },
+    "nem__remote_harvesting": {
+      "Bolt": " vzdálená sklizeň?",
+      "Caesar": "",
+      "Delizia": "",
+      "Eckhart": ""
+    },
+    "nem__remove": {
+      "Bolt": "Odstranit",
+      "Caesar": "",
+      "Delizia": "",
+      "Eckhart": ""
+    },
+    "nem__set_minimum_cosignatories_to": {
+      "Bolt": "Nastavit min. počet dalších podepisujících osob na ",
+      "Caesar": "",
+      "Delizia": "",
+      "Eckhart": ""
+    },
+    "nem__sign_tx_fee_template": {
+      "Bolt": "Podepsat transakci\na zaplatit {0}\njako síťový poplatek?",
+      "Caesar": "",
+      "Delizia": "",
+      "Eckhart": ""
+    },
+    "nem__supply_change": {
+      "Bolt": "Změna zdrojů",
+      "Caesar": "",
+      "Delizia": "",
+      "Eckhart": ""
+    },
+    "nem__supply_units_template": {
+      "Bolt": "{0} zdroj o {1} celých jednotek?",
+      "Caesar": "",
+      "Delizia": "",
+      "Eckhart": ""
+    },
+    "nem__transferable": {
+      "Bolt": "Přenosné?",
+      "Caesar": "",
+      "Delizia": "",
+      "Eckhart": ""
+    },
+    "nem__under_namespace": {
+      "Bolt": "v rámci oboru názvů",
+      "Caesar": "",
+      "Delizia": "",
+      "Eckhart": ""
+    },
+    "nem__unencrypted": {
+      "Bolt": "Nezašifrováno",
+      "Caesar": "",
+      "Delizia": "",
+      "Eckhart": ""
+    },
+    "nem__unknown_mosaic": {
+      "Bolt": "Neznámá mozaika!",
+      "Caesar": "",
+      "Delizia": "",
+      "Eckhart": ""
+    },
     "nostr__event_kind_template": "Druh události: {0}",
     "passphrase__access_hidden_wallet": "Přístup ke skryté peněžence",
     "passphrase__access_wallet": "Otev. passphrase pen.?",
     "passphrase__always_on_device": "Vždy zadávat passphrase na Trezoru?",
     "passphrase__continue_with_empty_passphrase": "Pokračovat s prázdnou passphrase?",
-    "passphrase__from_host_not_shown": "Použije se passphrase zadaná hostitelem, ale vzhledem k nastavení zařízení se nezobrazí.",
+    "passphrase__from_host_not_shown": {
+      "Bolt": "Použije se passphrase zadaná aplikací, ale vzhledem k nastavení zařízení se nezobrazí.",
+      "Caesar": "Použije se passphrase zadaná hostitelem, ale vzhledem k nastavení zařízení se nezobrazí.",
+      "Delizia": "Použije se passphrase zadaná aplikací, ale vzhledem k nastavení zařízení se nezobrazí.",
+      "Eckhart": "Použije se passphrase zadaná aplikací, ale vzhledem k nastavení zařízení se nezobrazí."
+    },
     "passphrase__hidden_wallet": "Skrytá peněženka",
-    "passphrase__hide": "Skrýt passphrase od hostitele?",
+    "passphrase__hide": "Skrýt passphrase z aplikace?",
     "passphrase__next_screen_will_show_passphrase": "Na další obrazovce se zobrazí vaše passphrase.",
     "passphrase__please_enter": "Zadejte passphrase.",
     "passphrase__revoke_on_device": "Chcete zrušit passphrase v nastavení zařízení?",
@@ -827,36 +1398,21 @@
     "pin__reenter": "Znovu zadejte PIN",
     "pin__reenter_new": "Zopakujte PIN",
     "pin__reenter_to_confirm": "Znovu zadejte PIN pro potvrzení.",
-    "pin__remove": {
-      "Bolt": "",
-      "Caesar": "",
-      "Delizia": "",
-      "Eckhart": "Odstranit PIN kód"
-    },
+    "pin__remove": "Odstranit PIN kód",
     "pin__setup_completed": "Nastavení PIN dokončeno.",
     "pin__should_be_long": "PIN musí mít 4-50 číslic.",
-    "pin__title": {
-      "Bolt": "",
-      "Caesar": "",
-      "Delizia": "",
-      "Eckhart": "PIN kód"
-    },
+    "pin__title": "PIN kód",
     "pin__title_check_pin": "Zkontrolovat PIN",
     "pin__title_settings": "Nastavení PIN kódu",
     "pin__title_wrong_pin": "Nesprávný PIN kód",
     "pin__tries_left": "pok.",
     "pin__turn_off": "Opravdu chcete vypnout ochranu PIN kódem?",
     "pin__turn_on": "Zapnout ochranu PIN kódem?",
-    "pin__wipe_code_exists_description": {
-      "Bolt": "",
-      "Caesar": "",
-      "Delizia": "",
-      "Eckhart": "Před vypnutím PINu je nutné vypnout kód pro vymazání."
-    },
+    "pin__wipe_code_exists_description": "Před vypnutím PINu je nutné vypnout kód pro vymazání.",
     "pin__wipe_code_exists_title": {
-      "Bolt": "",
-      "Caesar": "",
-      "Delizia": "",
+      "Bolt": "Kód pro vymazání",
+      "Caesar": "Kód pro vymazání nastaven",
+      "Delizia": "Kód pro vymazání nastaven",
       "Eckhart": "Kód pro vymazání nastaven"
     },
     "pin__wrong_pin": "Nesprávný PIN",
@@ -950,12 +1506,7 @@
       "Delizia": "Část {0}",
       "Eckhart": "Podíl #{0}"
     },
-    "recovery__start_entering": {
-      "Bolt": "",
-      "Caesar": "",
-      "Delizia": "",
-      "Eckhart": "Začněte zadávat"
-    },
+    "recovery__start_entering": "Začněte zadávat",
     "recovery__title": "Obnovit peněženku",
     "recovery__title_cancel_dry_run": "Zruš. kontr. zálohy",
     "recovery__title_cancel_recovery": "Zrušit obnovení",
@@ -990,10 +1541,20 @@
     },
     "recovery__x_of_y_entered_template": "Zadali jste {0} z {1} částí",
     "recovery__you_have_entered": "Zadali jste",
-    "regulatory_certification__title": "Regulační certifikace",
+    "regulatory__title": "Regulace",
     "reset__advanced_group_threshold_info": "Počet částí zálohy skupiny určuje počet skupin potřebných k obnovení peněženky.",
-    "reset__all_x_of_y_template": "všech {0} z {1} částí",
-    "reset__any_x_of_y_template": "lib. {0} z {1} částí",
+    "reset__all_x_of_y_template": {
+      "Bolt": "všech {0} z {1} částí",
+      "Caesar": "",
+      "Delizia": "",
+      "Eckhart": ""
+    },
+    "reset__any_x_of_y_template": {
+      "Bolt": "lib. {0} z {1} částí",
+      "Caesar": "",
+      "Delizia": "",
+      "Eckhart": ""
+    },
     "reset__button_create": "Vytv. peněženku",
     "reset__button_recover": "Obn. peněženku",
     "reset__by_continuing": "Pokračováním přijímáte smluvní podmínky společnosti Trezor.",
@@ -1022,14 +1583,39 @@
     "reset__incorrect_word_selected": "Vybrali jste nesprávné slovo",
     "reset__more_at": "Více na",
     "reset__more_info_at": "Další informace na",
-    "reset__need_all_share_template": "K obnovení potřebujete všech {0} částí.",
-    "reset__need_any_share_template": "K obnovení potřebujete libovolné {0} části.",
-    "reset__needed_to_form_a_group": "potřeba k vytvoření skupiny. ",
-    "reset__needed_to_recover_your_wallet": "potřeba k obnovení peněženky. ",
+    "reset__need_all_share_template": {
+      "Bolt": "K obnovení potřebujete všech {0} částí.",
+      "Caesar": "",
+      "Delizia": "",
+      "Eckhart": ""
+    },
+    "reset__need_any_share_template": {
+      "Bolt": "K obnovení potřebujete libovolné {0} části.",
+      "Caesar": "",
+      "Delizia": "",
+      "Eckhart": ""
+    },
+    "reset__needed_to_form_a_group": {
+      "Bolt": "potřeba k vytvoření skupiny. ",
+      "Caesar": "",
+      "Delizia": "",
+      "Eckhart": ""
+    },
+    "reset__needed_to_recover_your_wallet": {
+      "Bolt": "potřeba k obnovení peněženky. ",
+      "Caesar": "",
+      "Delizia": "",
+      "Eckhart": ""
+    },
     "reset__never_make_digital_copy": "Nevytvářejte digitální kopii zálohy ani ji nenahrávejte na internet!",
     "reset__num_of_share_holders_template": "Každý z {0} lidí nebo míst bude mít jednu část.",
     "reset__num_of_shares_advanced_info_template": "Každá část zálohy je sekvence {0} slov. Dále zvolíte počet částí pro obnovu potřebných k vytvoření skupiny {1}.",
-    "reset__num_of_shares_basic_info_template": "Každá část zálohy je sekvence {0} slov. Dále zvolíte, kolik částí potřebujete k obnovení peněženky.",
+    "reset__num_of_shares_basic_info_template": {
+      "Bolt": "Každá část zálohy je sekvence {0} slov. Dále zvolíte, kolik částí potřebujete k obnovení peněženky.",
+      "Caesar": "",
+      "Delizia": "",
+      "Eckhart": ""
+    },
     "reset__num_of_shares_how_many": "Kolik částí zálohy peněženky chcete vytvořit?",
     "reset__num_of_shares_long_info_template": {
       "Bolt": "Každá část zálohy je sekvence {0} slov. Každý seznam slov si uložte na jiné, bezpečné místo nebo ho sdělte někomu, komu důvěřujete. Poté je použijte v případě potřeby obnovení peněženky.",
@@ -1039,7 +1625,12 @@
     },
     "reset__num_shares_for_group_template": "Potřebný počet částí k vytvoření skupiny {0}.",
     "reset__number_of_shares_info": "= počet seznamů jedinečných slov u zálohy peněženky.",
-    "reset__one_share": "1 část",
+    "reset__one_share": {
+      "Bolt": "1 část",
+      "Caesar": "",
+      "Delizia": "",
+      "Eckhart": ""
+    },
     "reset__only_one_share_will_be_created": "Bude vytvořena pouze jedna část.",
     "reset__recovery_share_description": "Podíl zálohy je seznam slov, která jste zapsali při nastavování Trezor.",
     "reset__recovery_share_number": "Záloha vaší peněženky se skládá z 1 až 16 podílů.",
@@ -1049,10 +1640,20 @@
     "reset__required_number_of_groups": "Požadovaný počet skupin pro obnovení.",
     "reset__select_correct_word": "Pro každou pozici vyberte správné slovo.",
     "reset__select_threshold": "Vyberte minimální počet částí potřebných k obnovení peněženky.",
-    "reset__select_word_from_share_template": "Vyberte slovo #{0} z\npodílu #{1}",
+    "reset__select_word_from_share_template": {
+      "Bolt": "Vyberte slovo #{0} z\npodílu #{1}",
+      "Caesar": "Vyberte slovo #{0} z\npodílu #{1}",
+      "Delizia": "Vyberte slovo #{0} z\npodílu #{1}",
+      "Eckhart": "Vyberte slovo #{0} z podílu #{1}"
+    },
     "reset__select_word_template": "Vybrat slovo {0}",
     "reset__select_word_x_of_y_template": "Vyb. slovo {0} z {1}:",
-    "reset__set_it_to_count_template": "Nastavte {0} a budete potřebovat ",
+    "reset__set_it_to_count_template": {
+      "Bolt": "Nastavte {0} a budete potřebovat ",
+      "Caesar": "",
+      "Delizia": "",
+      "Eckhart": ""
+    },
     "reset__share_checked_successfully_template": "Část č. {0} byla úspěšně zkontrolována.",
     "reset__share_completed_template": "Část č. {0} byla dokončena",
     "reset__share_words_first": "Zapište si první slovo zálohy.",
@@ -1072,7 +1673,12 @@
     "reset__slip39_checklist_title": "Kont. seznam zálohy",
     "reset__slip39_checklist_write_down": "Zapište si a zkontr. všechny části",
     "reset__slip39_checklist_write_down_recovery": "Zapište si a zkontr. části zálohy",
-    "reset__the_threshold_sets_the_number_of_shares": "Počet pro obnovu nastaví počet částí ",
+    "reset__the_threshold_sets_the_number_of_shares": {
+      "Bolt": "Počet pro obnovu nastaví počet částí ",
+      "Caesar": "",
+      "Delizia": "",
+      "Eckhart": ""
+    },
     "reset__the_word_is_repeated": "Slovo se opakuje",
     "reset__threshold_info": "= minimální počet seznamů jedinečných slov u obnovy.",
     "reset__title_backup_is_done": "Záloha je dokončena",
@@ -1085,7 +1691,12 @@
     "reset__title_set_number_of_shares": "Nastavit počet částí",
     "reset__title_set_threshold": "Nast. počet obnovy",
     "reset__title_shamir_backup": "Vícedílná záloha",
-    "reset__to_form_group_template": "k vytvoření skupiny {0}.",
+    "reset__to_form_group_template": {
+      "Bolt": "k vytvoření skupiny {0}.",
+      "Caesar": "",
+      "Delizia": "",
+      "Eckhart": ""
+    },
     "reset__tos_link": "trezor.io/tos",
     "reset__total_number_of_shares_in_group_template": "Nastavte celkový počet částí ve skupině {0}.",
     "reset__use_your_backup": "Použijte zálohu, když potřebujete obnovit peněženku.",
@@ -1093,9 +1704,15 @@
     "reset__words_written_down_template": "Mám zapsáno postupně všech {0} slov.",
     "reset__write_down_words_template": "Na kartu zálohy napište {0} slov v pořadí.",
     "reset__wrong_word_selected": "Vybrali jste chybné slovo!",
-    "reset__you_need_one_share": "Pro obnovení potřebujete 1 část.",
+    "reset__you_need_one_share": {
+      "Bolt": "Pro obnovení potřebujete 1 část.",
+      "Caesar": "",
+      "Delizia": "",
+      "Eckhart": ""
+    },
     "reset__your_backup_is_done": "Záloha je dokončena.",
     "ripple__confirm_tag": "Potvrdit značku",
+    "ripple__destination_tag_missing": "",
     "ripple__destination_tag_template": "Cílová značka:\n{0}",
     "rotation__change_template": "Změnit orientaci displeje na {0}?",
     "rotation__east": "východ",
@@ -1108,28 +1725,138 @@
     "safety_checks__enforce_strict": "Opravdu chcete zavést přísné bezpečnostní kontroly (doporučeno)?",
     "safety_checks__title": "Bezpečn. kontroly",
     "safety_checks__title_safety_override": "Vyřazení zabezpeč.",
-    "sd_card__all_data_will_be_lost": "Všechna data na kartě SD budou ztracena.",
-    "sd_card__card_required": "Vyžadována karta SD.",
-    "sd_card__disable": "Opravdu chcete ze svého zařízení odstranit ochranu karty SD?",
-    "sd_card__disabled": "Úspěšně jste zakázali ochranu SD.",
-    "sd_card__enable": "Opravdu chcete zabezpečit své zařízení pomocí ochrany karty SD?",
-    "sd_card__enabled": "Úspěšně jste povolili ochranu SD.",
-    "sd_card__error": "Chyba karty SD",
-    "sd_card__format_card": "Naformátujte kartu SD",
-    "sd_card__insert_correct_card": "Vložte správnou kartu SD pro toto zařízení.",
-    "sd_card__please_insert": "Vložte kartu SD.",
-    "sd_card__please_unplug_and_insert": "Odpojte zařízení a vložte kartu SD.",
-    "sd_card__problem_accessing": "Došlo k problému s přístupem ke kartě SD.",
-    "sd_card__refresh": "Opravdu chcete nahradit aktuální klíč karty SD nově vygenerovaným?",
-    "sd_card__refreshed": "Úspěšně jste obnovili ochranu SD.",
-    "sd_card__restart": "Chcete restartovat Trezor v režimu bootloaderu?",
-    "sd_card__title": "Ochrana karty SD",
-    "sd_card__title_problem": "Problém s kartou SD",
-    "sd_card__unknown_filesystem": "Neznámý systém souborů.",
-    "sd_card__unplug_and_insert_correct": "Odpojte zařízení a vložte správnou kartu SD.",
-    "sd_card__use_different_card": "Použijte jinou kartu nebo naformátujte kartu SD na systém souborů FAT32.",
-    "sd_card__wanna_format": "Opravdu chcete naformátovat kartu SD?",
-    "sd_card__wrong_sd_card": "Nesprávná karta SD.",
+    "sd_card__all_data_will_be_lost": {
+      "Bolt": "Všechna data na kartě SD budou ztracena.",
+      "Caesar": "",
+      "Delizia": "Všechna data na kartě SD budou ztracena.",
+      "Eckhart": ""
+    },
+    "sd_card__card_required": {
+      "Bolt": "Vyžadována karta SD.",
+      "Caesar": "",
+      "Delizia": "Vyžadována karta SD.",
+      "Eckhart": ""
+    },
+    "sd_card__disable": {
+      "Bolt": "Opravdu chcete ze svého zařízení odstranit ochranu karty SD?",
+      "Caesar": "",
+      "Delizia": "Opravdu chcete ze svého zařízení odstranit ochranu karty SD?",
+      "Eckhart": ""
+    },
+    "sd_card__disabled": {
+      "Bolt": "Úspěšně jste zakázali ochranu SD.",
+      "Caesar": "",
+      "Delizia": "Úspěšně jste zakázali ochranu SD.",
+      "Eckhart": ""
+    },
+    "sd_card__enable": {
+      "Bolt": "Opravdu chcete zabezpečit své zařízení pomocí ochrany karty SD?",
+      "Caesar": "",
+      "Delizia": "Opravdu chcete zabezpečit své zařízení pomocí ochrany karty SD?",
+      "Eckhart": ""
+    },
+    "sd_card__enabled": {
+      "Bolt": "Úspěšně jste povolili ochranu SD.",
+      "Caesar": "",
+      "Delizia": "Úspěšně jste povolili ochranu SD.",
+      "Eckhart": ""
+    },
+    "sd_card__error": {
+      "Bolt": "Chyba karty SD",
+      "Caesar": "",
+      "Delizia": "Chyba karty SD",
+      "Eckhart": ""
+    },
+    "sd_card__format_card": {
+      "Bolt": "Naformátujte kartu SD",
+      "Caesar": "",
+      "Delizia": "Naformátujte kartu SD",
+      "Eckhart": ""
+    },
+    "sd_card__insert_correct_card": {
+      "Bolt": "Vložte správnou kartu SD pro toto zařízení.",
+      "Caesar": "",
+      "Delizia": "Vložte správnou kartu SD pro toto zařízení.",
+      "Eckhart": ""
+    },
+    "sd_card__please_insert": {
+      "Bolt": "Vložte kartu SD.",
+      "Caesar": "",
+      "Delizia": "Vložte kartu SD.",
+      "Eckhart": ""
+    },
+    "sd_card__please_unplug_and_insert": {
+      "Bolt": "Odpojte zařízení a vložte kartu SD.",
+      "Caesar": "",
+      "Delizia": "Odpojte zařízení a vložte kartu SD.",
+      "Eckhart": ""
+    },
+    "sd_card__problem_accessing": {
+      "Bolt": "Došlo k problému s přístupem ke kartě SD.",
+      "Caesar": "",
+      "Delizia": "Došlo k problému s přístupem ke kartě SD.",
+      "Eckhart": ""
+    },
+    "sd_card__refresh": {
+      "Bolt": "Opravdu chcete nahradit aktuální klíč karty SD nově vygenerovaným?",
+      "Caesar": "",
+      "Delizia": "Opravdu chcete nahradit aktuální klíč karty SD nově vygenerovaným?",
+      "Eckhart": ""
+    },
+    "sd_card__refreshed": {
+      "Bolt": "Úspěšně jste obnovili ochranu SD.",
+      "Caesar": "",
+      "Delizia": "Úspěšně jste obnovili ochranu SD.",
+      "Eckhart": ""
+    },
+    "sd_card__restart": {
+      "Bolt": "Chcete restartovat Trezor v režimu bootloaderu?",
+      "Caesar": "",
+      "Delizia": "Chcete restartovat Trezor v režimu bootloaderu?",
+      "Eckhart": ""
+    },
+    "sd_card__title": {
+      "Bolt": "Ochrana karty SD",
+      "Caesar": "",
+      "Delizia": "Ochrana karty SD",
+      "Eckhart": ""
+    },
+    "sd_card__title_problem": {
+      "Bolt": "Problém s kartou SD",
+      "Caesar": "",
+      "Delizia": "Problém s kartou SD",
+      "Eckhart": ""
+    },
+    "sd_card__unknown_filesystem": {
+      "Bolt": "Neznámý systém souborů.",
+      "Caesar": "",
+      "Delizia": "Neznámý systém souborů.",
+      "Eckhart": ""
+    },
+    "sd_card__unplug_and_insert_correct": {
+      "Bolt": "Odpojte zařízení a vložte správnou kartu SD.",
+      "Caesar": "",
+      "Delizia": "Odpojte zařízení a vložte správnou kartu SD.",
+      "Eckhart": ""
+    },
+    "sd_card__use_different_card": {
+      "Bolt": "Použijte jinou kartu nebo naformátujte kartu SD na systém souborů FAT32.",
+      "Caesar": "",
+      "Delizia": "Použijte jinou kartu nebo naformátujte kartu SD na systém souborů FAT32.",
+      "Eckhart": ""
+    },
+    "sd_card__wanna_format": {
+      "Bolt": "Opravdu chcete naformátovat kartu SD?",
+      "Caesar": "",
+      "Delizia": "Opravdu chcete naformátovat kartu SD?",
+      "Eckhart": ""
+    },
+    "sd_card__wrong_sd_card": {
+      "Bolt": "Nesprávná karta SD.",
+      "Caesar": "",
+      "Delizia": "Nesprávná karta SD.",
+      "Eckhart": ""
+    },
     "send__cancel_sign": "Zrušit podpis",
     "send__cancel_transaction": "Zrušit transakci",
     "send__confirm_sending": "Odesílání částky",
@@ -1164,6 +1891,18 @@
     "sign_message__confirm_without_review": "Potvrdit bez kontroly",
     "sign_message__message_size": "Velikost zprávy",
     "sign_message__verify_address": "Ověřit adresu",
+    "sn__action": {
+      "Bolt": "",
+      "Caesar": "",
+      "Delizia": "",
+      "Eckhart": "Povolit připojenému zařízení získat sériové číslo vašeho Trezor Safe 7?"
+    },
+    "sn__title": {
+      "Bolt": "",
+      "Caesar": "",
+      "Delizia": "",
+      "Eckhart": "Sériové číslo"
+    },
     "solana__account_index": "Index účtu",
     "solana__associated_token_account": "Přidružený tokenový účet",
     "solana__base_fee": "Základní poplatek",
@@ -1388,7 +2127,7 @@
       "Bolt": "",
       "Caesar": "",
       "Delizia": "",
-      "Eckhart": "Použijte dolní tlačítka na displeji k navigaci a potvrzení akcí."
+      "Eckhart": "Použijte tlačítka na displeji k navigaci a potvrzení akcí."
     },
     "tutorial__one_more_step": "Ještě jeden krok",
     "tutorial__power": {
@@ -1404,7 +2143,12 @@
     "tutorial__scroll_down": "Když se text nevejde na jednu obrazovku, pravým tlačítkem posunete text dolů.\n\rLevým tlačítkem se posunete nahoru.",
     "tutorial__suite_restart": "Tento návod si kdykoliv přehrajte z aplikace Trezor Suite.",
     "tutorial__sure_you_want_skip": "Opravdu chcete\npřeskočit tutoriál?",
-    "tutorial__swipe_up_and_down": "Pokračujte klepnutím do spodní části obrazovky, nebo se vraťte přejetím prstem dolů.",
+    "tutorial__swipe_up_and_down": {
+      "Bolt": "",
+      "Caesar": "",
+      "Delizia": "Pokračujte klepnutím do spodní části obrazovky, nebo se vraťte přejetím prstem dolů.",
+      "Eckhart": ""
+    },
     "tutorial__tap_to_start": "Klepněte pro spuštění návodu",
     "tutorial__title_easy_navigation": "Základní navigace",
     "tutorial__title_handy_menu": "Praktická nabídka",
@@ -1420,23 +2164,38 @@
     "tutorial__title_skip": "Přeskočit tutoriál",
     "tutorial__title_tutorial_complete": "Tutoriál dokončen",
     "tutorial__title_well_done": "Výborně!",
-    "tutorial__tropic_info": "TROPIC01 je nová generace open-source Secure Element čipu navrženého pro transparentní a auditovatelné hardwarové zabezpečení.",
+    "tutorial__tropic_info": {
+      "Bolt": "",
+      "Caesar": "",
+      "Delizia": "",
+      "Eckhart": "TROPIC01 je nová generace open-source Secure Element čipu navrženého pro transparentní a auditovatelné hardwarové zabezpečení."
+    },
     "tutorial__use_trezor": "Trezor použijete\nstisknutím levého a pravého tlačítka.\n\rPokračujte vpravo.",
     "tutorial__welcome_press_right": "Vítá vás Trezor. Pokračujte stisknutím pravého tlačítka.",
-    "tutorial__welcome_safe5": "Vítá vás Trezor Safe 5.",
-    "tutorial__welcome_safe7": "Vítá\nvás Trezor\nSafe 7",
-    "tutorial__what_is_tropic": "Co je TROPIC01?",
+    "tutorial__welcome_safe5": {
+      "Bolt": "",
+      "Caesar": "",
+      "Delizia": "Vítá vás Trezor Safe 5.",
+      "Eckhart": ""
+    },
+    "tutorial__welcome_safe7": {
+      "Bolt": "",
+      "Caesar": "",
+      "Delizia": "",
+      "Eckhart": "Vítá\nvás Trezor\nSafe 7"
+    },
+    "tutorial__what_is_tropic": {
+      "Bolt": "",
+      "Caesar": "",
+      "Delizia": "",
+      "Eckhart": "Co je TROPIC01?"
+    },
     "u2f__get": "Zvýšit a načíst čítač U2F?",
     "u2f__set_template": "Nastavit čítač U2F na {0}?",
     "u2f__title_get": "Získat čítač U2F",
     "u2f__title_set": "Nastavit čítač U2F",
     "wipe__info": "Všechna data budou smazána.",
-    "wipe__start_again": {
-      "Bolt": "",
-      "Caesar": "",
-      "Delizia": "",
-      "Eckhart": "Vymazejte celý Trezor a začněte proces nastavení znovu."
-    },
+    "wipe__start_again": "Vymazejte celý Trezor a začněte proces nastavení znovu.",
     "wipe__title": "Vymazat zařízení",
     "wipe__want_to_wipe": "Opravdu chcete vymazat zařízení?\n",
     "wipe_code__cancel_setup": {
@@ -1455,26 +2214,11 @@
     "wipe_code__info": "Kód pro vymazání lze použít k vymazání všech dat ze zařízení.",
     "wipe_code__invalid": "Chybný kód vymazání",
     "wipe_code__mismatch": "Zadané kódy pro vymazání se neshodují.",
-    "wipe_code__pin_not_set_description": {
-      "Bolt": "",
-      "Caesar": "",
-      "Delizia": "",
-      "Eckhart": "Před aktivací kódu pro vymazání je nutné nastavit PIN."
-    },
+    "wipe_code__pin_not_set_description": "Před aktivací kódu pro vymazání je nutné nastavit PIN.",
     "wipe_code__reenter": "Zopakujte kód vymaz.",
     "wipe_code__reenter_to_confirm": "Potvrďte dalším zadáním kódu vymazání.",
-    "wipe_code__remove": {
-      "Bolt": "",
-      "Caesar": "",
-      "Delizia": "",
-      "Eckhart": "Odstranit kód pro vymazání"
-    },
-    "wipe_code__title": {
-      "Bolt": "",
-      "Caesar": "",
-      "Delizia": "",
-      "Eckhart": "Kód pro vymazání"
-    },
+    "wipe_code__remove": "Odstranit kód pro vymazání",
+    "wipe_code__title": "Kód pro vymazání",
     "wipe_code__title_check": "Zkont. kód vymazání",
     "wipe_code__title_invalid": "Nesprávný kód pro vymazání",
     "wipe_code__title_settings": "Nast. kódu vymazání",
@@ -1493,57 +2237,27 @@
     "words__assets": "Portfolia",
     "words__authenticate": "Ověřit",
     "words__blockhash": "Blockhash",
-    "words__bluetooth": {
-      "Bolt": "",
-      "Caesar": "",
-      "Delizia": "",
-      "Eckhart": "Bluetooth"
-    },
+    "words__bluetooth": "Bluetooth",
     "words__buying": "Nákup",
     "words__cancel_and_exit": "Zrušit a ukončit",
     "words__cancel_question": "Zrušit?",
     "words__chain": "Řetězec",
     "words__confirm": "Potvrdit",
     "words__confirm_fee": "Potvrdit poplatek",
-    "words__connect": {
-      "Bolt": "",
-      "Caesar": "",
-      "Delizia": "",
-      "Eckhart": "Připojit"
-    },
+    "words__connect": "Připojit",
     "words__connected": "Připojeno",
     "words__contains": "Obsahuje",
     "words__continue_anyway": "Přesto pokračovat",
     "words__continue_anyway_question": "Přesto pokračovat?",
     "words__continue_with": "Pokračovat s",
     "words__device": "Zařízení",
-    "words__disabled": {
-      "Bolt": "",
-      "Caesar": "",
-      "Delizia": "",
-      "Eckhart": "Vypnuto"
-    },
+    "words__disabled": "Vypnuto",
     "words__disconnect": "Odpojit",
-    "words__disconnected": {
-      "Bolt": "",
-      "Caesar": "",
-      "Delizia": "",
-      "Eckhart": "Odpojen"
-    },
-    "words__enabled": {
-      "Bolt": "",
-      "Caesar": "",
-      "Delizia": "",
-      "Eckhart": "Zapnuto"
-    },
+    "words__disconnected": "Odpojen",
+    "words__enabled": "Zapnuto",
     "words__error": "Chyba",
     "words__fee": "Poplatek",
-    "words__forget": {
-      "Bolt": "",
-      "Caesar": "",
-      "Delizia": "",
-      "Eckhart": "Zapomenout"
-    },
+    "words__forget": "Zapomenout",
     "words__from": "od",
     "words__good_to_know": "Dobré vědět",
     "words__important": "Důležité",
@@ -1563,12 +2277,7 @@
     "words__pay_attention": "Pozor",
     "words__please_check_again": "Zkontrolujte to znovu",
     "words__please_try_again": "Zkuste to znovu",
-    "words__power": {
-      "Bolt": "",
-      "Caesar": "",
-      "Delizia": "",
-      "Eckhart": "Napájení"
-    },
+    "words__power": "Napájení",
     "words__provider": "Poskytovatel",
     "words__really_wanna": "Opravdu chcete",
     "words__receive": "Přijmout",
@@ -1577,12 +2286,7 @@
     "words__review": "Zkontrolovat",
     "words__security": "Zabezpečení",
     "words__send": "Odeslat",
-    "words__set": {
-      "Bolt": "",
-      "Caesar": "",
-      "Delizia": "",
-      "Eckhart": "Nastavit"
-    },
+    "words__set": "Nastavit",
     "words__settings": "Nastavení",
     "words__sign": "Podepsat",
     "words__signer": "Podepisující osoba",
@@ -1605,12 +2309,7 @@
     "words__unlocked": "Odemčeno",
     "words__wallet": "Peněženka",
     "words__warning": "Varování",
-    "words__wipe": {
-      "Bolt": "",
-      "Caesar": "",
-      "Delizia": "",
-      "Eckhart": "Vymazat"
-    },
+    "words__wipe": "Vymazat",
     "words__writable": "Zapisovatelné",
     "words__yes": "Ano"
   }

@@ -34,6 +34,7 @@ static void _librust_qstrs(void) {
   MP_QSTR_LayoutObj;
   MP_QSTR_LayoutState;
   MP_QSTR_MAX;
+  MP_QSTR_MAX_BONDS;
   MP_QSTR_MESSAGE_NAME;
   MP_QSTR_MESSAGE_WIRE_TYPE;
   MP_QSTR_MessageType;
@@ -632,7 +633,7 @@ static void _librust_qstrs(void) {
   MP_QSTR_recovery__x_of_y_entered_template;
   MP_QSTR_recovery__you_have_entered;
   MP_QSTR_recovery_type;
-  MP_QSTR_regulatory_certification__title;
+  MP_QSTR_regulatory__title;
   MP_QSTR_reject_pairing;
   MP_QSTR_remaining_shares;
   MP_QSTR_request_bip39;
@@ -984,6 +985,7 @@ static void _librust_qstrs(void) {
   MP_QSTR_words__cancel_and_exit;
   MP_QSTR_words__cancel_question;
   MP_QSTR_words__chain;
+  MP_QSTR_words__comm_trouble;
   MP_QSTR_words__confirm;
   MP_QSTR_words__confirm_fee;
   MP_QSTR_words__connect;
@@ -1362,6 +1364,7 @@ static void _librust_qstrs(void) {
   MP_QSTR_nem__unknown_mosaic;
   MP_QSTR_nostr__event_kind_template;
   MP_QSTR_ripple__confirm_tag;
+  MP_QSTR_ripple__destination_tag_missing;
   MP_QSTR_ripple__destination_tag_template;
   MP_QSTR_solana__account_index;
   MP_QSTR_solana__associated_token_account;

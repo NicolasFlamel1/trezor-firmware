@@ -67,8 +67,25 @@ __attribute__((noreturn)) void reboot_to_bootloader(void) {
   exit(3);
 }
 
+__attribute__((noreturn)) void reboot_and_upgrade(const uint8_t hash[32]) {
+  printf("reboot (upgrade)\n");
+
+  exit(3);
+}
+
 __attribute__((noreturn)) void reboot_to_off(void) {
   printf("reboot (power off)\n");
+
+  exit(3);
+}
+
+__attribute__((noreturn)) void reboot_and_wipe(
+    const bootutils_wipe_info_t* info) {
+  show_wipe_info(info);
+
+  printf("reboot (wipe)\n");
+
+  systick_delay_ms(3000);
 
   exit(3);
 }

@@ -45,7 +45,6 @@ async def require_confirm_memo(memo_type: StellarMemoType, memo_text: str) -> No
         return await layouts.show_warning(
             br_name="confirm_memo",
             content=TR.stellar__exchanges_require_memo,
-            br_code=ButtonRequestType.ConfirmOutput,
         )
 
     await layouts.confirm_text(
@@ -65,9 +64,9 @@ async def require_confirm_payment_request(
 ) -> None:
     from trezor.ui.layouts import confirm_payment_request
 
-    assert verified_payment_request.amount is not None  # required for non-CoinJoin
+    from apps.common.payment_request import parse_amount
 
-    total_amount = format_amount(verified_payment_request.amount, asset)
+    total_amount = format_amount(parse_amount(verified_payment_request), asset)
 
     texts: list[tuple[str | None, str]] = []
     refunds: list[tuple[str, str | None, str | None]] = []

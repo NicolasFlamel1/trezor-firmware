@@ -20,6 +20,7 @@
 
 #include <sys/backup_ram.h>
 #include <sys/irq.h>
+#include <sys/notify.h>
 #include <sys/pmic.h>
 #include <sys/systick.h>
 #include <trezor_rtl.h>
@@ -29,9 +30,14 @@
 #include "../stwlc38/stwlc38.h"
 #include "power_manager_internal.h"
 
+#ifdef PM_ENABLE_TEMP_CONTROL
 static void pm_temperature_controller(pm_driver_t* drv);
+#endif
+
 static void pm_battery_sampling(float vbat, float ibat, float ntc_temp);
 static void pm_parse_power_source_state(pm_driver_t* drv);
+
+#ifdef PM_ENABLE_TEMP_CONTROL
 
 // Temperature controller LUT
 static const struct {
@@ -43,6 +49,8 @@ static const struct {
     {PM_TEMP_CONTROL_BAND_3_MAX_TEMP, 0.5},
     {PM_TEMP_CONTROL_BAND_4_MAX_TEMP, 0.3},
 };
+
+#endif
 
 void pm_monitor_power_sources(void) {
   // Periodically called timer to request PMIC measurements. PMIC will call
@@ -168,7 +176,9 @@ void pm_charging_controller(pm_driver_t* drv) {
     drv->i_chg_target_ma = drv->i_chg_max_limit_ma;
   }
 
+#ifdef PM_ENABLE_TEMP_CONTROL
   pm_temperature_controller(drv);
+#endif
 
   if (drv->soc_target == 100) {
     drv->soc_target_reached = false;
@@ -176,10 +186,12 @@ void pm_charging_controller(pm_driver_t* drv) {
              20.0f) {
     // Translate SoC target to charging voltage via battery model
     float target_ocv_voltage_v =
-        battery_ocv(drv->soc_target / 100.0f, drv->pmic_data.ntc_temp, false);
+        battery_ocv(&drv->fuel_gauge.model, drv->soc_target / 100.0f,
+                    drv->pmic_data.ntc_temp, false);
 
-    float battery_ocv_v = battery_meas_to_ocv(
-        drv->pmic_data.vbat, drv->pmic_data.ibat, drv->pmic_data.ntc_temp);
+    float battery_ocv_v =
+        battery_meas_to_ocv(&drv->fuel_gauge.model, drv->pmic_data.vbat,
+                            drv->pmic_data.ibat, drv->pmic_data.ntc_temp);
 
     drv->target_battery_ocv_v_tau =
         (drv->target_battery_ocv_v_tau * 0.95f) +
@@ -222,6 +234,8 @@ void pm_charging_controller(pm_driver_t* drv) {
   }
 }
 
+#ifdef PM_ENABLE_TEMP_CONTROL
+
 static void pm_temperature_controller(pm_driver_t* drv) {
   if (ticks_expired(drv->temp_control_timeout)) {
     uint16_t i_chg_temp_limit_ma = 0;
@@ -248,6 +262,8 @@ static void pm_temperature_controller(pm_driver_t* drv) {
     drv->i_chg_target_ma = drv->i_chg_temp_limit_ma;
   }
 }
+
+#endif
 
 static void pm_battery_sampling(float vbat, float ibat, float ntc_temp) {
   pm_driver_t* drv = &g_pm;
@@ -278,10 +294,12 @@ static void pm_parse_power_source_state(pm_driver_t* drv) {
   if (drv->pmic_data.usb_status != 0x0) {
     if (!drv->usb_connected) {
       drv->usb_connected = true;
+      notify_send(NOTIFY_POWER_STATUS_CHANGE);
     }
   } else {
     if (drv->usb_connected) {
       drv->usb_connected = false;
+      notify_send(NOTIFY_POWER_STATUS_CHANGE);
     }
   }
 
@@ -289,10 +307,12 @@ static void pm_parse_power_source_state(pm_driver_t* drv) {
   if (drv->wireless_data.vout_ready) {
     if (!drv->wireless_connected) {
       drv->wireless_connected = true;
+      notify_send(NOTIFY_POWER_STATUS_CHANGE);
     }
   } else {
     if (drv->wireless_connected) {
       drv->wireless_connected = false;
+      notify_send(NOTIFY_POWER_STATUS_CHANGE);
     }
   }
 

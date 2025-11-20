@@ -52,7 +52,7 @@ use crate::{
     },
 };
 
-#[cfg(feature = "ui_debug")]
+#[cfg(any(feature = "rgb_led", feature = "ui_debug"))]
 use crate::ui::shape::Renderer;
 
 impl AttachType {
@@ -157,6 +157,10 @@ where
         let mut overflow: bool = false;
         render_on_display(None, Some(Color::black()), |target| {
             self.inner.render(target);
+
+            #[cfg(feature = "rgb_led")]
+            target.led_state().set();
+
             #[cfg(feature = "ui_debug")]
             if target.should_raise_overflow_exception() {
                 overflow = true;
