@@ -681,6 +681,7 @@ def confirm_blob(
     verb_skip_pagination: str | None = None,
     chunkify: bool = False,
     prompt_screen: bool = True,
+    info: bool = True,
 ) -> Awaitable[None]:
     if ask_pagination:
         main_layout = trezorui_api.confirm_value_intro(
@@ -726,6 +727,7 @@ def confirm_blob(
             hold=hold,
             chunkify=chunkify,
             prompt_screen=prompt_screen,
+            info=info,
         )
         return raise_if_not_confirmed(
             layout,

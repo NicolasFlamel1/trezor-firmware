@@ -674,6 +674,7 @@ def confirm_blob(
     verb_skip_pagination: str | None = None,
     chunkify: bool = False,
     _prompt_screen: bool = True,
+    info: bool = True,
 ) -> Awaitable[None]:
 
     if ask_pagination:
@@ -715,6 +716,7 @@ def confirm_blob(
             hold=hold,
             chunkify=chunkify,
             cancel=True,
+            info=info,
         )
         return raise_if_not_confirmed(
             layout,

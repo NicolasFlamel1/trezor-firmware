@@ -270,11 +270,9 @@ fn get_enum(enum_offset: u16) -> EnumDef {
     // an u16
     assert!(enum_offset % SIZE == 0);
     let offset: usize = (enum_offset / SIZE).into();
-    let count_lo = enum_defs[offset].into();
-    let count_hi = enum_defs[offset + 1].into();
-    let count: usize = u16::from_le_bytes([count_lo, count_hi]);
+    let count: usize = enum_defs[offset].into();
     EnumDef {
-        values: &enum_defs[offset + 2..offset + 2 + count],
+        values: &enum_defs[offset + 1..offset + 1 + count],
     }
 }
 

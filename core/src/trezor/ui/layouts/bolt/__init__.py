@@ -734,6 +734,7 @@ def confirm_blob(
     extra_confirmation_if_not_read: bool = False,
     chunkify: bool = False,
     prompt_screen: bool = True,
+    info: bool = True,
 ) -> Awaitable[None]:
     if description and ":" not in description:
         description += ":"
