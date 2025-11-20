@@ -885,7 +885,7 @@ def confirm_properties(
     subtitle: str | None = None,
     hold: bool = False,
     br_code: ButtonRequestType = ButtonRequestType.ConfirmOutput,
-    verb: str | None = TR.buttons__confirm,
+    verb: str = TR.buttons__confirm,
 ) -> Awaitable[None]:
 
     if subtitle:

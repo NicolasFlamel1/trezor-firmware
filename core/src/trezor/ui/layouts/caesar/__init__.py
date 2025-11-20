@@ -469,7 +469,6 @@ def show_warning(
     button: str | None = None,
     verb_cancel: str | None = None,
     br_code: ButtonRequestType = ButtonRequestType.Warning,
-    left_is_small: bool = False,
     exc: ExceptionType | None = ActionCancelled,
 ) -> Awaitable[ui.UiResult]:
     from trezor import translations

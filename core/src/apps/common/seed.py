@@ -127,7 +127,7 @@ else:
         @cache.stored_async(APP_COMMON_SEED)
         async def get_seed(progress_bar: bool = True) -> bytes:
             passphrase = await get_passphrase_legacy()
-            return mnemonic.get_seed(passphrase=passphrase, progress_bar)
+            return mnemonic.get_seed(passphrase=passphrase, progress_bar=progress_bar)
 
     else:
         # === Cardano variant ===
@@ -136,12 +136,12 @@ else:
 
         @cache.stored_async(APP_COMMON_SEED)
         async def get_seed(progress_bar: bool = True) -> bytes:
-            await derive_and_store_roots_legacy()
+            await derive_and_store_roots_legacy(progress_bar)
             common_seed = context.cache_get(APP_COMMON_SEED)
             assert common_seed is not None
             return common_seed
 
-        async def derive_and_store_roots_legacy() -> None:
+        async def derive_and_store_roots_legacy(progress_bar: bool = True) -> None:
             from trezor import wire
 
             if not storage_device.is_initialized():

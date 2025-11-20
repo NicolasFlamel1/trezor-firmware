@@ -11,6 +11,7 @@ else:
     # Cache keys for Codec
     from .cache_codec_keys import *  # noqa F401, F403
 
+
 # Keys that are valid across sessions
 SESSIONLESS_FLAG = const(128)
 APP_COMMON_SEED_WITHOUT_PASSPHRASE = const(0 | SESSIONLESS_FLAG)

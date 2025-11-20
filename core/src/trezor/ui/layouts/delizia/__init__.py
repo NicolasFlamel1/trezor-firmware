@@ -431,10 +431,10 @@ def show_warning(
     allow_cancel: bool = False,
     value_text_mono: bool = False,
 ) -> Awaitable[None]:
-    button = button or TR.buttons__continue  # def_arg
+    button = button or TR.words__important  # def_arg
     return raise_if_cancelled(
         trezorui_api.show_warning(
-            title=button or TR.words__important,
+            title=button,
             value=content,
             button=subheader or TR.words__continue_anyway_question,
             allow_cancel=allow_cancel,

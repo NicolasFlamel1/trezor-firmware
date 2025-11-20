@@ -1331,7 +1331,7 @@ impl FirmwareUI for UIDelizia {
         let content = if text_mono {
             ParagraphVecShort::from_iter([
                 Paragraph::new(&theme::TEXT_MAIN_GREY_LIGHT, description),
-                Paragraph::new(&theme::TEXT_MONO, value),
+                Paragraph::new(&theme::TEXT_MONO_DATA, value),
             ])
             .into_paragraphs()
         } else {

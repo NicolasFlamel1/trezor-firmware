@@ -1629,6 +1629,8 @@ impl FirmwareUI for UIEckhart {
         description: TString<'static>,
         allow_cancel: bool,
         danger: bool,
+        _left_is_small: bool,
+        _text_mono: bool,
     ) -> Result<Gc<LayoutObj>, Error> {
         let paragraphs = Paragraphs::new([
             Paragraph::new(&theme::TEXT_REGULAR, description),
