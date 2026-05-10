@@ -52,6 +52,10 @@
 #include <sec/hash_processor.h>
 #endif
 
+#ifdef USE_SECRET
+#include <sec/secret.h>
+#endif
+
 // Configure and enable power for USB peripheral
 // (need to be called in secure mode since PWR and RCC peripheras are
 //  not accessible from non-secure mode)
@@ -90,7 +94,7 @@ static void drivers_init(void) {
 #endif
 
 #ifdef USE_OEM_KEYS_CHECK
-  check_oem_keys();
+  option_bytes_check_oem_keys();
 #endif
 
 #ifdef USE_OPTIGA

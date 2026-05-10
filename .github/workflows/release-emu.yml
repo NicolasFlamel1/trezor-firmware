@@ -42,7 +42,7 @@ jobs:
       tropic_models: ${{ steps.get_models.outputs.tropic_models }}
       version: ${{ steps.get_models.outputs.version }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # actions/checkout@v6.0.2
       - name: Get models from releases.json
         id: get_models
         run: |
@@ -88,33 +88,15 @@ jobs:
       ADDRESS_SANITIZER: "0"
       LSAN_OPTIONS: "suppressions=../../asan_suppressions.txt"
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # actions/checkout@v6.0.2
         with:
           submodules: recursive
-      - uses: ./.github/actions/environment
-      - run: nix-shell --run "uv run make -C core build_bootloader_emu"
-        if: matrix.coins == 'universal'
-      - run: nix-shell --run "uv run make -C core build_unix_frozen"
-      - run: cp core/build/unix/trezor-emu-core core/build/unix/trezor-emu-core-${{ matrix.model }}-v${{ needs.get_models.outputs.version }}
-
-      - name: Configure aws credentials
-        uses: aws-actions/configure-aws-credentials@v4
+      - uses: ./.github/actions/build-core-emu
         with:
-          role-to-assume: arn:aws:iam::538326561891:role/gh_actions_deploy_dev_firmware_data
-          aws-region: eu-west-1
-        continue-on-error: true
-
-      - name: Upload emulator binaries
-        run: |
-            aws s3 mv core/build/unix/trezor-emu-core-${{ matrix.model }}-v${{ needs.get_models.outputs.version }} s3://data.trezor.io/dev/firmware/releases/emulators-new/${{ matrix.model}}/
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: core-emu-${{ matrix.model }}-${{ matrix.coins }}-${{ matrix.type }}-${{ matrix.asan }}
-          path: |
-            core/build/unix/trezor-emu-core*
-            core/build/bootloader_emu/bootloader.elf
-          retention-days: 7
+          model: ${{ matrix.model }}
+          version: ${{ needs.get_models.outputs.version }}
+          artifact-name: core-emu-${{ matrix.model }}-${{ matrix.coins }}-${{ matrix.type }}-${{ matrix.asan }}
+          build-bootloader: ${{ matrix.coins == 'universal' }}
 
   core_emu_arm:
     if: startsWith(github.ref, 'refs/tags/core/v') || inputs.project == 'core'
@@ -138,33 +120,16 @@ jobs:
       ADDRESS_SANITIZER: ${{ matrix.asan == 'asan' && '1' || '0' }}
       LSAN_OPTIONS: "suppressions=../../asan_suppressions.txt"
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # actions/checkout@v6.0.2
         with:
           submodules: recursive
-      - uses: ./.github/actions/environment
-      - run: nix-shell --run "uv run make -C core build_bootloader_emu"
-        if: matrix.coins == 'universal'
-      - run: nix-shell --run "uv run make -C core build_unix_frozen"
-      - run: mv core/build/unix/trezor-emu-core core/build/unix/trezor-emu-core-${{ matrix.model }}-v${{ needs.get_models.outputs.version }}-arm
-
-      - name: Configure aws credentials
-        uses: aws-actions/configure-aws-credentials@v4
+      - uses: ./.github/actions/build-core-emu
         with:
-          role-to-assume: arn:aws:iam::538326561891:role/gh_actions_deploy_dev_firmware_data
-          aws-region: eu-west-1
-        continue-on-error: true
-
-      - name: Upload emulator binaries
-        run: |
-            aws s3 cp core/build/unix/trezor-emu-core-${{ matrix.model }}-v${{ needs.get_models.outputs.version }}-arm s3://data.trezor.io/dev/firmware/releases/emulators-new/${{ matrix.model}}/
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: core-emu-arm-${{ matrix.model }}-${{ matrix.coins }}-${{ matrix.type }}-${{ matrix.asan }}
-          path: |
-            core/build/unix/trezor-emu-core*
-            core/build/bootloader_emu/bootloader.elf
-          retention-days: 7
+          model: ${{ matrix.model }}
+          version: ${{ needs.get_models.outputs.version }}
+          artifact-name: core-emu-arm-${{ matrix.model }}-${{ matrix.coins }}-${{ matrix.type }}-${{ matrix.asan }}
+          binary-suffix: -arm
+          build-bootloader: ${{ matrix.coins == 'universal' }}
 
   core_emu_tropic_capable:
     if: startsWith(github.ref, 'refs/tags/core/v') || inputs.project == 'core'
@@ -189,33 +154,16 @@ jobs:
       LSAN_OPTIONS: "suppressions=../../asan_suppressions.txt"
       DISABLE_TROPIC: "0"
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # actions/checkout@v6.0.2
         with:
           submodules: recursive
-      - uses: ./.github/actions/environment
-      - run: nix-shell --run "uv run make -C core build_bootloader_emu"
-        if: matrix.coins == 'universal'
-      - run: nix-shell --run "uv run make -C core build_unix_frozen"
-      - run: cp core/build/unix/trezor-emu-core core/build/unix/trezor-emu-core-${{ matrix.model }}-v${{ needs.get_models.outputs.version }}
-
-      - name: Configure aws credentials
-        uses: aws-actions/configure-aws-credentials@v4
+      - uses: ./.github/actions/build-core-emu
         with:
-          role-to-assume: arn:aws:iam::538326561891:role/gh_actions_deploy_dev_firmware_data
-          aws-region: eu-west-1
-        continue-on-error: true
-
-      - name: Upload emulator binaries
-        run: |
-            aws s3 mv core/build/unix/trezor-emu-core-${{ matrix.model }}-v${{ needs.get_models.outputs.version }} s3://data.trezor.io/dev/firmware/releases/emulators-new/${{ matrix.model}}/${{ matrix.model }}_tropic_on/
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: core-emu-tropic-capable-${{ matrix.model }}-${{ matrix.coins }}-${{ matrix.type }}-${{ matrix.asan }}
-          path: |
-            core/build/unix/trezor-emu-core*
-            core/build/bootloader_emu/bootloader.elf
-          retention-days: 7
+          model: ${{ matrix.model }}
+          version: ${{ needs.get_models.outputs.version }}
+          artifact-name: core-emu-tropic-capable-${{ matrix.model }}-${{ matrix.coins }}-${{ matrix.type }}-${{ matrix.asan }}
+          s3-subpath: ${{ matrix.model}}_tropic_on/
+          build-bootloader: ${{ matrix.coins == 'universal' }}
 
   core_emu_arm_tropic_capable:
     if: startsWith(github.ref, 'refs/tags/core/v') || inputs.project == 'core'
@@ -240,33 +188,17 @@ jobs:
       LSAN_OPTIONS: "suppressions=../../asan_suppressions.txt"
       DISABLE_TROPIC: "0"
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # actions/checkout@v6.0.2
         with:
           submodules: recursive
-      - uses: ./.github/actions/environment
-      - run: nix-shell --run "uv run make -C core build_bootloader_emu"
-        if: matrix.coins == 'universal'
-      - run: nix-shell --run "uv run make -C core build_unix_frozen"
-      - run: mv core/build/unix/trezor-emu-core core/build/unix/trezor-emu-core-${{ matrix.model }}-v${{ needs.get_models.outputs.version }}-arm
-
-      - name: Configure aws credentials
-        uses: aws-actions/configure-aws-credentials@v4
+      - uses: ./.github/actions/build-core-emu
         with:
-          role-to-assume: arn:aws:iam::538326561891:role/gh_actions_deploy_dev_firmware_data
-          aws-region: eu-west-1
-        continue-on-error: true
-
-      - name: Upload emulator binaries
-        run: |
-            aws s3 cp core/build/unix/trezor-emu-core-${{ matrix.model }}-v${{ needs.get_models.outputs.version }}-arm s3://data.trezor.io/dev/firmware/releases/emulators-new/${{ matrix.model}}/${{ matrix.model }}_tropic_on/
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: core-emu-arm-tropic-capable-${{ matrix.model }}-${{ matrix.coins }}-${{ matrix.type }}-${{ matrix.asan }}
-          path: |
-            core/build/unix/trezor-emu-core*
-            core/build/bootloader_emu/bootloader.elf
-          retention-days: 7
+          model: ${{ matrix.model }}
+          version: ${{ needs.get_models.outputs.version }}
+          artifact-name: core-emu-arm-tropic-capable-${{ matrix.model }}-${{ matrix.coins }}-${{ matrix.type }}-${{ matrix.asan }}
+          binary-suffix: -arm
+          s3-subpath: ${{ matrix.model}}_tropic_on/
+          build-bootloader: ${{ matrix.coins == 'universal' }}
 
   legacy_emu:
     if: startsWith(github.ref, 'refs/tags/legacy/v') || inputs.project == 'legacy'
@@ -285,23 +217,12 @@ jobs:
       DEBUG_LINK: ${{ matrix.type == 'debuglink' && '1' || '0' }}
       ADDRESS_SANITIZER: ${{ matrix.asan == 'asan' && '1' || '0' }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # actions/checkout@v6.0.2
         with:
           submodules: recursive
-      - uses: ./.github/actions/environment
-      - run: nix-shell --run "uv run legacy/script/cibuild"
-      - run: mv legacy/firmware/trezor.elf legacy/firmware/trezor-emu-legacy-T1B1-v${{ needs.get_models.outputs.version }}
-
-      - name: Configure aws credentials
-        uses: aws-actions/configure-aws-credentials@v4
+      - uses: ./.github/actions/build-legacy-emu
         with:
-          role-to-assume: arn:aws:iam::538326561891:role/gh_actions_deploy_dev_firmware_data
-          aws-region: eu-west-1
-        continue-on-error: true
-
-      - name: Upload emulator binaries
-        run: |
-            aws s3 cp legacy/firmware/trezor-emu-legacy-T1B1-v${{ needs.get_models.outputs.version }} s3://data.trezor.io/dev/firmware/releases/emulators-new/T1B1/
+          version: ${{ needs.get_models.outputs.version }}
 
 
   legacy_emu_arm:
@@ -320,20 +241,10 @@ jobs:
       DEBUG_LINK: ${{ matrix.type == 'debuglink' && '1' || '0' }}
       ADDRESS_SANITIZER: ${{ matrix.asan == 'asan' && '1' || '0' }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # actions/checkout@v6.0.2
         with:
           submodules: recursive
-      - uses: ./.github/actions/environment
-      - run: nix-shell --run "uv run legacy/script/cibuild"
-      - run: mv legacy/firmware/trezor.elf legacy/firmware/trezor-emu-legacy-T1B1-v${{ needs.get_models.outputs.version }}-arm
-
-      - name: Configure aws credentials
-        uses: aws-actions/configure-aws-credentials@v4
+      - uses: ./.github/actions/build-legacy-emu
         with:
-          role-to-assume: arn:aws:iam::538326561891:role/gh_actions_deploy_dev_firmware_data
-          aws-region: eu-west-1
-        continue-on-error: true
-
-      - name: Upload emulator binaries
-        run: |
-            aws s3 cp legacy/firmware/trezor-emu-legacy-T1B1-v${{ needs.get_models.outputs.version }}-arm s3://data.trezor.io/dev/firmware/releases/emulators-new/T1B1/
+          version: ${{ needs.get_models.outputs.version }}
+          binary-suffix: -arm

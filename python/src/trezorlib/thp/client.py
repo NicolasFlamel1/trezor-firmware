@@ -23,7 +23,7 @@ from collections import defaultdict
 
 from .. import client, exceptions, messages, models, protobuf
 from ..log import DUMP_BYTES
-from .channel import Channel
+from .channel import Channel, _ThpInteractiveContext
 from .pairing import PairingController
 
 if t.TYPE_CHECKING:
@@ -67,6 +67,7 @@ class TrezorClientThp(client.TrezorClient[ThpSession]):
         mapping: ProtobufMapping | None,
         model: models.TrezorModel | None,
     ) -> None:
+        # used to override channel creation logic in tests
         channel = Channel.allocate(transport)
         try:
             # try to open the channel
@@ -135,6 +136,14 @@ class TrezorClientThp(client.TrezorClient[ThpSession]):
         session.derive(passphrase, derive_cardano)
         return session
 
+    def _interact(self, *, force_flush: bool = False) -> _ThpInteractiveContext:
+        """
+        Used internally by `TrezorClient` to create an THP ACK piggybacking context.
+
+        Can be also used by tests for unconditionally sending THP ACKs.
+        """
+        return _ThpInteractiveContext(channel=self.channel, force_flush=force_flush)
+
     def _invalidate(self) -> None:
         super()._invalidate()
         # Close the channel. The client cannot be used until a channel is
@@ -187,19 +196,6 @@ class TrezorClientThp(client.TrezorClient[ThpSession]):
                 return msg
             else:
                 self._session_message_queue[session_id].append(msg)
-
-    def _call(
-        self,
-        session: ThpSession,
-        msg: client.MessageType,
-        *,
-        expect: type[client.MT] = client.MessageType,
-        timeout: float | None = None,
-    ) -> client.MT:
-        with self.channel.piggyback_acks(msg):
-            return super()._call(
-                session=session, msg=msg, expect=expect, timeout=timeout
-            )
 
     @staticmethod
     def detect_model(props: messages.ThpDeviceProperties) -> models.TrezorModel:

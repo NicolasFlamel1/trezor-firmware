@@ -701,25 +701,6 @@ impl FirmwareUI for UICaesar {
         LayoutObj::new_root(layout)
     }
 
-    fn flow_confirm_output(
-        _title: Option<TString<'static>>,
-        _subtitle: Option<TString<'static>>,
-        _description: Option<TString<'static>>,
-        _extra: Option<TString<'static>>,
-        _message: TString<'static>,
-        _chunkify: bool,
-        _text_mono: bool,
-        _account_title: TString<'static>,
-        _account: Option<TString<'static>>,
-        _account_path: Option<TString<'static>>,
-        _br_code: u16,
-        _br_name: TString<'static>,
-        _address_item: Option<Obj>,
-        _cancel_text: Option<TString<'static>>,
-    ) -> Result<impl LayoutMaybeTrace, Error> {
-        Err::<RootComponent<Empty, ModelUI>, Error>(Error::NotImplementedError)
-    }
-
     fn flow_confirm_set_new_code(_is_wipe_code: bool) -> Result<impl LayoutMaybeTrace, Error> {
         Err::<RootComponent<Empty, ModelUI>, Error>(Error::NotImplementedError)
     }
@@ -1110,7 +1091,7 @@ impl FirmwareUI for UICaesar {
         notification: Option<Notification>,
         lockable: bool,
     ) -> Result<impl LayoutMaybeTrace, Error> {
-        let loader_description = lockable.then_some("Locking the device...".into());
+        let loader_description = lockable.then_some(TR::progress__locking_device.into());
         let layout = RootComponent::new(Homescreen::new(label, notification, loader_description));
         Ok(layout)
     }

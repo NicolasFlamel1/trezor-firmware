@@ -374,14 +374,14 @@ OK 2F0079001951354861125762
 ```
 
 ### haptic-test
-Test the functionality of the device's haptic actuator. It takes one input parameter, representing the duration of the vibration in milliseconds.
+Test the functionality of the device's haptic actuator. It takes one mandatory input parameter, representing the duration of the vibration in milliseconds and second optional parameter setting the vibration amplitude
 
 The device only vibrates if there is motor connected to the haptic driver, otherwise the effect needs to be measured by an oscilloscope.
 
 Example (runs the driver for 3s):
 ```
-haptic-test 3000
-# Running haptic feedback test for 3000 ms...
+haptic-test 3000 50
+# Running haptic feedback test for 3000 ms with amplitude 50 ...
 OK
 ```
 
@@ -689,6 +689,31 @@ otp-device-sn-write 123456ABCD --dry-run
 # Writing info into OTP memory...
 # Bytes written: 3132333435364142434400000000000000000000000000000000000000000000
 # Locking OTP block...
+```
+
+### manufacturing-lock-write
+Writes the manufacturing lock into OTP memory, transitioning the device from manufacturing mode to normal mode. Once written, this lock is permanent and cannot be reverted.
+
+In non-production firmware, you must include `--execute` as the last parameter to write the data to the OTP memory. Conversely, in production firmware, you can use `--dry-run` as the last parameter to simulate the command without actually writing to the OTP memory.
+
+Example:
+```
+manufacturing-lock-write --dry-run
+#
+# !!! It's a dry run, OTP will be left unchanged.
+# !!! Use '--execute' switch to write to OTP memory.
+#
+# Writing manufacturing lock into OTP memory...
+OK
+```
+
+### manufacturing-lock-read
+Reads the current manufacturing lock status from OTP memory. Returns `locked` if the device has exited manufacturing mode, or `unlocked` if it is still in manufacturing mode.
+
+Example:
+```
+manufacturing-lock-read
+OK locked
 ```
 
 ### otp-variant-write
@@ -1439,7 +1464,7 @@ OK
 
 ### tropic-stress-test
 
-Runs a Tropic stress test that repeatedly calls `lt_session_start()`, `lt_mac_and_destroy()` and `lt_ecc_key_generate()` to test that Tropic doesn't enter alarm mode.
+Runs a Tropic stress test that repeatedly calls `lt_init()`, `lt_session_start()`, `lt_mac_and_destroy()`, `lt_ecc_key_generate()` and `lt_random_value_get()` to test that Tropic doesn't enter alarm mode.
 
 ### wpc-info
 Retrieves detailed information from the wireless power receiver, including chip identification, firmware version, configuration settings, and error status.

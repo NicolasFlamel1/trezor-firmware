@@ -4,6 +4,7 @@ from trezorlib import messages, protocol_v1
 from trezorlib.debuglink import TrezorTestContext as Client
 from trezorlib.mapping import DEFAULT_MAPPING
 from trezorlib.thp import control_byte, thp_io
+from trezorlib.thp.exceptions import ThpErrorCode
 from trezorlib.thp.message import Message
 from trezorlib.transport import Timeout, Transport
 
@@ -23,13 +24,16 @@ def test_v1(client: Client):
     # There should be a failure response to received init packet (starts with "?##")
     write_padded(client.transport, b"?## Init packet")
     res_id, res_data = protocol_v1.read(client.transport)
+    expected = messages.Failure(code=messages.FailureType.InvalidProtocol)
     res = DEFAULT_MAPPING.decode(res_id, res_data)
-    assert res == messages.Failure(code=messages.FailureType.InvalidProtocol)
+    assert res == expected
+    # make sure the constant "InvalidProtocol" response doesn't have trailing bytes (#6549)
+    assert (res_id, res_data) == DEFAULT_MAPPING.encode(expected)
 
     # There should be no response for continuation packet (starts with "?" only)
     write_padded(client.transport, b"? Cont packet")
     with pytest.raises(Timeout):
-        client.transport.read_chunk(timeout=0.1)
+        client.transport.read_chunk(timeout=1)
 
 
 def test_v2_unallocated(client: Client):
@@ -40,7 +44,7 @@ def test_v2_unallocated(client: Client):
         data=bytes.fromhex("0011223344556677"),
     )
     write_padded(client.transport, message.to_bytes())
-    response = thp_io.read(client.transport, timeout=0.1)
+    response = thp_io.read(client.transport)
     assert response.cid == 0x789A
     assert response.ctrl_byte == control_byte.ERROR
-    assert response.data == b"\x02"
+    assert response.data == bytes([ThpErrorCode.UNALLOCATED_CHANNEL])

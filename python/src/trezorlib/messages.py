@@ -202,6 +202,11 @@ class BackupType(IntEnum):
     Slip39_Advanced_Extendable = 5
 
 
+class BackupMethod(IntEnum):
+    Display = 0
+    N4W1 = 1
+
+
 class SafetyCheckLevel(IntEnum):
     Strict = 0
     PromptAlways = 1
@@ -460,6 +465,7 @@ class TronResourceCode(IntEnum):
 
 class TronRawContractType(IntEnum):
     TransferContract = 1
+    VoteWitnessContract = 4
     TriggerSmartContract = 31
     FreezeBalanceV2Contract = 54
     UnfreezeBalanceV2Contract = 55
@@ -575,6 +581,10 @@ class MessageType(IntEnum):
     DebugLinkGetPairingInfo = 9011
     DebugLinkPairingInfo = 9012
     DebugLinkSetLogFilter = 9013
+    DebugLinkN4W1Connected = 9014
+    DebugLinkN4W1Write = 9015
+    DebugLinkN4W1Read = 9016
+    DebugLinkN4W1Response = 9017
     EthereumGetPublicKey = 450
     EthereumPublicKey = 451
     EthereumGetAddress = 56
@@ -707,6 +717,7 @@ class MessageType(IntEnum):
     WebAuthnCredentials = 801
     WebAuthnAddResidentCredential = 802
     WebAuthnRemoveResidentCredential = 803
+    WebAuthnCredentialsAck = 804
     SolanaGetPublicKey = 900
     SolanaPublicKey = 901
     SolanaGetAddress = 902
@@ -776,6 +787,7 @@ class MessageType(IntEnum):
     TronFreezeBalanceV2Contract = 2207
     TronUnfreezeBalanceV2Contract = 2208
     TronWithdrawUnfreeze = 2209
+    TronVoteWitnessContract = 2210
     BenchmarkListNames = 9100
     BenchmarkNames = 9101
     BenchmarkRun = 9102
@@ -3827,6 +3839,7 @@ class ResetDevice(protobuf.MessageType):
         9: protobuf.Field("no_backup", "bool", repeated=False, required=False, default=None),
         10: protobuf.Field("backup_type", "BackupType", repeated=False, required=False, default=BackupType.Bip39),
         11: protobuf.Field("entropy_check", "bool", repeated=False, required=False, default=None),
+        12: protobuf.Field("backup_method", "BackupMethod", repeated=False, required=False, default=BackupMethod.Display),
     }
 
     def __init__(
@@ -3842,6 +3855,7 @@ class ResetDevice(protobuf.MessageType):
         no_backup: Optional["bool"] = None,
         backup_type: Optional["BackupType"] = BackupType.Bip39,
         entropy_check: Optional["bool"] = None,
+        backup_method: Optional["BackupMethod"] = BackupMethod.Display,
     ) -> None:
         self.strength = strength
         self.passphrase_protection = passphrase_protection
@@ -3853,6 +3867,7 @@ class ResetDevice(protobuf.MessageType):
         self.no_backup = no_backup
         self.backup_type = backup_type
         self.entropy_check = entropy_check
+        self.backup_method = backup_method
 
 
 class BackupDevice(protobuf.MessageType):
@@ -3860,6 +3875,7 @@ class BackupDevice(protobuf.MessageType):
     FIELDS = {
         1: protobuf.Field("group_threshold", "uint32", repeated=False, required=False, default=None),
         2: protobuf.Field("groups", "Slip39Group", repeated=True, required=False, default=None),
+        3: protobuf.Field("backup_method", "BackupMethod", repeated=False, required=False, default=BackupMethod.Display),
     }
 
     def __init__(
@@ -3867,9 +3883,11 @@ class BackupDevice(protobuf.MessageType):
         *,
         groups: Optional[Sequence["Slip39Group"]] = None,
         group_threshold: Optional["int"] = None,
+        backup_method: Optional["BackupMethod"] = BackupMethod.Display,
     ) -> None:
         self.groups: Sequence["Slip39Group"] = groups if groups is not None else []
         self.group_threshold = group_threshold
+        self.backup_method = backup_method
 
 
 class EntropyRequest(protobuf.MessageType):
@@ -3933,6 +3951,7 @@ class RecoveryDevice(protobuf.MessageType):
         8: protobuf.Field("input_method", "RecoveryDeviceInputMethod", repeated=False, required=False, default=None),
         9: protobuf.Field("u2f_counter", "uint32", repeated=False, required=False, default=None),
         10: protobuf.Field("type", "RecoveryType", repeated=False, required=False, default=RecoveryType.NormalRecovery),
+        11: protobuf.Field("backup_method", "BackupMethod", repeated=False, required=False, default=BackupMethod.Display),
     }
 
     def __init__(
@@ -3947,6 +3966,7 @@ class RecoveryDevice(protobuf.MessageType):
         input_method: Optional["RecoveryDeviceInputMethod"] = None,
         u2f_counter: Optional["int"] = None,
         type: Optional["RecoveryType"] = RecoveryType.NormalRecovery,
+        backup_method: Optional["BackupMethod"] = BackupMethod.Display,
     ) -> None:
         self.word_count = word_count
         self.passphrase_protection = passphrase_protection
@@ -3957,6 +3977,7 @@ class RecoveryDevice(protobuf.MessageType):
         self.input_method = input_method
         self.u2f_counter = u2f_counter
         self.type = type
+        self.backup_method = backup_method
 
 
 class WordRequest(protobuf.MessageType):
@@ -4511,6 +4532,55 @@ class DebugLinkSetLogFilter(protobuf.MessageType):
         filter: Optional["str"] = None,
     ) -> None:
         self.filter = filter
+
+
+class DebugLinkN4W1Connected(protobuf.MessageType):
+    MESSAGE_WIRE_TYPE = 9014
+
+
+class DebugLinkN4W1Write(protobuf.MessageType):
+    MESSAGE_WIRE_TYPE = 9015
+    FIELDS = {
+        1: protobuf.Field("key", "string", repeated=False, required=False, default=None),
+        2: protobuf.Field("value", "bytes", repeated=False, required=False, default=None),
+    }
+
+    def __init__(
+        self,
+        *,
+        key: Optional["str"] = None,
+        value: Optional["bytes"] = None,
+    ) -> None:
+        self.key = key
+        self.value = value
+
+
+class DebugLinkN4W1Read(protobuf.MessageType):
+    MESSAGE_WIRE_TYPE = 9016
+    FIELDS = {
+        1: protobuf.Field("key", "string", repeated=False, required=False, default=None),
+    }
+
+    def __init__(
+        self,
+        *,
+        key: Optional["str"] = None,
+    ) -> None:
+        self.key = key
+
+
+class DebugLinkN4W1Response(protobuf.MessageType):
+    MESSAGE_WIRE_TYPE = 9017
+    FIELDS = {
+        1: protobuf.Field("value", "bytes", repeated=False, required=False, default=None),
+    }
+
+    def __init__(
+        self,
+        *,
+        value: Optional["bytes"] = None,
+    ) -> None:
+        self.value = value
 
 
 class DebugLinkGcInfoItem(protobuf.MessageType):
@@ -9526,6 +9596,23 @@ class TronTransferContract(protobuf.MessageType):
         self.amount = amount
 
 
+class TronVoteWitnessContract(protobuf.MessageType):
+    MESSAGE_WIRE_TYPE = 2210
+    FIELDS = {
+        1: protobuf.Field("owner_address", "bytes", repeated=False, required=True),
+        2: protobuf.Field("votes", "TronVote", repeated=True, required=False, default=None),
+    }
+
+    def __init__(
+        self,
+        *,
+        owner_address: "bytes",
+        votes: Optional[Sequence["TronVote"]] = None,
+    ) -> None:
+        self.votes: Sequence["TronVote"] = votes if votes is not None else []
+        self.owner_address = owner_address
+
+
 class TronTriggerSmartContract(protobuf.MessageType):
     MESSAGE_WIRE_TYPE = 2206
     FIELDS = {
@@ -9646,6 +9733,23 @@ class TronRawTransaction(protobuf.MessageType):
         self.fee_limit = fee_limit
 
 
+class TronVote(protobuf.MessageType):
+    MESSAGE_WIRE_TYPE = None
+    FIELDS = {
+        1: protobuf.Field("address", "bytes", repeated=False, required=True),
+        2: protobuf.Field("count", "uint64", repeated=False, required=True),
+    }
+
+    def __init__(
+        self,
+        *,
+        address: "bytes",
+        count: "int",
+    ) -> None:
+        self.address = address
+        self.count = count
+
+
 class TronRawContract(protobuf.MessageType):
     MESSAGE_WIRE_TYPE = None
     FIELDS = {
@@ -9682,6 +9786,16 @@ class TronRawParameter(protobuf.MessageType):
 
 class WebAuthnListResidentCredentials(protobuf.MessageType):
     MESSAGE_WIRE_TYPE = 800
+    FIELDS = {
+        1: protobuf.Field("batch_size", "uint32", repeated=False, required=False, default=None),
+    }
+
+    def __init__(
+        self,
+        *,
+        batch_size: Optional["int"] = None,
+    ) -> None:
+        self.batch_size = batch_size
 
 
 class WebAuthnAddResidentCredential(protobuf.MessageType):
@@ -9716,14 +9830,21 @@ class WebAuthnCredentials(protobuf.MessageType):
     MESSAGE_WIRE_TYPE = 801
     FIELDS = {
         1: protobuf.Field("credentials", "WebAuthnCredential", repeated=True, required=False, default=None),
+        2: protobuf.Field("is_done", "bool", repeated=False, required=False, default=True),
     }
 
     def __init__(
         self,
         *,
         credentials: Optional[Sequence["WebAuthnCredential"]] = None,
+        is_done: Optional["bool"] = True,
     ) -> None:
         self.credentials: Sequence["WebAuthnCredential"] = credentials if credentials is not None else []
+        self.is_done = is_done
+
+
+class WebAuthnCredentialsAck(protobuf.MessageType):
+    MESSAGE_WIRE_TYPE = 804
 
 
 class WebAuthnCredential(protobuf.MessageType):

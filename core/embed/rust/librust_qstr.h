@@ -82,7 +82,6 @@ static void _librust_qstrs(void) {
   MP_QSTR_about_items;
   MP_QSTR_account;
   MP_QSTR_account_items;
-  MP_QSTR_account_path;
   MP_QSTR_account_title;
   MP_QSTR_accounts;
   MP_QSTR_action;
@@ -113,8 +112,6 @@ static void _librust_qstrs(void) {
   MP_QSTR_address_details__derivation_path;
   MP_QSTR_address_details__derivation_path_colon;
   MP_QSTR_address_details__title_receive_address;
-  MP_QSTR_address_details__title_receiving_to;
-  MP_QSTR_address_item;
   MP_QSTR_address_label;
   MP_QSTR_address_qr;
   MP_QSTR_allow_cancel;
@@ -268,7 +265,6 @@ static void _librust_qstrs(void) {
   MP_QSTR_buy_amount;
   MP_QSTR_can_go_back;
   MP_QSTR_cancel;
-  MP_QSTR_cancel_text;
   MP_QSTR_case_sensitive;
   MP_QSTR_check_homescreen_format;
   MP_QSTR_chunkify;
@@ -350,7 +346,6 @@ static void _librust_qstrs(void) {
   MP_QSTR_firmware_update__restart;
   MP_QSTR_firmware_update__title;
   MP_QSTR_firmware_update__title_fingerprint;
-  MP_QSTR_flow_confirm_output;
   MP_QSTR_flow_confirm_set_new_code;
   MP_QSTR_flow_get_address;
   MP_QSTR_flow_get_pubkey;
@@ -460,7 +455,6 @@ static void _librust_qstrs(void) {
   MP_QSTR_max_ms;
   MP_QSTR_max_rounds;
   MP_QSTR_menu_title;
-  MP_QSTR_message;
   MP_QSTR_min_count;
   MP_QSTR_min_ms;
   MP_QSTR_misc__decrypt_value;
@@ -1009,6 +1003,7 @@ static void _librust_qstrs(void) {
   MP_QSTR_words__good_to_know;
   MP_QSTR_words__important;
   MP_QSTR_words__instructions;
+  MP_QSTR_words__intent;
   MP_QSTR_words__keep_it_safe;
   MP_QSTR_words__know_what_your_doing;
   MP_QSTR_words__led;
@@ -1057,6 +1052,8 @@ static void _librust_qstrs(void) {
   MP_QSTR_words__unknown;
   MP_QSTR_words__unlimited;
   MP_QSTR_words__unlocked;
+  MP_QSTR_words__votes;
+  MP_QSTR_words__voting;
   MP_QSTR_words__wallet;
   MP_QSTR_words__warning;
   MP_QSTR_words__wipe;
@@ -1237,6 +1234,7 @@ static void _librust_qstrs(void) {
   MP_QSTR_ethereum__approve_revoke_from;
   MP_QSTR_ethereum__approve_to;
   MP_QSTR_ethereum__approve_unlimited_template;
+  MP_QSTR_ethereum__confirm_contract;
   MP_QSTR_ethereum__contract_address;
   MP_QSTR_ethereum__data_size_template;
   MP_QSTR_ethereum__eip_7702;

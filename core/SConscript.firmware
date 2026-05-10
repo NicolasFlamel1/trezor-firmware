@@ -14,6 +14,7 @@ EVERYTHING = BITCOIN_ONLY != '1'
 TREZOR_MODEL = ARGUMENTS.get('TREZOR_MODEL', 'T2T1')
 CMAKELISTS = int(ARGUMENTS.get('CMAKELISTS', 0))
 PYOPT = ARGUMENTS.get('PYOPT', '1')
+DEBUGLINK = ARGUMENTS.get('DEBUGLINK', '0') == '1'
 DISABLE_OPTIGA = ARGUMENTS.get('DISABLE_OPTIGA', '0') == '1'
 DISABLE_TROPIC = ARGUMENTS.get('DISABLE_TROPIC', '0') == '1'
 HW_REVISION = ARGUMENTS.get('HW_REVISION', None)
@@ -35,6 +36,10 @@ if STORAGE_INSECURE_TESTING_MODE:
     DISABLE_OPTIGA = True
     DISABLE_TROPIC = True
     PYOPT = "0"
+
+if DEBUGLINK or PYOPT == '0':
+  DEBUGLINK = True
+  PYOPT = '0'
 
 if BENCHMARK and PYOPT != '0':
   print("BENCHMARK=1 works only with PYOPT=0.")
@@ -85,7 +90,6 @@ if DISABLE_TROPIC:
 
 if PYOPT == '0':
     DBG_CONSOLE = DBG_CONSOLE or "VCP"
-    FEATURES_WANTED += ["usb_iface_debug"]
 
 if DBG_CONSOLE != "":
     FEATURES_WANTED += ["dbg_console"]
@@ -104,6 +108,10 @@ PATH_HAL = []
 RUST_UI_FEATURES = []
 
 FROZEN = True
+
+if DEBUGLINK:
+    FEATURES_WANTED += ["usb_iface_debug"]
+    CPPDEFINES_MOD += ['DEBUGLINK']
 
 # modtrezorconfig
 CPPPATH_MOD += [
@@ -475,7 +483,9 @@ SOURCE_FIRMWARE = [
 ]
 
 SDCARD = ('sd_card' in FEATURES_AVAILABLE)
+OPTIGA = ('optiga' in FEATURES_AVAILABLE)
 SERIAL_NUMBER = ('serial_number' in FEATURES_AVAILABLE)
+BACKLIGHT = ('backlight' in FEATURES_AVAILABLE)
 
 env.Tool('micropython')
 
@@ -732,7 +742,8 @@ if FROZEN:
         )
     ))
     if PYOPT == '0':
-        SOURCE_PY.extend(Glob(SOURCE_PY_DIR + 'apps/debug/*.py'))
+        exclude_n4w1 = [SOURCE_PY_DIR + 'apps/debug/n4w1_mock.py'] if TREZOR_MODEL != "T3W1" else []
+        SOURCE_PY.extend(Glob(SOURCE_PY_DIR + 'apps/debug/*.py', exclude=exclude_n4w1))
     SOURCE_PY.extend(Glob(SOURCE_PY_DIR + 'apps/homescreen/*.py',
         exclude=[
             SOURCE_PY_DIR + 'apps/homescreen/device_menu.py',
@@ -741,7 +752,9 @@ if FROZEN:
     SOURCE_PY.extend(Glob(SOURCE_PY_DIR + 'apps/management/*.py',
         exclude=(
             ([SOURCE_PY_DIR + 'apps/management/sd_protect.py'] if not SDCARD else []) +
-            ([SOURCE_PY_DIR + 'apps/management/get_serial_number.py'] if not SERIAL_NUMBER else [])
+            ([SOURCE_PY_DIR + 'apps/management/authenticate_device.py'] if not OPTIGA else []) +
+            ([SOURCE_PY_DIR + 'apps/management/get_serial_number.py'] if not SERIAL_NUMBER else []) +
+            ([SOURCE_PY_DIR + 'apps/management/set_brightness.py'] if not BACKLIGHT else [])
         )
     ))
     SOURCE_PY.extend(Glob(SOURCE_PY_DIR + 'apps/management/*/*.py',
@@ -836,13 +849,13 @@ if FROZEN:
         source=SOURCE_PY,
         source_dir=SOURCE_PY_DIR,
         bitcoin_only=BITCOIN_ONLY,
-        backlight='backlight' in FEATURES_AVAILABLE,
-        optiga='optiga' in FEATURES_AVAILABLE,
+        backlight=BACKLIGHT,
+        optiga=OPTIGA,
+        tropic='tropic' in FEATURES_AVAILABLE,
         use_ble='ble' in FEATURES_AVAILABLE,
         use_button='button' in FEATURES_AVAILABLE,
         use_touch='touch' in FEATURES_AVAILABLE,
         ui_layout=ui.get_ui_layout(TREZOR_MODEL),
-        tropic='tropic' in FEATURES_AVAILABLE,
         thp=THP,
         power_manager='power_manager' in FEATURES_AVAILABLE,
         )
@@ -907,6 +920,7 @@ env.Depends(protobuf_blobs, qstr_generated)
 features = ['micropython', 'protobuf', 'ui', 'translations'] + FEATURES_AVAILABLE + RUST_UI_FEATURES
 if PYOPT == '0':
     features.append('debug')
+    features.append('debuglink')
     features.append('ui_debug')
     features.append('ui_debug_overlay')
 if EVERYTHING:
@@ -1038,14 +1052,12 @@ if 'STM32F427xx' in CPPDEFINES_HAL or 'STM32F429xx' in CPPDEFINES_HAL:
         '$DD if=$TARGET of=${TARGET}.p1 skip=0 bs=128k count=6',
         '$CP $TARGET ' + BINARY_NAME,
     ]
-elif 'STM32U5G9xx' in CPPDEFINES_HAL or 'STM32U585xx' in CPPDEFINES_HAL:
+else:
     action_bin=[
         '$OBJCOPY -O binary -j .vendorheader -j .header -j .flash -j .data $SOURCE ${TARGET}',
         '$HEADERTOOL -h $TARGET ' + ('-D' if not PRODUCTION else ''),
         '$CP $TARGET ' + BINARY_NAME,
         ]
-else:
-    raise Exception("Unknown MCU")
 
 if STORAGE_INSECURE_TESTING_MODE:
     INSECURE_TESTING_MODE_STR = """

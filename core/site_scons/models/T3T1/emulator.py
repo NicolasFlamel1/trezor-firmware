@@ -44,6 +44,15 @@ def configure(
         ("FLASH_BLOCK_WORDS", "1"),
     ]
 
+    paths += ["embed/sec/secret/inc"]
+    sources += ["embed/sec/secret/unix/secret.c"]
+    defines += [("USE_SECRET", "1")]
+
+    paths += ["embed/sec/secret_keys/inc"]
+    sources += ["embed/sec/secret_keys/unix/secret_keys.c"]
+    sources += ["embed/sec/secret_keys/secret_keys_common.c"]
+    defines += [("USE_SECRET_KEYS", "1")]
+
     if "sd_card" in features_wanted:
         features_available.append("sd_card")
         sources += [
@@ -72,6 +81,9 @@ def configure(
         paths += ["embed/io/touch/inc"]
         features_available.append("touch")
         defines += [("USE_TOUCH", "1")]
+
+        if "usb_iface_debug" in features_wanted:
+            sources += ["embed/io/touch/touch_debug.c"]
 
     features_available.append("backlight")
     defines += [("USE_BACKLIGHT", "1")]

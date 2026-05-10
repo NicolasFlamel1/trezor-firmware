@@ -22,7 +22,6 @@
 #include <io/display.h>
 #include <io/rsod.h>
 #include <io/usb_config.h>
-#include <sec/secret.h>
 #include <sec/unit_properties.h>
 #include <sys/applet.h>
 #include <sys/bootutils.h>
@@ -58,23 +57,11 @@
 #include "zkp_context.h"
 #endif
 
-#include <SDL.h>
-
-#ifdef USE_TROPIC
-static uint16_t get_tropic_model_port(void) {
-  char *port_str = getenv("TROPIC_MODEL_PORT");
-  if (port_str != NULL) {
-    char *endptr;
-    long port_long = strtol(port_str, &endptr, 10);
-    if (*endptr != '\0' || port_long < 0 || port_long > 65535) {
-      printf("FATAL: invalid TROPIC_MODEL_PORT\n");
-      exit(1);
-    }
-    return (uint16_t)port_long;
-  }
-  return 28992;
-}
+#ifdef USE_SECRET
+#include <sec/secret.h>
 #endif
+
+#include <SDL.h>
 
 static void drivers_deinit(void) { flash_deinit(); }
 
@@ -95,7 +82,7 @@ static void drivers_init(void) {
 #endif
 
 #ifdef USE_TROPIC
-  tropic_init(get_tropic_model_port());
+  tropic_init();
 #endif
 
   usb_configure(NULL);
@@ -160,7 +147,7 @@ static void kernel_loop(applet_t *coreapp) {
 int main(int argc, char **argv) {
   system_init(&rsod_panic_handler);
 
-#ifdef LOCKABLE_BOOTLOADER
+#if defined(USE_SECRET) && defined(LOCKABLE_BOOTLOADER)
   secret_lock_bootloader();
 #endif
 

@@ -6,8 +6,9 @@ import trezorble as ble
 import trezorui_api
 from trezor import TR, config, log, utils
 from trezor.ui.layouts import interact, raise_if_not_confirmed
+from trezor.ui.layouts.homescreen import UsbAwareLayout
 from trezor.wire import ActionCancelled, PinCancelled
-from trezorui_api import CANCELLED, DeviceMenuResult
+from trezorui_api import DeviceMenuResult
 
 if TYPE_CHECKING:
     from buffer_types import AnyBytes
@@ -153,25 +154,23 @@ async def handle_device_menu() -> None:
                 ],
                 production_year=production_year,
             ),
-            "device_menu",
+            br_name=None,
             raise_on_cancel=None,
+            layout_type=UsbAwareLayout,
         )
-
-        if menu_result is CANCELLED:
-            return
 
         if not isinstance(menu_result, tuple) or len(menu_result) != 3:
             raise RuntimeError(f"Unknown menu {menu_result}")
 
         action, arg, parent_submenu_idx = menu_result
-        handler = _MENU_HANDLERS.get(action)
-        if not handler:
-            raise RuntimeError(f"Unknown menu {menu_result}")
-
         # special handling
         if action == DeviceMenuResult.RefreshMenu:
             init_submenu_idx = arg
             continue
+
+        handler = _MENU_HANDLERS.get(action)
+        if not handler:
+            raise RuntimeError(f"Unknown menu {menu_result}")
 
         try:
             if arg is None:

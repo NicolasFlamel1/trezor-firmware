@@ -1248,6 +1248,33 @@ if not utils.BITCOIN_ONLY:
             TR.confirm_total__title_fee,
         )
 
+    async def confirm_ethereum_clear_signing(
+        recipient_str: str,
+        intent: str,
+        properties: list[StrPropertyType],
+        maximum_fee: str,
+    ) -> None:
+        from ..properties import with_colon
+
+        await confirm_action("confirm_contract", TR.words__provider, recipient_str)
+        await confirm_action("confirm_contract", TR.words__intent, intent)
+        await confirm_properties(
+            "confirm_contract",
+            TR.ethereum__confirm_contract,
+            properties,
+        )
+        await raise_if_not_confirmed(
+            trezorui_api.confirm_summary(
+                amount=None,
+                amount_label=None,
+                fee=maximum_fee,
+                fee_label=with_colon(TR.send__maximum_fee),
+                extra_items=None,
+                extra_title=None,
+            ),
+            br_name="confirm_ethereum_tx",
+        )
+
     async def confirm_ethereum_staking_tx(
         title: str,
         intro_question: str,
@@ -1612,6 +1639,20 @@ if not utils.BITCOIN_ONLY:
             TR.words__fee_limit,
             title,
             None,
+        )
+
+    async def confirm_tron_voting(voting_list: list[tuple[int, str]]) -> None:
+        await raise_if_not_confirmed(
+            trezorui_api.confirm_properties(
+                title=TR.words__review,
+                items=[
+                    (f"{TR.words__votes}: {vote[0]}", f"{vote[1]}\n", True)
+                    for vote in voting_list
+                ],
+                hold=True,
+            ),
+            br_name="tron/vote",
+            br_code=ButtonRequestType.SignTx,
         )
 
 

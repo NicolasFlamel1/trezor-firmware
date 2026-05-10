@@ -31,15 +31,16 @@
 #ifdef KERNEL
 
 // Checks if bitblt destination is accessible
-#define CHECK_BB_DST(_bb)                                       \
-  if (!probe_write_access((_bb)->dst_row,                       \
-                          (_bb)->dst_stride * (_bb)->height)) { \
-    goto access_violation;                                      \
+#define CHECK_BB_DST(_bb)                                               \
+  if (!probe_write_access((_bb)->dst_row, (size_t)(_bb)->dst_stride *   \
+                                              (size_t)(_bb)->height)) { \
+    goto access_violation;                                              \
   }
 
 // Checks if bitblt source is accessible
 #define CHECK_BB_SRC(_bb)                                                      \
-  if (!probe_read_access((_bb)->src_row, (_bb)->src_stride * (_bb)->height)) { \
+  if (!probe_read_access((_bb)->src_row,                                       \
+                         (size_t)(_bb)->src_stride * (size_t)(_bb)->height)) { \
     goto access_violation;                                                     \
   }
 
@@ -147,12 +148,12 @@ access_violation:
   return -1;
 }
 
-bool syslog_set_filter__verified(const char *module_name, log_level_t level) {
-  if (!probe_read_access(module_name, strlen(module_name))) {
+bool syslog_set_filter__verified(const char *filter, size_t filter_len) {
+  if (!probe_read_access(filter, filter_len)) {
     goto access_violation;
   }
 
-  return syslog_set_filter(module_name, level);
+  return syslog_set_filter(filter, filter_len);
 
 access_violation:
   apptask_access_violation();
@@ -581,6 +582,7 @@ access_violation:
 
 // ---------------------------------------------------------------------
 
+#ifdef USE_SECRET_KEYS
 #include <sec/secret_keys.h>
 
 secbool secret_key_delegated_identity__verified(
@@ -595,6 +597,7 @@ access_violation:
   apptask_access_violation();
   return secfalse;
 }
+#endif
 
 // ---------------------------------------------------------------------
 
@@ -1050,6 +1053,14 @@ access_violation:
 
 jpegdec_state_t jpegdec_process__verified(jpegdec_input_t *input) {
   if (!probe_write_access(input, sizeof(*input))) {
+    goto access_violation;
+  }
+
+  if (input->offset > input->size) {
+    goto access_violation;
+  }
+
+  if (!probe_read_access(input->data, input->size - input->offset)) {
     goto access_violation;
   }
 

@@ -92,6 +92,10 @@ trezor_message_impl! {
     DebugLinkGetPairingInfo => MessageType_DebugLinkGetPairingInfo,
     DebugLinkPairingInfo => MessageType_DebugLinkPairingInfo,
     DebugLinkSetLogFilter => MessageType_DebugLinkSetLogFilter,
+    DebugLinkN4W1Connected => MessageType_DebugLinkN4W1Connected,
+    DebugLinkN4W1Write => MessageType_DebugLinkN4W1Write,
+    DebugLinkN4W1Read => MessageType_DebugLinkN4W1Read,
+    DebugLinkN4W1Response => MessageType_DebugLinkN4W1Response,
     ThpCreateNewSession => MessageType_ThpCreateNewSession,
     ThpCredentialRequest => MessageType_ThpCredentialRequest,
     ThpCredentialResponse => MessageType_ThpCredentialResponse,
@@ -362,6 +366,7 @@ trezor_message_impl! {
     TronFreezeBalanceV2Contract => MessageType_TronFreezeBalanceV2Contract,
     TronUnfreezeBalanceV2Contract => MessageType_TronUnfreezeBalanceV2Contract,
     TronWithdrawUnfreeze => MessageType_TronWithdrawUnfreeze,
+    TronVoteWitnessContract => MessageType_TronVoteWitnessContract,
 }
 
 #[cfg(feature = "webauthn")]
@@ -370,4 +375,5 @@ trezor_message_impl! {
     WebAuthnCredentials => MessageType_WebAuthnCredentials,
     WebAuthnAddResidentCredential => MessageType_WebAuthnAddResidentCredential,
     WebAuthnRemoveResidentCredential => MessageType_WebAuthnRemoveResidentCredential,
+    WebAuthnCredentialsAck => MessageType_WebAuthnCredentialsAck,
 }

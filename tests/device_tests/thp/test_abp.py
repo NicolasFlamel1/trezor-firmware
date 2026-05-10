@@ -1,11 +1,15 @@
+import functools
 import time
+import typing as t
 from unittest.mock import Mock
 
 import pytest
 
-from trezorlib import messages
+from trezorlib import device, messages
 from trezorlib.debuglink import DebugSession
 from trezorlib.thp.client import TrezorClientThp
+
+from ..test_msg_applysettings import homescreen_jpeg_path
 
 pytestmark = [pytest.mark.protocol("thp")]
 
@@ -33,3 +37,27 @@ def test_abp(session: DebugSession) -> None:
     # we should now successfully read the response
     resp = session.read()
     messages.Success.ensure_isinstance(resp)
+
+
+def delay_call(func: t.Callable, seconds: float) -> t.Callable:
+
+    @functools.wraps(func)
+    def wrapper(*args, **kw):
+        time.sleep(seconds)
+        return func(*args, **kw)
+
+    return wrapper
+
+
+def test_delay_acks_from_host(session: DebugSession) -> None:
+    assert isinstance(session.client, TrezorClientThp)
+    channel = session.client.channel
+
+    # delay THP ACK sending, to trigger retransmits
+    channel._send_ack = delay_call(channel._send_ack, seconds=0.6)
+    session.client.ping("Should succeed after some retransmits")
+    session.client.ping("ButtonRequest should be retransmitted", button_protection=True)
+
+    with open(homescreen_jpeg_path(session.debug.layout_type), "rb") as f:
+        # Multiple requests and responses
+        device.apply_settings(session, homescreen=f.read())

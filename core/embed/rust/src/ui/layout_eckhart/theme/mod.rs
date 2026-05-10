@@ -39,6 +39,8 @@ pub const GREEN: Color = Color::rgb(0x08, 0x74, 0x48);
 pub const GREEN_DARK: Color = Color::rgb(0x06, 0x1E, 0x19);
 pub const GREEN_EXTRA_DARK: Color = Color::rgb(0x03, 0x10, 0x0C);
 
+pub const GREEN_BRIGHT: Color = Color::rgb(0x60, 0xE1, 0x98); // used for Connected indicator
+
 pub const ORANGE: Color = Color::rgb(0xFF, 0x63, 0x30);
 pub const ORANGE_DIMMED: Color = Color::rgb(0x9E, 0x57, 0x42);
 pub const ORANGE_DARK: Color = Color::rgb(0x18, 0x0C, 0x0A);
@@ -203,8 +205,16 @@ include_icon!(
     ICON_SINGAPORE,
     "layout_eckhart/res/regulatory/singapore.toif"
 );
+include_icon!(
+    ICON_SOUTH_AFRICA,
+    "layout_eckhart/res/regulatory/south_africa.toif"
+);
 include_icon!(ICON_TAIWAN, "layout_eckhart/res/regulatory/taiwan.toif");
 include_icon!(ICON_UKRAINE, "layout_eckhart/res/regulatory/ukraine.toif");
+include_icon!(
+    ICON_UNITED_ARAB_EMIRATES,
+    "layout_eckhart/res/regulatory/uae.toif"
+);
 
 // Square icon for BLE connection items
 include_icon!(ICON_SQUARE, "layout_eckhart/res/square.toif");

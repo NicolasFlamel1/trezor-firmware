@@ -523,49 +523,6 @@ extern "C" fn new_continue_recovery_homepage(
     unsafe { util::try_with_args_and_kwargs(n_args, args, kwargs, block) }
 }
 
-extern "C" fn new_flow_confirm_output(n_args: usize, args: *const Obj, kwargs: *mut Map) -> Obj {
-    let block = move |_args: &[Obj], kwargs: &Map| {
-        let title: Option<TString> = kwargs.get(Qstr::MP_QSTR_title)?.try_into_option()?;
-        let subtitle: Option<TString> = kwargs.get(Qstr::MP_QSTR_subtitle)?.try_into_option()?;
-        let extra: Option<TString> = kwargs.get(Qstr::MP_QSTR_extra)?.try_into_option()?;
-        let description: Option<TString> =
-            kwargs.get(Qstr::MP_QSTR_description)?.try_into_option()?;
-        let message: TString = kwargs.get(Qstr::MP_QSTR_message)?.try_into()?;
-        let chunkify: bool = kwargs.get_or(Qstr::MP_QSTR_chunkify, false)?;
-        let text_mono: bool = kwargs.get_or(Qstr::MP_QSTR_text_mono, true)?;
-        let account_title: TString = kwargs.get(Qstr::MP_QSTR_account_title)?.try_into()?;
-        let account: Option<TString> = kwargs.get(Qstr::MP_QSTR_account)?.try_into_option()?;
-        let account_path: Option<TString> =
-            kwargs.get(Qstr::MP_QSTR_account_path)?.try_into_option()?;
-        let br_code: u16 = kwargs.get(Qstr::MP_QSTR_br_code)?.try_into()?;
-        let br_name: TString = kwargs.get(Qstr::MP_QSTR_br_name)?.try_into()?;
-
-        let address_item: Option<Obj> =
-            kwargs.get(Qstr::MP_QSTR_address_item)?.try_into_option()?;
-        let cancel_text: Option<TString> =
-            kwargs.get(Qstr::MP_QSTR_cancel_text)?.try_into_option()?;
-
-        let layout = ModelUI::flow_confirm_output(
-            title,
-            subtitle,
-            description,
-            extra,
-            message,
-            chunkify,
-            text_mono,
-            account_title,
-            account,
-            account_path,
-            br_code,
-            br_name,
-            address_item,
-            cancel_text,
-        )?;
-        Ok(LayoutObj::new_root(layout)?.into())
-    };
-    unsafe { util::try_with_args_and_kwargs(n_args, args, kwargs, block) }
-}
-
 extern "C" fn new_flow_confirm_set_new_code(
     n_args: usize,
     args: *const Obj,
@@ -920,10 +877,15 @@ extern "C" fn new_show_homescreen(n_args: usize, args: *const Obj, kwargs: *mut 
         let skip_first_paint: bool = kwargs.get(Qstr::MP_QSTR_skip_first_paint)?.try_into()?;
 
         let notification = if let Some(notif_tuple) = notification {
-            let [text, level]: [Obj; 2] = util::iter_into_array(notif_tuple)?;
+            let [text, level, actionable]: [Obj; 3] = util::iter_into_array(notif_tuple)?;
             let text: TString<'static> = text.try_into()?;
             let level: NotificationLevel = level.try_into()?;
-            Some(Notification { text, level })
+            let actionable: bool = actionable.try_into()?;
+            Some(Notification {
+                text,
+                level,
+                actionable,
+            })
         } else {
             None
         };
@@ -1747,26 +1709,6 @@ pub static mp_module_trezorui_api: Module = obj_module! {
     ///     """Device recovery homescreen."""
     Qstr::MP_QSTR_continue_recovery_homepage => obj_fn_kw!(0, new_continue_recovery_homepage).as_obj(),
 
-    /// def flow_confirm_output(
-    ///     *,
-    ///     title: str | None,
-    ///     subtitle: str | None,
-    ///     message: str,
-    ///     description: str | None,
-    ///     extra: str | None,
-    ///     chunkify: bool,
-    ///     text_mono: bool,
-    ///     account_title: str,
-    ///     account: str | None,
-    ///     account_path: str | None,
-    ///     br_code: ButtonRequestType,
-    ///     br_name: str,
-    ///     address_item: PropertyType | None,
-    ///     cancel_text: str | None = None,
-    /// ) -> LayoutObj[UiResult]:
-    ///     """Confirm the recipient, (optionally) confirm the amount and (optionally) confirm the summary and present a Hold to Sign page."""
-    Qstr::MP_QSTR_flow_confirm_output => obj_fn_kw!(0, new_flow_confirm_output).as_obj(),
-
     /// def flow_confirm_set_new_code(
     ///     *,
     ///     is_wipe_code: bool,
@@ -1983,7 +1925,7 @@ pub static mp_module_trezorui_api: Module = obj_module! {
     /// def show_homescreen(
     ///     *,
     ///     label: str,
-    ///     notification: tuple[str, int] | None = None,
+    ///     notification: tuple[str, int, bool] | None = None,
     ///     lockable: bool,
     ///     skip_first_paint: bool,
     /// ) -> LayoutObj[UiResult]:

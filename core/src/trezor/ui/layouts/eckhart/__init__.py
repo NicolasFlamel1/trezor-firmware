@@ -570,7 +570,7 @@ async def confirm_payment_request(
 
 async def confirm_output(
     address: str,
-    amount: str | None = None,
+    amount: str,
     title: str | None = None,
     hold: bool = False,
     br_code: ButtonRequestType = ButtonRequestType.ConfirmOutput,
@@ -593,93 +593,68 @@ async def confirm_output(
     else:
         title = TR.send__title_sending_to
 
-    if amount is not None:
-        account_properties: list[StrPropertyType] = []
-        if source_account:
-            account_properties.append((TR.words__wallet, source_account, None))
-        if source_account_path and source_account_path != source_account:
-            # the reason for this check is account_label in bitcoin/sign_tx/layout.py
-            # which can return the derivation path instead of the account
-            account_properties.append(
-                (
-                    TR.address_details__derivation_path,
-                    source_account_path,
-                    None,
-                )
+    account_properties: list[StrPropertyType] = []
+    if source_account:
+        account_properties.append((TR.words__wallet, source_account, None))
+    if source_account_path and source_account_path != source_account:
+        # the reason for this check is account_label in bitcoin/sign_tx/layout.py
+        # which can return the derivation path instead of the account
+        account_properties.append(
+            (
+                TR.address_details__derivation_path,
+                source_account_path,
+                None,
             )
-        if account_properties:
-            menu_items = [
-                create_details(
-                    TR.address_details__account_info,
-                    account_properties,
-                    title=TR.address_details__account_info,
-                    subtitle=TR.send__send_from,
-                )
-            ]
-        else:
-            menu_items = []
-
-        menu = Menu.root(
-            menu_items,
-            cancel=Cancel.from_layout(
-                name=TR.buttons__cancel,
-                layout_factory=trezorui_api.confirm_cancel,
-            ),
         )
-
-        address_layout = trezorui_api.confirm_value(
-            title=TR.words__send,
-            value=address,
-            description=description,
-            subtitle=title,
-            verb=TR.buttons__continue,
-            chunkify=chunkify,
-            page_counter=True,  # TODO: this is for test_cardano_sign_tx_show_details - maybe we can do without?
-            external_menu=True,
-        )
-
-        amount_layout = trezorui_api.confirm_value(
-            title=TR.words__send,
-            value=amount,
-            description=TR.words__amount,
-            is_data=False,
-            subtitle=title,
-            external_menu=True,
-            back_button=True,
-        )
-
-        try:
-            await confirm_linear_flow(
-                lambda: interact_with_menu(
-                    address_layout, menu, "confirm_output", br_code
-                ),
-                lambda: interact_with_menu(
-                    amount_layout, menu, "confirm_output", br_code
-                ),
+    if account_properties:
+        menu_items = [
+            create_details(
+                TR.address_details__account_info,
+                account_properties,
+                title=TR.address_details__account_info,
+                subtitle=TR.send__send_from,
             )
-        except ActionCancelled:
-            show_continue_in_app(TR.send__sign_cancelled)
-            raise
+        ]
     else:
-        await raise_if_not_confirmed(
-            trezorui_api.flow_confirm_output(
-                title=TR.words__send,
-                subtitle=title,
-                message=address,
-                extra=None,
-                chunkify=chunkify,
-                text_mono=True,
-                account_title=TR.send__send_from,
-                account=source_account,
-                account_path=source_account_path,
-                address_item=None,
-                br_code=br_code,
-                br_name="confirm_output",
-                cancel_text=cancel_text,
-                description=description,
-            ),
-            br_name=None,
+        menu_items = []
+
+    menu = Menu.root(
+        menu_items,
+        cancel=Cancel.from_layout(
+            name=TR.buttons__cancel,
+            layout_factory=trezorui_api.confirm_cancel,
+        ),
+    )
+
+    address_layout = trezorui_api.confirm_value(
+        title=TR.words__send,
+        value=address,
+        description=description,
+        subtitle=title,
+        verb=TR.buttons__continue,
+        chunkify=chunkify,
+        page_counter=True,  # TODO: this is for test_cardano_sign_tx_show_details - maybe we can do without?
+        external_menu=True,
+    )
+
+    amount_layout = trezorui_api.confirm_value(
+        title=TR.words__send,
+        value=amount,
+        description=TR.words__amount,
+        is_data=False,
+        subtitle=title,
+        external_menu=True,
+        back_button=True,
+    )
+
+    try:
+        await confirm_linear_flow(
+            lambda: interact_with_menu(address_layout, menu, "confirm_output", br_code),
+            lambda: interact_with_menu(amount_layout, menu, "confirm_output", br_code),
         )
+    except ActionCancelled:
+        show_continue_in_app(TR.send__sign_cancelled)
+        raise
 
 
 async def should_show_more(
@@ -1287,6 +1262,31 @@ if not utils.BITCOIN_ONLY:
             TR.confirm_total__title_fee,
         )
 
+    async def confirm_ethereum_clear_signing(
+        recipient_str: str,
+        intent: str,
+        properties: list[StrPropertyType],
+        maximum_fee: str,
+    ) -> None:
+        await confirm_action("confirm_contract", TR.words__provider, recipient_str)
+        await confirm_action("confirm_contract", TR.words__intent, intent)
+        await confirm_properties(
+            "confirm_contract",
+            TR.ethereum__confirm_contract,
+            properties,
+        )
+        await raise_if_not_confirmed(
+            trezorui_api.confirm_summary(
+                amount=None,
+                amount_label=None,
+                fee=maximum_fee,
+                fee_label=TR.send__maximum_fee,
+                extra_items=None,
+                extra_title=None,
+            ),
+            br_name="confirm_ethereum_tx",
+        )
+
     async def confirm_ethereum_staking_tx(
         title: str,
         intro_question: str,
@@ -1687,6 +1687,24 @@ if not utils.BITCOIN_ONLY:
             TR.words__fee_limit,
             title,
             None,
+        )
+
+    async def confirm_tron_voting(voting_list: list[tuple[int, str]]) -> None:
+
+        item_list: list[StrPropertyType] = []
+        for vote_count, address in voting_list:
+            item_list.append((TR.words__address, address, True))
+            item_list.append((f"\n{TR.words__votes}", f"{vote_count}", False))
+
+        await raise_if_not_confirmed(
+            trezorui_api.confirm_properties(
+                title=TR.words__review,
+                subtitle=TR.words__voting,
+                items=item_list,
+                hold=True,
+            ),
+            br_name="tron/vote",
+            br_code=ButtonRequestType.SignTx,
         )
 
 

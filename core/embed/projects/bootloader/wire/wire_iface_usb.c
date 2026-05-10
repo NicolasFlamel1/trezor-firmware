@@ -66,12 +66,14 @@ wire_iface_t* usb_iface_init(secbool usb21_landing) {
     return iface;
   }
 
+#ifndef DEBUGLINK
   usb_start_params_t params = {
       .serial_number = "000000000000000000000000",
       .usb21_landing = usb21_landing,
   };
 
   usb_start(&params);
+#endif
 
   memset(iface, 0, sizeof(wire_iface_t));
 
@@ -95,7 +97,10 @@ void usb_iface_deinit(void) {
   }
 
   memset(iface, 0, sizeof(wire_iface_t));
+
+#ifndef DEBUGLINK
   usb_stop();
+#endif
 }
 
 wire_iface_t* usb_iface_get(void) {

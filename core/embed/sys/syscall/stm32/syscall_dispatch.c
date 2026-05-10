@@ -30,8 +30,6 @@
 #include <io/usb.h>
 #include <sec/fwutils.h>
 #include <sec/rng_strong.h>
-#include <sec/secret.h>
-#include <sec/secret_keys.h>
 #include <sec/unit_properties.h>
 #include <sys/bootutils.h>
 #include <sys/irq.h>
@@ -39,6 +37,10 @@
 #include <sys/systask.h>
 #include <sys/system.h>
 #include <sys/systick.h>
+
+#ifdef USE_SECRET
+#include <sec/secret.h>
+#endif
 
 #ifdef USE_BLE
 #include <io/ble.h>
@@ -377,10 +379,12 @@ __attribute((no_stack_protector)) void syscall_handler(uint32_t *args,
                                                  device_sn_size);
     } break;
 
+#ifdef USE_SECRET
 #ifdef LOCKABLE_BOOTLOADER
     case SYSCALL_SECRET_BOOTLOADER_LOCKED: {
       args[0] = secret_bootloader_locked();
     } break;
+#endif
 #endif
 
 #ifdef USE_BUTTON
@@ -496,10 +500,12 @@ __attribute((no_stack_protector)) void syscall_handler(uint32_t *args,
 #endif
 #endif  // USE_OPTIGA
 
+#ifdef USE_SECRET_KEYS
     case SYSCALL_SECRET_KEYS_GET_DELEGATED_IDENTITY_KEY: {
       uint8_t *dest = (uint8_t *)args[0];
       args[0] = secret_key_delegated_identity__verified(dest);
     } break;
+#endif
 
 #ifdef USE_TELEMETRY
     case SYSCALL_TELEMETRY_GET: {
@@ -612,13 +618,13 @@ __attribute((no_stack_protector)) void syscall_handler(uint32_t *args,
       const uint8_t *data = (const uint8_t *)args[0];
       uint32_t offset = args[1];
       uint32_t len = args[2];
-      args[0] = translations_write(data, offset, len);
+      args[0] = translations_write__verified(data, offset, len);
     } break;
 
     case SYSCALL_TRANSLATIONS_READ: {
       uint32_t *len = (uint32_t *)args[0];
       uint32_t offset = args[1];
-      args[0] = (uint32_t)translations_read(len, offset);
+      args[0] = (uint32_t)translations_read__verified(len, offset);
     } break;
 
     case SYSCALL_TRANSLATIONS_ERASE: {

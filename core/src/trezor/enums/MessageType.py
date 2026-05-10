@@ -120,6 +120,10 @@ if __debug__:
     DebugLinkGetPairingInfo = 9011
     DebugLinkPairingInfo = 9012
     DebugLinkSetLogFilter = 9013
+    DebugLinkN4W1Connected = 9014
+    DebugLinkN4W1Write = 9015
+    DebugLinkN4W1Read = 9016
+    DebugLinkN4W1Response = 9017
 if utils.USE_THP:
     ThpCreateNewSession = 1000
     ThpCredentialRequest = 1016
@@ -260,6 +264,7 @@ if not utils.BITCOIN_ONLY:
     WebAuthnCredentials = 801
     WebAuthnAddResidentCredential = 802
     WebAuthnRemoveResidentCredential = 803
+    WebAuthnCredentialsAck = 804
     SolanaGetPublicKey = 900
     SolanaPublicKey = 901
     SolanaGetAddress = 902
@@ -320,3 +325,4 @@ if not utils.BITCOIN_ONLY:
     TronFreezeBalanceV2Contract = 2207
     TronUnfreezeBalanceV2Contract = 2208
     TronWithdrawUnfreeze = 2209
+    TronVoteWitnessContract = 2210

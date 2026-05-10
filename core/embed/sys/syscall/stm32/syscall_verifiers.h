@@ -67,7 +67,7 @@ bool syslog_start_record__verified(const log_source_t *source,
 ssize_t syslog_write_chunk__verified(const char *text, size_t text_len,
                                      bool end_record);
 
-bool syslog_set_filter__verified(const char *module_name, log_level_t level);
+bool syslog_set_filter__verified(const char *filter, size_t filter_len);
 
 #endif  // USE_DBG_CONSOLE
 
@@ -162,10 +162,12 @@ bool __wur optiga_read_sec__verified(uint8_t *sec);
 #endif  // USE_OPTIGA
 
 // ---------------------------------------------------------------------
+#ifdef USE_SECRET_KEYS
 #include <sec/secret_keys.h>
 
 secbool secret_key_delegated_identity__verified(
     uint8_t dest[ECDSA_PRIVATE_KEY_SIZE]);
+#endif
 
 // ---------------------------------------------------------------------
 #ifdef USE_TELEMETRY

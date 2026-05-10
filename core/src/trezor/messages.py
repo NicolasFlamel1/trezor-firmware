@@ -19,6 +19,7 @@ if TYPE_CHECKING:
     from typing import TypeGuard
     from trezor.enums import AmountUnit  # noqa: F401
     from trezor.enums import BackupAvailability  # noqa: F401
+    from trezor.enums import BackupMethod  # noqa: F401
     from trezor.enums import BackupType  # noqa: F401
     from trezor.enums import BootCommand  # noqa: F401
     from trezor.enums import ButtonRequestType  # noqa: F401
@@ -2492,6 +2493,7 @@ if TYPE_CHECKING:
         no_backup: "bool | None"
         backup_type: "BackupType"
         entropy_check: "bool | None"
+        backup_method: "BackupMethod"
 
         def __init__(
             self,
@@ -2505,6 +2507,7 @@ if TYPE_CHECKING:
             no_backup: "bool | None" = None,
             backup_type: "BackupType | None" = None,
             entropy_check: "bool | None" = None,
+            backup_method: "BackupMethod | None" = None,
         ) -> None:
             pass
 
@@ -2515,12 +2518,14 @@ if TYPE_CHECKING:
     class BackupDevice(protobuf.MessageType):
         group_threshold: "int | None"
         groups: "list[Slip39Group]"
+        backup_method: "BackupMethod"
 
         def __init__(
             self,
             *,
             groups: "list[Slip39Group] | None" = None,
             group_threshold: "int | None" = None,
+            backup_method: "BackupMethod | None" = None,
         ) -> None:
             pass
 
@@ -2587,6 +2592,7 @@ if TYPE_CHECKING:
         input_method: "RecoveryDeviceInputMethod | None"
         u2f_counter: "int | None"
         type: "RecoveryType"
+        backup_method: "BackupMethod"
 
         def __init__(
             self,
@@ -2599,6 +2605,7 @@ if TYPE_CHECKING:
             input_method: "RecoveryDeviceInputMethod | None" = None,
             u2f_counter: "int | None" = None,
             type: "RecoveryType | None" = None,
+            backup_method: "BackupMethod | None" = None,
         ) -> None:
             pass
 
@@ -3104,6 +3111,56 @@ if TYPE_CHECKING:
 
         @classmethod
         def is_type_of(cls, msg: Any) -> TypeGuard["DebugLinkSetLogFilter"]:
+            return isinstance(msg, cls)
+
+    class DebugLinkN4W1Connected(protobuf.MessageType):
+
+        @classmethod
+        def is_type_of(cls, msg: Any) -> TypeGuard["DebugLinkN4W1Connected"]:
+            return isinstance(msg, cls)
+
+    class DebugLinkN4W1Write(protobuf.MessageType):
+        key: "str | None"
+        value: "AnyBytes | None"
+
+        def __init__(
+            self,
+            *,
+            key: "str | None" = None,
+            value: "AnyBytes | None" = None,
+        ) -> None:
+            pass
+
+        @classmethod
+        def is_type_of(cls, msg: Any) -> TypeGuard["DebugLinkN4W1Write"]:
+            return isinstance(msg, cls)
+
+    class DebugLinkN4W1Read(protobuf.MessageType):
+        key: "str | None"
+
+        def __init__(
+            self,
+            *,
+            key: "str | None" = None,
+        ) -> None:
+            pass
+
+        @classmethod
+        def is_type_of(cls, msg: Any) -> TypeGuard["DebugLinkN4W1Read"]:
+            return isinstance(msg, cls)
+
+    class DebugLinkN4W1Response(protobuf.MessageType):
+        value: "AnyBytes | None"
+
+        def __init__(
+            self,
+            *,
+            value: "AnyBytes | None" = None,
+        ) -> None:
+            pass
+
+        @classmethod
+        def is_type_of(cls, msg: Any) -> TypeGuard["DebugLinkN4W1Response"]:
             return isinstance(msg, cls)
 
     class DebugLinkGcInfoItem(protobuf.MessageType):
@@ -7584,6 +7641,22 @@ if TYPE_CHECKING:
         def is_type_of(cls, msg: Any) -> TypeGuard["TronTransferContract"]:
             return isinstance(msg, cls)
 
+    class TronVoteWitnessContract(protobuf.MessageType):
+        owner_address: "AnyBytes"
+        votes: "list[TronVote]"
+
+        def __init__(
+            self,
+            *,
+            owner_address: "AnyBytes",
+            votes: "list[TronVote] | None" = None,
+        ) -> None:
+            pass
+
+        @classmethod
+        def is_type_of(cls, msg: Any) -> TypeGuard["TronVoteWitnessContract"]:
+            return isinstance(msg, cls)
+
     class TronTriggerSmartContract(protobuf.MessageType):
         owner_address: "AnyBytes"
         contract_address: "AnyBytes"
@@ -7692,6 +7765,22 @@ if TYPE_CHECKING:
         def is_type_of(cls, msg: Any) -> TypeGuard["TronRawTransaction"]:
             return isinstance(msg, cls)
 
+    class TronVote(protobuf.MessageType):
+        address: "AnyBytes"
+        count: "int"
+
+        def __init__(
+            self,
+            *,
+            address: "AnyBytes",
+            count: "int",
+        ) -> None:
+            pass
+
+        @classmethod
+        def is_type_of(cls, msg: Any) -> TypeGuard["TronVote"]:
+            return isinstance(msg, cls)
+
     class TronRawContract(protobuf.MessageType):
         type: "TronRawContractType"
         parameter: "TronRawParameter"
@@ -7725,6 +7814,14 @@ if TYPE_CHECKING:
             return isinstance(msg, cls)
 
     class WebAuthnListResidentCredentials(protobuf.MessageType):
+        batch_size: "int | None"
+
+        def __init__(
+            self,
+            *,
+            batch_size: "int | None" = None,
+        ) -> None:
+            pass
 
         @classmethod
         def is_type_of(cls, msg: Any) -> TypeGuard["WebAuthnListResidentCredentials"]:
@@ -7760,16 +7857,24 @@ if TYPE_CHECKING:
 
     class WebAuthnCredentials(protobuf.MessageType):
         credentials: "list[WebAuthnCredential]"
+        is_done: "bool"
 
         def __init__(
             self,
             *,
             credentials: "list[WebAuthnCredential] | None" = None,
+            is_done: "bool | None" = None,
         ) -> None:
             pass
 
         @classmethod
         def is_type_of(cls, msg: Any) -> TypeGuard["WebAuthnCredentials"]:
+            return isinstance(msg, cls)
+
+    class WebAuthnCredentialsAck(protobuf.MessageType):
+
+        @classmethod
+        def is_type_of(cls, msg: Any) -> TypeGuard["WebAuthnCredentialsAck"]:
             return isinstance(msg, cls)
 
     class WebAuthnCredential(protobuf.MessageType):

@@ -24,6 +24,7 @@ import typing as t
 import unicodedata
 import warnings
 from abc import ABCMeta, abstractmethod
+from contextlib import AbstractContextManager, nullcontext
 from dataclasses import dataclass
 
 import typing_extensions as tx
@@ -181,8 +182,9 @@ class Session(t.Generic[ClientType, SessionIdType]):
         choice of a correct session for this operation.
         """
         resp = self.call(GET_ROOT_FINGERPRINT_MESSAGE, expect=messages.PublicKey)
-        assert resp.root_fingerprint is not None
-        root_fingerprint = resp.root_fingerprint.to_bytes(4, "big")
+        # resp.root_fingerprint is not available on <1.9.4 & <2.3.5
+        assert resp.node.fingerprint is not None
+        root_fingerprint = resp.node.fingerprint.to_bytes(4, "big")
         if self._root_fingerprint is None:
             self._root_fingerprint = root_fingerprint
         assert self._root_fingerprint == root_fingerprint
@@ -244,6 +246,7 @@ class TrezorClient(t.Generic[SessionType], metaclass=ABCMeta):
         self._mapping = mapping
         self._features = None
         self.pairing = pairing
+        self._interact_ctx = self._interact()
 
     # ===== Internal methods for overriding in subclasses =====
 
@@ -283,11 +286,15 @@ class TrezorClient(t.Generic[SessionType], metaclass=ABCMeta):
         """
         raise NotImplementedError
 
+    def _interact(self, *, force_flush: bool = False) -> AbstractContextManager:
+        return nullcontext()
+
     # ===== Common implementations =====
 
     def __enter__(self) -> tx.Self:
         """(Re)Open a connection to the device."""
         self.transport.__enter__()
+        self._interact_ctx.__enter__()
         return self
 
     def __exit__(
@@ -296,7 +303,10 @@ class TrezorClient(t.Generic[SessionType], metaclass=ABCMeta):
         exc_value: BaseException | None,
         traceback: t.Any,
     ) -> None:
-        self.transport.__exit__(exc_type, exc_value, traceback)
+        try:
+            self._interact_ctx.__exit__(exc_type, exc_value, traceback)
+        finally:
+            self.transport.__exit__(exc_type, exc_value, traceback)
 
     def connect(self) -> None:
         """Establish a connection to the device.
@@ -561,7 +571,7 @@ class TrezorClient(t.Generic[SessionType], metaclass=ABCMeta):
         session = _use_session or self._get_any_session()
         with session:
             session.call_raw(messages.LockDevice())
-            self.refresh_features()
+        self.refresh_features()
 
     def ensure_unlocked(self) -> None:
         """Ensure the device is unlocked."""

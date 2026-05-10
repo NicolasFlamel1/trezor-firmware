@@ -43,6 +43,7 @@ async def sign_tx_eip1559(
 
     from apps.common import paths
 
+    from .clear_signing import InvalidFormatDefinition, InvalidFunctionCall
     from .helpers import format_ethereum_amount, get_fee_items_eip1559
     from .sign_tx import check_common_fields, confirm_tx_data, send_request_chunk
 
@@ -80,27 +81,54 @@ async def sign_tx_eip1559(
             msg.payment_req, slip44_id, keychain, amount_size_bytes=32
         )
 
-    # data chunks will be confirmed during digest (see below)
-    # tx summary will approved before signing the digest (see below)
-    confirm_data_chunk, approve_summary = await confirm_tx_data(
-        msg,
-        defs,
-        None,
-        address_bytes,
-        maximum_fee,
-        fee_items,
-        data_total,
-        payment_req_verifier,
-    )
-
     # digest
     total_length = _get_total_length(msg, data_total)
 
     sha = HashWriter(sha3_256(keccak=True))
 
     rlp.write(sha, _TX_TYPE)
-
     rlp.write_header(sha, total_length, rlp.LIST_HEADER_BYTE)
+
+    # data chunks will be confirmed during digest (see below)
+    # tx summary will approved before signing the digest (see below)
+    confirm_data_chunk, confirm_summary = await confirm_tx_data(
+        msg,
+        defs,
+        None,
+        address_bytes,
+        maximum_fee,
+        fee_items,
+        payment_req_verifier,
+        try_clear_signing=True,
+    )
+
+    await confirm_data_chunk(msg.data_initial_chunk)
+
+    data_left = data_total - len(msg.data_initial_chunk)
+
+    summary_confirmed = False
+    if data_left == 0:
+        try:
+            await confirm_summary
+            summary_confirmed = True
+        except (InvalidFunctionCall, InvalidFormatDefinition):
+            # parsing calldata by the clear signer failed,
+            # retry without clear signing
+            confirm_data_chunk, confirm_summary = await confirm_tx_data(
+                msg,
+                defs,
+                None,
+                address_bytes,
+                maximum_fee,
+                fee_items,
+                payment_req_verifier,
+                try_clear_signing=False,
+            )
+
+            # we can safely assume that the initial data chunk was not confirmed
+            # because we are currently handling clear signer's exception
+            # so let's finally confirm the initial data chunk!
+            await confirm_data_chunk(msg.data_initial_chunk)
 
     fields: tuple[rlp.RLPItem, ...] = (
         msg.chain_id,
@@ -114,8 +142,6 @@ async def sign_tx_eip1559(
     for field in fields:
         rlp.write(sha, field)
 
-    await confirm_data_chunk(msg.data_initial_chunk)
-    data_left = data_total - len(msg.data_initial_chunk)
     rlp.write_header(sha, data_total, rlp.STRING_HEADER_BYTE, msg.data_initial_chunk)
     sha.extend(msg.data_initial_chunk)
 
@@ -137,7 +163,10 @@ async def sign_tx_eip1559(
         rlp.write(sha, item.storage_keys)
 
     digest = sha.get_digest()
-    await approve_summary
+
+    if not summary_confirmed:
+        await confirm_summary
+
     # transaction data confirmed, proceed with signing
     result = _sign_digest(msg, keychain, digest)
 

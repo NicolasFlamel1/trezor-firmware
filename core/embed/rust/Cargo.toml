@@ -38,6 +38,7 @@ button = []
 touch = []
 clippy = []
 debug = ["ui_debug", "dev_keys"]
+debuglink = []
 dev_keys = []
 sbu = []
 haptic = []
@@ -135,7 +136,7 @@ features = ["libm"]
 version = "0.4.2"
 
 [dependencies.static-alloc]
-version = "0.2.4"
+version = "0.2.6"
 
 [dependencies.without-alloc]
 version = "0.2.2"

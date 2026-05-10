@@ -51,6 +51,15 @@ def configure(
         ("HW_REVISION", str(hw_revision)),
     ]
 
+    paths += ["embed/sec/secret/inc"]
+    sources += ["embed/sec/secret/stm32u5/secret.c"]
+    defines += [("USE_SECRET", "1")]
+
+    paths += ["embed/sec/secret_keys/inc"]
+    sources += ["embed/sec/secret_keys/stm32u5/secret_keys.c"]
+    sources += ["embed/sec/secret_keys/secret_keys_common.c"]
+    defines += [("USE_SECRET_KEYS", "1")]
+
     if "display" in features_wanted:
         sources += ["embed/io/display/st-7789/display_fb.c"]
         sources += ["embed/io/display/st-7789/display_driver.c"]
@@ -80,6 +89,9 @@ def configure(
         features_available.append("touch")
         defines += [("USE_TOUCH", "1")]
         defines += [("USE_I2C", "1")]
+
+        if "usb_iface_debug" in features_wanted:
+            sources += ["embed/io/touch/touch_debug.c"]
 
     if "haptic" in features_wanted:
         sources += [
@@ -130,7 +142,6 @@ def configure(
         ("USE_HASH_PROCESSOR", "1"),
         ("USE_STORAGE_HWKEY", "1"),
         ("USE_TAMPER", "1"),
-        ("USE_FLASH_BURST", "1"),
         ("USE_OEM_KEYS_CHECK", "1"),
         ("USE_PVD", "1"),
     ]

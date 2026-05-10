@@ -61,6 +61,15 @@ def configure(
         ("TERMINAL_Y_PADDING", "12"),
     ]
 
+    paths += ["embed/sec/secret/inc"]
+    sources += ["embed/sec/secret/stm32u5/secret.c"]
+    defines += [("USE_SECRET", "1")]
+
+    paths += ["embed/sec/secret_keys/inc"]
+    sources += ["embed/sec/secret_keys/stm32u5/secret_keys.c"]
+    sources += ["embed/sec/secret_keys/secret_keys_common.c"]
+    defines += [("USE_SECRET_KEYS", "1")]
+
     if "boot_ucb" in features_wanted:
         sources += ["embed/sec/image/boot_header.c"]
         sources += ["embed/sec/image/boot_ucb.c"]
@@ -98,6 +107,9 @@ def configure(
             ("USE_TOUCH", "1"),
             ("USE_BUTTON", "1"),
         ]
+        if "usb_iface_debug" in features_wanted:
+            sources += ["embed/io/touch/touch_debug.c"]
+            sources += ["embed/io/button/button_debug.c"]
 
     sources += ["embed/sys/i2c_bus/stm32u5/i2c_bus.c"]
     paths += ["embed/sys/i2c_bus/inc"]
@@ -270,7 +282,6 @@ def configure(
         ("USE_HASH_PROCESSOR", "1"),
         ("USE_STORAGE_HWKEY", "1"),
         ("USE_TAMPER", "1"),
-        ("USE_FLASH_BURST", "1"),
         ("USE_OEM_KEYS_CHECK", "1"),
     ]
 

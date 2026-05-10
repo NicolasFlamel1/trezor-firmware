@@ -49,6 +49,15 @@ def configure(
         ("HW_REVISION", str(hw_revision)),
     ]
 
+    paths += ["embed/sec/secret/inc"]
+    sources += ["embed/sec/secret/stm32u5/secret.c"]
+    defines += [("USE_SECRET", "1")]
+
+    paths += ["embed/sec/secret_keys/inc"]
+    sources += ["embed/sec/secret_keys/stm32u5/secret_keys.c"]
+    sources += ["embed/sec/secret_keys/secret_keys_common.c"]
+    defines += [("USE_SECRET_KEYS", "1")]
+
     if "display" in features_wanted:
         sources += ["embed/io/display/vg-2864/display_driver.c"]
         paths += ["embed/io/display/inc"]
@@ -60,6 +69,9 @@ def configure(
         paths += ["embed/io/button/inc"]
         features_available.append("button")
         defines += [("USE_BUTTON", "1")]
+
+        if "usb_iface_debug" in features_wanted:
+            sources += ["embed/io/button/button_debug.c"]
 
     if "sbu" in features_wanted:
         sources += ["embed/io/sbu/stm32/sbu.c"]
@@ -97,7 +109,6 @@ def configure(
         ("USE_HASH_PROCESSOR", "1"),
         ("USE_STORAGE_HWKEY", "1"),
         ("USE_TAMPER", "1"),
-        ("USE_FLASH_BURST", "1"),
         ("USE_OEM_KEYS_CHECK", "1"),
         ("USE_PVD", "1"),
     ]

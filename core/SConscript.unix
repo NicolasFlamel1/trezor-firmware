@@ -14,12 +14,17 @@ THP = ARGUMENTS.get('THP', '0') == '1' # Trezor-Host Protocol
 DISABLE_TROPIC = ARGUMENTS.get('DISABLE_TROPIC', '1') == '1'
 BENCHMARK = ARGUMENTS.get('BENCHMARK', '0') == '1'
 PYOPT = ARGUMENTS.get('PYOPT', '1')
+DEBUGLINK = ARGUMENTS.get('DEBUGLINK', '0') == '1'
 FROZEN = ARGUMENTS.get('TREZOR_EMULATOR_FROZEN', 0)
 RASPI = os.getenv('TREZOR_EMULATOR_RASPI') == '1'
 MICROPY_ENABLE_SOURCE_LINE = ARGUMENTS.get('MICROPY_ENABLE_SOURCE_LINE', '1')
 DBG_CONSOLE = ARGUMENTS.get('DBG_CONSOLE', '')
 EXTAPP_SUPPORT = ARGUMENTS.get('EXTAPP_SUPPORT', '0') == '1'
 
+
+if DEBUGLINK or PYOPT == '0':
+  DEBUGLINK = True
+  PYOPT = '0'
 
 if BENCHMARK and PYOPT != '0':
   print("BENCHMARK=1 works only with PYOPT=0.")
@@ -460,6 +465,11 @@ env = Environment(
 
 FEATURES_AVAILABLE = models.configure_board(TREZOR_MODEL, HW_REVISION, FEATURES_WANTED, env, CPPDEFINES_HAL, SOURCE_UNIX, PATH_HAL)
 
+SDCARD = ('sd_card' in FEATURES_AVAILABLE)
+OPTIGA = ('optiga' in FEATURES_AVAILABLE)
+SERIAL_NUMBER = ('serial_number' in FEATURES_AVAILABLE)
+BACKLIGHT = ('backlight' in FEATURES_AVAILABLE)
+
 env.Tool('micropython')
 
 env.Replace(
@@ -663,7 +673,7 @@ if FROZEN:
     SOURCE_PY.extend(Glob(SOURCE_PY_DIR + 'trezor/*.py',
         exclude=[
             SOURCE_PY_DIR + 'trezor/sdcard.py',
-        ] if 'sd_card' not in FEATURES_AVAILABLE else []
+        ] if not SDCARD else []
     ))
     SOURCE_PY.extend(Glob(SOURCE_PY_DIR + 'trezor/crypto/*.py'))
     SOURCE_PY.extend(Glob(SOURCE_PY_DIR + 'trezor/ui/*.py'))
@@ -699,7 +709,7 @@ if FROZEN:
 
     SOURCE_PY.extend(Glob(SOURCE_PY_DIR + 'storage/*.py',
         exclude=(
-            ([SOURCE_PY_DIR + 'storage/sd_salt.py'] if 'sd_card' not in FEATURES_AVAILABLE else []) +
+            ([SOURCE_PY_DIR + 'storage/sd_salt.py'] if not SDCARD else []) +
             ([SOURCE_PY_DIR + 'storage/debug.py'] if PYOPT != '0' else []) +
             ([
                 SOURCE_PY_DIR + 'storage/cache_codec.py',
@@ -743,11 +753,12 @@ if FROZEN:
             SOURCE_PY_DIR + 'apps/common/definitions.py',
             SOURCE_PY_DIR + 'apps/common/definitions_constants.py',
         ] + (
-            [SOURCE_PY_DIR + 'apps/common/sdcard.py'] if "sd_card" not in FEATURES_AVAILABLE else []
+            [SOURCE_PY_DIR + 'apps/common/sdcard.py'] if not SDCARD else []
         )
     ))
     if PYOPT == '0':
-        SOURCE_PY.extend(Glob(SOURCE_PY_DIR + 'apps/debug/*.py'))
+        exclude_n4w1 = [SOURCE_PY_DIR + 'apps/debug/n4w1_mock.py'] if TREZOR_MODEL != "T3W1" else []
+        SOURCE_PY.extend(Glob(SOURCE_PY_DIR + 'apps/debug/*.py', exclude=exclude_n4w1))
     SOURCE_PY.extend(Glob(SOURCE_PY_DIR + 'apps/homescreen/*.py',
         exclude=[
             SOURCE_PY_DIR + 'apps/homescreen/device_menu.py',
@@ -755,14 +766,12 @@ if FROZEN:
     )
     SOURCE_PY.extend(Glob(SOURCE_PY_DIR + 'apps/management/*.py',
         exclude=(
-            [SOURCE_PY_DIR + 'apps/management/sd_protect.py'] if "sd_card" not in FEATURES_AVAILABLE else []
-        ) + (
-            [SOURCE_PY_DIR + 'apps/management/authenticate_device.py'] if "optiga" not in FEATURES_AVAILABLE else []
-        ) + (
-            [SOURCE_PY_DIR + 'apps/management/get_serial_number.py'] if "serial_number" not in FEATURES_AVAILABLE else []
+            ([SOURCE_PY_DIR + 'apps/management/sd_protect.py'] if not SDCARD else []) +
+            ([SOURCE_PY_DIR + 'apps/management/authenticate_device.py'] if not OPTIGA else []) +
+            ([SOURCE_PY_DIR + 'apps/management/get_serial_number.py'] if not SERIAL_NUMBER else []) +
+            ([SOURCE_PY_DIR + 'apps/management/set_brightness.py'] if not BACKLIGHT else [])
         )
-    )
-    )
+    ))
     SOURCE_PY.extend(Glob(SOURCE_PY_DIR + 'apps/management/*/*.py',
         exclude=(
             [SOURCE_PY_DIR + 'apps/management/ble/*.py'] if "ble" not in FEATURES_AVAILABLE else []
@@ -859,8 +868,8 @@ if FROZEN:
         source=SOURCE_PY,
         source_dir=SOURCE_PY_DIR,
         bitcoin_only=BITCOIN_ONLY,
-        backlight='backlight' in FEATURES_AVAILABLE,
-        optiga='optiga' in FEATURES_AVAILABLE,
+        backlight=BACKLIGHT,
+        optiga=OPTIGA,
         tropic='tropic' in FEATURES_AVAILABLE,
         use_ble='ble' in FEATURES_AVAILABLE,
         use_button='button' in FEATURES_AVAILABLE,
@@ -934,6 +943,7 @@ else:
 features = ['micropython', 'protobuf', 'ui', 'translations'] + FEATURES_AVAILABLE + RUST_UI_FEATURES
 if PYOPT == '0':
     features.append('debug')
+    features.append('debuglink')
     features.append('ui_debug')
     features.append('ui_debug_overlay')
 if EVERYTHING:
