@@ -91,6 +91,7 @@ trezor_message_impl! {
     DebugLinkGcInfo => MessageType_DebugLinkGcInfo,
     DebugLinkGetPairingInfo => MessageType_DebugLinkGetPairingInfo,
     DebugLinkPairingInfo => MessageType_DebugLinkPairingInfo,
+    DebugLinkSetLogFilter => MessageType_DebugLinkSetLogFilter,
     ThpCreateNewSession => MessageType_ThpCreateNewSession,
     ThpCredentialRequest => MessageType_ThpCredentialRequest,
     ThpCredentialResponse => MessageType_ThpCredentialResponse,
@@ -98,6 +99,8 @@ trezor_message_impl! {
     BenchmarkNames => MessageType_BenchmarkNames,
     BenchmarkRun => MessageType_BenchmarkRun,
     BenchmarkResult => MessageType_BenchmarkResult,
+    TelemetryGet => MessageType_TelemetryGet,
+    Telemetry => MessageType_Telemetry,
 }
 
 #[cfg(feature = "bitcoin")]
@@ -192,6 +195,10 @@ trezor_message_impl! {
 trezor_message_impl! {
     EvoluGetNode => MessageType_EvoluGetNode,
     EvoluNode => MessageType_EvoluNode,
+    EvoluSignRegistrationRequest => MessageType_EvoluSignRegistrationRequest,
+    EvoluRegistrationRequest => MessageType_EvoluRegistrationRequest,
+    EvoluGetDelegatedIdentityKey => MessageType_EvoluGetDelegatedIdentityKey,
+    EvoluDelegatedIdentityKey => MessageType_EvoluDelegatedIdentityKey,
 }
 
 #[cfg(feature = "monero")]
@@ -341,6 +348,20 @@ trezor_message_impl! {
     TezosSignedTx => MessageType_TezosSignedTx,
     TezosGetPublicKey => MessageType_TezosGetPublicKey,
     TezosPublicKey => MessageType_TezosPublicKey,
+}
+
+#[cfg(feature = "tron")]
+trezor_message_impl! {
+    TronGetAddress => MessageType_TronGetAddress,
+    TronAddress => MessageType_TronAddress,
+    TronSignTx => MessageType_TronSignTx,
+    TronSignature => MessageType_TronSignature,
+    TronContractRequest => MessageType_TronContractRequest,
+    TronTransferContract => MessageType_TronTransferContract,
+    TronTriggerSmartContract => MessageType_TronTriggerSmartContract,
+    TronFreezeBalanceV2Contract => MessageType_TronFreezeBalanceV2Contract,
+    TronUnfreezeBalanceV2Contract => MessageType_TronUnfreezeBalanceV2Contract,
+    TronWithdrawUnfreeze => MessageType_TronWithdrawUnfreeze,
 }
 
 #[cfg(feature = "webauthn")]

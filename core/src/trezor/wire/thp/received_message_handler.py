@@ -23,10 +23,9 @@ from . import (
     ThpDeviceLockedError,
     ThpErrorType,
     ThpUnallocatedSessionError,
-    control_byte,
-    get_encoded_device_properties,
-    session_manager,
 )
+from . import alternating_bit_protocol as ABP
+from . import control_byte, get_encoded_device_properties, session_manager
 from .crypto import PUBKEY_LENGTH, Handshake
 from .session_context import SeedlessSessionContext
 
@@ -81,13 +80,47 @@ async def handle_received_message(channel: Channel) -> bool:
     return False
 
 
+async def _handle_thp_during_unlock(channel: Channel) -> None:
+    """
+    Keep handling THP messages while waiting for unlock.
+    It allows preemption and ping/pong handling if the device is soft-locked.
+    """
+    while True:
+        # may raise ChannelPreemptedException if another channel preempts this one
+        msg = await channel._get_reassembled_message()
+        if __debug__:
+            # we don't expect messages from this channel since the handshake is not over
+            channel._log(
+                "drop unexpected message",
+                utils.hexlify_if_bytes(msg),
+                logger=log.warning,
+            )
+
+
 async def _handle_state_handshake(
     ctx: Channel,
 ) -> None:
     if __debug__:
         log.debug(__name__, "handle_state_handshake", iface=ctx.iface)
 
-    payload = await ctx.recv_payload(control_byte.is_handshake_init_req)
+    def _handshake_callback(ctrl_byte: int) -> bool:
+        success = control_byte.is_handshake_init_req(ctrl_byte)
+
+        # TODO: re-enable THP ACK piggybacking after #6506 is fixed
+        # if success and control_byte.get_ack_bit(ctrl_byte) == 1:
+        #     # Newer Suite versions will send `handshake_init_req` with a non-zero ACK bit.
+        #     # The device should not use ACK piggybacking with older Suite versions.
+        #     ABP.allow_ack_piggybacking(ctx.channel_cache)
+
+        if __debug__:
+            ctx._log(
+                "THP ACK piggybacking = ",
+                str(ABP.is_ack_piggybacking_allowed(ctx.channel_cache)),
+            )
+
+        return success
+
+    payload = await ctx.recv_payload(_handshake_callback)
 
     if len(payload) != PUBKEY_LENGTH + 1:
         if __debug__:
@@ -107,14 +140,16 @@ async def _handle_state_handshake(
             return
 
         if try_to_unlock:
-            from trezor import workflow
+            from trezor import loop, workflow
 
             from apps.common.lock_manager import unlock_device
 
             # Register the unlock prompt with the workflow management system
             # (in order to avoid immediately respawning the lockscreen task)
             try:
-                return await workflow.spawn(unlock_device())
+                unlock = workflow.spawn(unlock_device())
+                handle = _handle_thp_during_unlock(channel=ctx)
+                return await loop.race(unlock, handle)
             except Exception as e:
                 if __debug__:
                     log.exception(__name__, e)

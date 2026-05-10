@@ -28,3 +28,4 @@ if not utils.BITCOIN_ONLY:
     U2F = 14
     Solana = 18
     MimbleWimbleCoin = 199
+    Tron = 24

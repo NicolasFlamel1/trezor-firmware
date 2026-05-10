@@ -371,6 +371,8 @@ pub struct Features {
     pub minor_version: ::std::option::Option<u32>,
     // @@protoc_insertion_point(field:hw.trezor.messages.management.Features.patch_version)
     pub patch_version: ::std::option::Option<u32>,
+    // @@protoc_insertion_point(field:hw.trezor.messages.management.Features.build_version)
+    pub build_version: ::std::option::Option<u32>,
     // @@protoc_insertion_point(field:hw.trezor.messages.management.Features.bootloader_mode)
     pub bootloader_mode: ::std::option::Option<bool>,
     // @@protoc_insertion_point(field:hw.trezor.messages.management.Features.device_id)
@@ -409,6 +411,8 @@ pub struct Features {
     pub fw_minor: ::std::option::Option<u32>,
     // @@protoc_insertion_point(field:hw.trezor.messages.management.Features.fw_patch)
     pub fw_patch: ::std::option::Option<u32>,
+    // @@protoc_insertion_point(field:hw.trezor.messages.management.Features.fw_build)
+    pub fw_build: ::std::option::Option<u32>,
     // @@protoc_insertion_point(field:hw.trezor.messages.management.Features.fw_vendor)
     pub fw_vendor: ::std::option::Option<::std::string::String>,
     // @@protoc_insertion_point(field:hw.trezor.messages.management.Features.unfinished_backup)
@@ -586,6 +590,25 @@ impl Features {
     // Param is passed by value, moved
     pub fn set_patch_version(&mut self, v: u32) {
         self.patch_version = ::std::option::Option::Some(v);
+    }
+
+    // optional uint32 build_version = 61;
+
+    pub fn build_version(&self) -> u32 {
+        self.build_version.unwrap_or(0)
+    }
+
+    pub fn clear_build_version(&mut self) {
+        self.build_version = ::std::option::Option::None;
+    }
+
+    pub fn has_build_version(&self) -> bool {
+        self.build_version.is_some()
+    }
+
+    // Param is passed by value, moved
+    pub fn set_build_version(&mut self, v: u32) {
+        self.build_version = ::std::option::Option::Some(v);
     }
 
     // optional bool bootloader_mode = 5;
@@ -1052,6 +1075,25 @@ impl Features {
     // Param is passed by value, moved
     pub fn set_fw_patch(&mut self, v: u32) {
         self.fw_patch = ::std::option::Option::Some(v);
+    }
+
+    // optional uint32 fw_build = 62;
+
+    pub fn fw_build(&self) -> u32 {
+        self.fw_build.unwrap_or(0)
+    }
+
+    pub fn clear_fw_build(&mut self) {
+        self.fw_build = ::std::option::Option::None;
+    }
+
+    pub fn has_fw_build(&self) -> bool {
+        self.fw_build.is_some()
+    }
+
+    // Param is passed by value, moved
+    pub fn set_fw_build(&mut self, v: u32) {
+        self.fw_build = ::std::option::Option::Some(v);
     }
 
     // optional string fw_vendor = 25;
@@ -1770,7 +1812,7 @@ impl Features {
     }
 
     fn generated_message_descriptor_data() -> ::protobuf::reflect::GeneratedMessageDescriptorData {
-        let mut fields = ::std::vec::Vec::with_capacity(58);
+        let mut fields = ::std::vec::Vec::with_capacity(60);
         let mut oneofs = ::std::vec::Vec::with_capacity(0);
         fields.push(::protobuf::reflect::rt::v2::make_option_accessor::<_, _>(
             "vendor",
@@ -1791,6 +1833,11 @@ impl Features {
             "patch_version",
             |m: &Features| { &m.patch_version },
             |m: &mut Features| { &mut m.patch_version },
+        ));
+        fields.push(::protobuf::reflect::rt::v2::make_option_accessor::<_, _>(
+            "build_version",
+            |m: &Features| { &m.build_version },
+            |m: &mut Features| { &mut m.build_version },
         ));
         fields.push(::protobuf::reflect::rt::v2::make_option_accessor::<_, _>(
             "bootloader_mode",
@@ -1886,6 +1933,11 @@ impl Features {
             "fw_patch",
             |m: &Features| { &m.fw_patch },
             |m: &mut Features| { &mut m.fw_patch },
+        ));
+        fields.push(::protobuf::reflect::rt::v2::make_option_accessor::<_, _>(
+            "fw_build",
+            |m: &Features| { &m.fw_build },
+            |m: &mut Features| { &mut m.fw_build },
         ));
         fields.push(::protobuf::reflect::rt::v2::make_option_accessor::<_, _>(
             "fw_vendor",
@@ -2101,6 +2153,9 @@ impl ::protobuf::Message for Features {
                 32 => {
                     self.patch_version = ::std::option::Option::Some(is.read_uint32()?);
                 },
+                488 => {
+                    self.build_version = ::std::option::Option::Some(is.read_uint32()?);
+                },
                 40 => {
                     self.bootloader_mode = ::std::option::Option::Some(is.read_bool()?);
                 },
@@ -2157,6 +2212,9 @@ impl ::protobuf::Message for Features {
                 },
                 192 => {
                     self.fw_patch = ::std::option::Option::Some(is.read_uint32()?);
+                },
+                496 => {
+                    self.fw_build = ::std::option::Option::Some(is.read_uint32()?);
                 },
                 202 => {
                     self.fw_vendor = ::std::option::Option::Some(is.read_string()?);
@@ -2290,6 +2348,9 @@ impl ::protobuf::Message for Features {
         if let Some(v) = self.patch_version {
             my_size += ::protobuf::rt::uint32_size(4, v);
         }
+        if let Some(v) = self.build_version {
+            my_size += ::protobuf::rt::uint32_size(61, v);
+        }
         if let Some(v) = self.bootloader_mode {
             my_size += 1 + 1;
         }
@@ -2346,6 +2407,9 @@ impl ::protobuf::Message for Features {
         }
         if let Some(v) = self.fw_patch {
             my_size += ::protobuf::rt::uint32_size(24, v);
+        }
+        if let Some(v) = self.fw_build {
+            my_size += ::protobuf::rt::uint32_size(62, v);
         }
         if let Some(v) = self.fw_vendor.as_ref() {
             my_size += ::protobuf::rt::string_size(25, &v);
@@ -2470,6 +2534,9 @@ impl ::protobuf::Message for Features {
         if let Some(v) = self.patch_version {
             os.write_uint32(4, v)?;
         }
+        if let Some(v) = self.build_version {
+            os.write_uint32(61, v)?;
+        }
         if let Some(v) = self.bootloader_mode {
             os.write_bool(5, v)?;
         }
@@ -2526,6 +2593,9 @@ impl ::protobuf::Message for Features {
         }
         if let Some(v) = self.fw_patch {
             os.write_uint32(24, v)?;
+        }
+        if let Some(v) = self.fw_build {
+            os.write_uint32(62, v)?;
         }
         if let Some(v) = self.fw_vendor.as_ref() {
             os.write_string(25, v)?;
@@ -2653,6 +2723,7 @@ impl ::protobuf::Message for Features {
         self.major_version = ::std::option::Option::None;
         self.minor_version = ::std::option::Option::None;
         self.patch_version = ::std::option::Option::None;
+        self.build_version = ::std::option::Option::None;
         self.bootloader_mode = ::std::option::Option::None;
         self.device_id = ::std::option::Option::None;
         self.pin_protection = ::std::option::Option::None;
@@ -2672,6 +2743,7 @@ impl ::protobuf::Message for Features {
         self.fw_major = ::std::option::Option::None;
         self.fw_minor = ::std::option::Option::None;
         self.fw_patch = ::std::option::Option::None;
+        self.fw_build = ::std::option::Option::None;
         self.fw_vendor = ::std::option::Option::None;
         self.unfinished_backup = ::std::option::Option::None;
         self.no_backup = ::std::option::Option::None;
@@ -2716,6 +2788,7 @@ impl ::protobuf::Message for Features {
             major_version: ::std::option::Option::None,
             minor_version: ::std::option::Option::None,
             patch_version: ::std::option::Option::None,
+            build_version: ::std::option::Option::None,
             bootloader_mode: ::std::option::Option::None,
             device_id: ::std::option::Option::None,
             pin_protection: ::std::option::Option::None,
@@ -2735,6 +2808,7 @@ impl ::protobuf::Message for Features {
             fw_major: ::std::option::Option::None,
             fw_minor: ::std::option::Option::None,
             fw_patch: ::std::option::Option::None,
+            fw_build: ::std::option::Option::None,
             fw_vendor: ::std::option::Option::None,
             unfinished_backup: ::std::option::Option::None,
             no_backup: ::std::option::Option::None,
@@ -2980,6 +3054,8 @@ pub mod features {
         Capability_BLE = 22,
         // @@protoc_insertion_point(enum_value:hw.trezor.messages.management.Features.Capability.Capability_NFC)
         Capability_NFC = 23,
+        // @@protoc_insertion_point(enum_value:hw.trezor.messages.management.Features.Capability.Capability_Tron)
+        Capability_Tron = 24,
     }
 
     impl ::protobuf::Enum for Capability {
@@ -3015,6 +3091,7 @@ pub mod features {
                 21 => ::std::option::Option::Some(Capability::Capability_Haptic),
                 22 => ::std::option::Option::Some(Capability::Capability_BLE),
                 23 => ::std::option::Option::Some(Capability::Capability_NFC),
+                24 => ::std::option::Option::Some(Capability::Capability_Tron),
                 _ => ::std::option::Option::None
             }
         }
@@ -3045,6 +3122,7 @@ pub mod features {
                 "Capability_Haptic" => ::std::option::Option::Some(Capability::Capability_Haptic),
                 "Capability_BLE" => ::std::option::Option::Some(Capability::Capability_BLE),
                 "Capability_NFC" => ::std::option::Option::Some(Capability::Capability_NFC),
+                "Capability_Tron" => ::std::option::Option::Some(Capability::Capability_Tron),
                 _ => ::std::option::Option::None
             }
         }
@@ -3074,6 +3152,7 @@ pub mod features {
             Capability::Capability_Haptic,
             Capability::Capability_BLE,
             Capability::Capability_NFC,
+            Capability::Capability_Tron,
         ];
     }
 
@@ -3109,6 +3188,7 @@ pub mod features {
                 Capability::Capability_Haptic => 21,
                 Capability::Capability_BLE => 22,
                 Capability::Capability_NFC => 23,
+                Capability::Capability_Tron => 24,
             };
             Self::enum_descriptor().value_by_index(index)
         }
@@ -6782,6 +6862,8 @@ pub struct LoadDevice {
     pub needs_backup: ::std::option::Option<bool>,
     // @@protoc_insertion_point(field:hw.trezor.messages.management.LoadDevice.no_backup)
     pub no_backup: ::std::option::Option<bool>,
+    // @@protoc_insertion_point(field:hw.trezor.messages.management.LoadDevice.unfinished_backup)
+    pub unfinished_backup: ::std::option::Option<bool>,
     // special fields
     // @@protoc_insertion_point(special_field:hw.trezor.messages.management.LoadDevice.special_fields)
     pub special_fields: ::protobuf::SpecialFields,
@@ -7001,8 +7083,27 @@ impl LoadDevice {
         self.no_backup = ::std::option::Option::Some(v);
     }
 
+    // optional bool unfinished_backup = 11;
+
+    pub fn unfinished_backup(&self) -> bool {
+        self.unfinished_backup.unwrap_or(false)
+    }
+
+    pub fn clear_unfinished_backup(&mut self) {
+        self.unfinished_backup = ::std::option::Option::None;
+    }
+
+    pub fn has_unfinished_backup(&self) -> bool {
+        self.unfinished_backup.is_some()
+    }
+
+    // Param is passed by value, moved
+    pub fn set_unfinished_backup(&mut self, v: bool) {
+        self.unfinished_backup = ::std::option::Option::Some(v);
+    }
+
     fn generated_message_descriptor_data() -> ::protobuf::reflect::GeneratedMessageDescriptorData {
-        let mut fields = ::std::vec::Vec::with_capacity(9);
+        let mut fields = ::std::vec::Vec::with_capacity(10);
         let mut oneofs = ::std::vec::Vec::with_capacity(0);
         fields.push(::protobuf::reflect::rt::v2::make_vec_simpler_accessor::<_, _>(
             "mnemonics",
@@ -7049,6 +7150,11 @@ impl LoadDevice {
             |m: &LoadDevice| { &m.no_backup },
             |m: &mut LoadDevice| { &mut m.no_backup },
         ));
+        fields.push(::protobuf::reflect::rt::v2::make_option_accessor::<_, _>(
+            "unfinished_backup",
+            |m: &LoadDevice| { &m.unfinished_backup },
+            |m: &mut LoadDevice| { &mut m.unfinished_backup },
+        ));
         ::protobuf::reflect::GeneratedMessageDescriptorData::new_2::<LoadDevice>(
             "LoadDevice",
             fields,
@@ -7094,6 +7200,9 @@ impl ::protobuf::Message for LoadDevice {
                 80 => {
                     self.no_backup = ::std::option::Option::Some(is.read_bool()?);
                 },
+                88 => {
+                    self.unfinished_backup = ::std::option::Option::Some(is.read_bool()?);
+                },
                 tag => {
                     ::protobuf::rt::read_unknown_or_skip_group(tag, is, self.special_fields.mut_unknown_fields())?;
                 },
@@ -7133,6 +7242,9 @@ impl ::protobuf::Message for LoadDevice {
         if let Some(v) = self.no_backup {
             my_size += 1 + 1;
         }
+        if let Some(v) = self.unfinished_backup {
+            my_size += 1 + 1;
+        }
         my_size += ::protobuf::rt::unknown_fields_size(self.special_fields.unknown_fields());
         self.special_fields.cached_size().set(my_size as u32);
         my_size
@@ -7166,6 +7278,9 @@ impl ::protobuf::Message for LoadDevice {
         if let Some(v) = self.no_backup {
             os.write_bool(10, v)?;
         }
+        if let Some(v) = self.unfinished_backup {
+            os.write_bool(11, v)?;
+        }
         os.write_unknown_fields(self.special_fields.unknown_fields())?;
         ::std::result::Result::Ok(())
     }
@@ -7192,6 +7307,7 @@ impl ::protobuf::Message for LoadDevice {
         self.u2f_counter = ::std::option::Option::None;
         self.needs_backup = ::std::option::Option::None;
         self.no_backup = ::std::option::Option::None;
+        self.unfinished_backup = ::std::option::Option::None;
         self.special_fields.clear();
     }
 
@@ -7206,6 +7322,7 @@ impl ::protobuf::Message for LoadDevice {
             u2f_counter: ::std::option::Option::None,
             needs_backup: ::std::option::Option::None,
             no_backup: ::std::option::Option::None,
+            unfinished_backup: ::std::option::Option::None,
             special_fields: ::protobuf::SpecialFields::new(),
         };
         &instance
@@ -10337,8 +10454,6 @@ pub struct RebootToBootloader {
     pub boot_command: ::std::option::Option<::protobuf::EnumOrUnknown<reboot_to_bootloader::BootCommand>>,
     // @@protoc_insertion_point(field:hw.trezor.messages.management.RebootToBootloader.firmware_header)
     pub firmware_header: ::std::option::Option<::std::vec::Vec<u8>>,
-    // @@protoc_insertion_point(field:hw.trezor.messages.management.RebootToBootloader.language_data_length)
-    pub language_data_length: ::std::option::Option<u32>,
     // special fields
     // @@protoc_insertion_point(special_field:hw.trezor.messages.management.RebootToBootloader.special_fields)
     pub special_fields: ::protobuf::SpecialFields,
@@ -10413,27 +10528,8 @@ impl RebootToBootloader {
         self.firmware_header.take().unwrap_or_else(|| ::std::vec::Vec::new())
     }
 
-    // optional uint32 language_data_length = 3;
-
-    pub fn language_data_length(&self) -> u32 {
-        self.language_data_length.unwrap_or(0u32)
-    }
-
-    pub fn clear_language_data_length(&mut self) {
-        self.language_data_length = ::std::option::Option::None;
-    }
-
-    pub fn has_language_data_length(&self) -> bool {
-        self.language_data_length.is_some()
-    }
-
-    // Param is passed by value, moved
-    pub fn set_language_data_length(&mut self, v: u32) {
-        self.language_data_length = ::std::option::Option::Some(v);
-    }
-
     fn generated_message_descriptor_data() -> ::protobuf::reflect::GeneratedMessageDescriptorData {
-        let mut fields = ::std::vec::Vec::with_capacity(3);
+        let mut fields = ::std::vec::Vec::with_capacity(2);
         let mut oneofs = ::std::vec::Vec::with_capacity(0);
         fields.push(::protobuf::reflect::rt::v2::make_option_accessor::<_, _>(
             "boot_command",
@@ -10444,11 +10540,6 @@ impl RebootToBootloader {
             "firmware_header",
             |m: &RebootToBootloader| { &m.firmware_header },
             |m: &mut RebootToBootloader| { &mut m.firmware_header },
-        ));
-        fields.push(::protobuf::reflect::rt::v2::make_option_accessor::<_, _>(
-            "language_data_length",
-            |m: &RebootToBootloader| { &m.language_data_length },
-            |m: &mut RebootToBootloader| { &mut m.language_data_length },
         ));
         ::protobuf::reflect::GeneratedMessageDescriptorData::new_2::<RebootToBootloader>(
             "RebootToBootloader",
@@ -10474,9 +10565,6 @@ impl ::protobuf::Message for RebootToBootloader {
                 18 => {
                     self.firmware_header = ::std::option::Option::Some(is.read_bytes()?);
                 },
-                24 => {
-                    self.language_data_length = ::std::option::Option::Some(is.read_uint32()?);
-                },
                 tag => {
                     ::protobuf::rt::read_unknown_or_skip_group(tag, is, self.special_fields.mut_unknown_fields())?;
                 },
@@ -10495,9 +10583,6 @@ impl ::protobuf::Message for RebootToBootloader {
         if let Some(v) = self.firmware_header.as_ref() {
             my_size += ::protobuf::rt::bytes_size(2, &v);
         }
-        if let Some(v) = self.language_data_length {
-            my_size += ::protobuf::rt::uint32_size(3, v);
-        }
         my_size += ::protobuf::rt::unknown_fields_size(self.special_fields.unknown_fields());
         self.special_fields.cached_size().set(my_size as u32);
         my_size
@@ -10509,9 +10594,6 @@ impl ::protobuf::Message for RebootToBootloader {
         }
         if let Some(v) = self.firmware_header.as_ref() {
             os.write_bytes(2, v)?;
-        }
-        if let Some(v) = self.language_data_length {
-            os.write_uint32(3, v)?;
         }
         os.write_unknown_fields(self.special_fields.unknown_fields())?;
         ::std::result::Result::Ok(())
@@ -10532,7 +10614,6 @@ impl ::protobuf::Message for RebootToBootloader {
     fn clear(&mut self) {
         self.boot_command = ::std::option::Option::None;
         self.firmware_header = ::std::option::Option::None;
-        self.language_data_length = ::std::option::Option::None;
         self.special_fields.clear();
     }
 
@@ -10540,7 +10621,6 @@ impl ::protobuf::Message for RebootToBootloader {
         static instance: RebootToBootloader = RebootToBootloader {
             boot_command: ::std::option::Option::None,
             firmware_header: ::std::option::Option::None,
-            language_data_length: ::std::option::Option::None,
             special_fields: ::protobuf::SpecialFields::new(),
         };
         &instance
@@ -12214,138 +12294,141 @@ static file_descriptor_proto_data: &'static [u8] = b"\
     \roptions.proto\"\x80\x01\n\nInitialize\x12\x1d\n\nsession_id\x18\x01\
     \x20\x01(\x0cR\tsessionId\x12,\n\x10_skip_passphrase\x18\x02\x20\x01(\
     \x08R\x0eSkipPassphraseB\x02\x18\x01\x12%\n\x0ederive_cardano\x18\x03\
-    \x20\x01(\x08R\rderiveCardano\"\r\n\x0bGetFeatures\"\xbf\x1a\n\x08Featur\
+    \x20\x01(\x08R\rderiveCardano\"\r\n\x0bGetFeatures\"\x94\x1b\n\x08Featur\
     es\x12\x16\n\x06vendor\x18\x01\x20\x01(\tR\x06vendor\x12#\n\rmajor_versi\
     on\x18\x02\x20\x02(\rR\x0cmajorVersion\x12#\n\rminor_version\x18\x03\x20\
     \x02(\rR\x0cminorVersion\x12#\n\rpatch_version\x18\x04\x20\x02(\rR\x0cpa\
-    tchVersion\x12'\n\x0fbootloader_mode\x18\x05\x20\x01(\x08R\x0ebootloader\
-    Mode\x12\x1b\n\tdevice_id\x18\x06\x20\x01(\tR\x08deviceId\x12%\n\x0epin_\
-    protection\x18\x07\x20\x01(\x08R\rpinProtection\x123\n\x15passphrase_pro\
-    tection\x18\x08\x20\x01(\x08R\x14passphraseProtection\x12\x1a\n\x08langu\
-    age\x18\t\x20\x01(\tR\x08language\x12\x14\n\x05label\x18\n\x20\x01(\tR\
-    \x05label\x12\x20\n\x0binitialized\x18\x0c\x20\x01(\x08R\x0binitialized\
-    \x12\x1a\n\x08revision\x18\r\x20\x01(\x0cR\x08revision\x12'\n\x0fbootloa\
-    der_hash\x18\x0e\x20\x01(\x0cR\x0ebootloaderHash\x12\x1a\n\x08imported\
-    \x18\x0f\x20\x01(\x08R\x08imported\x12\x1a\n\x08unlocked\x18\x10\x20\x01\
-    (\x08R\x08unlocked\x120\n\x12_passphrase_cached\x18\x11\x20\x01(\x08R\
-    \x10PassphraseCachedB\x02\x18\x01\x12)\n\x10firmware_present\x18\x12\x20\
-    \x01(\x08R\x0ffirmwarePresent\x12k\n\x13backup_availability\x18\x13\x20\
-    \x01(\x0e2:.hw.trezor.messages.management.Features.BackupAvailabilityR\
-    \x12backupAvailability\x12\x14\n\x05flags\x18\x14\x20\x01(\rR\x05flags\
-    \x12\x14\n\x05model\x18\x15\x20\x01(\tR\x05model\x12\x19\n\x08fw_major\
-    \x18\x16\x20\x01(\rR\x07fwMajor\x12\x19\n\x08fw_minor\x18\x17\x20\x01(\r\
-    R\x07fwMinor\x12\x19\n\x08fw_patch\x18\x18\x20\x01(\rR\x07fwPatch\x12\
-    \x1b\n\tfw_vendor\x18\x19\x20\x01(\tR\x08fwVendor\x12+\n\x11unfinished_b\
-    ackup\x18\x1b\x20\x01(\x08R\x10unfinishedBackup\x12\x1b\n\tno_backup\x18\
-    \x1c\x20\x01(\x08R\x08noBackup\x12_\n\x0frecovery_status\x18\x1d\x20\x01\
-    (\x0e26.hw.trezor.messages.management.Features.RecoveryStatusR\x0erecove\
-    ryStatus\x12V\n\x0ccapabilities\x18\x1e\x20\x03(\x0e22.hw.trezor.message\
-    s.management.Features.CapabilityR\x0ccapabilities\x12J\n\x0bbackup_type\
-    \x18\x1f\x20\x01(\x0e2).hw.trezor.messages.management.BackupTypeR\nbacku\
-    pType\x12&\n\x0fsd_card_present\x18\x20\x20\x01(\x08R\rsdCardPresent\x12\
-    #\n\rsd_protection\x18!\x20\x01(\x08R\x0csdProtection\x120\n\x14wipe_cod\
-    e_protection\x18\"\x20\x01(\x08R\x12wipeCodeProtection\x12\x1d\n\nsessio\
-    n_id\x18#\x20\x01(\x0cR\tsessionId\x12=\n\x1bpassphrase_always_on_device\
-    \x18$\x20\x01(\x08R\x18passphraseAlwaysOnDevice\x12T\n\rsafety_checks\
-    \x18%\x20\x01(\x0e2/.hw.trezor.messages.management.SafetyCheckLevelR\x0c\
-    safetyChecks\x12+\n\x12auto_lock_delay_ms\x18&\x20\x01(\rR\x0fautoLockDe\
-    layMs\x12Y\n\x10display_rotation\x18'\x20\x01(\x0e2..hw.trezor.messages.\
-    management.DisplayRotationR\x0fdisplayRotation\x123\n\x15experimental_fe\
-    atures\x18(\x20\x01(\x08R\x14experimentalFeatures\x12\x12\n\x04busy\x18)\
-    \x20\x01(\x08R\x04busy\x12\\\n\x11homescreen_format\x18*\x20\x01(\x0e2/.\
-    hw.trezor.messages.management.HomescreenFormatR\x10homescreenFormat\x129\
-    \n\x19hide_passphrase_from_host\x18+\x20\x01(\x08R\x16hidePassphraseFrom\
-    Host\x12%\n\x0einternal_model\x18,\x20\x01(\tR\rinternalModel\x12\x1d\n\
-    \nunit_color\x18-\x20\x01(\rR\tunitColor\x12!\n\x0cunit_btconly\x18.\x20\
-    \x01(\x08R\x0bunitBtconly\x12)\n\x10homescreen_width\x18/\x20\x01(\rR\
-    \x0fhomescreenWidth\x12+\n\x11homescreen_height\x180\x20\x01(\rR\x10home\
-    screenHeight\x12+\n\x11bootloader_locked\x181\x20\x01(\x08R\x10bootloade\
-    rLocked\x12>\n\x18language_version_matches\x182\x20\x01(\x08:\x04trueR\
-    \x16languageVersionMatches\x12%\n\x0eunit_packaging\x183\x20\x01(\rR\run\
-    itPackaging\x12'\n\x0fhaptic_feedback\x184\x20\x01(\x08R\x0ehapticFeedba\
-    ck\x12P\n\rrecovery_type\x185\x20\x01(\x0e2+.hw.trezor.messages.manageme\
-    nt.RecoveryTypeR\x0crecoveryType\x12\x1d\n\noptiga_sec\x186\x20\x01(\rR\
-    \toptigaSec\x12\x10\n\x03soc\x187\x20\x01(\rR\x03soc\x12-\n\x12firmware_\
-    corrupted\x188\x20\x01(\x08R\x11firmwareCorrupted\x12:\n\x1aauto_lock_de\
-    lay_battery_ms\x189\x20\x01(\rR\x16autoLockDelayBatteryMs\x12\x10\n\x03l\
-    ed\x18:\x20\x01(\x08R\x03led\x12#\n\rusb_connected\x18;\x20\x01(\x08R\
-    \x0cusbConnected\x12-\n\x12wireless_connected\x18<\x20\x01(\x08R\x11wire\
-    lessConnected\"C\n\x12BackupAvailability\x12\x10\n\x0cNotAvailable\x10\0\
-    \x12\x0c\n\x08Required\x10\x01\x12\r\n\tAvailable\x10\x02\"7\n\x0eRecove\
-    ryStatus\x12\x0b\n\x07Nothing\x10\0\x12\x0c\n\x08Recovery\x10\x01\x12\n\
-    \n\x06Backup\x10\x02\"\x98\x05\n\nCapability\x12\x1c\n\x12Capability_Bit\
-    coin\x10\x01\x1a\x04\x80\xa6\x1d\x01\x12\x1b\n\x17Capability_Bitcoin_lik\
-    e\x10\x02\x12\x16\n\x12Capability_Binance\x10\x03\x12\x16\n\x12Capabilit\
-    y_Cardano\x10\x04\x12\x1b\n\x11Capability_Crypto\x10\x05\x1a\x04\x80\xa6\
-    \x1d\x01\x12\x12\n\x0eCapability_EOS\x10\x06\x12\x17\n\x13Capability_Eth\
-    ereum\x10\x07\x12\x17\n\x0fCapability_Lisk\x10\x08\x1a\x02\x08\x01\x12\
-    \x15\n\x11Capability_Monero\x10\t\x12\x12\n\x0eCapability_NEM\x10\n\x12\
-    \x15\n\x11Capability_Ripple\x10\x0b\x12\x16\n\x12Capability_Stellar\x10\
-    \x0c\x12\x14\n\x10Capability_Tezos\x10\r\x12\x12\n\x0eCapability_U2F\x10\
-    \x0e\x12\x1b\n\x11Capability_Shamir\x10\x0f\x1a\x04\x80\xa6\x1d\x01\x12!\
-    \n\x17Capability_ShamirGroups\x10\x10\x1a\x04\x80\xa6\x1d\x01\x12$\n\x1a\
-    Capability_PassphraseEntry\x10\x11\x1a\x04\x80\xa6\x1d\x01\x12\x15\n\x11\
-    Capability_Solana\x10\x12\x12!\n\x17Capability_Translations\x10\x13\x1a\
-    \x04\x80\xa6\x1d\x01\x12\x20\n\x1bCapability_MimbleWimbleCoin\x10\xc7\
-    \x01\x12\x1f\n\x15Capability_Brightness\x10\x14\x1a\x04\x80\xa6\x1d\x01\
-    \x12\x1b\n\x11Capability_Haptic\x10\x15\x1a\x04\x80\xa6\x1d\x01\x12\x18\
-    \n\x0eCapability_BLE\x10\x16\x1a\x04\x80\xa6\x1d\x01\x12\x18\n\x0eCapabi\
-    lity_NFC\x10\x17\x1a\x04\x80\xa6\x1d\x01\x1a\x04\xc8\xf3\x18\x01\"\x0c\n\
-    \nLockDevice\"&\n\x07SetBusy\x12\x1b\n\texpiry_ms\x18\x01\x20\x01(\rR\
-    \x08expiryMs\"\x0c\n\nEndSession\"\xdd\x05\n\rApplySettings\x12\x1e\n\
-    \x08language\x18\x01\x20\x01(\tR\x08languageB\x02\x18\x01\x12\x14\n\x05l\
-    abel\x18\x02\x20\x01(\tR\x05label\x12%\n\x0euse_passphrase\x18\x03\x20\
-    \x01(\x08R\rusePassphrase\x12\x1e\n\nhomescreen\x18\x04\x20\x01(\x0cR\nh\
-    omescreen\x120\n\x12_passphrase_source\x18\x05\x20\x01(\rR\x10Passphrase\
-    SourceB\x02\x18\x01\x12+\n\x12auto_lock_delay_ms\x18\x06\x20\x01(\rR\x0f\
-    autoLockDelayMs\x12Y\n\x10display_rotation\x18\x07\x20\x01(\x0e2..hw.tre\
-    zor.messages.management.DisplayRotationR\x0fdisplayRotation\x12=\n\x1bpa\
-    ssphrase_always_on_device\x18\x08\x20\x01(\x08R\x18passphraseAlwaysOnDev\
-    ice\x12T\n\rsafety_checks\x18\t\x20\x01(\x0e2/.hw.trezor.messages.manage\
-    ment.SafetyCheckLevelR\x0csafetyChecks\x123\n\x15experimental_features\
-    \x18\n\x20\x01(\x08R\x14experimentalFeatures\x129\n\x19hide_passphrase_f\
-    rom_host\x18\x0b\x20\x01(\x08R\x16hidePassphraseFromHost\x12'\n\x0fhapti\
-    c_feedback\x18\r\x20\x01(\x08R\x0ehapticFeedback\x12+\n\x11homescreen_le\
-    ngth\x18\x0e\x20\x01(\rR\x10homescreenLength\x12:\n\x1aauto_lock_delay_b\
-    attery_ms\x18\x0f\x20\x01(\rR\x16autoLockDelayBatteryMs\"T\n\x0eChangeLa\
-    nguage\x12\x1f\n\x0bdata_length\x18\x01\x20\x02(\rR\ndataLength\x12!\n\
-    \x0cshow_display\x18\x02\x20\x01(\x08R\x0bshowDisplay\"T\n\x10DataChunkR\
-    equest\x12\x1f\n\x0bdata_length\x18\x01\x20\x02(\rR\ndataLength\x12\x1f\
-    \n\x0bdata_offset\x18\x02\x20\x02(\rR\ndataOffset\"-\n\x0cDataChunkAck\
-    \x12\x1d\n\ndata_chunk\x18\x01\x20\x02(\x0cR\tdataChunk\"\"\n\nApplyFlag\
-    s\x12\x14\n\x05flags\x18\x01\x20\x02(\rR\x05flags\"#\n\tChangePin\x12\
-    \x16\n\x06remove\x18\x01\x20\x01(\x08R\x06remove\"(\n\x0eChangeWipeCode\
-    \x12\x16\n\x06remove\x18\x01\x20\x01(\x08R\x06remove\"\xaa\x01\n\tSdProt\
-    ect\x12]\n\toperation\x18\x01\x20\x02(\x0e2?.hw.trezor.messages.manageme\
-    nt.SdProtect.SdProtectOperationTypeR\toperation\">\n\x16SdProtectOperati\
-    onType\x12\x0b\n\x07DISABLE\x10\0\x12\n\n\x06ENABLE\x10\x01\x12\x0b\n\
-    \x07REFRESH\x10\x02\"O\n\x04Ping\x12\x1a\n\x07message\x18\x01\x20\x01(\t\
-    :\0R\x07message\x12+\n\x11button_protection\x18\x02\x20\x01(\x08R\x10but\
-    tonProtection\"\x08\n\x06Cancel\"\x20\n\nGetEntropy\x12\x12\n\x04size\
-    \x18\x01\x20\x02(\rR\x04size\"#\n\x07Entropy\x12\x18\n\x07entropy\x18\
-    \x01\x20\x02(\x0cR\x07entropy\"/\n\x0fGetFirmwareHash\x12\x1c\n\tchallen\
-    ge\x18\x01\x20\x01(\x0cR\tchallenge\"\"\n\x0cFirmwareHash\x12\x12\n\x04h\
-    ash\x18\x01\x20\x02(\x0cR\x04hash\"2\n\x12AuthenticateDevice\x12\x1c\n\t\
-    challenge\x18\x01\x20\x02(\x0cR\tchallenge\"\xcb\x01\n\x11AuthenticityPr\
-    oof\x12/\n\x13optiga_certificates\x18\x01\x20\x03(\x0cR\x12optigaCertifi\
-    cates\x12)\n\x10optiga_signature\x18\x02\x20\x02(\x0cR\x0foptigaSignatur\
-    e\x12/\n\x13tropic_certificates\x18\x03\x20\x03(\x0cR\x12tropicCertifica\
-    tes\x12)\n\x10tropic_signature\x18\x04\x20\x01(\x0cR\x0ftropicSignature\
-    \"\x0c\n\nWipeDevice\"\xad\x02\n\nLoadDevice\x12\x1c\n\tmnemonics\x18\
-    \x01\x20\x03(\tR\tmnemonics\x12\x10\n\x03pin\x18\x03\x20\x01(\tR\x03pin\
-    \x123\n\x15passphrase_protection\x18\x04\x20\x01(\x08R\x14passphraseProt\
-    ection\x12\x1e\n\x08language\x18\x05\x20\x01(\tR\x08languageB\x02\x18\
-    \x01\x12\x14\n\x05label\x18\x06\x20\x01(\tR\x05label\x12#\n\rskip_checks\
-    um\x18\x07\x20\x01(\x08R\x0cskipChecksum\x12\x1f\n\x0bu2f_counter\x18\
-    \x08\x20\x01(\rR\nu2fCounter\x12!\n\x0cneeds_backup\x18\t\x20\x01(\x08R\
-    \x0bneedsBackup\x12\x1b\n\tno_backup\x18\n\x20\x01(\x08R\x08noBackup\"\
-    \x9d\x03\n\x0bResetDevice\x12\x1f\n\x08strength\x18\x02\x20\x01(\r:\x032\
-    56R\x08strength\x123\n\x15passphrase_protection\x18\x03\x20\x01(\x08R\
-    \x14passphraseProtection\x12%\n\x0epin_protection\x18\x04\x20\x01(\x08R\
-    \rpinProtection\x12\x1e\n\x08language\x18\x05\x20\x01(\tR\x08languageB\
-    \x02\x18\x01\x12\x14\n\x05label\x18\x06\x20\x01(\tR\x05label\x12\x1f\n\
-    \x0bu2f_counter\x18\x07\x20\x01(\rR\nu2fCounter\x12\x1f\n\x0bskip_backup\
-    \x18\x08\x20\x01(\x08R\nskipBackup\x12\x1b\n\tno_backup\x18\t\x20\x01(\
+    tchVersion\x12#\n\rbuild_version\x18=\x20\x01(\rR\x0cbuildVersion\x12'\n\
+    \x0fbootloader_mode\x18\x05\x20\x01(\x08R\x0ebootloaderMode\x12\x1b\n\td\
+    evice_id\x18\x06\x20\x01(\tR\x08deviceId\x12%\n\x0epin_protection\x18\
+    \x07\x20\x01(\x08R\rpinProtection\x123\n\x15passphrase_protection\x18\
+    \x08\x20\x01(\x08R\x14passphraseProtection\x12\x1a\n\x08language\x18\t\
+    \x20\x01(\tR\x08language\x12\x14\n\x05label\x18\n\x20\x01(\tR\x05label\
+    \x12\x20\n\x0binitialized\x18\x0c\x20\x01(\x08R\x0binitialized\x12\x1a\n\
+    \x08revision\x18\r\x20\x01(\x0cR\x08revision\x12'\n\x0fbootloader_hash\
+    \x18\x0e\x20\x01(\x0cR\x0ebootloaderHash\x12\x1a\n\x08imported\x18\x0f\
+    \x20\x01(\x08R\x08imported\x12\x1a\n\x08unlocked\x18\x10\x20\x01(\x08R\
+    \x08unlocked\x120\n\x12_passphrase_cached\x18\x11\x20\x01(\x08R\x10Passp\
+    hraseCachedB\x02\x18\x01\x12)\n\x10firmware_present\x18\x12\x20\x01(\x08\
+    R\x0ffirmwarePresent\x12k\n\x13backup_availability\x18\x13\x20\x01(\x0e2\
+    :.hw.trezor.messages.management.Features.BackupAvailabilityR\x12backupAv\
+    ailability\x12\x14\n\x05flags\x18\x14\x20\x01(\rR\x05flags\x12\x14\n\x05\
+    model\x18\x15\x20\x01(\tR\x05model\x12\x19\n\x08fw_major\x18\x16\x20\x01\
+    (\rR\x07fwMajor\x12\x19\n\x08fw_minor\x18\x17\x20\x01(\rR\x07fwMinor\x12\
+    \x19\n\x08fw_patch\x18\x18\x20\x01(\rR\x07fwPatch\x12\x19\n\x08fw_build\
+    \x18>\x20\x01(\rR\x07fwBuild\x12\x1b\n\tfw_vendor\x18\x19\x20\x01(\tR\
+    \x08fwVendor\x12+\n\x11unfinished_backup\x18\x1b\x20\x01(\x08R\x10unfini\
+    shedBackup\x12\x1b\n\tno_backup\x18\x1c\x20\x01(\x08R\x08noBackup\x12_\n\
+    \x0frecovery_status\x18\x1d\x20\x01(\x0e26.hw.trezor.messages.management\
+    .Features.RecoveryStatusR\x0erecoveryStatus\x12V\n\x0ccapabilities\x18\
+    \x1e\x20\x03(\x0e22.hw.trezor.messages.management.Features.CapabilityR\
+    \x0ccapabilities\x12J\n\x0bbackup_type\x18\x1f\x20\x01(\x0e2).hw.trezor.\
+    messages.management.BackupTypeR\nbackupType\x12&\n\x0fsd_card_present\
+    \x18\x20\x20\x01(\x08R\rsdCardPresent\x12#\n\rsd_protection\x18!\x20\x01\
+    (\x08R\x0csdProtection\x120\n\x14wipe_code_protection\x18\"\x20\x01(\x08\
+    R\x12wipeCodeProtection\x12\x1d\n\nsession_id\x18#\x20\x01(\x0cR\tsessio\
+    nId\x12=\n\x1bpassphrase_always_on_device\x18$\x20\x01(\x08R\x18passphra\
+    seAlwaysOnDevice\x12T\n\rsafety_checks\x18%\x20\x01(\x0e2/.hw.trezor.mes\
+    sages.management.SafetyCheckLevelR\x0csafetyChecks\x12+\n\x12auto_lock_d\
+    elay_ms\x18&\x20\x01(\rR\x0fautoLockDelayMs\x12Y\n\x10display_rotation\
+    \x18'\x20\x01(\x0e2..hw.trezor.messages.management.DisplayRotationR\x0fd\
+    isplayRotation\x123\n\x15experimental_features\x18(\x20\x01(\x08R\x14exp\
+    erimentalFeatures\x12\x12\n\x04busy\x18)\x20\x01(\x08R\x04busy\x12\\\n\
+    \x11homescreen_format\x18*\x20\x01(\x0e2/.hw.trezor.messages.management.\
+    HomescreenFormatR\x10homescreenFormat\x129\n\x19hide_passphrase_from_hos\
+    t\x18+\x20\x01(\x08R\x16hidePassphraseFromHost\x12%\n\x0einternal_model\
+    \x18,\x20\x01(\tR\rinternalModel\x12\x1d\n\nunit_color\x18-\x20\x01(\rR\
+    \tunitColor\x12!\n\x0cunit_btconly\x18.\x20\x01(\x08R\x0bunitBtconly\x12\
+    )\n\x10homescreen_width\x18/\x20\x01(\rR\x0fhomescreenWidth\x12+\n\x11ho\
+    mescreen_height\x180\x20\x01(\rR\x10homescreenHeight\x12+\n\x11bootloade\
+    r_locked\x181\x20\x01(\x08R\x10bootloaderLocked\x12>\n\x18language_versi\
+    on_matches\x182\x20\x01(\x08:\x04trueR\x16languageVersionMatches\x12%\n\
+    \x0eunit_packaging\x183\x20\x01(\rR\runitPackaging\x12'\n\x0fhaptic_feed\
+    back\x184\x20\x01(\x08R\x0ehapticFeedback\x12P\n\rrecovery_type\x185\x20\
+    \x01(\x0e2+.hw.trezor.messages.management.RecoveryTypeR\x0crecoveryType\
+    \x12\x1d\n\noptiga_sec\x186\x20\x01(\rR\toptigaSec\x12\x10\n\x03soc\x187\
+    \x20\x01(\rR\x03soc\x12-\n\x12firmware_corrupted\x188\x20\x01(\x08R\x11f\
+    irmwareCorrupted\x12:\n\x1aauto_lock_delay_battery_ms\x189\x20\x01(\rR\
+    \x16autoLockDelayBatteryMs\x12\x10\n\x03led\x18:\x20\x01(\x08R\x03led\
+    \x12#\n\rusb_connected\x18;\x20\x01(\x08R\x0cusbConnected\x12-\n\x12wire\
+    less_connected\x18<\x20\x01(\x08R\x11wirelessConnected\"C\n\x12BackupAva\
+    ilability\x12\x10\n\x0cNotAvailable\x10\0\x12\x0c\n\x08Required\x10\x01\
+    \x12\r\n\tAvailable\x10\x02\"7\n\x0eRecoveryStatus\x12\x0b\n\x07Nothing\
+    \x10\0\x12\x0c\n\x08Recovery\x10\x01\x12\n\n\x06Backup\x10\x02\"\xad\x05\
+    \n\nCapability\x12\x1c\n\x12Capability_Bitcoin\x10\x01\x1a\x04\x80\xa6\
+    \x1d\x01\x12\x1b\n\x17Capability_Bitcoin_like\x10\x02\x12\x16\n\x12Capab\
+    ility_Binance\x10\x03\x12\x16\n\x12Capability_Cardano\x10\x04\x12\x1b\n\
+    \x11Capability_Crypto\x10\x05\x1a\x04\x80\xa6\x1d\x01\x12\x12\n\x0eCapab\
+    ility_EOS\x10\x06\x12\x17\n\x13Capability_Ethereum\x10\x07\x12\x17\n\x0f\
+    Capability_Lisk\x10\x08\x1a\x02\x08\x01\x12\x15\n\x11Capability_Monero\
+    \x10\t\x12\x12\n\x0eCapability_NEM\x10\n\x12\x15\n\x11Capability_Ripple\
+    \x10\x0b\x12\x16\n\x12Capability_Stellar\x10\x0c\x12\x14\n\x10Capability\
+    _Tezos\x10\r\x12\x12\n\x0eCapability_U2F\x10\x0e\x12\x1b\n\x11Capability\
+    _Shamir\x10\x0f\x1a\x04\x80\xa6\x1d\x01\x12!\n\x17Capability_ShamirGroup\
+    s\x10\x10\x1a\x04\x80\xa6\x1d\x01\x12$\n\x1aCapability_PassphraseEntry\
+    \x10\x11\x1a\x04\x80\xa6\x1d\x01\x12\x15\n\x11Capability_Solana\x10\x12\
+    \x12!\n\x17Capability_Translations\x10\x13\x1a\x04\x80\xa6\x1d\x01\x12\
+    \x20\n\x1bCapability_MimbleWimbleCoin\x10\xc7\x01\x12\x1f\n\x15Capabilit\
+    y_Brightness\x10\x14\x1a\x04\x80\xa6\x1d\x01\x12\x1b\n\x11Capability_Hap\
+    tic\x10\x15\x1a\x04\x80\xa6\x1d\x01\x12\x18\n\x0eCapability_BLE\x10\x16\
+    \x1a\x04\x80\xa6\x1d\x01\x12\x18\n\x0eCapability_NFC\x10\x17\x1a\x04\x80\
+    \xa6\x1d\x01\x12\x13\n\x0fCapability_Tron\x10\x18\x1a\x04\xc8\xf3\x18\
+    \x01\"\x0c\n\nLockDevice\"&\n\x07SetBusy\x12\x1b\n\texpiry_ms\x18\x01\
+    \x20\x01(\rR\x08expiryMs\"\x0c\n\nEndSession\"\xdd\x05\n\rApplySettings\
+    \x12\x1e\n\x08language\x18\x01\x20\x01(\tR\x08languageB\x02\x18\x01\x12\
+    \x14\n\x05label\x18\x02\x20\x01(\tR\x05label\x12%\n\x0euse_passphrase\
+    \x18\x03\x20\x01(\x08R\rusePassphrase\x12\x1e\n\nhomescreen\x18\x04\x20\
+    \x01(\x0cR\nhomescreen\x120\n\x12_passphrase_source\x18\x05\x20\x01(\rR\
+    \x10PassphraseSourceB\x02\x18\x01\x12+\n\x12auto_lock_delay_ms\x18\x06\
+    \x20\x01(\rR\x0fautoLockDelayMs\x12Y\n\x10display_rotation\x18\x07\x20\
+    \x01(\x0e2..hw.trezor.messages.management.DisplayRotationR\x0fdisplayRot\
+    ation\x12=\n\x1bpassphrase_always_on_device\x18\x08\x20\x01(\x08R\x18pas\
+    sphraseAlwaysOnDevice\x12T\n\rsafety_checks\x18\t\x20\x01(\x0e2/.hw.trez\
+    or.messages.management.SafetyCheckLevelR\x0csafetyChecks\x123\n\x15exper\
+    imental_features\x18\n\x20\x01(\x08R\x14experimentalFeatures\x129\n\x19h\
+    ide_passphrase_from_host\x18\x0b\x20\x01(\x08R\x16hidePassphraseFromHost\
+    \x12'\n\x0fhaptic_feedback\x18\r\x20\x01(\x08R\x0ehapticFeedback\x12+\n\
+    \x11homescreen_length\x18\x0e\x20\x01(\rR\x10homescreenLength\x12:\n\x1a\
+    auto_lock_delay_battery_ms\x18\x0f\x20\x01(\rR\x16autoLockDelayBatteryMs\
+    \"T\n\x0eChangeLanguage\x12\x1f\n\x0bdata_length\x18\x01\x20\x02(\rR\nda\
+    taLength\x12!\n\x0cshow_display\x18\x02\x20\x01(\x08R\x0bshowDisplay\"T\
+    \n\x10DataChunkRequest\x12\x1f\n\x0bdata_length\x18\x01\x20\x02(\rR\ndat\
+    aLength\x12\x1f\n\x0bdata_offset\x18\x02\x20\x02(\rR\ndataOffset\"-\n\
+    \x0cDataChunkAck\x12\x1d\n\ndata_chunk\x18\x01\x20\x02(\x0cR\tdataChunk\
+    \"\"\n\nApplyFlags\x12\x14\n\x05flags\x18\x01\x20\x02(\rR\x05flags\"#\n\
+    \tChangePin\x12\x16\n\x06remove\x18\x01\x20\x01(\x08R\x06remove\"(\n\x0e\
+    ChangeWipeCode\x12\x16\n\x06remove\x18\x01\x20\x01(\x08R\x06remove\"\xaa\
+    \x01\n\tSdProtect\x12]\n\toperation\x18\x01\x20\x02(\x0e2?.hw.trezor.mes\
+    sages.management.SdProtect.SdProtectOperationTypeR\toperation\">\n\x16Sd\
+    ProtectOperationType\x12\x0b\n\x07DISABLE\x10\0\x12\n\n\x06ENABLE\x10\
+    \x01\x12\x0b\n\x07REFRESH\x10\x02\"O\n\x04Ping\x12\x1a\n\x07message\x18\
+    \x01\x20\x01(\t:\0R\x07message\x12+\n\x11button_protection\x18\x02\x20\
+    \x01(\x08R\x10buttonProtection\"\x08\n\x06Cancel\"\x20\n\nGetEntropy\x12\
+    \x12\n\x04size\x18\x01\x20\x02(\rR\x04size\"#\n\x07Entropy\x12\x18\n\x07\
+    entropy\x18\x01\x20\x02(\x0cR\x07entropy\"/\n\x0fGetFirmwareHash\x12\x1c\
+    \n\tchallenge\x18\x01\x20\x01(\x0cR\tchallenge\"\"\n\x0cFirmwareHash\x12\
+    \x12\n\x04hash\x18\x01\x20\x02(\x0cR\x04hash\"2\n\x12AuthenticateDevice\
+    \x12\x1c\n\tchallenge\x18\x01\x20\x02(\x0cR\tchallenge\"\xcb\x01\n\x11Au\
+    thenticityProof\x12/\n\x13optiga_certificates\x18\x01\x20\x03(\x0cR\x12o\
+    ptigaCertificates\x12)\n\x10optiga_signature\x18\x02\x20\x02(\x0cR\x0fop\
+    tigaSignature\x12/\n\x13tropic_certificates\x18\x03\x20\x03(\x0cR\x12tro\
+    picCertificates\x12)\n\x10tropic_signature\x18\x04\x20\x01(\x0cR\x0ftrop\
+    icSignature\"\x0c\n\nWipeDevice\"\xda\x02\n\nLoadDevice\x12\x1c\n\tmnemo\
+    nics\x18\x01\x20\x03(\tR\tmnemonics\x12\x10\n\x03pin\x18\x03\x20\x01(\tR\
+    \x03pin\x123\n\x15passphrase_protection\x18\x04\x20\x01(\x08R\x14passphr\
+    aseProtection\x12\x1e\n\x08language\x18\x05\x20\x01(\tR\x08languageB\x02\
+    \x18\x01\x12\x14\n\x05label\x18\x06\x20\x01(\tR\x05label\x12#\n\rskip_ch\
+    ecksum\x18\x07\x20\x01(\x08R\x0cskipChecksum\x12\x1f\n\x0bu2f_counter\
+    \x18\x08\x20\x01(\rR\nu2fCounter\x12!\n\x0cneeds_backup\x18\t\x20\x01(\
+    \x08R\x0bneedsBackup\x12\x1b\n\tno_backup\x18\n\x20\x01(\x08R\x08noBacku\
+    p\x12+\n\x11unfinished_backup\x18\x0b\x20\x01(\x08R\x10unfinishedBackup\
+    \"\x9d\x03\n\x0bResetDevice\x12\x1f\n\x08strength\x18\x02\x20\x01(\r:\
+    \x03256R\x08strength\x123\n\x15passphrase_protection\x18\x03\x20\x01(\
+    \x08R\x14passphraseProtection\x12%\n\x0epin_protection\x18\x04\x20\x01(\
+    \x08R\rpinProtection\x12\x1e\n\x08language\x18\x05\x20\x01(\tR\x08langua\
+    geB\x02\x18\x01\x12\x14\n\x05label\x18\x06\x20\x01(\tR\x05label\x12\x1f\
+    \n\x0bu2f_counter\x18\x07\x20\x01(\rR\nu2fCounter\x12\x1f\n\x0bskip_back\
+    up\x18\x08\x20\x01(\x08R\nskipBackup\x12\x1b\n\tno_backup\x18\t\x20\x01(\
     \x08R\x08noBackup\x12Q\n\x0bbackup_type\x18\n\x20\x01(\x0e2).hw.trezor.m\
     essages.management.BackupType:\x05Bip39R\nbackupType\x12#\n\rentropy_che\
     ck\x18\x0b\x20\x01(\x08R\x0centropyCheckJ\x04\x08\x01\x10\x02\"\xe5\x01\
@@ -12378,32 +12461,31 @@ static file_descriptor_proto_data: &'static [u8] = b"\
     Counter\x12\x1f\n\x0bu2f_counter\x18\x01\x20\x02(\rR\nu2fCounter\"\x13\n\
     \x11GetNextU2FCounter\"1\n\x0eNextU2FCounter\x12\x1f\n\x0bu2f_counter\
     \x18\x01\x20\x02(\rR\nu2fCounter\"\x11\n\x0fDoPreauthorized\"\x16\n\x14P\
-    reauthorizedRequest\"\x15\n\x13CancelAuthorization\"\x9a\x02\n\x12Reboot\
+    reauthorizedRequest\"\x15\n\x13CancelAuthorization\"\xeb\x01\n\x12Reboot\
     ToBootloader\x12o\n\x0cboot_command\x18\x01\x20\x01(\x0e2=.hw.trezor.mes\
     sages.management.RebootToBootloader.BootCommand:\rSTOP_AND_WAITR\x0bboot\
     Command\x12'\n\x0ffirmware_header\x18\x02\x20\x01(\x0cR\x0efirmwareHeade\
-    r\x123\n\x14language_data_length\x18\x03\x20\x01(\r:\x010R\x12languageDa\
-    taLength\"5\n\x0bBootCommand\x12\x11\n\rSTOP_AND_WAIT\x10\0\x12\x13\n\
-    \x0fINSTALL_UPGRADE\x10\x01\"\x10\n\x08GetNonce:\x04\x88\xb2\x19\x01\"#\
-    \n\x05Nonce\x12\x14\n\x05nonce\x18\x01\x20\x02(\x0cR\x05nonce:\x04\x88\
-    \xb2\x19\x01\";\n\nUnlockPath\x12\x1b\n\taddress_n\x18\x01\x20\x03(\rR\
-    \x08addressN\x12\x10\n\x03mac\x18\x02\x20\x01(\x0cR\x03mac\"'\n\x13Unloc\
-    kedPathRequest\x12\x10\n\x03mac\x18\x01\x20\x02(\x0cR\x03mac\"\x14\n\x12\
-    ShowDeviceTutorial\"\x12\n\x10UnlockBootloader\"%\n\rSetBrightness\x12\
-    \x14\n\x05value\x18\x01\x20\x01(\rR\x05value\"\x11\n\x0fGetSerialNumber\
-    \"3\n\x0cSerialNumber\x12#\n\rserial_number\x18\x01\x20\x02(\tR\x0cseria\
-    lNumber*\x99\x01\n\nBackupType\x12\t\n\x05Bip39\x10\0\x12\x10\n\x0cSlip3\
-    9_Basic\x10\x01\x12\x13\n\x0fSlip39_Advanced\x10\x02\x12\x1c\n\x18Slip39\
-    _Single_Extendable\x10\x03\x12\x1b\n\x17Slip39_Basic_Extendable\x10\x04\
-    \x12\x1e\n\x1aSlip39_Advanced_Extendable\x10\x05*G\n\x10SafetyCheckLevel\
-    \x12\n\n\x06Strict\x10\0\x12\x10\n\x0cPromptAlways\x10\x01\x12\x15\n\x11\
-    PromptTemporarily\x10\x02*=\n\x0fDisplayRotation\x12\t\n\x05North\x10\0\
-    \x12\x08\n\x04East\x10Z\x12\n\n\x05South\x10\xb4\x01\x12\t\n\x04West\x10\
-    \x8e\x02*0\n\x10HomescreenFormat\x12\x08\n\x04Toif\x10\x01\x12\x08\n\x04\
-    Jpeg\x10\x02\x12\x08\n\x04ToiG\x10\x03*H\n\x0cRecoveryType\x12\x12\n\x0e\
-    NormalRecovery\x10\0\x12\n\n\x06DryRun\x10\x01\x12\x18\n\x14UnlockRepeat\
-    edBackup\x10\x02BB\n#com.satoshilabs.trezor.lib.protobufB\x17TrezorMessa\
-    geManagement\x80\xa6\x1d\x01\
+    r\"5\n\x0bBootCommand\x12\x11\n\rSTOP_AND_WAIT\x10\0\x12\x13\n\x0fINSTAL\
+    L_UPGRADE\x10\x01J\x04\x08\x03\x10\x04\"\n\n\x08GetNonce\"\x1d\n\x05Nonc\
+    e\x12\x14\n\x05nonce\x18\x01\x20\x02(\x0cR\x05nonce\";\n\nUnlockPath\x12\
+    \x1b\n\taddress_n\x18\x01\x20\x03(\rR\x08addressN\x12\x10\n\x03mac\x18\
+    \x02\x20\x01(\x0cR\x03mac\"'\n\x13UnlockedPathRequest\x12\x10\n\x03mac\
+    \x18\x01\x20\x02(\x0cR\x03mac\"\x14\n\x12ShowDeviceTutorial\"\x12\n\x10U\
+    nlockBootloader\"%\n\rSetBrightness\x12\x14\n\x05value\x18\x01\x20\x01(\
+    \rR\x05value\"\x11\n\x0fGetSerialNumber\"3\n\x0cSerialNumber\x12#\n\rser\
+    ial_number\x18\x01\x20\x02(\tR\x0cserialNumber*\x99\x01\n\nBackupType\
+    \x12\t\n\x05Bip39\x10\0\x12\x10\n\x0cSlip39_Basic\x10\x01\x12\x13\n\x0fS\
+    lip39_Advanced\x10\x02\x12\x1c\n\x18Slip39_Single_Extendable\x10\x03\x12\
+    \x1b\n\x17Slip39_Basic_Extendable\x10\x04\x12\x1e\n\x1aSlip39_Advanced_E\
+    xtendable\x10\x05*G\n\x10SafetyCheckLevel\x12\n\n\x06Strict\x10\0\x12\
+    \x10\n\x0cPromptAlways\x10\x01\x12\x15\n\x11PromptTemporarily\x10\x02*=\
+    \n\x0fDisplayRotation\x12\t\n\x05North\x10\0\x12\x08\n\x04East\x10Z\x12\
+    \n\n\x05South\x10\xb4\x01\x12\t\n\x04West\x10\x8e\x02*0\n\x10HomescreenF\
+    ormat\x12\x08\n\x04Toif\x10\x01\x12\x08\n\x04Jpeg\x10\x02\x12\x08\n\x04T\
+    oiG\x10\x03*H\n\x0cRecoveryType\x12\x12\n\x0eNormalRecovery\x10\0\x12\n\
+    \n\x06DryRun\x10\x01\x12\x18\n\x14UnlockRepeatedBackup\x10\x02BB\n#com.s\
+    atoshilabs.trezor.lib.protobufB\x17TrezorMessageManagement\x80\xa6\x1d\
+    \x01\
 ";
 
 /// `FileDescriptorProto` object which was a source for this generated file

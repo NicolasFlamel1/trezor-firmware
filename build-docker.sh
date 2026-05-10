@@ -134,10 +134,10 @@ COMMIT_HASH="$(git rev-parse "$TAG")"
 PRODUCTION=${PRODUCTION:-1}
 
 if which wget > /dev/null ; then
-  wget --no-config -nc -P ci/ "$CONTAINER_FS_URL"
+  wget --no-verbose --no-config -nc -P ci/ "$CONTAINER_FS_URL"
 else
   if ! [ -f "ci/$ALPINE_TARBALL" ]; then
-    curl -L -o "ci/$ALPINE_TARBALL" "$CONTAINER_FS_URL"
+    curl --no-progress-meter -L -o "ci/$ALPINE_TARBALL" "$CONTAINER_FS_URL"
   fi
 fi
 
@@ -213,7 +213,7 @@ fi  # init
 cat <<EOF >> "$SCRIPT_NAME"
   $GIT_CLEAN_REPO
   git submodule update --init --recursive
-  uv sync
+  uv sync --locked
   cd core/embed/rust
   cargo fetch
 
@@ -228,7 +228,6 @@ echo
 
 $DOCKER run \
   --network=host \
-  -t \
   -v "$PWD:/local" \
   -v "$PWD/build:/build" \
   --name "$SNAPSHOT_NAME" \
@@ -276,16 +275,19 @@ for TREZOR_MODEL in ${MODELS[@]}; do
       set -e -o pipefail
       cd /reproducible-build/trezor-firmware/core
       $GIT_CLEAN_REPO
+      rm -rf /build/*
       uv run make clean vendor $MAKE_TARGETS QUIET_MODE=1
-      for item in bootloader firmware prodtest; do
-        if [ -f build/\$item/\$item.bin ]; then
+      for item in bootloader secmon firmware prodtest; do
+        if [ -s build/\$item/\$item.bin ]; then
           uv run ../python/tools/firmware-fingerprint.py \
                       -o build/\$item/\$item.bin.fingerprint \
                       build/\$item/\$item.bin
+
+          # copy only the artifacts to the build output directory
+          mkdir /build/\$item/
+          cp -v build/\$item/\$item* /build/\$item/
         fi
       done
-      rm -rf /build/*
-      cp -r build/* /build
       chown -R $USER:$GROUP /build
 EOF
 

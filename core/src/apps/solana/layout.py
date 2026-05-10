@@ -22,7 +22,7 @@ if TYPE_CHECKING:
     from typing import Sequence
 
     from trezor.messages import PaymentRequest, SolanaTokenInfo
-    from trezor.ui.layouts import PropertyType
+    from trezor.ui.layouts import PropertyType, StrPropertyType
 
     from .definitions import Definitions
     from .transaction import Fee
@@ -45,15 +45,15 @@ def _format_path(path: list[int]) -> str:
 
 def _get_address_reference_props(
     address: AddressReference, display_name: str
-) -> Sequence[PropertyType]:
+) -> Sequence[StrPropertyType]:
     return (
         (
+            None,
             TR.solana__is_provided_via_lookup_table_template.format(display_name),
             None,
-            None,
         ),
-        (f"{TR.solana__lookup_table_address}:", base58.encode(address[0]), True),
-        (f"{TR.solana__account_index}:", f"{address[1]}", True),
+        (TR.solana__lookup_table_address, base58.encode(address[0]), True),
+        (TR.solana__account_index, f"{address[1]}", True),
     )
 
 
@@ -181,7 +181,7 @@ async def confirm_instruction(
 
             signers.append(
                 (
-                    f"{TR.words__signer} {i}{path_str}:",
+                    f"{TR.words__signer} {i}{path_str}",
                     base58.encode(multisig_signer[0]),
                     True,
                 )
@@ -235,7 +235,7 @@ async def confirm_unsupported_instruction_details(
             title,
             (
                 (
-                    f"{TR.solana__instruction_data}:",
+                    f"{TR.solana__instruction_data}",
                     bytes(instruction.instruction_data),
                     True,
                 ),
@@ -254,7 +254,7 @@ async def confirm_unsupported_instruction_details(
 
                 accounts.append(
                     (
-                        f"{TR.words__account} {i}{path_str} {address_type}:",
+                        f"{TR.words__account} {i}{path_str} {address_type}",
                         base58.encode(account_public_key),
                         True,
                     )
@@ -329,7 +329,7 @@ async def confirm_token_transfer(
     fee: Fee,
     blockhash: bytes,
 ) -> None:
-    items: list[PropertyType] = []
+    items: list[StrPropertyType] = []
     if token_account != destination_account:
         items.append(
             (TR.solana__associated_token_account, base58.encode(token_account), True)
@@ -358,10 +358,10 @@ async def confirm_token_transfer(
     await confirm_custom_transaction(amount, decimals, token.symbol, fee)
 
 
-def _fee_ui_info(fee: Fee | None) -> tuple[str, str, list[PropertyType]]:
-    fee_items: list[PropertyType] = []
+def _fee_ui_info(fee: Fee | None) -> tuple[str, str, list[StrPropertyType]]:
+    fee_items: list[StrPropertyType] = []
     if fee is None:
-        fee_title = f"{TR.solana__max_fees_rent}:"
+        fee_title = f"{TR.solana__max_fees_rent}"
         fee_str = TR.words__unknown
     else:
         fee_str = format_amount_unit(format_amount(fee.total, 9), "SOL")
@@ -371,11 +371,11 @@ def _fee_ui_info(fee: Fee | None) -> tuple[str, str, list[PropertyType]]:
             priority_fee_str = format_amount_unit(format_amount(fee.priority, 9), "SOL")
             fee_items.append((TR.solana__priority_fee, priority_fee_str, True))
         if fee.rent:
-            fee_title = f"{TR.solana__max_fees_rent}:"
+            fee_title = f"{TR.solana__max_fees_rent}"
             rent_str = format_amount_unit(format_amount(fee.rent, 9), "SOL")
             fee_items.append((TR.solana__max_rent_fee, rent_str, True))
         else:
-            fee_title = f"{TR.words__transaction_fee}:"
+            fee_title = f"{TR.words__transaction_fee}"
     return fee_title, fee_str, fee_items
 
 
@@ -455,7 +455,7 @@ async def confirm_stake_transaction(
             True,
         ),
         amount_item=(
-            f"{TR.words__amount}:",
+            f"{TR.words__amount}",
             format_amount_unit(format_amount(create.lamports, 9), "SOL"),
             True,
         ),
@@ -505,7 +505,7 @@ async def confirm_claim_transaction(
         vote_account="",
         stake_item=None,
         amount_item=(
-            f"{TR.words__amount}:",
+            f"{TR.words__amount}",
             format_amount_unit(format_amount(total_amount, 9), "SOL"),
             True,
         ),
@@ -540,12 +540,13 @@ async def confirm_payment_request(
     verified_payment_request: PaymentRequest,
 ) -> None:
     from trezor.ui.layouts import confirm_payment_request
+    from trezor.ui.layouts.slip24 import Refund, Trade
 
     total_amount = format_amount_unit(format_amount(amount, decimals), token.symbol)
 
     texts: list[tuple[str | None, str]] = []
-    refunds: list[tuple[str, str | None, str | None]] = []
-    trades: list[tuple[str, str, str, str | None, str | None]] = []
+    refunds = []
+    trades = []
     for memo in verified_payment_request.memos:
         if memo.text_memo is not None:
             texts.append((None, memo.text_memo.text))
@@ -553,13 +554,13 @@ async def confirm_payment_request(
             texts.append((memo.text_details_memo.title, memo.text_details_memo.text))
         elif memo.refund_memo:
             refund_account_path = address_n_to_str(memo.refund_memo.address_n)
-            refunds.append((memo.refund_memo.address, None, refund_account_path))
+            refunds.append(Refund(memo.refund_memo.address, None, refund_account_path))
         elif memo.coin_purchase_memo:
             coin_purchase_account_path = address_n_to_str(
                 memo.coin_purchase_memo.address_n
             )
             trades.append(
-                (
+                Trade(
                     f"-\u00a0{total_amount}",
                     f"+\u00a0{memo.coin_purchase_memo.amount}",
                     memo.coin_purchase_memo.address,
@@ -571,7 +572,7 @@ async def confirm_payment_request(
             raise wire.DataError("Unrecognized memo type in payment request memo.")
 
     account_path = address_n_to_str(address_n) if address_n else None
-    account_items: list[PropertyType] = []
+    account_items: list[StrPropertyType] = []
     if account_path:
         account_items.append((TR.address_details__derivation_path, account_path, True))
 
@@ -586,5 +587,4 @@ async def confirm_payment_request(
         account_items,
         fee_str,
         fee_items,
-        None,
     )

@@ -190,7 +190,7 @@ def confirm_words(debug: "DebugLink", words: list[str], skip_intro=False) -> Non
             word_pos = int(word_pos_match.group(0))
             # Unifying both the buttons and words to lowercase
             btn_texts = [
-                text.lower() for text in layout.tt_check_seed_button_contents()
+                text.lower() for text in layout.bolt_check_seed_button_contents()
             ]
             wanted_word = words[word_pos - 1].lower()
             button_pos = btn_texts.index(wanted_word)
@@ -201,8 +201,8 @@ def confirm_words(debug: "DebugLink", words: list[str], skip_intro=False) -> Non
         debug.press_right()
         layout = debug.read_layout()
         for _ in range(3):
-            # "SELECT 2ND WORD"
-            #         ^
+            # "SELECT WORD 2 of 20"
+            #              ^
             word_pos_match = re.search(r"\d+", layout.title())
             assert word_pos_match is not None
             word_pos = int(word_pos_match.group(0))
@@ -225,7 +225,7 @@ def confirm_words(debug: "DebugLink", words: list[str], skip_intro=False) -> Non
             word_pos = int(word_pos_match.group(0))
             # Unifying both the buttons and words to lowercase
             btn_texts = [
-                text.lower() for text in layout.tt_check_seed_button_contents()
+                text.lower() for text in layout.bolt_check_seed_button_contents()
             ]
             wanted_word = words[word_pos - 1].lower()
             button_pos = btn_texts.index(wanted_word)
@@ -249,7 +249,7 @@ def confirm_words(debug: "DebugLink", words: list[str], skip_intro=False) -> Non
             word_pos = int(word_pos_match.group(0))
             # Unifying both the buttons and words to lowercase
             btn_texts = [
-                text.lower() for text in layout.tt_check_seed_button_contents()
+                text.lower() for text in layout.bolt_check_seed_button_contents()
             ]
             wanted_word = words[word_pos - 1].lower()
             button_pos = btn_texts.index(wanted_word)

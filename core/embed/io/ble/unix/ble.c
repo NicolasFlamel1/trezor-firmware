@@ -1,7 +1,28 @@
+/*
+ * This file is part of the Trezor project, https://trezor.io/
+ *
+ * Copyright (c) SatoshiLabs
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+#include <trezor_rtl.h>
+
 #include <io/ble.h>
 #include <io/unix/sock.h>
+#include <sys/logging.h>
 #include <sys/sysevent_source.h>
-#include <trezor_rtl.h>
 
 #include <arpa/inet.h>
 #include <stdlib.h>
@@ -10,12 +31,15 @@
 #include <time.h>
 #include <unistd.h>
 
+LOG_DECLARE(ble_driver)
+
 static const uint16_t DATA_PORT_OFFSET = 4;  // see usb_config.c
 static const uint16_t EVENT_PORT_OFFSET = 5;
 
 typedef struct {
   ble_mode_t mode_current;
   bool initialized;
+  bool comm_running;
   bool enabled;
   bool pairing_requested;
   uint8_t adv_name[BLE_ADV_NAME_LEN];
@@ -81,11 +105,12 @@ static void bonds_remove(ble_driver_t *drv, const bt_le_addr_t *addr) {
 }
 
 static bool is_enabled(const ble_driver_t *drv) {
-  return (drv->initialized && drv->enabled);
+  return (drv->initialized && drv->enabled && drv->comm_running);
 }
 
 bool ble_init(void) {
   ble_driver_t *drv = &g_ble_driver;
+  memset(drv, 0, sizeof(*drv));
   sock_init(&drv->data_sock);
   sock_init(&drv->event_sock);
   if (!syshandle_register(SYSHANDLE_BLE, &ble_handle_vmt, drv)) {
@@ -95,22 +120,6 @@ bool ble_init(void) {
   if (!syshandle_register(SYSHANDLE_BLE_IFACE_0, &ble_iface_handle_vmt, drv)) {
     goto cleanup;
   }
-  return true;
-
-cleanup:
-  memset(drv, 0, sizeof(ble_driver_t));
-  printf("unix/ble: init failed\n");
-  return false;
-}
-
-void ble_deinit(void) {
-  syshandle_unregister(SYSHANDLE_BLE_IFACE_0);
-  syshandle_unregister(SYSHANDLE_BLE);
-}
-
-void ble_start(void) {
-  ble_driver_t *drv = &g_ble_driver;
-  memset(drv, 0, sizeof(*drv));
 
   const char *ip = getenv("TREZOR_UDP_IP");
   const char *port_base_str = getenv("TREZOR_UDP_PORT");
@@ -120,6 +129,30 @@ void ble_start(void) {
   sock_start(&drv->event_sock, ip, port_base + EVENT_PORT_OFFSET);
 
   drv->initialized = true;
+  drv->enabled = true;
+  return true;
+
+cleanup:
+  memset(drv, 0, sizeof(ble_driver_t));
+  LOG_ERR("init failed");
+  return false;
+}
+
+void ble_deinit(void) {
+  ble_driver_t *drv = &g_ble_driver;
+
+  memset(drv, 0, sizeof(ble_driver_t));
+
+  sock_stop(&drv->data_sock);
+  sock_stop(&drv->event_sock);
+
+  syshandle_unregister(SYSHANDLE_BLE_IFACE_0);
+  syshandle_unregister(SYSHANDLE_BLE);
+}
+
+void ble_start(void) {
+  ble_driver_t *drv = &g_ble_driver;
+  drv->comm_running = true;
 }
 
 void ble_stop(void) {
@@ -128,9 +161,7 @@ void ble_stop(void) {
     return;
   }
 
-  sock_stop(&drv->data_sock);
-  sock_stop(&drv->event_sock);
-  drv->initialized = false;
+  drv->comm_running = false;
 }
 
 static bool send_to_emu(char cmdtype) {
@@ -148,7 +179,7 @@ static bool send_to_emu(char cmdtype) {
 
   ssize_t r = sock_sendto(&drv->event_sock, &command, sizeof(command));
   if (r != sizeof(command)) {
-    printf("unix/ble: failed to write command %c: %zd\n", cmdtype, r);
+    LOG_ERR("failed to write command %c: %zd", cmdtype, r);
   }
 
   return true;
@@ -156,7 +187,7 @@ static bool send_to_emu(char cmdtype) {
 
 bool ble_switch_off(void) {
   ble_driver_t *drv = &g_ble_driver;
-  if (!is_enabled(drv)) {
+  if (!drv->initialized) {
     return false;
   }
   drv->mode_current = BLE_MODE_OFF;
@@ -166,7 +197,7 @@ bool ble_switch_off(void) {
 
 bool ble_switch_on(void) {
   ble_driver_t *drv = &g_ble_driver;
-  if (!is_enabled(drv)) {
+  if (!drv->initialized) {
     return false;
   }
   if (drv->connected) {
@@ -189,7 +220,7 @@ bool ble_enter_pairing_mode(const uint8_t *name, size_t name_len) {
 
 bool ble_disconnect(void) {
   ble_driver_t *drv = &g_ble_driver;
-  if (!is_enabled(drv)) {
+  if (!drv->initialized) {
     return false;
   }
   drv->connected = false;
@@ -199,10 +230,10 @@ bool ble_disconnect(void) {
 
 bool ble_erase_bonds(void) {
   ble_driver_t *drv = &g_ble_driver;
-  if (!is_enabled(drv)) {
+  if (!drv->initialized) {
     return false;
   }
-  printf("unix/ble: erase bonds\n");
+  LOG_INF("erase bonds");
   memset(drv->bonds, 0, sizeof(drv->bonds));
   drv->bonds_len = 0;
   drv->connected = false;
@@ -223,7 +254,7 @@ bool ble_allow_pairing(const uint8_t *pairing_code) {
 
 bool ble_reject_pairing(void) {
   ble_driver_t *drv = &g_ble_driver;
-  if (!is_enabled(drv)) {
+  if (!drv->initialized) {
     return false;
   }
   drv->pairing_requested = false;
@@ -234,7 +265,7 @@ bool ble_reject_pairing(void) {
 
 bool ble_keep_connection(void) {
   ble_driver_t *drv = &g_ble_driver;
-  if (!is_enabled(drv)) {
+  if (!drv->initialized) {
     return false;
   }
   drv->mode_current = BLE_MODE_KEEP_CONNECTION;
@@ -243,7 +274,7 @@ bool ble_keep_connection(void) {
 
 bool ble_get_event(ble_event_t *event) {
   ble_driver_t *drv = &g_ble_driver;
-  if (!is_enabled(drv)) {
+  if (!drv->initialized) {
     return false;
   }
 
@@ -252,7 +283,7 @@ bool ble_get_event(ble_event_t *event) {
   if (r <= 0) {
     return false;
   } else if (r > sizeof(ble_event_t)) {
-    printf("unix/ble: event packet too long: %zd\n", r);
+    LOG_ERR("event packet too long: %zd", r);
     return false;
   }
 
@@ -292,14 +323,14 @@ bool ble_get_event(ble_event_t *event) {
       send_to_emu(' ');
       break;
     case BLE_CONNECTION_CHANGED:
-      printf("unix/ble: CONNECTION_CHANGED not implemented\n");
+      LOG_WARN("CONNECTION_CHANGED not implemented");
       break;
     case BLE_EMULATOR_PING:
       send_to_emu(' ');
       return ble_get_event(event);  // do not forward to app
       break;
     default:
-      printf("unix/ble: unknown event type\n");
+      LOG_WARN("unknown event type");
       break;
   }
 
@@ -311,7 +342,7 @@ void ble_get_state(ble_state_t *state) {
   const ble_driver_t *drv = &g_ble_driver;
   memset(state, 0, sizeof(ble_state_t));
 
-  if (!is_enabled(drv)) {
+  if (!drv->initialized) {
     return;
   }
 
@@ -341,7 +372,7 @@ void ble_get_advertising_name(char *name, size_t max_len) {
     return;
   }
 
-  if (!is_enabled(drv)) {
+  if (!drv->initialized) {
     memset(name, 0, max_len);
     return;
   }
@@ -365,7 +396,7 @@ bool ble_write(const uint8_t *data, uint16_t len) {
   }
 
   if (!drv->connected) {
-    printf("unix/ble: ble_write while disconnected\n");
+    LOG_ERR("ble_write while disconnected");
     return false;
   }
 
@@ -389,7 +420,7 @@ uint32_t ble_read(uint8_t *data, uint16_t max_len) {
   }
 
   if (!drv->connected) {
-    printf("unix/ble: ble_read while disconnected\n");
+    LOG_ERR("ble_read while disconnected");
     return false;
   }
 
@@ -406,12 +437,12 @@ uint32_t ble_read(uint8_t *data, uint16_t max_len) {
 bool ble_get_mac(bt_le_addr_t *addr) {
   ble_driver_t *drv = &g_ble_driver;
 
-  if (!is_enabled(drv)) {
+  if (drv->initialized) {
     memset(addr, 0, sizeof(*addr));
     return false;
   }
 
-  printf("unix/ble: ble_get_mac not implemented\n");
+  LOG_WARN("ble_get_mac not implemented");
   for (size_t i = 0; i < sizeof(addr->addr); i++) {
     addr->addr[i] = i + 0xe1;
   }
@@ -429,7 +460,7 @@ uint8_t ble_get_bond_list(bt_le_addr_t *bonds, size_t count) {
 }
 
 void ble_set_high_speed(bool enable) {
-  printf("unix/ble: set_high_speed not implemented\n");
+  LOG_WARN("set_high_speed not implemented");
 }
 
 bool ble_unpair(const bt_le_addr_t *addr) {
@@ -444,7 +475,7 @@ bool ble_unpair(const bt_le_addr_t *addr) {
 }
 
 void ble_notify(const uint8_t *data, size_t len) {
-  printf("unix/ble: ble_notify not implemented\n");
+  LOG_WARN("ble_notify not implemented");
 }
 
 void ble_set_enabled(bool enabled) {

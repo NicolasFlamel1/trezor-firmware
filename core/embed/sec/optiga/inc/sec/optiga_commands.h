@@ -17,8 +17,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef TREZORHAL_OPTIGA_COMMANDS_H
-#define TREZORHAL_OPTIGA_COMMANDS_H
+#pragma once
 
 #include <trezor_types.h>
 
@@ -96,12 +95,18 @@ typedef enum {
 
 // Access conditions.
 typedef enum {
-  OPTIGA_ACCESS_COND_ALW = 0x00,   // Always.
-  OPTIGA_ACCESS_COND_CONF = 0x20,  // Confidentiality protection required.
-  OPTIGA_ACCESS_COND_INT = 0x21,   // Integrity protection required.
-  OPTIGA_ACCESS_COND_AUTO = 0x23,  // Authorization required.
-  OPTIGA_ACCESS_COND_LUC = 0x40,   // Usage limited by counter.
-  OPTIGA_ACCESS_COND_NEV = 0xFF,   // Never.
+  OPTIGA_ACCESS_COND_ALW = 0x00,      // Always.
+  OPTIGA_ACCESS_COND_CONF = 0x20,     // Confidentiality protection required.
+  OPTIGA_ACCESS_COND_INT = 0x21,      // Integrity protection required.
+  OPTIGA_ACCESS_COND_AUTO = 0x23,     // Authorization required.
+  OPTIGA_ACCESS_COND_LUC = 0x40,      // Usage limited by counter.
+  OPTIGA_ACCESS_COND_LCSG = 0x70,     // Global lifecycle state.
+  OPTIGA_ACCESS_COND_LCSA = 0xE0,     // Application lifecycle state.
+  OPTIGA_ACCESS_COND_LCSO = 0xE1,     // Data object lifecycle state.
+  OPTIGA_ACCESS_COND_EQUAL = 0xFA,    // Equal.
+  OPTIGA_ACCESS_COND_GREATER = 0xFB,  // Greater than.
+  OPTIGA_ACCESS_COND_LESS = 0xFC,     // Less than.
+  OPTIGA_ACCESS_COND_NEV = 0xFF,      // Never.
 } optiga_access_cond;
 
 // Life cycle status.
@@ -172,6 +177,9 @@ typedef struct {
 #define OPTIGA_RANDOM_MIN_SIZE 8
 #define OPTIGA_RANDOM_MAX_SIZE 256
 #define OPTIGA_MAX_CERT_SIZE 1728
+
+// The throttling delay when the security event counter is at its maximum.
+#define OPTIGA_T_MAX_MS 5000
 
 #define OPTIGA_ACCESS_CONDITION(ac_id, oid)           \
   (const optiga_metadata_item) {                      \
@@ -255,9 +263,3 @@ optiga_result optiga_set_priv_key(uint16_t oid, const uint8_t priv_key[32]);
 optiga_result optiga_clear_all_auto_states(void);
 optiga_result optiga_reset_counter(uint16_t oid, uint32_t limit);
 void optiga_reset_counter_time(uint32_t *time_ms);
-
-#if !PRODUCTION
-void optiga_command_set_log_hex(optiga_log_hex_t f);
-#endif
-
-#endif

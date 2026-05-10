@@ -1,7 +1,6 @@
 # pylint: disable=E0602
 
 import os
-import shlex
 import tools, models, ui
 
 TREZOR_MODEL = ARGUMENTS.get('TREZOR_MODEL', 'T2T1')
@@ -11,6 +10,7 @@ PRODUCTION = 0 if BOOTLOADER_QA else ARGUMENTS.get('PRODUCTION', '0') == '1'
 HW_REVISION = ARGUMENTS.get('HW_REVISION', None)
 UI_PERFORMANCE_OVERLAY = ARGUMENTS.get('UI_PERFORMANCE_OVERLAY', '0') == '1'
 DBG_CONSOLE = ARGUMENTS.get('DBG_CONSOLE', '')
+DISABLE_ANIMATION = ARGUMENTS.get('TREZOR_DISABLE_ANIMATION', '0') == '1'
 
 FEATURES_WANTED = [
     "ble",
@@ -27,6 +27,7 @@ FEATURES_WANTED = [
     "secure_domain",
     "secure_mode",
     "suspend",
+    "telemetry",
     "usb",
     "usb_iface_wire",
     ]
@@ -70,6 +71,7 @@ CPPDEFINES_MOD += [
     'USE_KECCAK',
     'ED25519_NO_PRECOMP',
     'FANCY_FATAL_ERROR',
+    ('DISABLE_ANIMATION', '1' if DISABLE_ANIMATION else '0'),
 ]
 
 SOURCE_MOD_CRYPTO = [
@@ -107,25 +109,29 @@ CPPPATH_MOD += [
 ]
 
 SOURCE_MOD += [
-    'embed/gfx/bitblt/gfx_bitblt.c',
-    'embed/gfx/bitblt/gfx_bitblt_mono8.c',
-    'embed/gfx/bitblt/gfx_bitblt_rgb565.c',
-    'embed/gfx/bitblt/gfx_bitblt_rgba8888.c',
-    'embed/gfx/fonts/font_bitmap.c',
-    'embed/gfx/gfx_color.c',
-    'embed/gfx/gfx_draw.c',
-    'embed/gfx/terminal.c',
     'embed/io/display/display_utils.c',
-    'embed/util/flash/flash_utils.c',
-    'embed/util/image/image.c',
-    'embed/util/rsod/rsod.c',
-    'embed/util/scm_revision/scm_revision.c',
+    'embed/io/gfx/bitblt/gfx_bitblt.c',
+    'embed/io/gfx/bitblt/gfx_bitblt_mono8.c',
+    'embed/io/gfx/bitblt/gfx_bitblt_rgb565.c',
+    'embed/io/gfx/bitblt/gfx_bitblt_rgba8888.c',
+    'embed/io/gfx/gfx_color.c',
+    'embed/io/gfx/gfx_draw.c',
+    'embed/io/gfx/rsod.c',
+    'embed/io/gfx/terminal/font_bitmap.c',
+    'embed/io/gfx/terminal/terminal.c',
     'embed/rtl/error_handling.c',
-    'embed/rtl/mini_printf.c',
+    'embed/rtl/scm_revision.c',
+    'embed/rtl/strutils.c',
+    'embed/sec/image/image.c',
+    'embed/sec/rsod/rsod_special.c',
+    'embed/sys/flash/flash_utils.c',
     'vendor/micropython/lib/uzlib/adler32.c',
     'vendor/micropython/lib/uzlib/crc32.c',
     'vendor/micropython/lib/uzlib/tinflate.c',
 ]
+
+if not PRODUCTION:
+    SOURCE_MOD += ['embed/rtl/printf.c']
 
 SOURCE_NANOPB = [
     'vendor/nanopb/pb_common.c',
@@ -154,6 +160,7 @@ SOURCE_BOOTLOADER = [
     'embed/projects/bootloader/wire/wire_iface_ble.c',
     'embed/projects/bootloader/protob/protob.c',
     'embed/projects/bootloader/protob/pb/messages.pb.c',
+    'embed/projects/bootloader/fw_check.c',
     'embed/projects/bootloader/version_check.c',
 ]
 
@@ -199,12 +206,11 @@ ALLPATHS = [
         'embed/projects/bootloader/protob',
         'embed/rtl/inc',
         'embed/models',
+        'embed/io/gfx/inc',
+        'embed/io/translations/inc',
+        'embed/sec/image/inc',
+        'embed/sec/rsod/inc',
         'embed/sys/bsp/inc',
-        'embed/gfx/inc',
-        'embed/util/translations/inc',
-        'embed/util/image/inc',
-        'embed/util/rsod/inc',
-        'embed/util/scm_revision/inc',
         'embed/upymod/modtrezorui',
         'vendor/nanopb',
     ] + CPPPATH_MOD + PATH_HAL
@@ -272,6 +278,7 @@ obj_program += env.Object(source=SOURCE_MOD_CRYPTO, CCFLAGS='$CCFLAGS -ftrivial-
 obj_program += env.Object(source=SOURCE_BOOTLOADER)
 obj_program += env.Object(source=SOURCE_NANOPB)
 obj_program += env.Object(source=SOURCE_HAL)
+obj_program += [rust]
 
 if 'boot_ucb' in FEATURES_AVAILABLE:
     obj_program += env.Object(
@@ -293,7 +300,6 @@ program_elf = env.Command(
 )
 
 env.Depends(program_elf, linkerscript_gen)
-env.Depends(program_elf, rust)
 
 SUFFIX = '_qa' if BOOTLOADER_QA else ''
 

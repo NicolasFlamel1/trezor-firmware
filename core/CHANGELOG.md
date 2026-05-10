@@ -4,6 +4,61 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [2.11.0] (18th March 2026)
+
+### Added
+- Adding TRON support for TRX and other TRC-20 tokens, smart contracts, and Stake 2.0.  [#5358]
+- ETH: Add support for EIP-7702.  [#6394]
+
+### Changed
+- Updated libtropic to version 3.0.0.  [#6247]
+- Allow ETH staking operations regardless of source.  [#6358]
+- Avoid backup workflow cancellation.  [#6483]
+
+### Removed
+- Deprecate uploading language blob during firmware update.  [#6103]
+
+### Fixed
+- Solana: allow optional program reference for SetComputeUnitLimit.  [#6048]
+- Fix crash for ETH Approve calls containing ERC-8021 data.  [#6321]
+- Fix 'Connected Trezor is used by another application' bug.  [#6448]
+
+### Security
+- Confirm all data during Ethereum transaction hashing.
+- Fixed bug in multisig verification.
+
+## [2.10.0] (21st January 2026)
+
+### Added
+- [T3W1] Reset Tropic and retry command when alarm mode is detected.  [#6104]
+- [T3W1] Introduce wear leveling of mac-and-destroy slots in Tropic.  [#6136]
+- Added version build number to Features message.  [#6225]
+
+### Changed
+- [T3W1] Update Regulatory screen in the device menu.  [#6281]
+
+### Fixed
+- Allow loading translations with different BUILD_VERSION.  [#6228]
+- [T2T1] Fixed FIDO credentials scrolling.  [#6236]
+- [T3W1] Change bootscreen homebar text to 'Unlock'.  [#6257]
+- [T2T1,T2B1,T3B1,T3W1] Fixed address chunkification in certain cases.  [#6279]
+
+### Security
+- Fixed side-channel vulnerability in BIP-39 mnemonic processing.
+
+## [2.9.6] (10th December 2025)
+
+### Fixed
+- Fixed Stellar Amount and Bitcoin lock time font.  [#6109]
+- Make sure to increment THP `seq_bit`.  [#6138]
+- [T3W1] Don't stall THP handling during PIN unlock.  [#6145]
+- Fixed external tamper trigger clearing.  [#6186]
+
+## [2.9.5] (28th November 2025)
+
+### Fixed
+- Fixed tamper RSOD not showing.  [#6165]
+
 ## [2.9.4] (19th November 2025)
 
 ### Added
@@ -1287,6 +1342,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 [#5316]: https://github.com/trezor/trezor-firmware/pull/5316
 [#5317]: https://github.com/trezor/trezor-firmware/pull/5317
 [#5344]: https://github.com/trezor/trezor-firmware/pull/5344
+[#5358]: https://github.com/trezor/trezor-firmware/pull/5358
 [#5369]: https://github.com/trezor/trezor-firmware/pull/5369
 [#5378]: https://github.com/trezor/trezor-firmware/pull/5378
 [#5464]: https://github.com/trezor/trezor-firmware/pull/5464
@@ -1314,8 +1370,29 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 [#6022]: https://github.com/trezor/trezor-firmware/pull/6022
 [#6023]: https://github.com/trezor/trezor-firmware/pull/6023
 [#6032]: https://github.com/trezor/trezor-firmware/pull/6032
+[#6048]: https://github.com/trezor/trezor-firmware/pull/6048
 [#6053]: https://github.com/trezor/trezor-firmware/pull/6053
 [#6075]: https://github.com/trezor/trezor-firmware/pull/6075
 [#6076]: https://github.com/trezor/trezor-firmware/pull/6076
 [#6096]: https://github.com/trezor/trezor-firmware/pull/6096
 [#6100]: https://github.com/trezor/trezor-firmware/pull/6100
+[#6103]: https://github.com/trezor/trezor-firmware/pull/6103
+[#6104]: https://github.com/trezor/trezor-firmware/pull/6104
+[#6109]: https://github.com/trezor/trezor-firmware/pull/6109
+[#6136]: https://github.com/trezor/trezor-firmware/pull/6136
+[#6138]: https://github.com/trezor/trezor-firmware/pull/6138
+[#6145]: https://github.com/trezor/trezor-firmware/pull/6145
+[#6165]: https://github.com/trezor/trezor-firmware/pull/6165
+[#6186]: https://github.com/trezor/trezor-firmware/pull/6186
+[#6225]: https://github.com/trezor/trezor-firmware/pull/6225
+[#6228]: https://github.com/trezor/trezor-firmware/pull/6228
+[#6236]: https://github.com/trezor/trezor-firmware/pull/6236
+[#6247]: https://github.com/trezor/trezor-firmware/pull/6247
+[#6257]: https://github.com/trezor/trezor-firmware/pull/6257
+[#6279]: https://github.com/trezor/trezor-firmware/pull/6279
+[#6281]: https://github.com/trezor/trezor-firmware/pull/6281
+[#6321]: https://github.com/trezor/trezor-firmware/pull/6321
+[#6358]: https://github.com/trezor/trezor-firmware/pull/6358
+[#6394]: https://github.com/trezor/trezor-firmware/pull/6394
+[#6448]: https://github.com/trezor/trezor-firmware/pull/6448
+[#6483]: https://github.com/trezor/trezor-firmware/pull/6483

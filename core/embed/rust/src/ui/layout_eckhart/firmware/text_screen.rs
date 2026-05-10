@@ -41,9 +41,15 @@ pub struct TextScreen<T> {
     action_bar: Option<ActionBar>,
     page_limit: Option<u16>,
     background: Option<ScreenBackground>,
+
     // runtime visibility flags
     show_action_bar: bool,
     show_page_counter: bool,
+
+    #[cfg(feature = "ui_debug")]
+    external_menu: bool,
+    #[cfg(feature = "ui_debug")]
+    has_flow_menu: bool,
     // TODO: swipe handling
     // TODO: animations
 }
@@ -71,6 +77,10 @@ where
             background: None,
             show_action_bar: false,
             show_page_counter: false,
+            #[cfg(feature = "ui_debug")]
+            external_menu: false,
+            #[cfg(feature = "ui_debug")]
+            has_flow_menu: false,
         }
     }
 
@@ -103,6 +113,31 @@ where
 
     pub fn with_background(mut self, background: ScreenBackground) -> Self {
         self.background = Some(background);
+        self
+    }
+
+    #[cfg(feature = "ui_debug")]
+    pub fn with_external_menu(mut self, external_menu: bool) -> Self {
+        self.external_menu = external_menu;
+        self
+    }
+    #[cfg(not(feature = "ui_debug"))]
+    pub fn with_external_menu(self, _external_menu: bool) -> Self {
+        self
+    }
+
+    // TODO: currently used to traverse old style (aka non-"external" menus)
+    // which are implemented as part of swipe flows.
+    // Once we have eventually replaced all these with new style "external menu",
+    // we should get rid of this flag and the related debuglink code.
+    #[cfg(feature = "ui_debug")]
+    pub fn with_flow_menu(mut self, has_flow_menu: bool) -> Self {
+        // Allow visiting this menu automatically by tests
+        self.has_flow_menu = has_flow_menu;
+        self
+    }
+    #[cfg(not(feature = "ui_debug"))]
+    pub fn with_flow_menu(self, _has_flow_menu: bool) -> Self {
         self
     }
 
@@ -368,5 +403,9 @@ where
             t.int("page_limit", page_limit as i64);
         }
         t.int("page_count", self.content.pager().total() as i64);
+
+        debug_assert!(!(self.external_menu && self.has_flow_menu));
+        t.bool("has_menu", self.external_menu);
+        t.bool("has_flow_menu", self.has_flow_menu);
     }
 }

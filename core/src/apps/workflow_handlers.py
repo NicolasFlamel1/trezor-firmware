@@ -64,6 +64,9 @@ def _find_message_handler_module(msg_type: int) -> str:
     if msg_type == MessageType.ShowDeviceTutorial:
         return "apps.management.show_tutorial"
 
+    if utils.USE_TELEMETRY and msg_type == MessageType.TelemetryGet:
+        return "apps.telemetry.get_telemetry"
+
     if utils.USE_BACKLIGHT and msg_type == MessageType.SetBrightness:
         return "apps.management.set_brightness"
 
@@ -106,8 +109,16 @@ def _find_message_handler_module(msg_type: int) -> str:
         return "apps.misc.cipher_key_value"
     if msg_type == MessageType.GetFirmwareHash:
         return "apps.misc.get_firmware_hash"
+
+    # evolu
     if msg_type == MessageType.EvoluGetNode:
-        return "apps.misc.get_evolu_node"
+        return "apps.evolu.get_node"
+    if msg_type == MessageType.EvoluSignRegistrationRequest:
+        return "apps.evolu.sign_registration_request"
+    if msg_type == MessageType.EvoluGetDelegatedIdentityKey:
+        return "apps.evolu.get_delegated_identity_key"
+    if msg_type == MessageType.PaymentNotification:
+        return "apps.misc.payment_notification"
 
     if not utils.BITCOIN_ONLY:
         # When promoting the Nostr app to production-level
@@ -119,6 +130,12 @@ def _find_message_handler_module(msg_type: int) -> str:
                 return "apps.nostr.get_pubkey"
             if msg_type == MessageType.NostrSignEvent:
                 return "apps.nostr.sign_event"
+
+        # tron
+        if msg_type == MessageType.TronGetAddress:
+            return "apps.tron.get_address"
+        if msg_type == MessageType.TronSignTx:
+            return "apps.tron.sign_tx"
 
         if msg_type == MessageType.SetU2FCounter:
             return "apps.management.set_u2f_counter"

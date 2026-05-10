@@ -24,16 +24,17 @@ def configure(
         env, features_wanted, defines, sources, paths
     )
 
-    env.get("ENV")[
-        "CPU_ASFLAGS"
-    ] = "-mthumb -mcpu=cortex-m33 -mfloat-abi=hard -mfpu=fpv5-sp-d16 "
-    env.get("ENV")[
-        "CPU_CCFLAGS"
-    ] = "-mthumb -mcpu=cortex-m33 -mfloat-abi=hard -mfpu=fpv5-sp-d16 -mtune=cortex-m33 "
-    env.get("ENV")["RUST_TARGET"] = "thumbv8m.main-none-eabihf"
+    ENV = env.get("ENV")
+    assert ENV
+
+    ENV["CPU_ASFLAGS"] = "-mthumb -mcpu=cortex-m33 -mfloat-abi=hard -mfpu=fpv5-sp-d16 "
+    ENV["CPU_CCFLAGS"] = (
+        "-mthumb -mcpu=cortex-m33 -mfloat-abi=hard -mfpu=fpv5-sp-d16 -mtune=cortex-m33 "
+    )
+    ENV["RUST_TARGET"] = "thumbv8m.main-none-eabihf"
 
     if "secure_domain" in features_wanted:
-        env.get("ENV")["CPU_CCFLAGS"] += "-mcmse "
+        ENV["CPU_CCFLAGS"] += "-mcmse "
 
     if "secmon_layout" in features_wanted:
         defines += [("USE_SECMON_LAYOUT", "1")]
@@ -53,8 +54,8 @@ def configure(
     ]
 
     if "boot_ucb" in features_wanted:
-        sources += ["embed/util/image/boot_header.c"]
-        sources += ["embed/util/image/boot_ucb.c"]
+        sources += ["embed/sec/image/boot_header.c"]
+        sources += ["embed/sec/image/boot_ucb.c"]
         defines += [("USE_BOOT_UCB", "1")]
         features_available.append("boot_ucb")
 
@@ -76,11 +77,11 @@ def configure(
         paths += ["embed/io/backlight/inc"]
 
     if "input" in features_wanted:
-        sources += ["embed/io/i2c_bus/stm32u5/i2c_bus.c"]
+        sources += ["embed/sys/i2c_bus/stm32u5/i2c_bus.c"]
         sources += ["embed/io/touch/sitronix/touch.c"]
         sources += ["embed/io/touch/sitronix/sitronix.c"]
         sources += ["embed/io/touch/touch_poll.c"]
-        paths += ["embed/io/i2c_bus/inc"]
+        paths += ["embed/sys/i2c_bus/inc"]
         paths += ["embed/io/touch/inc"]
         features_available.append("touch")
         defines += [
@@ -102,7 +103,7 @@ def configure(
 
     defines += ["USE_DMA2D"]
     features_available.append("dma2d")
-    sources += ["embed/gfx/bitblt/stm32/dma2d_bitblt.c"]
+    sources += ["embed/io/gfx/bitblt/stm32/dma2d_bitblt.c"]
 
     defines += [
         "USE_HASH_PROCESSOR=1",
@@ -112,7 +113,7 @@ def configure(
         "USE_OEM_KEYS_CHECK=1",
     ]
 
-    env.get("ENV")["LINKER_SCRIPT"] = linker_script
-    env.get("ENV")["MEMORY_LAYOUT"] = memory_layout
+    ENV["LINKER_SCRIPT"] = linker_script
+    ENV["MEMORY_LAYOUT"] = memory_layout
 
     return features_available

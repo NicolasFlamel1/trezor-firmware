@@ -9,7 +9,7 @@ from .helpers import DECIMALS
 
 if TYPE_CHECKING:
     from trezor.messages import PaymentRequest
-    from trezor.ui.layouts import PropertyType
+    from trezor.ui.layouts import StrPropertyType
 
     from apps.common.paths import Bip32Path
 
@@ -47,6 +47,7 @@ async def require_confirm_payment_request(
     address_n: Bip32Path | None,
 ) -> None:
     from trezor.ui.layouts import confirm_payment_request
+    from trezor.ui.layouts.slip24 import Refund, Trade
 
     from apps.common.paths import address_n_to_str
     from apps.common.payment_request import parse_amount
@@ -66,13 +67,13 @@ async def require_confirm_payment_request(
             texts.append((memo.text_details_memo.title, memo.text_details_memo.text))
         elif memo.refund_memo:
             refund_account_path = address_n_to_str(memo.refund_memo.address_n)
-            refunds.append((memo.refund_memo.address, None, refund_account_path))
+            refunds.append(Refund(memo.refund_memo.address, None, refund_account_path))
         elif memo.coin_purchase_memo:
             coin_purchase_account_path = address_n_to_str(
                 memo.coin_purchase_memo.address_n
             )
             trades.append(
-                (
+                Trade(
                     f"-\u00a0{total_amount}",
                     f"+\u00a0{memo.coin_purchase_memo.amount}",
                     memo.coin_purchase_memo.address,
@@ -84,7 +85,7 @@ async def require_confirm_payment_request(
             raise wire.DataError("Unrecognized memo type in payment request memo.")
 
     account_path = address_n_to_str(address_n) if address_n else None
-    account_items: list[PropertyType] = []
+    account_items: list[StrPropertyType] = []
     if account_path:
         account_items.append((TR.address_details__derivation_path, account_path, True))
 
@@ -95,7 +96,6 @@ async def require_confirm_payment_request(
         refunds,
         trades,
         account_items,
-        None,
         None,
         None,
     )

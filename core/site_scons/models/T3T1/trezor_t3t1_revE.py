@@ -35,13 +35,14 @@ def configure(
         env, features_wanted, defines, sources, paths
     )
 
-    env.get("ENV")[
-        "CPU_ASFLAGS"
-    ] = "-mthumb -mcpu=cortex-m33 -mfloat-abi=hard -mfpu=fpv5-sp-d16 "
-    env.get("ENV")[
-        "CPU_CCFLAGS"
-    ] = "-mthumb -mcpu=cortex-m33 -mfloat-abi=hard -mfpu=fpv5-sp-d16 -mtune=cortex-m33 -mcmse "
-    env.get("ENV")["RUST_TARGET"] = "thumbv8m.main-none-eabihf"
+    ENV = env.get("ENV")
+    assert ENV
+
+    ENV["CPU_ASFLAGS"] = "-mthumb -mcpu=cortex-m33 -mfloat-abi=hard -mfpu=fpv5-sp-d16 "
+    ENV["CPU_CCFLAGS"] = (
+        "-mthumb -mcpu=cortex-m33 -mfloat-abi=hard -mfpu=fpv5-sp-d16 -mtune=cortex-m33 -mcmse "
+    )
+    ENV["RUST_TARGET"] = "thumbv8m.main-none-eabihf"
 
     defines += [
         mcu,
@@ -70,11 +71,11 @@ def configure(
             sources += ["embed/io/display/bg_copy/stm32u5/bg_copy.c"]
 
     if "input" in features_wanted:
-        sources += ["embed/io/i2c_bus/stm32u5/i2c_bus.c"]
+        sources += ["embed/sys/i2c_bus/stm32u5/i2c_bus.c"]
         sources += ["embed/io/touch/ft6x36/ft6x36.c"]
         sources += ["embed/io/touch/touch_poll.c"]
         sources += ["embed/io/touch/ft6x36/panels/lx154a2422cpt23.c"]
-        paths += ["embed/io/i2c_bus/inc"]
+        paths += ["embed/sys/i2c_bus/inc"]
         paths += ["embed/io/touch/inc"]
         features_available.append("touch")
         defines += [("USE_TOUCH", "1")]
@@ -82,7 +83,7 @@ def configure(
 
     if "haptic" in features_wanted:
         sources += [
-            "embed/io/haptic/drv2625/drv2625.c",
+            "embed/io/haptic/drv262x/drv262x.c",
         ]
         paths += ["embed/io/haptic/inc"]
         features_available.append("haptic")
@@ -106,14 +107,14 @@ def configure(
 
     if "dma2d" in features_wanted:
         defines += [("USE_DMA2D", "1")]
-        sources += ["embed/gfx/bitblt/stm32/dma2d_bitblt.c"]
+        sources += ["embed/io/gfx/bitblt/stm32/dma2d_bitblt.c"]
         features_available.append("dma2d")
 
     if "optiga" in features_wanted:
         sources += ["embed/sec/optiga/stm32/optiga_hal.c"]
         sources += ["embed/sec/optiga/optiga.c"]
         sources += ["embed/sec/optiga/optiga_commands.c"]
-        sources += ["embed/sec/optiga/optiga_config.c"]
+        sources += ["embed/sec/optiga/optiga_init.c"]
         sources += ["embed/sec/optiga/optiga_transport.c"]
         sources += ["vendor/trezor-crypto/hash_to_curve.c"]
         paths += ["embed/sec/optiga/inc"]
@@ -122,8 +123,8 @@ def configure(
 
     if "hw_revision" in features_wanted:
         defines += [("USE_HW_REVISION", "1")]
-        paths += ["embed/util/hw_revision/inc"]
-        sources += ["embed/util/hw_revision/stm32/hw_revision.c"]
+        paths += ["embed/sec/hw_revision/inc"]
+        sources += ["embed/sec/hw_revision/stm32/hw_revision.c"]
 
     defines += [
         ("USE_HASH_PROCESSOR", "1"),
@@ -134,9 +135,9 @@ def configure(
         ("USE_PVD", "1"),
     ]
 
-    env.get("ENV")["TREZOR_BOARD"] = board
-    env.get("ENV")["MCU_TYPE"] = mcu
-    env.get("ENV")["LINKER_SCRIPT"] = linker_script
-    env.get("ENV")["MEMORY_LAYOUT"] = memory_layout
+    ENV["TREZOR_BOARD"] = board
+    ENV["MCU_TYPE"] = mcu
+    ENV["LINKER_SCRIPT"] = linker_script
+    ENV["MEMORY_LAYOUT"] = memory_layout
 
     return features_available

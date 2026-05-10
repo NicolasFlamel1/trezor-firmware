@@ -22,7 +22,7 @@ _bss_section_end = ADDR(.bss) + SIZEOF(.bss);
 _bootargs_ram_start = BOOTARGS_START;
 _bootargs_ram_end = BOOTARGS_START + BOOTARGS_SIZE;
 
-_codelen = SIZEOF(.flash) + SIZEOF(.data);
+_codelen = _bootloader_code_end - ADDR(.flash);
 
 SECTIONS {
   .header : ALIGN(4) {
@@ -35,7 +35,7 @@ SECTIONS {
     *(.text*);
     . = ALIGN(4);
     *(.rodata*);
-    . = ALIGN(512);
+    . = ALIGN(4);
   } >FLASH AT>FLASH
 
   .stack : ALIGN(8) {
@@ -44,7 +44,7 @@ SECTIONS {
 
   .data : ALIGN(4) {
     *(.data*);
-    . = ALIGN(512);
+    . = ALIGN(4);
   } >MAIN_RAM AT>FLASH
 
   /DISCARD/ : {
@@ -73,4 +73,12 @@ SECTIONS {
     . = ALIGN(8);
   } >BOOT_ARGS
 
+  .flash : ALIGN(4) {
+    /* Pad the rest of bootloader area with zeros */
+    BYTE(0x00)
+    FILL(0x00)
+    /* Use alignment required by the boardloader */
+    . = ALIGN(512);
+    _bootloader_code_end = .;
+  } >FLASH
 }

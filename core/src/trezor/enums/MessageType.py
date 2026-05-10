@@ -88,10 +88,16 @@ ECDHSessionKey = 62
 PaymentNotification = 52
 EvoluGetNode = 2100
 EvoluNode = 2101
+EvoluSignRegistrationRequest = 2102
+EvoluRegistrationRequest = 2103
+EvoluGetDelegatedIdentityKey = 2104
+EvoluDelegatedIdentityKey = 2105
 BenchmarkListNames = 9100
 BenchmarkNames = 9101
 BenchmarkRun = 9102
 BenchmarkResult = 9103
+TelemetryGet = 1100
+Telemetry = 1101
 if __debug__:
     DebugLinkDecision = 100
     DebugLinkGetState = 101
@@ -113,6 +119,7 @@ if __debug__:
     DebugLinkGcInfo = 9010
     DebugLinkGetPairingInfo = 9011
     DebugLinkPairingInfo = 9012
+    DebugLinkSetLogFilter = 9013
 if utils.USE_THP:
     ThpCreateNewSession = 1000
     ThpCredentialRequest = 1016
@@ -303,3 +310,13 @@ if not utils.BITCOIN_ONLY:
     NostrPubkey = 2002
     NostrSignEvent = 2003
     NostrEventSignature = 2004
+    TronGetAddress = 2200
+    TronAddress = 2201
+    TronSignTx = 2202
+    TronSignature = 2203
+    TronContractRequest = 2204
+    TronTransferContract = 2205
+    TronTriggerSmartContract = 2206
+    TronFreezeBalanceV2Contract = 2207
+    TronUnfreezeBalanceV2Contract = 2208
+    TronWithdrawUnfreeze = 2209

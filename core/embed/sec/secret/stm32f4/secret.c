@@ -20,10 +20,11 @@
 #include <trezor_model.h>
 #include <trezor_rtl.h>
 
+#include <sec/rsod_special.h>
 #include <sec/secret.h>
+#include <sys/flash.h>
+#include <sys/flash_utils.h>
 #include <sys/mpu.h>
-#include <util/flash.h>
-#include <util/flash_utils.h>
 
 #ifdef KERNEL_MODE
 

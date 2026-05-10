@@ -21,7 +21,7 @@ from typing import TYPE_CHECKING, Tuple
 import pytest
 
 from trezorlib import btc, device, exceptions, messages
-from trezorlib.client import PASSPHRASE_ON_DEVICE
+from trezorlib.client import PassphraseSetting
 from trezorlib.debuglink import DebugLink, LayoutType
 from trezorlib.protobuf import MessageType
 from trezorlib.tools import parse_path
@@ -122,19 +122,19 @@ def test_autolock_interrupts_signing(device_handler: "BackgroundDeviceHandler"):
         debug.click(debug.screen_buttons.ok())
         layout = debug.read_layout()
         assert TR.send__total_amount in layout.text_content()
-        assert "0.0039 BTC" in layout.text_content()
+        assert "0.0039 BTC" in layout.text_content()
     elif debug.layout_type is LayoutType.Delizia:
         debug.swipe_up()
         debug.swipe_up()
         layout = debug.read_layout()
         assert TR.send__total_amount in layout.text_content()
-        assert "0.0039 BTC" in layout.text_content()
+        assert "0.0039 BTC" in layout.text_content()
     elif debug.layout_type is LayoutType.Caesar:
         debug.press_right()
         debug.press_right()
         layout = debug.read_layout()
         assert TR.send__total_amount in layout.text_content()
-        assert "0.0039 BTC" in layout.text_content()
+        assert "0.0039 BTC" in layout.text_content()
     else:
         raise ValueError(f"Unsupported layout type: {debug.layout_type}")
 
@@ -184,31 +184,29 @@ def test_autolock_does_not_interrupt_signing(device_handler: "BackgroundDeviceHa
         debug.click(debug.screen_buttons.ok())
         layout = debug.read_layout()
         assert TR.send__total_amount in layout.text_content()
-        assert "0.0039 BTC" in layout.text_content()
+        assert "0.0039 BTC" in layout.text_content()
     elif debug.layout_type is LayoutType.Delizia:
         debug.swipe_up()
         debug.swipe_up()
         layout = debug.read_layout()
         assert TR.send__total_amount in layout.text_content()
-        assert "0.0039 BTC" in layout.text_content()
+        assert "0.0039 BTC" in layout.text_content()
         debug.swipe_up()
     elif debug.layout_type is LayoutType.Caesar:
         debug.press_right()
         debug.press_right()
         layout = debug.read_layout()
         assert TR.send__total_amount in layout.text_content()
-        assert "0.0039 BTC" in layout.text_content()
+        assert "0.0039 BTC" in layout.text_content()
     else:
         raise ValueError(f"Unsupported layout type: {debug.layout_type}")
 
-    client = session.client
-
     def sleepy_filter(msg: MessageType) -> MessageType:
         time.sleep(10.1)
-        client.set_filter(messages.TxAck, None)
+        session.test_ctx.set_filter(messages.TxAck, None)
         return msg
 
-    with client:
+    with session.test_ctx as client:
         client.set_filter(messages.TxAck, sleepy_filter)
         # confirm transaction
         # don't wait for layout change, to avoid "layout deadlock detected" error
@@ -232,7 +230,7 @@ def test_autolock_passphrase_keyboard(device_handler: "BackgroundDeviceHandler")
     set_autolock_delay(device_handler, 10_000)
     debug = device_handler.debuglink()
 
-    device_handler.get_session(passphrase=PASSPHRASE_ON_DEVICE)  # type: ignore
+    device_handler.get_session(passphrase=PassphraseSetting.ON_DEVICE)  # type: ignore
     debug.synchronize_at(["PassphraseKeyboard", "StringKeyboard"])
 
     if debug.layout_type is LayoutType.Caesar:
@@ -278,7 +276,7 @@ def test_autolock_interrupts_passphrase(device_handler: "BackgroundDeviceHandler
     debug = device_handler.debuglink()
 
     # get address (derive_seed)
-    device_handler.get_session(passphrase=PASSPHRASE_ON_DEVICE)
+    device_handler.get_session(passphrase=PassphraseSetting.ON_DEVICE)
     debug.synchronize_at(["PassphraseKeyboard", "StringKeyboard"])
 
     if debug.layout_type is LayoutType.Caesar:
@@ -576,14 +574,12 @@ def test_autolock_does_not_interrupt_preauthorized(
         no_fee_indices=[],
     )
 
-    client = session.client
-
     def sleepy_filter(msg: MessageType) -> MessageType:
         time.sleep(10.1)
-        client.set_filter(messages.SignTx, None)
+        session.test_ctx.set_filter(messages.SignTx, None)
         return msg
 
-    with client:
+    with session.test_ctx as client:
         # Start DoPreauthorized flow when device is unlocked. Wait 10s before
         # delivering SignTx, by that time autolock timer should have fired.
         client.set_filter(messages.SignTx, sleepy_filter)

@@ -295,3 +295,13 @@ message DebugLinkGcInfo {
         required uint64 value = 2;
     }
 }
+
+
+/**
+ * Request: Set logging filter string.
+ * @start
+ * @next Success
+ */
+message DebugLinkSetLogFilter {
+    optional string filter = 1;  // filter string
+}

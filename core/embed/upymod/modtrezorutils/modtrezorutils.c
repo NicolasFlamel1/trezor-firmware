@@ -26,7 +26,7 @@
 #include "py/objstr.h"
 #include "py/runtime.h"
 
-#include <util/image.h>
+#include <sec/image.h>
 #include "version.h"
 
 #if MICROPY_PY_TREZORUTILS
@@ -35,13 +35,20 @@
 #include "embed/upymod/trezorobj.h"
 
 #include <io/usb.h>
+#include <sys/logging.h>
+
+#include <io/notify.h>
+#include <rtl/scm_revision.h>
+#include <sec/fwutils.h>
+#include <sec/secret_keys.h>
+#include <sec/unit_properties.h>
 #include <sys/bootutils.h>
-#include <sys/notify.h>
-#include <util/fwutils.h>
-#include <util/scm_revision.h>
-#include <util/unit_properties.h>
 #include "blake2s.h"
 #include "memzero.h"
+
+#ifdef USE_TELEMETRY
+#include <sec/telemetry.h>
+#endif
 
 #ifdef USE_BLE
 #include <io/ble.h>
@@ -59,6 +66,31 @@
 #endif
 
 /// from trezor import utils
+
+#ifdef USE_TELEMETRY
+/// def telemetry_get() -> tuple[int, int, int, int] | None:
+///     """
+///     Retrieves the stored telemetry data. Returns a tuple
+///     (min_temp_milli_c, max_temp_milli_c, battery_errors, battery_cycles)
+///     or None if telemetry is not available.
+///     """
+STATIC mp_obj_t mod_trezorutils_telemetry_get(void) {
+  telemetry_data_t data;
+  if (!telemetry_get(&data)) {
+    return mp_const_none;
+  }
+
+  mp_obj_t tuple[4];
+  tuple[0] = mp_obj_new_int((int32_t)(data.min_temp_c * 1000.0f));
+  tuple[1] = mp_obj_new_int((int32_t)(data.max_temp_c * 1000.0f));
+  tuple[2] = mp_obj_new_int(data.battery_errors.all);
+  tuple[3] = mp_obj_new_int(data.battery_cycles * 1000.0f);
+
+  return mp_obj_new_tuple(4, tuple);
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_0(mod_trezorutils_telemetry_get_obj,
+                                 mod_trezorutils_telemetry_get);
+#endif
 
 /// def consteq(sec: AnyBytes, pub: AnyBytes) -> bool:
 ///     """
@@ -234,6 +266,22 @@ STATIC mp_obj_t mod_trezorutils_firmware_vendor(void) {
 STATIC MP_DEFINE_CONST_FUN_OBJ_0(mod_trezorutils_firmware_vendor_obj,
                                  mod_trezorutils_firmware_vendor);
 
+/// def delegated_identity() -> bytes:
+///     """
+///     Returns the delegated identity key used for registration and space
+///     management at Evolu.
+///     """
+STATIC mp_obj_t mod_trezorutils_delegated_identity(void) {
+  uint8_t private_key[ECDSA_PRIVATE_KEY_SIZE] = {0};
+  if (secret_key_delegated_identity(private_key) != sectrue) {
+    mp_raise_msg(&mp_type_RuntimeError,
+                 MP_ERROR_TEXT("Failed to read delegated identity."));
+  }
+  return mp_obj_new_bytes(private_key, sizeof(private_key));
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_0(mod_trezorutils_delegated_identity_obj,
+                                 mod_trezorutils_delegated_identity);
+
 /// def unit_color() -> int | None:
 ///     """
 ///     Returns the color of the unit.
@@ -272,6 +320,35 @@ STATIC mp_obj_t mod_trezorutils_unit_packaging(void) {
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_0(mod_trezorutils_unit_packaging_obj,
                                  mod_trezorutils_unit_packaging);
+
+/// def unit_production_date() -> tuple[int, int, int] | None:
+///     """
+///     Returns the unit production date as (year, month, day), or None if
+///     unavailable.
+///     """
+STATIC mp_obj_t mod_trezorutils_unit_production_date(void) {
+  const unit_properties_t *props = unit_properties();
+  if (props == NULL) {
+    return mp_const_none;
+  }
+
+  const uint16_t year = props->production_date.year;
+  const uint8_t month = props->production_date.month;
+  const uint8_t day = props->production_date.day;
+
+  // If any field is zero, consider the date unavailable
+  if (year == 0 || month == 0 || day == 0) {
+    return mp_const_none;
+  }
+
+  mp_obj_t items[3];
+  items[0] = mp_obj_new_int(year);
+  items[1] = mp_obj_new_int(month);
+  items[2] = mp_obj_new_int(day);
+  return mp_obj_new_tuple(3, items);
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_0(mod_trezorutils_unit_production_date_obj,
+                                 mod_trezorutils_unit_production_date);
 
 #if USE_SERIAL_NUMBER
 
@@ -583,7 +660,7 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_1(mod_trezorutils_check_firmware_header_obj,
 
 /// def bootloader_locked() -> bool | None:
 ///     """
-///     Returns True/False if the the bootloader is locked/unlocked and None if
+///     Returns True/False if the bootloader is locked/unlocked and None if
 ///     the feature is not supported.
 ///     """
 STATIC mp_obj_t mod_trezorutils_bootloader_locked() {
@@ -638,31 +715,46 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_0(mod_trezorutils_nrf_get_version_obj,
                                  mod_trezorutils_nrf_get_version);
 #endif
 
-STATIC mp_obj_str_t mod_trezorutils_revision_obj = {
+#ifdef USE_DBG_CONSOLE
+/// def set_log_filter(filter: str) -> None:
+///     """
+///     Sets filter string for syslog
+///     """
+STATIC mp_obj_t mod_trezorutils_set_log_filter(mp_obj_t filter) {
+  mp_buffer_info_t filter_buf = {0};
+  mp_get_buffer_raise(filter, &filter_buf, MP_BUFFER_READ);
+  syslog_set_filter(filter_buf.buf, filter_buf.len);
+  return mp_const_none;
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_1(mod_trezorutils_set_log_filter_obj,
+                                 mod_trezorutils_set_log_filter);
+#endif
+
+STATIC const mp_obj_str_t mod_trezorutils_revision_obj = {
     {&mp_type_bytes}, 0, sizeof(SCM_REVISION), (const byte *)SCM_REVISION};
 
-STATIC mp_obj_str_t mod_trezorutils_model_name_obj = {
+STATIC const mp_obj_str_t mod_trezorutils_model_name_obj = {
     {&mp_type_str}, 0, sizeof(MODEL_NAME) - 1, (const byte *)MODEL_NAME};
 
-STATIC mp_obj_str_t mod_trezorutils_full_name_obj = {
+STATIC const mp_obj_str_t mod_trezorutils_full_name_obj = {
     {&mp_type_str},
     0,
     sizeof(MODEL_FULL_NAME) - 1,
     (const byte *)MODEL_FULL_NAME};
 
-STATIC mp_obj_str_t mod_trezorutils_model_usb_manufacturer_obj = {
+STATIC const mp_obj_str_t mod_trezorutils_model_usb_manufacturer_obj = {
     {&mp_type_str},
     0,
     sizeof(MODEL_USB_MANUFACTURER) - 1,
     (const byte *)MODEL_USB_MANUFACTURER};
 
-STATIC mp_obj_str_t mod_trezorutils_model_usb_product_obj = {
+STATIC const mp_obj_str_t mod_trezorutils_model_usb_product_obj = {
     {&mp_type_str},
     0,
     sizeof(MODEL_USB_PRODUCT) - 1,
     (const byte *)MODEL_USB_PRODUCT};
 
-STATIC mp_obj_tuple_t mod_trezorutils_version_obj = {
+STATIC const mp_obj_tuple_t mod_trezorutils_version_obj = {
     {&mp_type_tuple},
     4,
     {MP_OBJ_NEW_SMALL_INT(VERSION_MAJOR), MP_OBJ_NEW_SMALL_INT(VERSION_MINOR),
@@ -696,6 +788,12 @@ STATIC mp_obj_tuple_t mod_trezorutils_version_obj = {
 /// """Whether the hardware has a battery."""
 /// USE_NRF: bool
 /// """Whether the hardware has a nRF chip."""
+/// USE_DBG_CONSOLE: bool
+/// """Whether a debug console is enabled."""
+/// USE_APP_LOADING: bool
+/// """Whether the firmware supports loading 3rd-party applications."""
+/// USE_TELEMETRY: bool
+/// """Whether a telemetry is supported."""
 /// MODEL: str
 /// """Model name."""
 /// MODEL_FULL_NAME: str
@@ -764,6 +862,13 @@ STATIC const mp_rom_map_elem_t mp_module_trezorutils_globals_table[] = {
      MP_ROM_PTR(&mod_trezorutils_bootloader_locked_obj)},
     {MP_ROM_QSTR(MP_QSTR_notify_send),
      MP_ROM_PTR(&mod_trezorutils_notify_send_obj)},
+#ifdef USE_TELEMETRY
+    {MP_ROM_QSTR(MP_QSTR_telemetry_get),
+     MP_ROM_PTR(&mod_trezorutils_telemetry_get_obj)},
+    {MP_ROM_QSTR(MP_QSTR_USE_TELEMETRY), mp_const_true},
+#else
+    {MP_ROM_QSTR(MP_QSTR_USE_TELEMETRY), mp_const_false},
+#endif
     {MP_ROM_QSTR(MP_QSTR_NOTIFY_BOOT), MP_ROM_INT(NOTIFY_BOOT)},
     {MP_ROM_QSTR(MP_QSTR_NOTIFY_UNLOCK), MP_ROM_INT(NOTIFY_UNLOCK)},
     {MP_ROM_QSTR(MP_QSTR_NOTIFY_LOCK), MP_ROM_INT(NOTIFY_LOCK)},
@@ -779,13 +884,20 @@ STATIC const mp_rom_map_elem_t mp_module_trezorutils_globals_table[] = {
     {MP_ROM_QSTR(MP_QSTR_nrf_get_version),
      MP_ROM_PTR(&mod_trezorutils_nrf_get_version_obj)},
 #endif
-
+#ifdef USE_DBG_CONSOLE
+    {MP_ROM_QSTR(MP_QSTR_set_log_filter),
+     MP_ROM_PTR(&mod_trezorutils_set_log_filter_obj)},
+#endif
+    {MP_ROM_QSTR(MP_QSTR_delegated_identity),
+     MP_ROM_PTR(&mod_trezorutils_delegated_identity_obj)},
     {MP_ROM_QSTR(MP_QSTR_unit_color),
      MP_ROM_PTR(&mod_trezorutils_unit_color_obj)},
     {MP_ROM_QSTR(MP_QSTR_unit_packaging),
      MP_ROM_PTR(&mod_trezorutils_unit_packaging_obj)},
     {MP_ROM_QSTR(MP_QSTR_unit_btconly),
      MP_ROM_PTR(&mod_trezorutils_unit_btconly_obj)},
+    {MP_ROM_QSTR(MP_QSTR_unit_production_date),
+     MP_ROM_PTR(&mod_trezorutils_unit_production_date_obj)},
 #if USE_SERIAL_NUMBER
     {MP_ROM_QSTR(MP_QSTR_serial_number),
      MP_ROM_PTR(&mod_trezorutils_serial_number_obj)},
@@ -875,6 +987,16 @@ STATIC const mp_rom_map_elem_t mp_module_trezorutils_globals_table[] = {
     {MP_ROM_QSTR(MP_QSTR_USE_NRF), mp_const_true},
 #else
     {MP_ROM_QSTR(MP_QSTR_USE_NRF), mp_const_false},
+#endif
+#ifdef USE_DBG_CONSOLE
+    {MP_ROM_QSTR(MP_QSTR_USE_DBG_CONSOLE), mp_const_true},
+#else
+    {MP_ROM_QSTR(MP_QSTR_USE_DBG_CONSOLE), mp_const_false},
+#endif
+#ifdef USE_APP_LOADING
+    {MP_ROM_QSTR(MP_QSTR_USE_APP_LOADING), mp_const_true},
+#else
+    {MP_ROM_QSTR(MP_QSTR_USE_APP_LOADING), mp_const_false},
 #endif
     {MP_ROM_QSTR(MP_QSTR_MODEL), MP_ROM_PTR(&mod_trezorutils_model_name_obj)},
     {MP_ROM_QSTR(MP_QSTR_MODEL_FULL_NAME),

@@ -25,7 +25,7 @@ if TYPE_CHECKING:
         Busy = 15
         ThpUnallocatedSession = 16
         InvalidProtocol = 17
-        BufferError = 18
+        InProgress = 19
         FirmwareError = 99
 
     class ButtonRequestType(IntEnum):
@@ -235,6 +235,7 @@ if TYPE_CHECKING:
         Haptic = 21
         BLE = 22
         NFC = 23
+        Tron = 24
 
     class SdProtectOperationType(IntEnum):
         DISABLE = 0
@@ -394,6 +395,17 @@ if TYPE_CHECKING:
         QrCode = 3
         NFC = 4
 
+    class TronResourceCode(IntEnum):
+        BANDWIDTH = 0
+        ENERGY = 1
+
+    class TronRawContractType(IntEnum):
+        TransferContract = 1
+        TriggerSmartContract = 31
+        FreezeBalanceV2Contract = 54
+        UnfreezeBalanceV2Contract = 55
+        WithdrawExpireUnfreezeContract = 56
+
     class MessageType(IntEnum):
         Initialize = 0
         Ping = 1
@@ -502,6 +514,7 @@ if TYPE_CHECKING:
         DebugLinkGcInfo = 9010
         DebugLinkGetPairingInfo = 9011
         DebugLinkPairingInfo = 9012
+        DebugLinkSetLogFilter = 9013
         EthereumGetPublicKey = 450
         EthereumPublicKey = 451
         EthereumGetAddress = 56
@@ -689,7 +702,23 @@ if TYPE_CHECKING:
         NostrEventSignature = 2004
         EvoluGetNode = 2100
         EvoluNode = 2101
+        EvoluSignRegistrationRequest = 2102
+        EvoluRegistrationRequest = 2103
+        EvoluGetDelegatedIdentityKey = 2104
+        EvoluDelegatedIdentityKey = 2105
+        TronGetAddress = 2200
+        TronAddress = 2201
+        TronSignTx = 2202
+        TronSignature = 2203
+        TronContractRequest = 2204
+        TronTransferContract = 2205
+        TronTriggerSmartContract = 2206
+        TronFreezeBalanceV2Contract = 2207
+        TronUnfreezeBalanceV2Contract = 2208
+        TronWithdrawUnfreeze = 2209
         BenchmarkListNames = 9100
         BenchmarkNames = 9101
         BenchmarkRun = 9102
         BenchmarkResult = 9103
+        TelemetryGet = 1100
+        Telemetry = 1101

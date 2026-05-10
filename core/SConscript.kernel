@@ -14,15 +14,18 @@ TREZOR_MODEL = ARGUMENTS.get('TREZOR_MODEL', 'T2T1')
 CMAKELISTS = int(ARGUMENTS.get('CMAKELISTS', 0))
 PYOPT = ARGUMENTS.get('PYOPT', '1')
 DISABLE_OPTIGA = ARGUMENTS.get('DISABLE_OPTIGA', '0') == '1'
+DISABLE_TROPIC = ARGUMENTS.get('DISABLE_TROPIC', '0') == '1'
 HW_REVISION = ARGUMENTS.get('HW_REVISION', None)
 THP = ARGUMENTS.get('THP', '0') == '1' # Trezor-Host Protocol
 DBG_CONSOLE = ARGUMENTS.get('DBG_CONSOLE', '')
+EXTAPP_SUPPORT = ARGUMENTS.get('EXTAPP_SUPPORT', '0') == '1'
 
 STORAGE_INSECURE_TESTING_MODE = ARGUMENTS.get('STORAGE_INSECURE_TESTING_MODE', '0') == '1'
 if STORAGE_INSECURE_TESTING_MODE and PRODUCTION:
     raise RuntimeError("STORAGE_INSECURE_TESTING_MODE cannot be used in production")
 if STORAGE_INSECURE_TESTING_MODE:
     DISABLE_OPTIGA = True
+    DISABLE_TROPIC = True
     PYOPT = "0"
 
 CCFLAGS_MOD = ''
@@ -48,6 +51,7 @@ FEATURES_WANTED = [
     "dma2d",
     "haptic",
     "input",
+    "ipc",
     "kernel_mode",
     "optiga",
     "power_manager",
@@ -58,6 +62,7 @@ FEATURES_WANTED = [
     "smp",
     "storage",
     "suspend",
+    "telemetry",
     "tropic",
     "usb",
     "usb_iface_wire",
@@ -78,11 +83,19 @@ if DBG_CONSOLE != "":
 if not TREZOR_MODEL in ['T3W1', 'D002']:
     FEATURES_WANTED += ["secure_mode"]
 
+if TREZOR_MODEL in ['T3W1'] and EXTAPP_SUPPORT:
+    FEATURES_WANTED += ["app_loading"]
+
 if DISABLE_OPTIGA:
     # TODO use PYOPT instead of PRODUCTION, same as in firmware, blocked on #4253
     if PRODUCTION:
         raise RuntimeError("DISABLE_OPTIGA requires non-production build")
     FEATURES_WANTED.remove("optiga")
+
+if DISABLE_TROPIC:
+    if PRODUCTION:
+        raise RuntimeError("DISABLE_TROPIC requires non-production build")
+    FEATURES_WANTED.remove("tropic")
 
 FROZEN = True
 
@@ -201,24 +214,28 @@ if FEATURE_FLAGS["SECP256K1_ZKP"]:
     ]
 
 SOURCE_MOD += [
-    'embed/gfx/bitblt/gfx_bitblt.c',
-    'embed/gfx/bitblt/gfx_bitblt_rgb565.c',
-    'embed/gfx/bitblt/gfx_bitblt_rgba8888.c',
-    'embed/gfx/bitblt/gfx_bitblt_mono8.c',
-    'embed/gfx/fonts/font_bitmap.c',
-    'embed/gfx/gfx_color.c',
-    'embed/gfx/gfx_draw.c',
-    'embed/gfx/terminal.c',
-    'embed/util/translations/translations.c',
-    'embed/util/image/boot_image.c',
-    'embed/util/image/image.c',
-    'embed/util/rsod/rsod.c',
+    'embed/io/gfx/bitblt/gfx_bitblt.c',
+    'embed/io/gfx/bitblt/gfx_bitblt_rgb565.c',
+    'embed/io/gfx/bitblt/gfx_bitblt_rgba8888.c',
+    'embed/io/gfx/bitblt/gfx_bitblt_mono8.c',
+    'embed/io/gfx/gfx_color.c',
+    'embed/io/gfx/gfx_draw.c',
+    'embed/io/gfx/rsod.c',
+    'embed/io/gfx/terminal/font_bitmap.c',
+    'embed/io/gfx/terminal/terminal.c',
+    'embed/io/translations/translations.c',
     'embed/rtl/error_handling.c',
-    'embed/rtl/mini_printf.c',
+    'embed/rtl/strutils.c',
+    'embed/sec/image/boot_image.c',
+    'embed/sec/image/image.c',
+    'embed/sec/rsod/rsod_special.c',
     'vendor/micropython/lib/uzlib/adler32.c',
     'vendor/micropython/lib/uzlib/crc32.c',
     'vendor/micropython/lib/uzlib/tinflate.c',
 ]
+
+if not PRODUCTION:
+    SOURCE_MOD += ['embed/rtl/printf.c']
 
 CPPPATH_MOD += [
     'vendor/micropython/lib/uzlib',
@@ -301,11 +318,11 @@ ALLPATHS = [
         'embed/projects/firmware',
         'embed/rtl/inc',
         'embed/models',
-        'embed/gfx/inc',
+        'embed/io/gfx/inc',
+        'embed/io/translations/inc',
+        'embed/sec/image/inc',
+        'embed/sec/rsod/inc',
         'embed/sys/bsp/inc',
-        'embed/util/image/inc',
-        'embed/util/rsod/inc',
-        'embed/util/translations/inc',
     ] + CPPPATH_MOD + PATH_HAL
 
 env.Replace(
@@ -384,6 +401,7 @@ VENDORHEADER = f'embed/models/{TREZOR_MODEL}/vendorheader/vendorheader_{vendor}.
 
 if BOOTLOADER_DEVEL:
     if UNSAFE_FW:
+        # the `_DEV` binaries below are built using `make build_secmon BOOTLOADER_DEVEL=1`
         SECMON = f'embed/models/{TREZOR_MODEL}/secmon/secmon_DEV.bin'
         SECMON_API = f'embed/models/{TREZOR_MODEL}/secmon/secmon_api_DEV.o'
     else:
@@ -431,6 +449,7 @@ rust = tools.add_rust_lib(
     all_paths=ALLPATHS,
     build_dir=str(Dir('.').abspath),
 )
+obj_program += [rust]
 
 
 if "secmon_layout" in FEATURES_AVAILABLE:
@@ -447,7 +466,6 @@ program_elf = env.Command(
 )
 
 env.Depends(program_elf, linkerscript_gen)
-env.Depends(program_elf, rust)
 
 if CMAKELISTS != 0:
     env.Depends(program_elf, cmake_gen)

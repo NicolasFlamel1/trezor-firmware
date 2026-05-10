@@ -14,17 +14,46 @@
 # You should have received a copy of the License along with this library.
 # If not, see <https://www.gnu.org/licenses/lgpl-3.0.html>.
 
+from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 from . import messages
+from .tools import workflow
 
 if TYPE_CHECKING:
-    from .transport.session import Session
+    from .client import Session
 
 
-def get_evolu_node(session: "Session") -> messages.EvoluNode:
+@workflow()
+def get_node(session: Session, proof: bytes) -> bytes:
     return session.call(
-        messages.EvoluGetNode(),
+        messages.EvoluGetNode(proof_of_delegated_identity=proof),
         expect=messages.EvoluNode,
+    ).data
+
+
+def sign_registration_request(
+    session: Session, challenge: bytes, size: int, proof: bytes
+) -> messages.EvoluRegistrationRequest:
+    return session.call(
+        messages.EvoluSignRegistrationRequest(
+            challenge_from_server=challenge,
+            size_to_acquire=size,
+            proof_of_delegated_identity=proof,
+        ),
+        expect=messages.EvoluRegistrationRequest,
     )
+
+
+def get_delegated_identity_key(
+    session: Session,
+    thp_credential: Optional[bytes] = None,
+) -> bytes:
+
+    return session.call(
+        messages.EvoluGetDelegatedIdentityKey(
+            thp_credential=thp_credential,
+        ),
+        expect=messages.EvoluDelegatedIdentityKey,
+    ).private_key

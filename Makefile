@@ -6,7 +6,6 @@ help: ## show this help
 ## style commands:
 
 PY_FILES = $(shell find . -type f -name '*.py'   | sed 'sO^\./OO' | grep -f ./tools/style.py.include | grep -v -f ./tools/style.py.exclude ) common/protob/pb2py
-PY_FILES_LIMITED = $(shell find . -type f -name '*.py'   | sed 'sO^\./OO' | grep -f ./tools/style.py.include | grep -v -f ./tools/style.py.exclude | grep -v -f ./tools/style.py.typecheck.exclude ) common/protob/pb2py
 C_FILES =  $(shell find . -type f -name '*.[ch]' | grep -f ./tools/style.c.include  | grep -v -f ./tools/style.c.exclude )
 
 
@@ -22,10 +21,10 @@ pystyle_check: ## run code style check on application sources and tests
 	pyright --version
 	@echo [TYPECHECK]
 	@make -C core typecheck
+	@echo [TYPECHECK - COMMON and TOOLS]
+	@make typecheck
 	@echo [FLAKE8]
-	@flake8 $(PY_FILES_LIMITED)
-	@echo [FLAKE8 - limited]
-	@flake8 --extend-ignore=ANN $(PY_FILES)
+	@flake8 $(PY_FILES)
 	@echo [ISORT]
 	@isort --check-only $(PY_FILES)
 	@echo [BLACK]
@@ -47,10 +46,10 @@ pystyle: ## apply code style on application sources and tests
 	@black $(PY_FILES)
 	@echo [TYPECHECK]
 	@make -C core typecheck
+	@echo [TYPECHECK - COMMON and TOOLS]
+	@make typecheck
 	@echo [FLAKE8]
-	@flake8 $(PY_FILES_LIMITED)
-	@echo [FLAKE8 - limited]
-	@flake8 --extend-ignore=ANN $(PY_FILES)
+	@flake8 $(PY_FILES)
 	@echo [PYLINT]
 	@pylint $(PY_FILES)
 	@echo [PYTHON]
@@ -95,16 +94,19 @@ defs_check: ## check validity of coin definitions and protobuf files
 ruststyle:
 	@echo [RUSTFMT]
 	@cd core/embed/rust ; cargo fmt
-	@cd rust/trezor-client ; cargo fmt
+	make -C rust style
 
 ruststyle_check:
 	rustfmt --version
 	@echo [RUSTFMT]
 	@cd core/embed/rust ; cargo fmt -- --check
-	@cd rust/trezor-client ; cargo fmt -- --check
+	make -C rust style_check
 
-python_support_check:
-	./tests/test_python_support.py
+
+typecheck: pyright
+
+pyright:
+	python ./tools/pyright_tool.py
 
 ## code generation commands:
 

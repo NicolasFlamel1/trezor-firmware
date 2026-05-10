@@ -22,23 +22,23 @@
 
 #include <io/display.h>
 #include <io/display_utils.h>
+#include <io/notify.h>
+#include <io/rsod.h>
 #include <io/usb_config.h>
+#include <sec/image.h>
 #include <sec/random_delays.h>
+#include <sec/rsod_special.h>
 #include <sec/secret.h>
+#include <sec/unit_properties.h>
 #include <sys/bootargs.h>
 #include <sys/bootutils.h>
-#include <sys/notify.h>
+#include <sys/flash_utils.h>
 #include <sys/system.h>
 #include <sys/systick.h>
 #include <sys/types.h>
-#include <util/flash_otp.h>
-#include <util/flash_utils.h>
-#include <util/image.h>
-#include <util/rsod.h>
-#include <util/unit_properties.h>
 
 #ifdef USE_BOOT_UCB
-#include <util/boot_ucb.h>
+#include <sec/boot_ucb.h>
 #endif
 
 #ifdef USE_PVD
@@ -48,7 +48,7 @@
 #include <io/touch.h>
 #endif
 #ifdef USE_BACKUP_RAM
-#include <sys/backup_ram.h>
+#include <sec/backup_ram.h>
 #endif
 #ifdef USE_BUTTON
 #include <io/button.h>
@@ -66,13 +66,13 @@
 #include <sys/rtc.h>
 #endif
 #ifdef USE_TAMPER
-#include <sys/tamper.h>
+#include <sec/tamper.h>
 #endif
 #ifdef USE_BLE
 #include <io/ble.h>
 #endif
 #ifdef USE_POWER_MANAGER
-#include <sys/power_manager.h>
+#include <io/power_manager.h>
 #endif
 #ifdef USE_HAPTIC
 #include <io/haptic.h>
@@ -89,6 +89,8 @@
 #endif
 
 #include "bootui.h"
+#include "fw_check.h"
+#include "rust_ui_common.h"
 #include "ui_helpers.h"
 #include "version_check.h"
 #include "wire/wire_iface_usb.h"
@@ -104,10 +106,14 @@ void failed_jump_to_firmware(void);
 volatile secbool dont_optimize_out_true = sectrue;
 void (*volatile firmware_jump_fn)(void) = failed_jump_to_firmware;
 
-static secbool is_manufacturing_mode(vendor_header *vhdr) {
+static secbool is_manufacturing_mode(void) {
   unit_properties_init();
 
-  if ((vhdr->vtrust & VTRUST_ALLOW_PROVISIONING) != VTRUST_ALLOW_PROVISIONING) {
+  vendor_header vhdr;
+  memset(&vhdr, 0, sizeof(vhdr));
+  (void)!read_vendor_header((const uint8_t *)FIRMWARE_START, &vhdr);
+
+  if ((vhdr.vtrust & VTRUST_ALLOW_PROVISIONING) != VTRUST_ALLOW_PROVISIONING) {
     return secfalse;
   }
 
@@ -155,7 +161,8 @@ static secbool boot_sequence(void) {
 #endif
 
 #ifdef USE_HAPTIC
-  haptic_init();
+  ts_t status = haptic_init();
+  UNUSED(status);
 #endif
 
 #ifdef USE_RTC
@@ -346,23 +353,6 @@ static void drivers_deinit(void) {
 #endif
 }
 
-static secbool check_vendor_header_lock(const vendor_header *const vhdr) {
-  uint8_t lock[FLASH_OTP_BLOCK_SIZE];
-  ensure(flash_otp_read(FLASH_OTP_BLOCK_VENDOR_HEADER_LOCK, 0, lock,
-                        FLASH_OTP_BLOCK_SIZE),
-         NULL);
-  if (0 ==
-      memcmp(lock,
-             "\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF"
-             "\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF",
-             FLASH_OTP_BLOCK_SIZE)) {
-    return sectrue;
-  }
-  uint8_t hash[32];
-  vendor_header_hash(vhdr, hash);
-  return sectrue * (0 == memcmp(lock, hash, 32));
-}
-
 void failed_jump_to_firmware(void) { error_shutdown("(glitch)"); }
 
 void real_jump_to_firmware(void) {
@@ -392,7 +382,6 @@ void real_jump_to_firmware(void) {
 
   ensure(check_firmware_min_version(hdr->monotonic),
          "Firmware downgrade protection");
-  ensure_firmware_min_version(hdr->monotonic);
 
   ensure(check_image_contents(hdr, IMAGE_HEADER_SIZE + vhdr.hdrlen,
                               &FIRMWARE_AREA),
@@ -416,9 +405,18 @@ void real_jump_to_firmware(void) {
 
   ensure(check_secmon_header_sig(secmon_hdr), "Invalid secmon signature");
 
+  ensure(check_secmon_min_version(secmon_hdr->monotonic),
+         "Secmon downgrade protection");
+
   ensure(check_secmon_contents(secmon_hdr, secmon_start - FIRMWARE_START,
                                &FIRMWARE_AREA),
          "Secmon is corrupted");
+#endif
+
+  // ensure minimal versions are properly stored for both firmware and secmon
+  ensure_firmware_min_version(hdr->monotonic);
+#ifdef USE_SECMON_VERIFICATION
+  ensure_secmon_min_version(secmon_hdr->monotonic);
 #endif
 
   secbool provisioning_access =
@@ -503,15 +501,15 @@ int bootloader_main(void) {
   boot_ucb_erase();
 #endif
 
-  vendor_header vhdr;
-  volatile secbool vhdr_present = secfalse;
-  vhdr_present = read_vendor_header((const uint8_t *)FIRMWARE_START, &vhdr);
-
-  secbool manufacturing_mode = is_manufacturing_mode(&vhdr);
+  secbool manufacturing_mode = is_manufacturing_mode();
 
   secbool stay_in_bootloader = boot_sequence();
 
   drivers_init(manufacturing_mode, &touch_initialized);
+
+#ifdef DISABLE_ANIMATION
+  disable_animation(true);
+#endif
 
 #ifdef USE_BOOTARGS_RSOD
   if (bootargs_get_command() == BOOT_COMMAND_SHOW_RSOD) {
@@ -559,99 +557,10 @@ int bootloader_main(void) {
   hal_delay(400);
 #endif
 
-  const image_header *hdr = NULL;
-
-  // detect whether the device contains a valid firmware
-  volatile secbool vhdr_keys_ok = secfalse;
-  volatile secbool vhdr_lock_ok = secfalse;
-  volatile secbool img_hdr_ok = secfalse;
-  volatile secbool model_ok = secfalse;
-  volatile secbool signatures_ok = secfalse;
-  volatile secbool version_ok = secfalse;
-  volatile secbool header_present = secfalse;
-  volatile secbool firmware_present = secfalse;
-  volatile secbool firmware_present_backup = secfalse;
   volatile secbool auto_upgrade = secfalse;
-  volatile secbool secmon_valid = secfalse;
 
-  if (sectrue == vhdr_present) {
-    vhdr_keys_ok = check_vendor_header_keys(&vhdr);
-  }
-
-  if (sectrue == vhdr_keys_ok) {
-    vhdr_lock_ok = check_vendor_header_lock(&vhdr);
-  }
-
-  if (sectrue == vhdr_lock_ok) {
-    hdr = read_image_header(
-        (const uint8_t *)(size_t)(FIRMWARE_START + vhdr.hdrlen),
-        FIRMWARE_IMAGE_MAGIC, FIRMWARE_MAXSIZE);
-    if (hdr == (const image_header *)(size_t)(FIRMWARE_START + vhdr.hdrlen)) {
-      img_hdr_ok = sectrue;
-    }
-  }
-  if (sectrue == img_hdr_ok) {
-    model_ok = check_image_model(hdr);
-  }
-
-  if (sectrue == model_ok) {
-    signatures_ok =
-        check_image_header_sig(hdr, vhdr.vsig_m, vhdr.vsig_n, vhdr.vpub);
-  }
-
-  if (sectrue == signatures_ok) {
-    version_ok = check_firmware_min_version(hdr->monotonic);
-  }
-
-  if (sectrue == version_ok) {
-    header_present = version_ok;
-  }
-
-#ifdef USE_SECMON_VERIFICATION
-  size_t secmon_start = (size_t)IMAGE_CODE_ALIGN(FIRMWARE_START + vhdr.hdrlen +
-                                                 IMAGE_HEADER_SIZE);
-
-  const secmon_header_t *secmon_hdr =
-      read_secmon_header((const uint8_t *)secmon_start, FIRMWARE_MAXSIZE);
-
-  volatile secbool secmon_header_present = secfalse;
-  volatile secbool secmon_model_valid = secfalse;
-  volatile secbool secmon_header_sig_valid = secfalse;
-  volatile secbool secmon_contents_valid = secfalse;
-
-  if (sectrue == header_present) {
-    secmon_header_present =
-        secbool_and(header_present, (secmon_hdr != NULL) * sectrue);
-  }
-
-  if (sectrue == secmon_header_present) {
-    secmon_model_valid =
-        secbool_and(secmon_header_present, check_secmon_model(secmon_hdr));
-  }
-
-  if (sectrue == secmon_model_valid) {
-    secmon_header_sig_valid =
-        secbool_and(secmon_model_valid, check_secmon_header_sig(secmon_hdr));
-  }
-
-  if (sectrue == secmon_header_sig_valid) {
-    secmon_contents_valid = secbool_and(
-        secmon_header_sig_valid,
-        check_secmon_contents(secmon_hdr, secmon_start - FIRMWARE_START,
-                              &FIRMWARE_AREA));
-    secmon_valid = secmon_contents_valid;
-  }
-
-#else
-  secmon_valid = header_present;
-#endif
-
-  if (sectrue == secmon_valid) {
-    ensure_firmware_min_version(hdr->monotonic);
-    firmware_present = check_image_contents(
-        hdr, IMAGE_HEADER_SIZE + vhdr.hdrlen, &FIRMWARE_AREA);
-    firmware_present_backup = firmware_present;
-  }
+  fw_info_t fw;
+  fw_check(&fw);
 
 #if PRODUCTION && !defined STM32U5
   // for STM32U5, this check is moved to boardloader
@@ -664,7 +573,7 @@ int bootloader_main(void) {
       stay_in_bootloader = sectrue;
       break;
     case BOOT_COMMAND_INSTALL_UPGRADE:
-      if (firmware_present == sectrue) {
+      if (fw.firmware_present == sectrue) {
         // continue without user interaction
         auto_upgrade = sectrue;
       }
@@ -673,7 +582,8 @@ int bootloader_main(void) {
       break;
   }
 
-  ensure(dont_optimize_out_true * (firmware_present == firmware_present_backup),
+  ensure(dont_optimize_out_true *
+             (fw.firmware_present == fw.firmware_present_backup),
          NULL);
 
   // delay to detect touch or skip if we know we are staying in bootloader
@@ -681,7 +591,7 @@ int bootloader_main(void) {
   uint32_t touched = 0;
 #ifndef USE_POWER_MANAGER
 #ifdef USE_TOUCH
-  if (firmware_present == sectrue && stay_in_bootloader != sectrue) {
+  if (fw.firmware_present == sectrue && stay_in_bootloader != sectrue) {
     // Wait until the touch controller is ready
     // (on hardware this may take a while)
     if (touch_initialized != secfalse) {
@@ -709,7 +619,8 @@ int bootloader_main(void) {
 #endif
 #endif
 
-  ensure(dont_optimize_out_true * (firmware_present == firmware_present_backup),
+  ensure(dont_optimize_out_true *
+             (fw.firmware_present == fw.firmware_present_backup),
          NULL);
 
   notify_send(NOTIFY_BOOT);
@@ -719,18 +630,16 @@ int bootloader_main(void) {
   // ... or we have stay_in_bootloader flag to force it
   // ... or strict upgrade was confirmed in the firmware (auto_upgrade flag)
   // ... or there is no valid firmware
-  if (touched || stay_in_bootloader == sectrue || firmware_present != sectrue ||
-      auto_upgrade == sectrue) {
+  if (touched || stay_in_bootloader == sectrue ||
+      fw.firmware_present != sectrue || auto_upgrade == sectrue) {
     workflow_result_t result;
 
 #ifdef LAZY_DISPLAY_INIT
     display_touch_init(secfalse, &touch_initialized);
 #endif
 
-    if (header_present == sectrue) {
-      fw_info_t fw = {
-          .vhdr = &vhdr, .hdr = hdr, .firmware_present = firmware_present};
-      if (auto_upgrade == sectrue && firmware_present == sectrue) {
+    if (fw.header_present == sectrue) {
+      if (auto_upgrade == sectrue && fw.firmware_present == sectrue) {
         result = workflow_auto_update(&fw);
       } else {
         result = workflow_bootloader(&fw);
@@ -773,11 +682,11 @@ int bootloader_main(void) {
       }
     }
   } else {
-    ensure(
-        dont_optimize_out_true * (firmware_present == firmware_present_backup),
-        NULL);
+    ensure(dont_optimize_out_true *
+               (fw.firmware_present == fw.firmware_present_backup),
+           NULL);
 
-    if (sectrue == firmware_present) {
+    if (sectrue == fw.firmware_present) {
       firmware_jump_fn = real_jump_to_firmware;
     }
 

@@ -18,7 +18,7 @@ import pytest
 
 from trezorlib import btc, messages, models
 from trezorlib.cli import btc as btc_cli
-from trezorlib.debuglink import SessionDebugWrapper as Session
+from trezorlib.debuglink import DebugSession as Session
 from trezorlib.tools import H_
 
 from ...input_flows import InputFlowShowXpubQRCode
@@ -161,16 +161,16 @@ def _address_n(purpose, coin, account, script_type):
     return res
 
 
-@pytest.mark.models("core")
 @pytest.mark.parametrize(
     "coin, account, purpose, script_type, descriptors", VECTORS_DESCRIPTORS
 )
 def test_descriptors(
     session: Session, coin, account, purpose, script_type, descriptors
 ):
-    with session.client as client:
-        IF = InputFlowShowXpubQRCode(session.client)
-        client.set_input_flow(IF.get())
+    with session.test_ctx as client:
+        if client.model != models.T1B1:
+            IF = InputFlowShowXpubQRCode(session)
+            client.set_input_flow(IF.get())
 
         address_n = _address_n(purpose, coin, account, script_type)
         res = btc.get_public_node(
@@ -191,11 +191,29 @@ def test_descriptors(
 def test_descriptors_trezorlib(
     session: Session, coin, account, purpose, script_type, descriptors
 ):
-    with session.client as client:
-        if session.client.model != models.T1B1:
-            IF = InputFlowShowXpubQRCode(session.client)
+    with session.test_ctx as client:
+        if session.model != models.T1B1:
+            IF = InputFlowShowXpubQRCode(session)
             client.set_input_flow(IF.get())
         res = btc_cli._get_descriptor(
             session, coin, account, purpose, script_type, show_display=True
         )
         assert res == descriptors
+
+
+def test_descriptors_unsupported(session: Session):
+    with session.test_ctx as client:
+        if session.model != models.T1B1:
+            IF = InputFlowShowXpubQRCode(session)
+            client.set_input_flow(IF.get())
+
+        address_n = [H_(45), H_(0)]
+        res = btc.get_public_node(
+            session,
+            address_n,
+            show_display=True,
+            coin_name="Bitcoin",
+            script_type=messages.InputScriptType.SPENDMULTISIG,
+            ignore_xpub_magic=True,
+        )
+        assert res.descriptor is None

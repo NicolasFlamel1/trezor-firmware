@@ -23,15 +23,15 @@
 #include <trezor_rtl.h>
 
 #include <io/display.h>
+#include <io/rsod.h>
 #include <io/usb.h>
 #include <io/usb_config.h>
 #include <rtl/cli.h>
+#include <sec/board_capabilities.h>
+#include <sec/unit_properties.h>
+#include <sys/flash_otp.h>
 #include <sys/system.h>
 #include <sys/systick.h>
-#include <util/board_capabilities.h>
-#include <util/flash_otp.h>
-#include <util/rsod.h>
-#include <util/unit_properties.h>
 
 #include "commands.h"
 #include "rust_types.h"
@@ -51,7 +51,7 @@
 #endif
 
 #ifdef USE_BACKUP_RAM
-#include <sys/backup_ram.h>
+#include <sec/backup_ram.h>
 #endif
 
 #ifdef USE_TOUCH
@@ -60,7 +60,7 @@
 
 #ifdef USE_OPTIGA
 #include <sec/optiga_commands.h>
-#include <sec/optiga_transport.h>
+#include <sec/optiga_init.h>
 #include "cmd/prodtest_optiga.h"
 #endif
 
@@ -89,7 +89,7 @@
 #endif
 
 #ifdef USE_POWER_MANAGER
-#include <sys/power_manager.h>
+#include <io/power_manager.h>
 #endif
 
 #ifdef USE_STORAGE_HWKEY
@@ -102,11 +102,11 @@
 #endif
 
 #ifdef USE_HW_REVISION
-#include <util/hw_revision.h>
+#include <sec/hw_revision.h>
 #endif
 
 #ifdef USE_TAMPER
-#include <sys/tamper.h>
+#include <sec/tamper.h>
 #endif
 
 #ifdef TREZOR_MODEL_T2T1
@@ -182,7 +182,9 @@ static void drivers_init(void) {
   sbu_init();
 #endif
 #ifdef USE_HAPTIC
-  haptic_init();
+  ts_t status;
+  status = haptic_init();
+  UNUSED(status);
 #endif
 #ifdef USE_RGB_LED
   rgb_led_init();
@@ -196,7 +198,7 @@ static void drivers_init(void) {
 #else
   tropic_init();
 #endif
-  tropic_wait_for_ready();
+  tropic_wait_for_ready(NULL);
 #endif
 #ifdef USE_HW_REVISION
   hw_revision_init();
@@ -250,7 +252,7 @@ int prodtest_main(void) {
 #endif
 
 #ifdef TREZOR_MODEL_T3W1
-  display_set_backlight(85);
+  display_set_backlight(155);
 #else
   display_set_backlight(150);
 #endif

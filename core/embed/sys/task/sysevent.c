@@ -24,9 +24,14 @@
 
 #ifdef KERNEL_MODE
 
+#include <sys/mpu.h>
 #include <sys/sysevent_source.h>
 #include <sys/systask.h>
 #include <trezor_bsp.h>
+
+#ifdef KERNEL
+#include <sys/applet.h>
+#endif
 
 #ifdef TREZOR_EMULATOR
 #include <sys/unix/sdl_event.h>
@@ -38,9 +43,12 @@ typedef struct {
   // Deadline for the task to be woken up
   uint32_t deadline;
   // Bitmask of events the task is waiting for
-  const sysevents_t *awaited;
+  sysevents_t awaited;
   // Bitmask of events that were signaled
-  sysevents_t *signalled;
+  sysevents_t signalled;
+
+  sysevents_t *signalled_arg;
+
 } sysevent_poller_t;
 
 typedef struct {
@@ -128,13 +136,13 @@ void syshandle_signal_read_ready(syshandle_t handle, void *param) {
   for (size_t i = 0; i < dispatcher->pollers_count; i++) {
     sysevent_poller_t *poller = &dispatcher->pollers[i];
     syshandle_mask_t handle_mask = 1 << handle;
-    if ((poller->awaited->read_ready & handle_mask) != 0) {
+    if ((poller->awaited.read_ready & handle_mask) != 0) {
       if (source->vmt->check_read_ready != NULL) {
         if (source->vmt->check_read_ready(source->context,
                                           systask_id(poller->task), param)) {
-          poller->signalled->read_ready |= handle_mask;
+          poller->signalled.read_ready |= handle_mask;
         } else {
-          poller->signalled->read_ready &= ~handle_mask;
+          poller->signalled.read_ready &= ~handle_mask;
         }
       }
     }
@@ -153,13 +161,13 @@ void syshandle_signal_write_ready(syshandle_t handle, void *param) {
   for (size_t i = 0; i < dispatcher->pollers_count; i++) {
     sysevent_poller_t *poller = &dispatcher->pollers[i];
     syshandle_mask_t handle_mask = 1 << handle;
-    if ((poller->awaited->write_ready & handle_mask) != 0) {
+    if ((poller->awaited.write_ready & handle_mask) != 0) {
       if (source->vmt->check_write_ready != NULL) {
         if (source->vmt->check_write_ready(source->context,
                                            systask_id(poller->task), param)) {
-          poller->signalled->write_ready |= handle_mask;
+          poller->signalled.write_ready |= handle_mask;
         } else {
-          poller->signalled->write_ready &= ~handle_mask;
+          poller->signalled.write_ready &= ~handle_mask;
         }
       }
     }
@@ -210,8 +218,9 @@ void sysevents_poll(const sysevents_t *awaited, sysevents_t *signalled,
   // Add task to the polling list
   // Kernel task has the highest priority so it is always first in the list
   dispatcher->pollers[prio].task = systask_active();
-  dispatcher->pollers[prio].awaited = awaited;
-  dispatcher->pollers[prio].signalled = signalled;
+  dispatcher->pollers[prio].awaited = *awaited;
+  dispatcher->pollers[prio].signalled = (sysevents_t){0};
+  dispatcher->pollers[prio].signalled_arg = signalled;
   dispatcher->pollers[prio].deadline = deadline;
 
   if (active_task != kernel_task) {
@@ -231,8 +240,8 @@ void sysevents_poll(const sysevents_t *awaited, sysevents_t *signalled,
     // Gather sources to poll
     for (size_t i = 0; i < dispatcher->pollers_count; i++) {
       sysevent_poller_t *poller = &dispatcher->pollers[i];
-      handles_to_read |= poller->awaited->read_ready;
-      handles_to_write |= poller->awaited->write_ready;
+      handles_to_read |= poller->awaited.read_ready;
+      handles_to_write |= poller->awaited.write_ready;
     }
 
     // Poll sources we are waiting for
@@ -249,14 +258,23 @@ void sysevents_poll(const sysevents_t *awaited, sysevents_t *signalled,
 
     uint32_t now = systick_ms();
 
+    bool events_processed = false;
+
     // Choose the next task to run
     for (size_t prio = 0; prio < dispatcher->pollers_count; prio++) {
       sysevent_poller_t *poller = &dispatcher->pollers[prio];
       bool timed_out = ((int32_t)(poller->deadline - now)) <= 0;
-      bool ready = (poller->signalled->read_ready != 0) ||
-                   (poller->signalled->write_ready != 0);
+      bool ready = (poller->signalled.read_ready != 0) ||
+                   (poller->signalled.write_ready != 0);
       if (ready || timed_out) {
+        events_processed = true;
         systask_t *task = poller->task;
+#if defined(KERNEL) && !defined(TREZOR_EMULATOR)
+        systask_set_mpu(task);
+#endif
+        if (poller->signalled_arg != NULL) {
+          *poller->signalled_arg = poller->signalled;
+        }
         remove_poller(dispatcher, prio);
         if (task == kernel_task) {
           return;
@@ -267,13 +285,15 @@ void sysevents_poll(const sysevents_t *awaited, sysevents_t *signalled,
       }
     }
 
+    if (!events_processed) {
 #ifdef TREZOR_EMULATOR
-    // Wait a bit to not consume 100% CPU
-    systick_delay_ms(1);
+      // Wait a bit to not consume 100% CPU
+      systick_delay_ms(1);
 #else
-    // Wait for the next event
-    __WFI();
+      // Wait for the next event
+      __WFI();
 #endif
+    }
   }
 }
 
@@ -309,6 +329,33 @@ void sysevents_notify_task_killed(systask_t *task) {
       source->vmt->task_killed(source->context, task_id);
     }
   }
+}
+
+// Yields the active task and schedules it to be resumed
+//
+// Adds the current active taqsk to the polling list without waiting for any
+// specific events and with an immediate timeout of 0. This effectively
+// schedules the task to resume as soon as possible when the
+void sysevents_yield_and_reschedule(systask_t *task) {
+  sysevent_dispatcher_t *dispatcher = &g_sysevent_dispatcher;
+
+  systask_t *active_task = systask_active();
+
+  if (active_task != systask_kernel()) {
+    uint32_t prio = dispatcher->pollers_count;
+
+    insert_poller(dispatcher, prio);
+
+    // Add task to the polling list
+    // (Do not wait for any events, just scschedule it)
+    dispatcher->pollers[prio].task = active_task;
+    dispatcher->pollers[prio].awaited = (sysevents_t){0};
+    dispatcher->pollers[prio].signalled = (sysevents_t){0};
+    dispatcher->pollers[prio].signalled_arg = NULL;
+    dispatcher->pollers[prio].deadline = ticks_timeout(0);
+  }
+
+  systask_yield_to(task);
 }
 
 #endif  // KERNEL_MODE

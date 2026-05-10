@@ -23,7 +23,8 @@
 
 #include <libtropic.h>
 
-#include <sec/rng.h>
+#include <memzero.h>
+#include <sec/rng_strong.h>
 #include <sec/tropic.h>
 #include <sys/systick.h>
 
@@ -34,11 +35,17 @@ typedef struct {
 
 static tropic01_hal_driver_t g_tropic01_hal_driver = {.initialized = false};
 
+static tropic_ui_progress_t ui_progress = NULL;
+
+void tropic_set_ui_progress(tropic_ui_progress_t f) { ui_progress = f; }
+
 void tropic01_reset(void) {
+  HAL_GPIO_WritePin(TROPIC01_SPI_NSS_PORT, TROPIC01_SPI_NSS_PIN,
+                    GPIO_PIN_RESET);
   HAL_GPIO_WritePin(TROPIC01_PWR_PORT, TROPIC01_PWR_PIN, GPIO_PIN_SET);
   systick_delay_ms(10);
   HAL_GPIO_WritePin(TROPIC01_PWR_PORT, TROPIC01_PWR_PIN, GPIO_PIN_RESET);
-  systick_delay_ms(10);
+  HAL_GPIO_WritePin(TROPIC01_SPI_NSS_PORT, TROPIC01_SPI_NSS_PIN, GPIO_PIN_SET);
 }
 
 lt_ret_t lt_port_init(lt_l2_state_t *s2) {
@@ -165,7 +172,7 @@ lt_ret_t lt_port_spi_transfer(lt_l2_state_t *s2, uint8_t offset,
                               uint16_t tx_len, uint32_t timeout_ms) {
   tropic01_hal_driver_t *drv = &g_tropic01_hal_driver;
 
-  if (offset + tx_len > LT_L1_LEN_MAX) {
+  if (offset + tx_len > TR01_L1_LEN_MAX) {
     return LT_L1_DATA_LEN_ERROR;
   }
   int ret = HAL_SPI_TransmitReceive(&drv->spi, s2->buff + offset,
@@ -182,6 +189,10 @@ lt_ret_t lt_port_delay(lt_l2_state_t *s2, uint32_t ms) {
 
   systick_delay_ms(ms);
 
+  if (ui_progress != NULL) {
+    ui_progress();
+  }
+
   return LT_OK;
 }
 
@@ -191,6 +202,10 @@ lt_ret_t lt_port_random_bytes(lt_l2_state_t *s2, void *buff, size_t count) {
   rng_fill_buffer((uint8_t *)buff, count);
 
   return LT_OK;
+}
+
+void lt_secure_memzero(void *const ptr, const size_t count) {
+  memzero(ptr, count);
 }
 
 #endif
