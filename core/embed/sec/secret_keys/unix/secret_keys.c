@@ -26,6 +26,14 @@
 #include <sec/secret_keys.h>
 #include "../secret_keys_common.h"
 
+#ifdef USE_MCU_ATTESTATION
+secbool secret_key_mcu_device_auth(uint8_t dest[MLDSA_SEEDBYTES]) {
+  _Static_assert(MLDSA_SEEDBYTES == SHA256_DIGEST_LENGTH);
+  memset(dest, 3, SHA256_DIGEST_LENGTH);
+  return sectrue;
+}
+#endif  // USE_MCU_ATTESTATION
+
 #ifdef USE_TROPIC
 
 static uint8_t SECRET_TROPIC_PAIRING_BYTES[] = {
@@ -43,12 +51,6 @@ _Static_assert(sizeof(SECRET_TROPIC_PAIRING_BYTES) == sizeof(curve25519_key),
 
 _Static_assert(sizeof(SECRET_TROPIC_PUBKEY_BYTES) == sizeof(curve25519_key),
                "Invalid size of Tropic public key");
-
-secbool secret_key_mcu_device_auth(uint8_t dest[MLDSA_SEEDBYTES]) {
-  _Static_assert(MLDSA_SEEDBYTES == SHA256_DIGEST_LENGTH);
-  memset(dest, 3, SHA256_DIGEST_LENGTH);
-  return sectrue;
-}
 
 secbool secret_key_tropic_public(curve25519_key dest) {
   memcpy(dest, SECRET_TROPIC_PUBKEY_BYTES, sizeof(curve25519_key));
@@ -72,14 +74,15 @@ secbool secret_key_tropic_masking(uint8_t dest[ECDSA_PRIVATE_KEY_SIZE]) {
 
 #endif  // USE_TROPIC
 
-secbool secret_key_delegated_identity(uint8_t dest[ECDSA_PRIVATE_KEY_SIZE]) {
+secbool secret_key_delegated_identity(uint16_t rotation_index,
+                                      uint8_t dest[ECDSA_PRIVATE_KEY_SIZE]) {
 #ifdef SECRET_UNPRIVILEGED_MASTER_KEY_SLOT
   static uint8_t key_slot = SECRET_UNPRIVILEGED_MASTER_KEY_SLOT;
 #else
   static uint8_t key_slot = UNUSED_KEY_SLOT;
 #endif
   return secret_key_derive_nist256p1(key_slot, KEY_INDEX_DELEGATED_IDENTITY,
-                                     dest);
+                                     rotation_index, dest);
 }
 
 secbool secret_key_master_key_get(secret_key_master_key_t* master_key) {

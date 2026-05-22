@@ -71,38 +71,32 @@ void get_boardloader_version(boardloader_version_t *version) {
 
 void reboot_to_bootloader(void) {
   smcall_invoke0(SMCALL_REBOOT_TO_BOOTLOADER);
-  while (1)
-    ;
+  while (1);
 }
 
 void reboot_and_upgrade(const uint8_t hash[32]) {
   smcall_invoke1((uint32_t)hash, SMCALL_REBOOT_AND_UPGRADE);
-  while (1)
-    ;
+  while (1);
 }
 
 void reboot_device(void) {
   smcall_invoke0(SMCALL_REBOOT_DEVICE);
-  while (1)
-    ;
+  while (1);
 }
 
 void reboot_or_halt_after_rsod(void) {
   smcall_invoke0(SMCALL_REBOOT_DEVICE);
-  while (1)
-    ;
+  while (1);
 }
 
 void reboot_to_off(void) {
   smcall_invoke0(SMCALL_REBOOT_TO_OFF);
-  while (1)
-    ;
+  while (1);
 }
 
 void reboot_with_rsod(const systask_postmortem_t *pminfo) {
   smcall_invoke1((uint32_t)pminfo, SMCALL_REBOOT_WITH_RSOD);
-  while (1)
-    ;
+  while (1);
 }
 
 // =============================================================================
@@ -207,7 +201,7 @@ void optiga_init_and_configure(void) {
   smcall_invoke0(SMCALL_OPTIGA_INIT_AND_CONFIGURE);
 }
 
-#if PYOPT == 0
+#if USE_OPTIGA_TESTING
 void optiga_set_sec_max(void) { smcall_invoke0(SMCALL_OPTIGA_SET_SEC_MAX); }
 
 #endif
@@ -221,12 +215,37 @@ void optiga_set_sec_max(void) { smcall_invoke0(SMCALL_OPTIGA_SET_SEC_MAX); }
 #ifdef USE_SECRET_KEYS
 #include <sec/secret_keys.h>
 
-secbool secret_key_delegated_identity(uint8_t dest[ECDSA_PRIVATE_KEY_SIZE]) {
-  return (secbool)smcall_invoke1((uint32_t)dest,
+secbool secret_key_delegated_identity(uint16_t rotation_index,
+                                      uint8_t dest[ECDSA_PRIVATE_KEY_SIZE]) {
+  return (secbool)smcall_invoke2(rotation_index, (uint32_t)dest,
                                  SMCALL_SECRET_KEYS_GET_DELEGATED_IDENTITY_KEY);
 }
 
 #endif
+
+#ifdef USE_MCU_ATTESTATION
+#include <sec/mcu_attestation.h>
+
+secbool mcu_attestation_cert_size(size_t *cert_size) {
+  return (secbool)smcall_invoke1((uint32_t)cert_size,
+                                 SMCALL_MCU_ATTESTATION_CERT_SIZE);
+}
+
+secbool mcu_attestation_cert_read(uint8_t *cert, size_t max_cert_size,
+                                  size_t *cert_size) {
+  return (secbool)smcall_invoke3((uint32_t)cert, (uint32_t)max_cert_size,
+                                 (uint32_t)cert_size,
+                                 SMCALL_MCU_ATTESTATION_CERT_READ);
+}
+
+secbool mcu_attestation_sign(const uint8_t *challenge, size_t challenge_size,
+                             uint8_t signature[MCU_ATTESTATION_SIG_SIZE]) {
+  return (secbool)smcall_invoke3((uint32_t)challenge, (uint32_t)challenge_size,
+                                 (uint32_t)signature,
+                                 SMCALL_MCU_ATTESTATION_SIGN);
+}
+
+#endif  // USE_MCU_ATTESTATION
 
 // =============================================================================
 // storage.h
@@ -400,7 +419,7 @@ bool backup_ram_write(uint16_t key, backup_ram_item_type_t type,
 
 #endif  // USE_BACKUP_RAM
 
-#ifdef USE_NRF
+#ifdef USE_NRF_AUTH
 
 #include <sec/secret.h>
 

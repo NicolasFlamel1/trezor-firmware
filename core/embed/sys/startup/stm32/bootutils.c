@@ -32,10 +32,6 @@
 #include <sys/systick.h>
 #include <sys/sysutils.h>
 
-#ifdef STM32F4
-#include <io/display.h>
-#endif
-
 // Battery powered devices (USE_POWER_MANAGER) should not stall
 // after showing RSOD, as it would drain the battery.
 #ifdef USE_POWER_MANAGER
@@ -128,8 +124,7 @@ static void halt_device_phase_2(uint32_t arg1, uint32_t arg2) {
   clear_otg_hs_memory();
 #endif
 
-  while (true)
-    ;  // Infinite loop
+  while (true);  // Infinite loop
 }
 
 __attribute__((noreturn)) static void halt_device(void) {
@@ -174,7 +169,8 @@ static void reboot_with_args_phase_2(uint32_t arg1, uint32_t arg2) {
     SysTick_Config(HAL_RCC_GetSysClockFreq() / 1000U);
     NVIC_SetPriority(SysTick_IRQn, 0);
 #endif
-    jump_to_vectbl(BOOTLOADER_START + BOOTLOADER_VECTBL_OFFSET, command);
+    jump_to_vectbl(BOOTLOADER_START + BOOTLOADER_VECTBL_OFFSET, command, NULL,
+                   0);
   }
 #else
 #error Unsupported platform
@@ -190,11 +186,10 @@ __attribute__((noreturn)) static void reboot_with_args(boot_command_t command,
 
 #ifdef STM32F4
   // We are going to jump directly to the bootloader, so we need to
-  // ensure that the device is in a compatible state. Following lines
-  // ensure the display is properly deinitialized, CPU frequency is
-  // properly set and we are running in privileged thread mode.
-  display_deinit(DISPLAY_RESET_CONTENT);
-  ensure_compatible_settings();
+  // ensure that the device is in a compatible state.
+  ensure_compatible_display_settings_for_bootloader();
+  ensure_compatible_core_clock();
+  // Ensure the device is running in privileged thread mode.
   ensure_thread_mode();
 #endif
 
@@ -240,7 +235,12 @@ __attribute__((noreturn)) void reboot_or_halt_after_rsod(void) {
 
 #endif  // SECURE_MODE
 
+// args1 - vector table address of the next stage
+// args2 - pointer to the startup_args_t struct
 static void jump_to_next_stage_phase_2(uint32_t arg1, uint32_t arg2) {
+  const startup_args_t* args = (const startup_args_t*)arg2;
+  size_t args_size = (args != NULL) ? sizeof(startup_args_t) + args->size : 0;
+
   // We are now running on a new stack. We cannot be sure about
   // any variables in the .bss and .data sections, so we must
   // be careful and avoid using them altogether.
@@ -256,24 +256,28 @@ static void jump_to_next_stage_phase_2(uint32_t arg1, uint32_t arg2) {
   memregion_t region = MEMREGION_ALL_RUNTIME_RAM;
   MEMREGION_DEL_SECTION(&region, _stack_section);
   MEMREGION_DEL_SECTION(&region, _bootargs_ram);
+  if (args_size != 0) {
+    memregion_del_range(&region, (uint8_t*)args, (uint8_t*)args + args_size);
+  }
   memregion_fill(&region, 0);
 
   // Jump to reset vector of the next stage
-  jump_to_vectbl(arg1, 0);
+  jump_to_vectbl(arg1, 0, (void*)args, args_size);
 }
 
-void __attribute__((noreturn)) jump_to_next_stage(uint32_t vectbl_address) {
+void __attribute__((noreturn)) jump_to_next_stage(uint32_t vectbl_address,
+                                                  const startup_args_t* args) {
 #ifdef STM32F4
   // Ensure the display is properly deinitialized, CPU frequency is
-  // properly set. It's needed for backward compatibility with the older
+  // properly set. This is needed for backward compatibility with the older
   // firmware.
-  display_deinit(DISPLAY_JUMP_BEHAVIOR);
-  ensure_compatible_settings();
+  ensure_compatible_display_settings();
+  ensure_compatible_core_clock();
 #endif
 
   // Disable interrupts, MPU, clear all registers and set up a new stack
-  // (on STM32U5 it also clear all CPU secrets and SRAM2).
-  call_with_new_stack(vectbl_address, 0, false, jump_to_next_stage_phase_2);
+  call_with_new_stack(vectbl_address, (uint32_t)args, false,
+                      jump_to_next_stage_phase_2);
 }
 
 #endif  // KERNEL_MODE

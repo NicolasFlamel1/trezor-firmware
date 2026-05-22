@@ -151,6 +151,7 @@ enum MessageType {
     MessageType_DebugLinkN4W1Write = 9015 [(bitcoin_only) = true, (wire_debug_out) = true];
     MessageType_DebugLinkN4W1Read = 9016 [(bitcoin_only) = true, (wire_debug_out) = true];
     MessageType_DebugLinkN4W1Response = 9017 [(bitcoin_only) = true, (wire_debug_in) = true];
+    MessageType_DebugLinkSetBatteryState = 9018 [(bitcoin_only) = true, (wire_debug_in) = true];
 
     // Ethereum
     MessageType_EthereumGetPublicKey = 450 [(wire_in) = true];
@@ -378,10 +379,10 @@ enum MessageType {
     MessageType_MimbleWimbleCoinLoginChallengeSignature = 0xC796 [(wire_out) = true];
 
     // THP
-    MessageType_ThpCreateNewSession = 1000 [(bitcoin_only) = true];
+    MessageType_ThpCreateNewSession = 1000 [(wire_in) = true, (bitcoin_only) = true];
     reserved 1001 to 1015;  // see ThpMessageType in messages-thp.proto
-    MessageType_ThpCredentialRequest = 1016 [(bitcoin_only) = true];
-    MessageType_ThpCredentialResponse = 1017 [(bitcoin_only) = true];
+    MessageType_ThpCredentialRequest = 1016 [(wire_in) = true, (bitcoin_only) = true];
+    MessageType_ThpCredentialResponse = 1017 [(wire_out) = true, (bitcoin_only) = true];
     reserved 1018 to 1099;  // see ThpMessageType in messages-thp.proto
 
     // Nostr
@@ -397,6 +398,8 @@ enum MessageType {
     MessageType_EvoluRegistrationRequest = 2103 [(bitcoin_only) = true, (wire_out) = true];
     MessageType_EvoluGetDelegatedIdentityKey = 2104 [(bitcoin_only) = true, (wire_in) = true];
     MessageType_EvoluDelegatedIdentityKey = 2105 [(bitcoin_only) = true, (wire_out) = true];
+    MessageType_EvoluIndexManagement = 2106 [(bitcoin_only) = true, (wire_in) = true];
+    MessageType_EvoluIndexManagementResponse = 2107 [(bitcoin_only) = true, (wire_out) = true];
 
     // Tron
     MessageType_TronGetAddress = 2200 [(wire_in) = true];

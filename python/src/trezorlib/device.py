@@ -150,6 +150,7 @@ def recover(
     language: Optional[str] = None,
     input_callback: Optional[Callable] = None,
     input_method: messages.RecoveryDeviceInputMethod = messages.RecoveryDeviceInputMethod.ScrambledWords,
+    backup_method: Optional[messages.BackupMethod] = None,
     dry_run: Optional[bool] = None,
     u2f_counter: Optional[int] = None,
     *,
@@ -181,6 +182,9 @@ def recover(
     if session.features.model == "1" and input_callback is None:
         raise RuntimeError("Input callback required for Trezor One")
 
+    if session.features.model == "1" and backup_method is not None:
+        raise RuntimeError("Backup method cannot be set for Trezor One")
+
     if word_count not in (12, 18, 24):
         raise ValueError("Invalid word count. Use 12/18/24")
 
@@ -196,6 +200,7 @@ def recover(
         word_count=word_count,
         enforce_wordlist=True,
         input_method=input_method,
+        backup_method=backup_method,
         type=type,
     )
 
@@ -322,6 +327,7 @@ def setup(
     skip_backup: bool = False,
     no_backup: bool = False,
     backup_type: Optional[messages.BackupType] = None,
+    backup_method: Optional[messages.BackupMethod] = None,
     entropy_check_count: Optional[int] = None,
     paths: Iterable[Address] = [],
     _get_entropy: Callable[[], bytes] = _get_external_entropy,
@@ -407,6 +413,7 @@ def setup(
         no_backup=bool(no_backup),
         backup_type=backup_type,
         entropy_check=entropy_check_count > 0,
+        backup_method=backup_method,
     )
     if entropy_check_count > 0:
         xpubs = _reset_with_entropycheck(
@@ -553,6 +560,7 @@ def backup(
     session: "Session",
     group_threshold: Optional[int] = None,
     groups: Iterable[tuple[int, int]] = (),
+    backup_method: Optional[messages.BackupMethod] = None,
 ) -> None:
     session.call(
         messages.BackupDevice(
@@ -561,6 +569,7 @@ def backup(
                 messages.Slip39Group(member_threshold=t, member_count=c)
                 for t, c in groups
             ],
+            backup_method=backup_method,
         ),
         expect=messages.Success,
     )

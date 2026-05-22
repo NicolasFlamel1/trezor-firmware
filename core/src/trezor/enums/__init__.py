@@ -524,6 +524,7 @@ if TYPE_CHECKING:
         DebugLinkN4W1Write = 9015
         DebugLinkN4W1Read = 9016
         DebugLinkN4W1Response = 9017
+        DebugLinkSetBatteryState = 9018
         EthereumGetPublicKey = 450
         EthereumPublicKey = 451
         EthereumGetAddress = 56
@@ -716,6 +717,8 @@ if TYPE_CHECKING:
         EvoluRegistrationRequest = 2103
         EvoluGetDelegatedIdentityKey = 2104
         EvoluDelegatedIdentityKey = 2105
+        EvoluIndexManagement = 2106
+        EvoluIndexManagementResponse = 2107
         TronGetAddress = 2200
         TronAddress = 2201
         TronSignTx = 2202

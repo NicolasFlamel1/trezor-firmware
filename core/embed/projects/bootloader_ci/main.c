@@ -29,6 +29,7 @@
 #include <io/usb_config.h>
 #include <sec/image.h>
 #include <sec/random_delays.h>
+#include <sec/rsod_special.h>
 #include <sys/bootargs.h>
 #include <sys/bootutils.h>
 #include <sys/flash_otp.h>
@@ -46,6 +47,10 @@
 
 #ifdef USE_HASH_PROCESSOR
 #include <sec/hash_processor.h>
+#endif
+
+#ifdef USE_TRUSTZONE
+#include <sec/tz_init.h>
 #endif
 
 #define USB_IFACE_NUM SYSHANDLE_USB_WIRE
@@ -167,6 +172,10 @@ static secbool check_vendor_header_lock(const vendor_header *const vhdr) {
 }
 
 int main(void) {
+#ifdef USE_TRUSTZONE
+  tz_init();
+#endif
+
   system_init(&rsod_panic_handler);
 
   drivers_init();
@@ -263,8 +272,10 @@ int main(void) {
 
   system_deinit();
 
-  jump_to_next_stage(
-      IMAGE_CODE_ALIGN(FIRMWARE_START + vhdr.hdrlen + IMAGE_HEADER_SIZE));
+  uint32_t vectbl_addr =
+      IMAGE_CODE_ALIGN(FIRMWARE_START + vhdr.hdrlen + IMAGE_HEADER_SIZE);
+
+  jump_to_next_stage(vectbl_addr, NULL);
 
   return 0;
 }

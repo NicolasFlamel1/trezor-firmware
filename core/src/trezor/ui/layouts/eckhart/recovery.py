@@ -38,20 +38,20 @@ async def request_word(
 ) -> str:
     prompt = TR.recovery__word_x_of_y_template.format(word_index + 1, word_count)
     if is_slip39:
-        keyboard = trezorui_api.request_slip39(
+        ctx = trezorui_api.request_slip39(
             prompt=prompt, prefill_word=prefill_word, can_go_back=True
         )
     else:
-        keyboard = trezorui_api.request_bip39(
+        ctx = trezorui_api.request_bip39(
             prompt=prompt, prefill_word=prefill_word, can_go_back=True
         )
 
-    word: str = await interact(
-        keyboard,
-        "mnemonic" if send_button_request else None,
-        ButtonRequestType.MnemonicInput,
-    )
-    return word
+    with ctx as obj:
+        return await interact(
+            obj,
+            "mnemonic" if send_button_request else None,
+            ButtonRequestType.MnemonicInput,
+        )
 
 
 def format_remaining_shares_info(
@@ -162,7 +162,7 @@ async def show_already_added() -> None:
     )
 
 
-async def show_group_thresholod() -> None:
+async def show_group_threshold() -> None:
     await show_recovery_warning(
         "warning_group_threshold",
         f"{TR.recovery__group_threshold_reached} {TR.recovery__enter_share_from_diff_group}",

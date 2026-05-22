@@ -50,6 +50,7 @@ STORAGE_INSECURE_TESTING_MODE ?= 0
 UI_PERFORMANCE_OVERLAY ?= 0
 DBG_CONSOLE ?=
 EXTAPP_SUPPORT ?= 0
+N4W1 ?= 0
 
 # If set, VCP writes will be blocking, in order to allow reliable debug data transmission over VCP.
 # Disabled by default, to prevent debug firmware from getting stuck while writing log messages (if the host is not reading them).
@@ -147,7 +148,8 @@ SCONS_VARS = \
 	UI_PERFORMANCE_OVERLAY="$(UI_PERFORMANCE_OVERLAY)" \
 	BLOCK_ON_VCP="$(BLOCK_ON_VCP)" \
 	DBG_CONSOLE="$(DBG_CONSOLE)" \
-	EXTAPP_SUPPORT="$(EXTAPP_SUPPORT)"
+	EXTAPP_SUPPORT="$(EXTAPP_SUPPORT)" \
+	N4W1="$(N4W1)"
 
 ifdef DISABLE_OPTIGA
 SCONS_VARS += DISABLE_OPTIGA="$(DISABLE_OPTIGA)"
@@ -269,6 +271,9 @@ clippy:
 	export BUILD_DIR=$(abspath $(UNIX_BUILD_DIR)) ; \
 	cd embed/rust ; cargo clippy $(TESTOPTS) --all-features --target=$(RUST_TARGET)
 
+audit_rust: ## run cargo audit on rust dependencies
+	cd embed/rust ; cargo audit
+
 ## code generation:
 
 templates: translations ## render Mako templates (for lists of coins, tokens, etc.)
@@ -349,8 +354,7 @@ build_unix_debug: templates ## build unix port
 
 build_cross: ## build mpy-cross port
 	INC=-I$(CURDIR)/embed/upymod/mpycross_include/ \
-		$(MAKE) -C vendor/micropython/mpy-cross $(CROSS_PORT_OPTS) \
-		CFLAGS_EXTRA="-DMICROPY_ENABLE_SOURCE_LINE=$(MICROPY_ENABLE_SOURCE_LINE) -Wno-unterminated-string-initialization"
+		$(MAKE) -C vendor/micropython/mpy-cross $(CROSS_PORT_OPTS)
 
 ## clean commands:
 
@@ -533,7 +537,13 @@ upload: ## upload firmware using trezorctl
 upload_prodtest: ## upload prodtest using trezorctl
 	trezorctl firmware_update -s -f $(PRODTEST_BUILD_DIR)/prodtest.bin
 
-coverage:  ## generate coverage report
+# Skip the frozen-build rebuild when preprocessed `.i` files are already
+# present (e.g. downloaded as a CI artifact); otherwise build first so local
+# `make coverage` is self-contained.
+COVERAGE_I_SENTINEL := $(UNIX_BUILD_DIR)/src/trezor/utils.i
+COVERAGE_BUILD_DEP  := $(if $(wildcard $(COVERAGE_I_SENTINEL)),,build_unix_frozen)
+
+coverage: $(COVERAGE_BUILD_DEP) ## generate coverage report
 	./tools/coverage-report
 	./tools/coverage-annotate.py $(shell find . -name '.coverage*.json*') > htmlcov/hits.md
 

@@ -35,8 +35,8 @@
 #include "py/objtype.h"
 
 #include <io/usb.h>
-#include "embed/rust/librust.h"
-#include "embed/upymod/trezorobj.h"
+#include "../../rust/librust.h"
+#include "../trezorobj.h"
 
 #if !TREZOR_EMULATOR
 #define fopen(path, mode) &mp_plat_print
@@ -103,7 +103,7 @@
   } while (0)
 
 #define BLOCK_FROM_PTR(ptr) \
-  (((byte *)(ptr)-MP_STATE_MEM(gc_pool_start)) / BYTES_PER_BLOCK)
+  (((byte *)(ptr) - MP_STATE_MEM(gc_pool_start)) / BYTES_PER_BLOCK)
 #define PTR_FROM_BLOCK(block) \
   (((block) * BYTES_PER_BLOCK + (uintptr_t)MP_STATE_MEM(gc_pool_start)))
 #define ATB_FROM_BLOCK(bl) ((bl) / BLOCKS_PER_ATB)

@@ -22,12 +22,13 @@ SCM_REVISION = ARGUMENTS.get('SCM_REVISION', None)
 THP = ARGUMENTS.get('THP', '0') == '1' # Trezor-Host Protocol
 BENCHMARK = ARGUMENTS.get('BENCHMARK', '0') == '1'
 LOG_STACK_USAGE = ARGUMENTS.get('LOG_STACK_USAGE', '0') == '1'
-MICROPY_ENABLE_SOURCE_LINE = ARGUMENTS.get('MICROPY_ENABLE_SOURCE_LINE', '0')
+MICROPY_ENABLE_SOURCE_LINE = ARGUMENTS.get('MICROPY_ENABLE_SOURCE_LINE', '0') == '1'
 DISABLE_ANIMATION = ARGUMENTS.get('TREZOR_DISABLE_ANIMATION', '0') == '1'
 BLOCK_ON_VCP = ARGUMENTS.get('BLOCK_ON_VCP', '0') == '1'
 UI_PERFORMANCE_OVERLAY = ARGUMENTS.get('UI_PERFORMANCE_OVERLAY', '0') == '1'
 DBG_CONSOLE = ARGUMENTS.get('DBG_CONSOLE', '')
 EXTAPP_SUPPORT = ARGUMENTS.get('EXTAPP_SUPPORT', '0') == '1'
+N4W1 = ARGUMENTS.get('N4W1', '0') == '1'
 
 STORAGE_INSECURE_TESTING_MODE = ARGUMENTS.get('STORAGE_INSECURE_TESTING_MODE', '0') == '1'
 if STORAGE_INSECURE_TESTING_MODE and PRODUCTION:
@@ -97,6 +98,10 @@ if DBG_CONSOLE != "":
 if TREZOR_MODEL in ['T3W1'] and EXTAPP_SUPPORT:
     FEATURES_WANTED += ["app_loading"]
 
+if N4W1:
+    assert PYOPT == "0", "N4W1 requires PYOPT=0"
+    FEATURES_WANTED += ["n4w1"]
+
 CCFLAGS_MOD = ''
 CPPPATH_MOD = []
 CPPDEFINES_MOD = []
@@ -136,7 +141,7 @@ CPPDEFINES_MOD += [
     ('USE_CARDANO', '1' if EVERYTHING else '0'),
     ('USE_NEM', '1' if (EVERYTHING and TREZOR_MODEL == "T2T1") else '0'),
     ('USE_EOS', '1' if (EVERYTHING and TREZOR_MODEL == "T2T1") else '0'),
-    ('MICROPY_ENABLE_SOURCE_LINE', MICROPY_ENABLE_SOURCE_LINE),
+    ('MICROPY_ENABLE_SOURCE_LINE', '1' if MICROPY_ENABLE_SOURCE_LINE else '0'),
     ('DISABLE_ANIMATION', '1' if DISABLE_ANIMATION else '0'),
     ('LOG_STACK_USAGE', '1' if LOG_STACK_USAGE else '0'),
     ('BLOCK_ON_VCP', '1' if BLOCK_ON_VCP else '0'),
@@ -279,7 +284,6 @@ SOURCE_MOD += [
     'embed/rtl/error_handling.c',
     'embed/rtl/scm_revision.c',
     'embed/rtl/strutils.c',
-    'embed/sec/image/boot_image_embdata.c',
     'embed/sec/image/image.c',
     'vendor/micropython/lib/uzlib/adler32.c',
     'vendor/micropython/lib/uzlib/crc32.c',
@@ -457,7 +461,7 @@ ui.init_ui(TREZOR_MODEL, "firmware", RUST_UI_FEATURES)
 SOURCE_QSTR = SOURCE_MOD + SOURCE_MICROPYTHON + SOURCE_MICROPYTHON_SPEED
 
 if PYOPT == '0':
-    DEBUG_FLAGS = "-DMICROPY_OOM_CALLBACK=1 -DSTATIC="
+    DEBUG_FLAGS = "-DMICROPY_OOM_CALLBACK=1 -DSTATIC= -DUSE_OPTIGA_TESTING=1"
 else:
     DEBUG_FLAGS = "-DMICROPY_OOM_CALLBACK=0"
 
@@ -476,8 +480,10 @@ env = Environment(
 FEATURES_AVAILABLE = models.configure_board(TREZOR_MODEL, HW_REVISION, FEATURES_WANTED, env, CPPDEFINES_HAL, SOURCE_HAL, PATH_HAL)
 
 SOURCE_FIRMWARE = [
+    'embed/projects/firmware/boot_image_embdata.c',
     'embed/projects/firmware/header.S',
     'embed/projects/firmware/main.c',
+    'embed/projects/firmware/stm32/coreapp_header.S',
     'embed/projects/firmware/mphalport.c',
     'embed/projects/firmware/nlrthumb.c',
 ]
@@ -486,6 +492,8 @@ SDCARD = ('sd_card' in FEATURES_AVAILABLE)
 OPTIGA = ('optiga' in FEATURES_AVAILABLE)
 SERIAL_NUMBER = ('serial_number' in FEATURES_AVAILABLE)
 BACKLIGHT = ('backlight' in FEATURES_AVAILABLE)
+TELEMETRY = ('telemetry' in FEATURES_AVAILABLE)
+N4W1 = ('n4w1' in FEATURES_AVAILABLE)
 
 env.Tool('micropython')
 
@@ -699,11 +707,10 @@ if FROZEN:
             ([
                 SOURCE_PY_DIR + 'storage/cache_codec.py',
                 SOURCE_PY_DIR + 'storage/cache_codec_keys.py'
-            ] if THP and PYOPT != '0' else []) +
-            ([
+            ] if THP else [
                 SOURCE_PY_DIR + 'storage/cache_thp.py',
                 SOURCE_PY_DIR + 'storage/cache_thp_keys.py'
-            ] if not THP else [])
+            ])
         )
     ))
 
@@ -742,7 +749,7 @@ if FROZEN:
         )
     ))
     if PYOPT == '0':
-        exclude_n4w1 = [SOURCE_PY_DIR + 'apps/debug/n4w1_mock.py'] if TREZOR_MODEL != "T3W1" else []
+        exclude_n4w1 = [SOURCE_PY_DIR + 'apps/debug/n4w1_mock.py'] if not N4W1 else []
         SOURCE_PY.extend(Glob(SOURCE_PY_DIR + 'apps/debug/*.py', exclude=exclude_n4w1))
     SOURCE_PY.extend(Glob(SOURCE_PY_DIR + 'apps/homescreen/*.py',
         exclude=[
@@ -763,7 +770,7 @@ if FROZEN:
         ))
     )
     SOURCE_PY.extend(Glob(SOURCE_PY_DIR + 'apps/misc/*.py'))
-    if 'telemetry' in FEATURES_AVAILABLE:
+    if TELEMETRY:
         SOURCE_PY.extend(Glob(SOURCE_PY_DIR + 'apps/telemetry/*.py'))
     SOURCE_PY.extend(Glob(SOURCE_PY_DIR + 'apps/bitcoin/*.py'))
     SOURCE_PY.extend(Glob(SOURCE_PY_DIR + 'apps/bitcoin/*/*.py',
@@ -774,7 +781,11 @@ if FROZEN:
         ])
     )
 
-    SOURCE_PY.extend(Glob(SOURCE_PY_DIR + 'apps/evolu/*.py'))
+    SOURCE_PY.extend(Glob(SOURCE_PY_DIR + 'apps/evolu/*.py',
+        exclude=[
+            SOURCE_PY_DIR + 'apps/evolu/sign_registration_request.py'
+        ] if not ('optiga' in FEATURES_AVAILABLE) else [])
+    )  # TODO: refactor to `OPTIGA` after rebase
 
     if BENCHMARK:
         SOURCE_PY.extend(Glob(SOURCE_PY_DIR + 'apps/benchmark/*.py'))
@@ -854,11 +865,17 @@ if FROZEN:
         tropic='tropic' in FEATURES_AVAILABLE,
         use_ble='ble' in FEATURES_AVAILABLE,
         use_button='button' in FEATURES_AVAILABLE,
+        use_haptic='haptic' in FEATURES_AVAILABLE,
+        use_rgb_led='rgb_led' in FEATURES_AVAILABLE,
         use_touch='touch' in FEATURES_AVAILABLE,
         ui_layout=ui.get_ui_layout(TREZOR_MODEL),
         thp=THP,
         power_manager='power_manager' in FEATURES_AVAILABLE,
-        )
+        telemetry=TELEMETRY,
+        n4w1=N4W1,
+        include_source_lines=MICROPY_ENABLE_SOURCE_LINE,
+        emulator=False,
+    )
 
     source_mpyc = env.FrozenCFile(
         target='frozen_mpy.c', source=source_mpy, qstr_header=qstr_preprocessed)

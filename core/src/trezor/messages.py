@@ -2432,6 +2432,8 @@ if TYPE_CHECKING:
         optiga_signature: "AnyBytes"
         tropic_certificates: "list[AnyBytes]"
         tropic_signature: "AnyBytes | None"
+        mcu_certificates: "list[AnyBytes]"
+        mcu_signature: "AnyBytes | None"
 
         def __init__(
             self,
@@ -2439,7 +2441,9 @@ if TYPE_CHECKING:
             optiga_signature: "AnyBytes",
             optiga_certificates: "list[AnyBytes] | None" = None,
             tropic_certificates: "list[AnyBytes] | None" = None,
+            mcu_certificates: "list[AnyBytes] | None" = None,
             tropic_signature: "AnyBytes | None" = None,
+            mcu_signature: "AnyBytes | None" = None,
         ) -> None:
             pass
 
@@ -2592,7 +2596,7 @@ if TYPE_CHECKING:
         input_method: "RecoveryDeviceInputMethod | None"
         u2f_counter: "int | None"
         type: "RecoveryType"
-        backup_method: "BackupMethod"
+        backup_method: "BackupMethod | None"
 
         def __init__(
             self,
@@ -3071,6 +3075,32 @@ if TYPE_CHECKING:
 
         @classmethod
         def is_type_of(cls, msg: Any) -> TypeGuard["DebugLinkEraseSdCard"]:
+            return isinstance(msg, cls)
+
+    class DebugLinkSetBatteryState(protobuf.MessageType):
+        soc: "int | None"
+        usb_connected: "bool | None"
+        wireless_connected: "bool | None"
+        ntc_connected: "bool | None"
+        charging_limited: "bool | None"
+        temp_control_active: "bool | None"
+        battery_connected: "bool | None"
+
+        def __init__(
+            self,
+            *,
+            soc: "int | None" = None,
+            usb_connected: "bool | None" = None,
+            wireless_connected: "bool | None" = None,
+            ntc_connected: "bool | None" = None,
+            charging_limited: "bool | None" = None,
+            temp_control_active: "bool | None" = None,
+            battery_connected: "bool | None" = None,
+        ) -> None:
+            pass
+
+        @classmethod
+        def is_type_of(cls, msg: Any) -> TypeGuard["DebugLinkSetBatteryState"]:
             return isinstance(msg, cls)
 
     class DebugLinkOptigaSetSecMax(protobuf.MessageType):
@@ -4187,11 +4217,13 @@ if TYPE_CHECKING:
 
     class EvoluGetNode(protobuf.MessageType):
         proof_of_delegated_identity: "AnyBytes"
+        node_rotation_index: "int"
 
         def __init__(
             self,
             *,
             proof_of_delegated_identity: "AnyBytes",
+            node_rotation_index: "int | None" = None,
         ) -> None:
             pass
 
@@ -4249,11 +4281,15 @@ if TYPE_CHECKING:
 
     class EvoluGetDelegatedIdentityKey(protobuf.MessageType):
         thp_credential: "AnyBytes | None"
+        rotation_index: "int | None"
+        rotate: "bool | None"
 
         def __init__(
             self,
             *,
             thp_credential: "AnyBytes | None" = None,
+            rotation_index: "int | None" = None,
+            rotate: "bool | None" = None,
         ) -> None:
             pass
 
@@ -4263,16 +4299,46 @@ if TYPE_CHECKING:
 
     class EvoluDelegatedIdentityKey(protobuf.MessageType):
         private_key: "AnyBytes"
+        rotation_index: "int | None"
 
         def __init__(
             self,
             *,
             private_key: "AnyBytes",
+            rotation_index: "int | None" = None,
         ) -> None:
             pass
 
         @classmethod
         def is_type_of(cls, msg: Any) -> TypeGuard["EvoluDelegatedIdentityKey"]:
+            return isinstance(msg, cls)
+
+    class EvoluIndexManagement(protobuf.MessageType):
+        rotation_index: "int | None"
+
+        def __init__(
+            self,
+            *,
+            rotation_index: "int | None" = None,
+        ) -> None:
+            pass
+
+        @classmethod
+        def is_type_of(cls, msg: Any) -> TypeGuard["EvoluIndexManagement"]:
+            return isinstance(msg, cls)
+
+    class EvoluIndexManagementResponse(protobuf.MessageType):
+        rotation_index: "int | None"
+
+        def __init__(
+            self,
+            *,
+            rotation_index: "int | None" = None,
+        ) -> None:
+            pass
+
+        @classmethod
+        def is_type_of(cls, msg: Any) -> TypeGuard["EvoluIndexManagementResponse"]:
             return isinstance(msg, cls)
 
     class MimbleWimbleCoinGetRootPublicKey(protobuf.MessageType):

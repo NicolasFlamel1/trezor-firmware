@@ -48,13 +48,13 @@ __attribute((noreturn)) void call_with_new_stack(uint32_t arg1, uint32_t arg2,
 //    error_handler callback that draws an RSOD screen.
 void ensure_thread_mode(void);
 
-// Ensure compatible hardware settings before jumping to
+// Ensure compatible core clock settings before jumping to
 // the different booting stage. This function is used to
 // ensure backward compatibility with older versions of
 // released bootloaders and firmware.
 //
 // Does nothing on almost all platforms.
-void ensure_compatible_settings(void);
+void ensure_compatible_core_clock(void);
 
 // Clears USB peripheral fifo memory
 //
@@ -72,7 +72,12 @@ void reset_peripherals_and_interrupts(void);
 //
 // The target binary is called with interrupts disabled, and all registers
 // are cleared except R11, which is set to the specified value.
-__attribute((noreturn)) void jump_to_vectbl(uint32_t vectbl_addr, uint32_t r11);
+//
+// If args_size is non-zero, args_size bytes from args are moved to the top
+// of the target stack (overlap-safe) and R0 points to the moved block.
+// If args_size is zero, R0 is set to NULL.
+__attribute((noreturn)) void jump_to_vectbl(uint32_t vectbl_addr, uint32_t r11,
+                                            void* args, size_t args_size);
 
 #ifdef SECMON
 // Jumps to the NON-SECURE binary using its vector table.

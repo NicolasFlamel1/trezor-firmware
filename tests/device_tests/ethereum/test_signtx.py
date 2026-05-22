@@ -288,30 +288,43 @@ def test_data_streaming(session: Session):
         client.set_input_flow(flow.get())
         is_legacy = client.model in models.LEGACY_MODELS
 
-        br_sign_tx = messages.ButtonRequest(code=messages.ButtonRequestType.SignTx)
+        def br_sign_tx(n):
+            return messages.ButtonRequest(
+                code=messages.ButtonRequestType.SignTx, name=n
+            )
+
         br_protect = messages.ButtonRequest(code=messages.ButtonRequestType.ProtectCall)
 
-        expected_responses: list[ExpectedResponse] = [br_sign_tx]
-        if is_legacy:
-            expected_responses += [br_sign_tx] * LEGACY_MAX_DATA_PAGES + [
-                br_protect,
-                br_sign_tx,
-            ]
-
-        expected_responses.extend(
-            message_filters.EthereumTxRequest(
-                data_length=data_length,
-                signature_r=None,
-                signature_s=None,
-                signature_v=None,
+        def tx_request(l):
+            return message_filters.EthereumTxRequest(
+                data_length=l, signature_r=None, signature_s=None, signature_v=None
             )
-            for data_length in (1_024, 1_024, 1_024, 3)
-        )
 
-        if not is_legacy:
-            expected_responses += [br_sign_tx, br_sign_tx]
+        if is_legacy:
+            expected_responses: list[ExpectedResponse] = []
+            expected_responses += [br_sign_tx(None)]
+            expected_responses += [br_sign_tx(None)] * LEGACY_MAX_DATA_PAGES
+            expected_responses += [
+                br_protect,
+                br_sign_tx(None),
+            ]
+            expected_responses += [tx_request(l) for l in (1024, 1024, 1024, 3)]
+            expected_responses += [message_filters.EthereumTxRequest(data_length=None)]
+        else:
+            expected_responses: list[ExpectedResponse] = []
+            expected_responses += [tx_request(l) for l in (1024, 1024, 1024)]
+            expected_responses += [br_sign_tx("confirm_data")]
+            expected_responses += [tx_request(3)]
+            if client.model is models.T3T1 or client.model is models.T3W1:
+                # related issue: https://github.com/trezor/trezor-firmware/issues/6490
+                # TODO: make these consistent!
+                expected_responses += [br_sign_tx("confirm_output")]
+                expected_responses += [br_sign_tx("confirm_total")]
+            else:
+                expected_responses += [br_sign_tx("confirm_ethereum_tx")]
+                expected_responses += [br_sign_tx("confirm_ethereum_tx")]
+            expected_responses += [message_filters.EthereumTxRequest(data_length=None)]
 
-        expected_responses += [message_filters.EthereumTxRequest(data_length=None)]
         client.set_expected_responses(expected_responses)
 
         ethereum.sign_tx(
@@ -488,12 +501,20 @@ def test_sanity_checks_eip1559(session: Session):
         )
 
 
-HEXDATA = "0123456789abcd000023456789abcd010003456789abcd020000456789abcd030000056789abcd040000006789abcd050000000789abcd060000000089abcd070000000009abcd080000000000abcd090000000001abcd0a0000000011abcd0b0000000111abcd0c0000001111abcd0d0000011111abcd0e0000111111abcd0f0000000002abcd100000000022abcd110000000222abcd120000002222abcd130000022222abcd140000222222abcd15"
+DATA_FOR_PAGINATION = bytes.fromhex(
+    "0123456789abcd000023456789abcd010003456789abcd020000456789abcd030000056789abcd040000006789abcd050000000789abcd060000000089abcd070000000009abcd080000000000abcd090000000001abcd0a0000000011abcd0b0000000111abcd0c0000001111abcd0d0000011111abcd0e0000111111abcd0f0000000002abcd100000000022abcd110000000222abcd120000002222abcd130000022222abcd140000222222abcd15"
+)
 
 
-@pytest.mark.parametrize("scroll", [True, False])
+@pytest.mark.parametrize(
+    "scroll,size", product([True, False], [len(DATA_FOR_PAGINATION), 10_000])
+)
 @pytest.mark.models("core")
-def test_signtx_data_pagination(session: Session, scroll: bool):
+def test_signtx_data_pagination(session: Session, scroll: bool, size: int):
+    data = DATA_FOR_PAGINATION * (1 + (size // len(DATA_FOR_PAGINATION)))
+    data = data[:size]
+    assert len(data) == size
+
     def _sign_tx_call():
         ethereum.sign_tx(
             session,
@@ -505,7 +526,7 @@ def test_signtx_data_pagination(session: Session, scroll: bool):
             chain_id=1,
             value=0xA,
             tx_type=None,
-            data=bytes.fromhex(HEXDATA),
+            data=data,
         )
 
     # test pagination

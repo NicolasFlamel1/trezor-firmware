@@ -495,6 +495,11 @@ MP_NOINLINE int main_(int argc, char **argv) {
 
   mp_init();
 
+#if MICROPY_ENABLE_COMPILER && MICROPY_ENABLE_SOURCE_LINE
+  // include source lines on non-frozen builds
+  MP_STATE_VM(include_source_lines) = true;
+#endif
+
   char *home = getenv("HOME");
   char *path = getenv("MICROPYPATH");
   if (path == NULL) {
@@ -602,8 +607,7 @@ MP_NOINLINE int main_(int argc, char **argv) {
         } else {
           MP_STATE_VM(mp_optimise_value) = 0;
           for (char *p = argv[a] + 1; *p && *p == 'O';
-               p++, MP_STATE_VM(mp_optimise_value)++)
-            ;
+               p++, MP_STATE_VM(mp_optimise_value)++);
         }
       } else {
         return usage(argv);

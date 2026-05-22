@@ -24,7 +24,7 @@ LOG_DECLARE(emulator)
 
 #undef FIRMWARE_START
 
-uint8_t *FIRMWARE_START = 0;
+uintptr_t FIRMWARE_START = 0;
 
 int bootloader_main(void);
 
@@ -141,11 +141,13 @@ int main(int argc, char **argv) {
   flash_init();
   flash_otp_init();
 
-  FIRMWARE_START = (uint8_t *)flash_area_get_address(&FIRMWARE_AREA, 0, 0);
+  FIRMWARE_START = (uintptr_t)flash_area_get_address(&FIRMWARE_AREA, 0, 0);
 
   // simulate non-empty storage so that we know whether it was erased or not
   if (storage_empty(&STORAGE_AREAS[0])) {
-    secbool ret = flash_area_write_word(&STORAGE_AREAS[0], 16, 0x12345678);
+    uint32_t data = 0x12345678;
+    secbool ret =
+        flash_area_write_data(&STORAGE_AREAS[0], 0, &data, sizeof(data));
     (void)ret;
   }
 
@@ -232,7 +234,7 @@ int main(int argc, char **argv) {
   return 0;
 }
 
-void jump_to_next_stage(uint32_t address) {
+void jump_to_next_stage(uint32_t address, const startup_args_t *args) {
   bool storage_is_erased =
       storage_empty(&STORAGE_AREAS[0]) && storage_empty(&STORAGE_AREAS[1]);
 

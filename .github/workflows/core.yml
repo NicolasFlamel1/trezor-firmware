@@ -148,6 +148,7 @@ jobs:
           path: |
             core/build/unix/trezor-emu-core*
             core/build/bootloader_emu/bootloader.elf
+            core/build/unix/src/**/*.i
           retention-days: 7
 
   core_emu_arm:
@@ -243,6 +244,7 @@ jobs:
         if: matrix.asan == 'noasan'
       - run: nix-shell --run "uv run make -C core clippy"
       - run: nix-shell --run "uv run make -C core test_rust"
+      - run: nix-shell --run "uv run make -C core audit_rust"
 
   core_rust_client_test:
     name: Rust trezor-client tests
@@ -384,24 +386,34 @@ jobs:
       matrix:
         # FIXME: T3B1 https://github.com/trezor/trezor-firmware/issues/2724
         # FIXME: T3T1 https://github.com/trezor/trezor-firmware/issues/3595
-        model: [T2T1]
+        model: [T2T1, T3W1]
         asan: ${{ fromJSON(needs.param.outputs.asan) }}
     env:
-      TREZOR_UPGRADE_TEST: core
       PYTEST_TIMEOUT: 20
       TESTOPTS: "--durations 10"
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # actions/checkout@v6.0.2
         with:
           submodules: recursive
+      - name: Set upgrade selector
+        run: |
+          echo "TREZOR_UPGRADE_TEST=${{ matrix.model }}" >> "$GITHUB_ENV"
       - uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3  # actions/download-artifact@v8.0.0
         with:
           name: core-emu-${{ matrix.model }}-universal-debuglink-${{ matrix.asan }}
           path: core/build
       - run: chmod +x core/build/unix/trezor-emu-core*
       - uses: ./.github/actions/environment
+        if: ${{ matrix.model != 'T3W1' }}
+      - uses: ./.github/actions/environment
+        if: ${{ matrix.model == 'T3W1' }}
+        with:
+          full-deps: true
       - run: nix-shell --run "tests/download_emulators.sh ${{ matrix.model }}"
       - run: nix-shell --run "uv run pytest tests/upgrade_tests"
+        if: ${{ matrix.model != 'T3W1' }}
+      - run: nix-shell --arg fullDeps true --run "uv run pytest tests/upgrade_tests"
+        if: ${{ matrix.model == 'T3W1' }}
       - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f  # actions/upload-artifact@v7.0.0
         with:
           name: core-test-upgrade-${{ matrix.model }}-${{ matrix.asan }}
@@ -430,6 +442,9 @@ jobs:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # actions/checkout@v6.0.2
         with:
           submodules: recursive
+      - name: Set upgrade selector
+        run: |
+          echo "TREZOR_UPGRADE_TEST=${{ matrix.model }}" >> "$GITHUB_ENV"
       - uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3  # actions/download-artifact@v8.0.0
         with:
           name: core-emu-${{ matrix.model }}-universal-debuglink-${{ matrix.asan }}
@@ -656,6 +671,7 @@ jobs:
     name: Coverage report
     runs-on: ubuntu-latest
     needs:
+      - core_emu
       - core_click_test
       - core_persistence_test
       - core_device_test
@@ -667,8 +683,7 @@ jobs:
       matrix:
         model: [T2T1, T3B1, T3T1, T3W1]
     env:
-      # TODO: https://github.com/trezor/trezor-firmware/issues/5957
-      COVERAGE_THRESHOLD: ${{ matrix.model == 'T3B1' && 84 || 85 }}
+      COVERAGE_THRESHOLD: 85
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # actions/checkout@v6.0.2
         with:
@@ -678,7 +693,15 @@ jobs:
           pattern: core-coverage-${{ matrix.model }}-*
           path: core
           merge-multiple: true
+      # Reuse the frozen-build artifact produced by `core_emu` (noasan variant
+      # matches the test jobs that set TREZOR_PROFILING=1) so the preprocessed
+      # .i sources are available without rebuilding.
+      - uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3  # actions/download-artifact@v8.0.0
+        with:
+          name: core-emu-${{ matrix.model }}-universal-debuglink-noasan
+          path: core/build
       - uses: ./.github/actions/environment
+      # `make coverage` uses .i files downloaded above
       - run: nix-shell --run "uv run make -C core coverage"
       - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f  # actions/upload-artifact@v7.0.0
         with:

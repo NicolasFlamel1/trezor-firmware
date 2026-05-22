@@ -92,6 +92,8 @@ EvoluSignRegistrationRequest = 2102
 EvoluRegistrationRequest = 2103
 EvoluGetDelegatedIdentityKey = 2104
 EvoluDelegatedIdentityKey = 2105
+EvoluIndexManagement = 2106
+EvoluIndexManagementResponse = 2107
 BenchmarkListNames = 9100
 BenchmarkNames = 9101
 BenchmarkRun = 9102
@@ -124,6 +126,7 @@ if __debug__:
     DebugLinkN4W1Write = 9015
     DebugLinkN4W1Read = 9016
     DebugLinkN4W1Response = 9017
+    DebugLinkSetBatteryState = 9018
 if utils.USE_THP:
     ThpCreateNewSession = 1000
     ThpCredentialRequest = 1016

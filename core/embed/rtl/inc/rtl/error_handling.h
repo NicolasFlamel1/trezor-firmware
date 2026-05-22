@@ -46,6 +46,7 @@ typedef struct {
 #define TS_EIO ts_make(EIO)
 #define TS_EBADMSG ts_make(EBADMSG)
 #define TS_EACCES ts_make(EACCES)
+#define TS_EEXIST ts_make(EEXIST)
 
 /** List of Trezor-specific error codes with offset from 2000 to avoid mixing
  * with standard errno codes */
@@ -155,8 +156,9 @@ const char *ts_string(ts_t status);
  * @param footer Footer of the error message (defaults to
  *  "PLEASE VISIT TREZOR.IO/RSOD" if NULL)
  */
-void __attribute__((noreturn))
-error_shutdown_ex(const char *title, const char *message, const char *footer);
+void __attribute__((noreturn)) error_shutdown_ex(const char *title,
+                                                 const char *message,
+                                                 const char *footer);
 
 /**
  * Shows an error message and shuts down the device.
@@ -176,8 +178,8 @@ void __attribute__((noreturn)) error_shutdown(const char *message);
  * @param file Source file name where the error occurred
  * @param line Line number in the source file where the error occurred
  */
-void __attribute__((noreturn))
-__fatal_error(const char *msg, const char *file, int line);
+void __attribute__((noreturn)) __fatal_error(const char *msg, const char *file,
+                                             int line);
 
 /*
  * TSH_DECLARE, TSH_RETURN and TSH_CHECK_xxx() macros define

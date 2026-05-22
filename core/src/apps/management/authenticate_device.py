@@ -61,6 +61,9 @@ async def authenticate_device(msg: AuthenticateDevice) -> AuthenticityProof:
         r = BufferReader(tropic.get_user_data(tropic.DEVICE_CERT_INDEX))
         tropic_certificates = parse_cert_chain(r)
 
+    mcu_certificates = None
+    mcu_signature = None
+
     if not utils.DISABLE_ANIMATION:
         frame_delay = sleep(60)
         for i in range(1, 20):
@@ -74,4 +77,6 @@ async def authenticate_device(msg: AuthenticateDevice) -> AuthenticityProof:
         optiga_signature=optiga_signature,
         tropic_certificates=tropic_certificates,
         tropic_signature=tropic_signature,
+        mcu_certificates=mcu_certificates,
+        mcu_signature=mcu_signature,
     )

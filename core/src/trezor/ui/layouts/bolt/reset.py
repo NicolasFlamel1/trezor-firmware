@@ -279,9 +279,8 @@ def slip39_advanced_prompt_group_threshold(num_of_groups: int) -> Awaitable[int]
     )
 
 
-def show_intro_backup(single_share: bool, num_of_words: int | None) -> Awaitable[None]:
-    if single_share:
-        assert num_of_words is not None
+def show_intro_backup(num_of_words: int | None) -> Awaitable[None]:
+    if num_of_words is not None:
         description = TR.backup__info_single_share_backup.format(num_of_words)
     else:
         description = TR.backup__info_multi_share_backup
@@ -290,7 +289,7 @@ def show_intro_backup(single_share: bool, num_of_words: int | None) -> Awaitable
         trezorui_api.show_info(
             title="",
             description=description,
-            button=TR.buttons__continue,
+            button=(TR.buttons__continue, True),
         ),
         "backup_intro",
         ButtonRequestType.ResetDevice,
@@ -302,7 +301,7 @@ def show_warning_backup() -> Awaitable[trezorui_api.UiResult]:
         trezorui_api.show_info(
             title=TR.reset__never_make_digital_copy,
             description="",
-            button=TR.buttons__ok_i_understand,
+            button=(TR.buttons__ok_i_understand, True),
         ),
         "backup_warning",
         ButtonRequestType.ResetDevice,

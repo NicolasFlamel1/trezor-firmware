@@ -22,7 +22,7 @@
 #include <trezor_bsp.h>
 #include <trezor_rtl.h>
 
-#include <io/rsod.h>
+#include <sec/rsod_special.h>
 #include <sec/tamper.h>
 #include <sys/bootutils.h>
 #include <sys/irq.h>
@@ -122,7 +122,7 @@ bool tamper_init(void) {
 
   NVIC_ClearPendingIRQ(TAMP_IRQn);
 
-  // Enable battery and power monitoring (!@# rework it)
+  // Enable battery and power monitoring
   RCC->AHB3ENR |= RCC_AHB3ENR_PWREN;
   // HAL_PWR_EnableBkUpAccess();
   PWR->BDCR1 |= PWR_BDCR1_MONEN;

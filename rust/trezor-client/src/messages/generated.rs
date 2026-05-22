@@ -96,6 +96,7 @@ trezor_message_impl! {
     DebugLinkN4W1Write => MessageType_DebugLinkN4W1Write,
     DebugLinkN4W1Read => MessageType_DebugLinkN4W1Read,
     DebugLinkN4W1Response => MessageType_DebugLinkN4W1Response,
+    DebugLinkSetBatteryState => MessageType_DebugLinkSetBatteryState,
     ThpCreateNewSession => MessageType_ThpCreateNewSession,
     ThpCredentialRequest => MessageType_ThpCredentialRequest,
     ThpCredentialResponse => MessageType_ThpCredentialResponse,
@@ -203,6 +204,8 @@ trezor_message_impl! {
     EvoluRegistrationRequest => MessageType_EvoluRegistrationRequest,
     EvoluGetDelegatedIdentityKey => MessageType_EvoluGetDelegatedIdentityKey,
     EvoluDelegatedIdentityKey => MessageType_EvoluDelegatedIdentityKey,
+    EvoluIndexManagement => MessageType_EvoluIndexManagement,
+    EvoluIndexManagementResponse => MessageType_EvoluIndexManagementResponse,
 }
 
 #[cfg(feature = "monero")]

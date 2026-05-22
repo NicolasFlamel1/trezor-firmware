@@ -250,14 +250,32 @@ def get_progress_indicator(total_len: int, progress_len: int = 0) -> ConfirmData
 
 def get_data_confirmer(total_len: int) -> ConfirmDataFn:
     from trezor.enums import ButtonRequestType
-    from trezor.ui.layouts import confirm_blob_prefix
+    from trezor.ui.layouts import confirm_blob_intro, confirm_blob_prefix
 
     confirmed_len = 0
     progress_bar: ConfirmDataFn | None = None
+    first: bool = True
 
     async def confirm_fn(chunk: AnyBytes) -> None:
         nonlocal confirmed_len
         nonlocal progress_bar
+        nonlocal first
+
+        if first:
+            first = False
+            # show intro layout
+            skip = await confirm_blob_intro(
+                title=TR.ethereum__title_input_data,
+                value=chunk,
+                subtitle=TR.ethereum__data_size_template.format(total_len),
+                verb=TR.buttons__confirm,
+                verb_cancel=TR.send__cancel_sign,
+                br_name="confirm_data",
+                br_code=ButtonRequestType.SignTx,
+            )
+            if skip:
+                # skip following chunks confirmation - use a progress bar instead
+                progress_bar = get_progress_indicator(total_len, progress_len=0)
 
         if progress_bar is not None:
             return await progress_bar(chunk)
@@ -267,7 +285,6 @@ def get_data_confirmer(total_len: int) -> ConfirmDataFn:
         while True:
             assert 0 <= confirmed_len <= total_len
             prefix_len = await confirm_blob_prefix(
-                title=TR.ethereum__title_input_data,
                 data=chunk,
                 total_len=total_len,
                 confirmed_len=confirmed_len,

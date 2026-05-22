@@ -32,6 +32,7 @@
 #include <sys/bootargs.h>
 #include <sys/bootutils.h>
 #include <sys/flash_utils.h>
+#include <sys/startup_args.h>
 #include <sys/system.h>
 #include <sys/systick.h>
 #include <sys/types.h>
@@ -84,6 +85,12 @@
 #endif
 #ifdef USE_SECRET
 #include <sec/secret.h>
+#endif
+#ifdef USE_TRUSTZONE
+#include <sec/tz_init.h>
+#endif
+#ifdef USE_MCU_ATTESTATION
+#include <sec/mcu_attestation.h>
 #endif
 
 #ifdef USE_BLE
@@ -373,6 +380,41 @@ static void drivers_deinit(void) {
 
 void failed_jump_to_firmware(void) { error_shutdown("(glitch)"); }
 
+#ifdef USE_MCU_ATTESTATION
+ts_t pass_mcu_attestation_cert(void) {
+  TSH_DECLARE;
+
+  ts_t status;
+  secbool ok;
+  void *buffer = NULL;
+  size_t cert_size = 0;
+
+  ok = secret_mcu_device_cert_size(&cert_size);
+  TSH_CHECK(ok == sectrue, TS_ENOENT);
+
+  status = startup_args_reserve(STARTUP_ARGS_TYPE_MCU_DEVICE_CERT, cert_size,
+                                &buffer);
+  TSH_CHECK_OK(status);
+
+  ok = secret_mcu_device_cert_read(buffer, cert_size, &cert_size);
+  TSH_CHECK(ok == sectrue, TS_EIO);
+
+  status = startup_args_commit(cert_size);
+  TSH_CHECK_OK(status);
+
+  buffer = NULL;
+
+cleanup:
+
+  if (buffer != NULL) {
+    startup_args_discard();
+  }
+
+  TSH_RETURN;
+}
+
+#endif
+
 void real_jump_to_firmware(void) {
   const image_header *hdr = NULL;
   vendor_header vhdr = {0};
@@ -437,6 +479,10 @@ void real_jump_to_firmware(void) {
   ensure_secmon_min_version(secmon_hdr->monotonic);
 #endif
 
+#ifdef USE_MCU_ATTESTATION
+  pass_mcu_attestation_cert();
+#endif
+
 #ifdef USE_SECRET
   secbool provisioning_access =
       ((vhdr.vtrust & (VTRUST_ALLOW_PROVISIONING | VTRUST_SECRET_MASK)) ==
@@ -496,9 +542,11 @@ void real_jump_to_firmware(void) {
 
   system_deinit();
 
-  jump_to_next_stage(
+  uint32_t vectbl_addr =
       IMAGE_CODE_ALIGN(FIRMWARE_START + vhdr.hdrlen + IMAGE_HEADER_SIZE) +
-      secmon_code_offset);
+      secmon_code_offset;
+
+  jump_to_next_stage(vectbl_addr, startup_args_export());
 }
 
 __attribute__((noreturn)) void reboot_with_fade(void) {
@@ -512,6 +560,10 @@ int main(void) {
 int bootloader_main(void) {
 #endif
   secbool touch_initialized = secfalse;
+
+#ifdef USE_TRUSTZONE
+  tz_init();
+#endif
 
   system_init(&rsod_panic_handler);
 

@@ -91,7 +91,24 @@ class LayoutType(Enum):
             return cls.Eckhart
         if model in (models.T1B1,):
             return cls.T1
+        internal_name = getattr(model, "internal_name", None)
+        if internal_name:
+            return cls.from_internal_name(internal_name)
         raise ValueError(f"Unknown model: {model}")
+
+    @classmethod
+    def from_internal_name(cls, internal_name: str) -> "LayoutType":
+        if internal_name in (models.T2T1.internal_name,):
+            return cls.Bolt
+        if internal_name in (models.T2B1.internal_name, models.T3B1.internal_name):
+            return cls.Caesar
+        if internal_name in (models.T3T1.internal_name,):
+            return cls.Delizia
+        if internal_name in (models.T3W1.internal_name,):
+            return cls.Eckhart
+        if internal_name in (models.T1B1.internal_name,):
+            return cls.T1
+        raise ValueError(f"Unknown internal name: {internal_name}")
 
     def __str__(self) -> str:
         return self.name
@@ -889,6 +906,34 @@ class DebugLink:
     def erase_sd_card(self, format: bool = True) -> None:
         self._call(
             messages.DebugLinkEraseSdCard(format=format), expect=messages.Success
+        )
+
+    def set_battery_state(
+        self,
+        soc: int | None = None,
+        usb_connected: bool | None = None,
+        wireless_connected: bool | None = None,
+        ntc_connected: bool | None = None,
+        charging_limited: bool | None = None,
+        temp_control_active: bool | None = None,
+        battery_connected: bool | None = None,
+    ) -> None:
+        """Set emulated battery/power state. Only works on emulator.
+
+        All parameters are optional — pass only what you want to change.
+        Charging status and power status are derived from connection states.
+        """
+        self._call(
+            messages.DebugLinkSetBatteryState(
+                soc=soc,
+                usb_connected=usb_connected,
+                wireless_connected=wireless_connected,
+                ntc_connected=ntc_connected,
+                charging_limited=charging_limited,
+                temp_control_active=temp_control_active,
+                battery_connected=battery_connected,
+            ),
+            expect=messages.Success,
         )
 
     def snapshot_legacy(self) -> None:

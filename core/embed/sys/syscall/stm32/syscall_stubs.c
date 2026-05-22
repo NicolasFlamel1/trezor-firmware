@@ -33,8 +33,7 @@
 
 void system_exit(int exit_code) {
   syscall_invoke1(exit_code, SYSCALL_SYSTEM_EXIT);
-  while (1)
-    ;
+  while (1);
 }
 
 void system_exit_error_ex(const char *title, size_t title_len,
@@ -42,16 +41,14 @@ void system_exit_error_ex(const char *title, size_t title_len,
                           const char *footer, size_t footer_len) {
   syscall_invoke6((uint32_t)title, title_len, (uint32_t)message, message_len,
                   (uint32_t)footer, footer_len, SYSCALL_SYSTEM_EXIT_ERROR);
-  while (1)
-    ;
+  while (1);
 }
 
 void system_exit_fatal_ex(const char *message, size_t message_len,
                           const char *file, size_t file_len, int line) {
   syscall_invoke5((uint32_t)message, message_len, (uint32_t)file, file_len,
                   line, SYSCALL_SYSTEM_EXIT_FATAL);
-  while (1)
-    ;
+  while (1);
 }
 
 // =============================================================================
@@ -196,20 +193,17 @@ void boot_image_replace(const boot_image_t *image) {
 
 void reboot_to_bootloader(void) {
   syscall_invoke0(SYSCALL_REBOOT_TO_BOOTLOADER);
-  while (1)
-    ;
+  while (1);
 }
 
 void reboot_and_upgrade(const uint8_t hash[32]) {
   syscall_invoke1((uint32_t)hash, SYSCALL_REBOOT_AND_UPGRADE);
-  while (1)
-    ;
+  while (1);
 }
 
 void reboot_device(void) {
   syscall_invoke0(SYSCALL_REBOOT_DEVICE);
-  while (1)
-    ;
+  while (1);
 }
 
 // =============================================================================
@@ -355,20 +349,30 @@ secbool secret_bootloader_locked(void) {
 #endif
 
 // =============================================================================
-// secret_keys.h
-// =============================================================================
+#ifdef USE_MCU_ATTESTATION
+#include <sec/mcu_attestation.h>
 
-#ifdef USE_SECRET_KEYS
-#include <sec/secret_keys.h>
-
-secbool secret_key_delegated_identity(uint8_t dest[ECDSA_PRIVATE_KEY_SIZE]) {
-  return (secbool)syscall_invoke1(
-      (uint32_t)dest, SYSCALL_SECRET_KEYS_GET_DELEGATED_IDENTITY_KEY);
+secbool mcu_attestation_cert_size(size_t *cert_size) {
+  return (secbool)syscall_invoke1((uint32_t)cert_size,
+                                  SYSCALL_MCU_ATTESTATION_CERT_SIZE);
 }
 
-#endif
+secbool mcu_attestation_cert_read(uint8_t *cert, size_t max_cert_size,
+                                  size_t *cert_size) {
+  return (secbool)syscall_invoke3((uint32_t)cert, (uint32_t)max_cert_size,
+                                  (uint32_t)cert_size,
+                                  SYSCALL_MCU_ATTESTATION_CERT_READ);
+}
 
-// =============================================================================
+secbool mcu_attestation_sign(const uint8_t *challenge, size_t challenge_size,
+                             uint8_t signature[MCU_ATTESTATION_SIG_SIZE]) {
+  return (secbool)syscall_invoke3((uint32_t)challenge, (uint32_t)challenge_size,
+                                  (uint32_t)signature,
+                                  SYSCALL_MCU_ATTESTATION_SIGN);
+}
+
+#endif  // USE_MCU_ATTESTATION
+
 // button.h
 // =============================================================================
 
@@ -494,12 +498,27 @@ bool optiga_read_sec(uint8_t *sec) {
   return (bool)syscall_invoke1((uint32_t)sec, SYSCALL_OPTIGA_READ_SEC);
 }
 
-#if PYOPT == 0
+#if USE_OPTIGA_TESTING
 void optiga_set_sec_max(void) { syscall_invoke0(SYSCALL_OPTIGA_SET_SEC_MAX); }
 
 #endif
 
 #endif  // USE_OPTIGA
+
+// =============================================================================
+// secret_keys.h
+// =============================================================================
+
+#ifdef USE_SECRET_KEYS
+#include <sec/secret_keys.h>
+
+secbool secret_key_delegated_identity(uint16_t rotation_index,
+                                      uint8_t dest[ECDSA_PRIVATE_KEY_SIZE]) {
+  return (secbool)syscall_invoke2(
+      rotation_index, (uint32_t)dest,
+      SYSCALL_SECRET_KEYS_GET_DELEGATED_IDENTITY_KEY);
+}
+#endif
 
 // =============================================================================
 // telemetry.h

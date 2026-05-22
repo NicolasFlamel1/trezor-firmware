@@ -9,7 +9,7 @@ from ..constants import (
     SOLANA_BASE_FEE_LAMPORTS,
     SOLANA_COMPUTE_UNIT_LIMIT,
 )
-from ..types import AddressType
+from ..types import AddressType, is_address_reference
 from .instruction import Instruction
 from .instructions import (
     COMPUTE_BUDGET_PROGRAM_ID,
@@ -89,27 +89,20 @@ class Transaction:
     def _parse_addresses(self, serialized_tx_reader: BufferReader) -> None:
         num_of_addresses = parse_var_int(serialized_tx_reader)
 
+        # Read-only signers are always just a subset of all signers.
+        assert self.num_signature_read_only_addresses <= self.required_signers_count
         assert (
             num_of_addresses
-            >= self.required_signers_count
-            + self.num_signature_read_only_addresses
-            + self.num_read_only_addresses
+            >= self.required_signers_count + self.num_read_only_addresses
         )
 
         addresses: list[Address] = []
         for i in range(num_of_addresses):
-            if i < self.required_signers_count:
+            if i < self.required_signers_count - self.num_signature_read_only_addresses:
                 type = AddressType.AddressSig
-            elif (
-                i < self.required_signers_count + self.num_signature_read_only_addresses
-            ):
+            elif i < self.required_signers_count:
                 type = AddressType.AddressSigReadOnly
-            elif (
-                i
-                < self.required_signers_count
-                + self.num_signature_read_only_addresses
-                + self.num_read_only_addresses
-            ):
+            elif i < num_of_addresses - self.num_read_only_addresses:
                 type = AddressType.AddressRw
             else:
                 type = AddressType.AddressReadOnly
@@ -225,7 +218,8 @@ class Transaction:
     def calculate_fee(self) -> Fee | None:
         number_of_signers = 0
         for address in self.addresses:
-            if address[1] == AddressType.AddressSig:
+            # Writable or ReadOnly signers.
+            if address[1] in (AddressType.AddressSig, AddressType.AddressSigReadOnly):
                 number_of_signers += 1
 
         base_fee = SOLANA_BASE_FEE_LAMPORTS * number_of_signers
@@ -264,7 +258,7 @@ class Transaction:
         )
 
     def get_account_address(self, account: Account) -> bytes | None:
-        if len(account) == 2:
+        if not is_address_reference(account):
             return account[0]
         else:
             # AddressReference points to an Address Lookup Table account, whose contents are unavailable here:

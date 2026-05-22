@@ -35,6 +35,8 @@ else:
 if __debug__:
     from trezorui_api import disable_animation
 
+    from apps.debug import notify_layout_change
+
     disable_animation(utils.DISABLE_ANIMATION)
 
 
@@ -144,21 +146,15 @@ class Layout(Generic[T]):
         def __str__(self) -> str:
             return f"{repr(self)}({self._trace(self.layout)[:150]})"
 
-        @staticmethod
-        def notify_debuglink(layout: "Layout | None") -> None:
-            from apps.debug import notify_layout_change
-
-            notify_layout_change(layout)
-
     def __init__(self, layout: LayoutObj[T]) -> None:
         """Set up a layout."""
         self.layout = layout
-        self.tasks: set[loop.Task] = set()
-        self.timers: dict[int, loop.Task] = {}
+        self.tasks: set[loop.Task[None]] = set()
+        self.timers: dict[int, loop.Task[None]] = {}
         self.result_box: loop.mailbox[Any] = loop.mailbox()
         self.button_request_ack_pending: bool = False
         self.button_request_box: loop.mailbox[ButtonRequest | None] = loop.mailbox()
-        self.button_request_task: loop.Task | None = None
+        self.button_request_task: loop.Task[None] | None = None
         self.transition_out: AttachType | None = None
         self.backlight_level = BacklightLevels.NORMAL
         self.context: Context | None = None
@@ -209,8 +205,11 @@ class Layout(Generic[T]):
         # do not notify debuglink, we will do it when we receive an ATTACHED event
         set_current_layout(self)
 
-        # save context
-        self.context = context.CURRENT_CONTEXT
+        try:
+            # save context (if exists)
+            self.context = context.get_context()
+        except context.NoWireContext:
+            pass
 
         # attach a timer callback and paint self
         self._event(self.layout.attach_timer_fn, self._set_timer, transition_in)
@@ -266,7 +265,7 @@ class Layout(Generic[T]):
                         log.error(__name__, msg)
                     else:
                         raise wire.FirmwareError(msg)
-                self.notify_debuglink(None)
+                notify_layout_change(None)
 
     async def get_result(self) -> T:
         """Wait for, and return, the result of this UI layout."""
@@ -348,7 +347,7 @@ class Layout(Generic[T]):
             if self.button_request_ack_pending:
                 state = LayoutState.TRANSITIONING
             elif __debug__:
-                self.notify_debuglink(self)
+                notify_layout_change(self)
 
         if state is not None:
             self.state = state
@@ -432,7 +431,7 @@ class Layout(Generic[T]):
         self.result_box.put(msg)
         raise Shutdown()
 
-    def create_tasks(self) -> Iterator[loop.Task]:
+    def create_tasks(self) -> Iterator[loop.Task[None]]:
         """Set up background tasks for a layout.
 
         Called from `start()`. Creates and yields a list of background tasks, typically
@@ -494,7 +493,7 @@ class Layout(Generic[T]):
             self.button_request_ack_pending = False
             self.state = LayoutState.ATTACHED
             if __debug__:
-                self.notify_debuglink(self)
+                notify_layout_change(self)
 
     if utils.USE_BLE:
 
@@ -534,7 +533,7 @@ class Layout(Generic[T]):
             finally:
                 pm.close()
 
-    def _task_finalizer(self, task: loop.Task, value: Any) -> None:
+    def _task_finalizer(self, task: loop.Task[None], value: Any) -> None:
         if value is None:
             # all is good
             if __debug__:
@@ -560,11 +559,12 @@ class Layout(Generic[T]):
         if __debug__:
             log.error(__name__, "UI task returned non-None: %s (%s)", task, value)
 
-    def _start_task(self, task: loop.Task) -> None:
+    def _start_task(self, task: loop.Task[None]) -> None:
         self.tasks.add(task)
         loop.schedule(task, finalizer=self._task_finalizer)
 
     def __del__(self) -> None:
+        # safe to call even if `self.layout` has been already dropped.
         self.layout.__del__()
 
 

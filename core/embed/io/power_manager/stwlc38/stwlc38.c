@@ -37,10 +37,11 @@ stwlc38_driver_t g_stwlc38_driver = {
 };
 
 // I2C operation for writing 8-bit constant value to the STWLC38 register
-#define STWLC_WRITE_CONST8(reg, value)                                 \
-  {                                                                    \
-    .flags = I2C_FLAG_TX | I2C_FLAG_EMBED | I2C_FLAG_START, .size = 3, \
-    .data = {(reg) >> 8, (reg) & 0xFF, (value)},                       \
+#define STWLC_WRITE_CONST8(reg, value)                        \
+  {                                                           \
+      .flags = I2C_FLAG_TX | I2C_FLAG_EMBED | I2C_FLAG_START, \
+      .size = 3,                                              \
+      .data = {(reg) >> 8, (reg) & 0xFF, (value)},            \
   }
 
 // I2C operations for reading 16-bit STWLC38 register into the
@@ -313,7 +314,7 @@ static void stwlc38_i2c_callback(void *context, i2c_packet_t *packet) {
     memset(&drv->report, 0, sizeof(stwlc38_report_t));
     // Kill periodic timer
     systimer_unset(drv->timer);
-    // !@# retry on error?????
+    // TODO: consider retry on error
     drv->state = STWLC38_STATE_POWER_DOWN;
     drv->report_readout_requested = false;
 

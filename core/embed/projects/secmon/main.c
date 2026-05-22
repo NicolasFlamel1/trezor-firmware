@@ -25,6 +25,7 @@
 #include <sec/option_bytes.h>
 #include <sec/random_delays.h>
 #include <sec/secure_aes.h>
+#include <sec/tz_init.h>
 #include <sec/unit_properties.h>
 #include <sys/bootutils.h>
 #include <sys/flash.h>
@@ -118,7 +119,7 @@ static void drivers_init(void) {
 
 // Secure monitor panic handler
 // (may be called from interrupt context)
-static void secmon_panic(const systask_postmortem_t *pminfo) {
+static void secmon_panic(const systask_postmortem_t* pminfo) {
   // Since the system state is unreliable, enter emergency mode,
   // store the postmortem info into bootargs and reboot.
   system_emergency_rescue(NULL, pminfo);
@@ -126,10 +127,12 @@ static void secmon_panic(const systask_postmortem_t *pminfo) {
 
 // defined in linker script
 extern uint32_t _secmon_size;
-#define SECMON_SIZE ((uint32_t) & _secmon_size)
+#define SECMON_SIZE ((uint32_t)&_secmon_size)
 #define KERNEL_START (FIRMWARE_START + SECMON_SIZE)
 
 int main(void) {
+  tz_init();
+
   // Initialize system's core services
   system_init(secmon_panic);
 

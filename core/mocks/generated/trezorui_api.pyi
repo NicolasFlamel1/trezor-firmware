@@ -78,8 +78,23 @@ class LayoutObj(Generic[T]):
         """Return the transition type."""
     def return_value(self) -> T:
         """Retrieve the return value of the layout object."""
+    # TODO: remove after https://github.com/trezor/trezor-firmware/issues/6811 is resolved.
     def __del__(self) -> None:
         """Calls drop on contents of the root component."""
+    # TODO: remove after https://github.com/trezor/trezor-firmware/issues/6811 is resolved.
+    def __enter__(self) -> LayoutObj[T]:
+        """Enters a context manager (checking the root component is not dropped)."""
+    def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
+        """Exits a context manager (dropping the root component)."""
+
+
+# rust/src/ui/api/firmware_micropython.rs
+class LayoutContext(Generic[T]):
+    """Scopes the lifetime of a Rust-based layout object."""
+    def __enter__(self) -> LayoutObj[T]:
+        """Enters a context manager (checking the root component is not dropped)."""
+    def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
+        """Exits a context manager (dropping the root component)."""
 
 
 # rust/src/ui/api/firmware_micropython.rs
@@ -181,7 +196,7 @@ def confirm_value(
     prompt_screen: bool = False,
     cancel: bool = False,
     back_button: bool = False,
-    warning_footer: str | None = None,
+    footer: tuple[str, bool] | None = None,
     external_menu: bool = False,
 ) -> LayoutObj[UiResult]:
     """Confirm a generic piece of information on the screen.
@@ -345,7 +360,7 @@ def confirm_with_info(
     subtitle: str | None = None,
     items: Iterable[tuple[StrOrBytes, bool]],
     verb: str,
-    verb_info: str,
+    verb_info: str | None = None,
     verb_cancel: str | None = None,
     external_menu: bool = False,
 ) -> LayoutObj[UiResult]:
@@ -391,7 +406,7 @@ def flow_get_address(
     xpubs: Sequence[tuple[str, str]],
     br_code: ButtonRequestType,
     br_name: str,
-) -> LayoutObj[UiResult]:
+) -> LayoutContext[UiResult]:
     """Get address / receive funds."""
 
 
@@ -435,7 +450,7 @@ def request_bip39(
     prompt: str,
     prefill_word: str,
     can_go_back: bool,
-) -> LayoutObj[str]:
+) -> LayoutContext[str]:
     """BIP39 word input keyboard."""
 
 
@@ -445,7 +460,7 @@ def request_slip39(
     prompt: str,
     prefill_word: str,
     can_go_back: bool,
-) -> LayoutObj[str]:
+) -> LayoutContext[str]:
     """SLIP39 word input keyboard."""
 
 
@@ -514,7 +529,7 @@ def select_menu(
     items: Iterable[str],
     current: int,
     cancel: str | None = None
-) -> LayoutObj[int]:
+) -> LayoutContext[int]:
     """Select an item from a menu. Returns index in range `0..len(items)`."""
 
 
@@ -687,8 +702,9 @@ def show_info(
     *,
     title: str,
     description: str = "",
-    button: str = "",
+    button: tuple[str, bool] | None = None,
     time_ms: int = 0,
+    external_menu: bool = False,
 ) -> LayoutObj[UiResult]:
     """Info screen."""
 
@@ -701,7 +717,7 @@ def show_info_with_cancel(
     horizontal: bool = False,
     chunkify: bool = False,
 ) -> LayoutObj[UiResult]:
-    """Show metadata for outgoing transaction."""
+    """Show metadata for outgoing transaction with a 'close' button."""
 
 
 # rust/src/ui/api/firmware_micropython.rs

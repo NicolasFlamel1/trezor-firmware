@@ -81,10 +81,10 @@ def firmware_vendor() -> str:
 
 
 # upymod/modtrezorutils/modtrezorutils.c
-def delegated_identity() -> bytes:
+def delegated_identity(rotation_index: int) -> bytes:
     """
     Returns the delegated identity key used for registration and space
-    management at Evolu.
+    management at Quota Manager.
     """
 
 
@@ -266,6 +266,8 @@ USE_OPTIGA: bool
 """Whether the hardware supports Optiga secure element."""
 USE_TROPIC: bool
 """Whether the hardware supports Tropic Square secure element."""
+USE_MCU_ATTESTATION: bool
+"""Whether the hardware supports MCU attestation signing and certificate."""
 USE_TOUCH: bool
 """Whether the hardware supports touch screen."""
 USE_BUTTON: bool
@@ -280,6 +282,8 @@ USE_APP_LOADING: bool
 """Whether the firmware supports loading 3rd-party applications."""
 USE_TELEMETRY: bool
 """Whether a telemetry is supported."""
+USE_N4W1: bool
+"""Whether N4W1 is supported."""
 MODEL: str
 """Model name."""
 MODEL_FULL_NAME: str

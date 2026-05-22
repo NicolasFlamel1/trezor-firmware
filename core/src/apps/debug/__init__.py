@@ -15,7 +15,6 @@ if __debug__:
     from trezor import io, log, loop, ui, utils, wire, workflow
     from trezor.enums import DebugTouchEventType, DebugWaitType, MessageType
     from trezor.messages import Success
-    from trezor.ui import display
 
     if TYPE_CHECKING:
         from typing import Any, Awaitable, Callable, NoReturn
@@ -33,6 +32,7 @@ if __debug__:
             DebugLinkPairingInfo,
             DebugLinkRecordScreen,
             DebugLinkReseedRandom,
+            DebugLinkSetBatteryState,
             DebugLinkSetLogFilter,
             DebugLinkState,
             DebugLinkStop,
@@ -344,6 +344,8 @@ if __debug__:
             return _state(msg.return_empty_state)
 
     async def dispatch_DebugLinkRecordScreen(msg: DebugLinkRecordScreen) -> Success:
+        from trezor.ui import display
+
         if msg.target_directory:
             # Ensure we consistently start at a layout, instead of randomly sometimes
             # hitting the pause between layouts and rendering the "upcoming" one.
@@ -398,6 +400,36 @@ if __debug__:
             sdcard.power_off()
         return Success()
 
+    if utils.USE_POWER_MANAGER and utils.EMULATOR:
+
+        async def dispatch_DebugLinkSetBatteryState(
+            msg: DebugLinkSetBatteryState,
+        ) -> Success:
+            from trezor import io
+
+            log.debug(
+                __name__,
+                "setting battery state: soc=%s, usb=%s, wireless=%s, ntc=%s, "
+                "limited=%s, temp_ctrl=%s, bat_conn=%s",
+                msg.soc,
+                msg.usb_connected,
+                msg.wireless_connected,
+                msg.ntc_connected,
+                msg.charging_limited,
+                msg.temp_control_active,
+                msg.battery_connected,
+            )
+            io.pm.set_emu_battery_state(
+                soc=msg.soc,
+                usb_connected=msg.usb_connected,
+                wireless_connected=msg.wireless_connected,
+                ntc_connected=msg.ntc_connected,
+                charging_limited=msg.charging_limited,
+                temp_control_active=msg.temp_control_active,
+                battery_connected=msg.battery_connected,
+            )
+            return Success()
+
     async def dispatch_DebugLinkOptigaSetSecMax(
         msg: DebugLinkOptigaSetSecMax,
     ) -> Success:
@@ -447,7 +479,7 @@ if __debug__:
         finally:
             raise RestartEventLoop
 
-    if utils.INTERNAL_MODEL == "T3W1":  # TODO utils.USE_N4W1
+    if utils.USE_N4W1:
 
         async def dispatch_DebugLinkConnected(msg: DebugLinkN4W1Connected) -> Success:
             """Exchange a sequence of N4W1 messages."""
@@ -576,9 +608,14 @@ if __debug__:
         MessageType.WipeDevice: dispatch_WipeDevice,
     }
 
-    if utils.INTERNAL_MODEL == "T3W1":  # TODO utils.USE_N4W1
+    if utils.USE_N4W1:
         WORKFLOW_HANDLERS[MessageType.DebugLinkN4W1Connected] = (
             dispatch_DebugLinkConnected
+        )
+
+    if utils.USE_POWER_MANAGER and utils.EMULATOR:
+        WORKFLOW_HANDLERS[MessageType.DebugLinkSetBatteryState] = (
+            dispatch_DebugLinkSetBatteryState
         )
 
     def boot() -> None:

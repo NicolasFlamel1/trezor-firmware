@@ -585,6 +585,7 @@ class MessageType(IntEnum):
     DebugLinkN4W1Write = 9015
     DebugLinkN4W1Read = 9016
     DebugLinkN4W1Response = 9017
+    DebugLinkSetBatteryState = 9018
     EthereumGetPublicKey = 450
     EthereumPublicKey = 451
     EthereumGetAddress = 56
@@ -777,6 +778,8 @@ class MessageType(IntEnum):
     EvoluRegistrationRequest = 2103
     EvoluGetDelegatedIdentityKey = 2104
     EvoluDelegatedIdentityKey = 2105
+    EvoluIndexManagement = 2106
+    EvoluIndexManagementResponse = 2107
     TronGetAddress = 2200
     TronAddress = 2201
     TronSignTx = 2202
@@ -3765,6 +3768,8 @@ class AuthenticityProof(protobuf.MessageType):
         2: protobuf.Field("optiga_signature", "bytes", repeated=False, required=True),
         3: protobuf.Field("tropic_certificates", "bytes", repeated=True, required=False, default=None),
         4: protobuf.Field("tropic_signature", "bytes", repeated=False, required=False, default=None),
+        5: protobuf.Field("mcu_certificates", "bytes", repeated=True, required=False, default=None),
+        6: protobuf.Field("mcu_signature", "bytes", repeated=False, required=False, default=None),
     }
 
     def __init__(
@@ -3773,12 +3778,16 @@ class AuthenticityProof(protobuf.MessageType):
         optiga_signature: "bytes",
         optiga_certificates: Optional[Sequence["bytes"]] = None,
         tropic_certificates: Optional[Sequence["bytes"]] = None,
+        mcu_certificates: Optional[Sequence["bytes"]] = None,
         tropic_signature: Optional["bytes"] = None,
+        mcu_signature: Optional["bytes"] = None,
     ) -> None:
         self.optiga_certificates: Sequence["bytes"] = optiga_certificates if optiga_certificates is not None else []
         self.tropic_certificates: Sequence["bytes"] = tropic_certificates if tropic_certificates is not None else []
+        self.mcu_certificates: Sequence["bytes"] = mcu_certificates if mcu_certificates is not None else []
         self.optiga_signature = optiga_signature
         self.tropic_signature = tropic_signature
+        self.mcu_signature = mcu_signature
 
 
 class WipeDevice(protobuf.MessageType):
@@ -3951,7 +3960,7 @@ class RecoveryDevice(protobuf.MessageType):
         8: protobuf.Field("input_method", "RecoveryDeviceInputMethod", repeated=False, required=False, default=None),
         9: protobuf.Field("u2f_counter", "uint32", repeated=False, required=False, default=None),
         10: protobuf.Field("type", "RecoveryType", repeated=False, required=False, default=RecoveryType.NormalRecovery),
-        11: protobuf.Field("backup_method", "BackupMethod", repeated=False, required=False, default=BackupMethod.Display),
+        11: protobuf.Field("backup_method", "BackupMethod", repeated=False, required=False, default=None),
     }
 
     def __init__(
@@ -3966,7 +3975,7 @@ class RecoveryDevice(protobuf.MessageType):
         input_method: Optional["RecoveryDeviceInputMethod"] = None,
         u2f_counter: Optional["int"] = None,
         type: Optional["RecoveryType"] = RecoveryType.NormalRecovery,
-        backup_method: Optional["BackupMethod"] = BackupMethod.Display,
+        backup_method: Optional["BackupMethod"] = None,
     ) -> None:
         self.word_count = word_count
         self.passphrase_protection = passphrase_protection
@@ -4478,6 +4487,38 @@ class DebugLinkEraseSdCard(protobuf.MessageType):
         format: Optional["bool"] = None,
     ) -> None:
         self.format = format
+
+
+class DebugLinkSetBatteryState(protobuf.MessageType):
+    MESSAGE_WIRE_TYPE = 9018
+    FIELDS = {
+        1: protobuf.Field("soc", "uint32", repeated=False, required=False, default=None),
+        2: protobuf.Field("usb_connected", "bool", repeated=False, required=False, default=None),
+        3: protobuf.Field("wireless_connected", "bool", repeated=False, required=False, default=None),
+        4: protobuf.Field("ntc_connected", "bool", repeated=False, required=False, default=None),
+        5: protobuf.Field("charging_limited", "bool", repeated=False, required=False, default=None),
+        6: protobuf.Field("temp_control_active", "bool", repeated=False, required=False, default=None),
+        7: protobuf.Field("battery_connected", "bool", repeated=False, required=False, default=None),
+    }
+
+    def __init__(
+        self,
+        *,
+        soc: Optional["int"] = None,
+        usb_connected: Optional["bool"] = None,
+        wireless_connected: Optional["bool"] = None,
+        ntc_connected: Optional["bool"] = None,
+        charging_limited: Optional["bool"] = None,
+        temp_control_active: Optional["bool"] = None,
+        battery_connected: Optional["bool"] = None,
+    ) -> None:
+        self.soc = soc
+        self.usb_connected = usb_connected
+        self.wireless_connected = wireless_connected
+        self.ntc_connected = ntc_connected
+        self.charging_limited = charging_limited
+        self.temp_control_active = temp_control_active
+        self.battery_connected = battery_connected
 
 
 class DebugLinkWatchLayout(protobuf.MessageType):
@@ -5745,14 +5786,17 @@ class EvoluGetNode(protobuf.MessageType):
     MESSAGE_WIRE_TYPE = 2100
     FIELDS = {
         1: protobuf.Field("proof_of_delegated_identity", "bytes", repeated=False, required=True),
+        2: protobuf.Field("node_rotation_index", "uint32", repeated=False, required=False, default=0),
     }
 
     def __init__(
         self,
         *,
         proof_of_delegated_identity: "bytes",
+        node_rotation_index: Optional["int"] = 0,
     ) -> None:
         self.proof_of_delegated_identity = proof_of_delegated_identity
+        self.node_rotation_index = node_rotation_index
 
 
 class EvoluNode(protobuf.MessageType):
@@ -5810,28 +5854,65 @@ class EvoluGetDelegatedIdentityKey(protobuf.MessageType):
     MESSAGE_WIRE_TYPE = 2104
     FIELDS = {
         1: protobuf.Field("thp_credential", "bytes", repeated=False, required=False, default=None),
+        3: protobuf.Field("rotation_index", "uint32", repeated=False, required=False, default=None),
+        4: protobuf.Field("rotate", "bool", repeated=False, required=False, default=None),
     }
 
     def __init__(
         self,
         *,
         thp_credential: Optional["bytes"] = None,
+        rotation_index: Optional["int"] = None,
+        rotate: Optional["bool"] = None,
     ) -> None:
         self.thp_credential = thp_credential
+        self.rotation_index = rotation_index
+        self.rotate = rotate
 
 
 class EvoluDelegatedIdentityKey(protobuf.MessageType):
     MESSAGE_WIRE_TYPE = 2105
     FIELDS = {
         1: protobuf.Field("private_key", "bytes", repeated=False, required=True),
+        2: protobuf.Field("rotation_index", "uint32", repeated=False, required=False, default=None),
     }
 
     def __init__(
         self,
         *,
         private_key: "bytes",
+        rotation_index: Optional["int"] = None,
     ) -> None:
         self.private_key = private_key
+        self.rotation_index = rotation_index
+
+
+class EvoluIndexManagement(protobuf.MessageType):
+    MESSAGE_WIRE_TYPE = 2106
+    FIELDS = {
+        1: protobuf.Field("rotation_index", "uint32", repeated=False, required=False, default=None),
+    }
+
+    def __init__(
+        self,
+        *,
+        rotation_index: Optional["int"] = None,
+    ) -> None:
+        self.rotation_index = rotation_index
+
+
+class EvoluIndexManagementResponse(protobuf.MessageType):
+    MESSAGE_WIRE_TYPE = 2107
+    FIELDS = {
+        1: protobuf.Field("rotation_index", "uint32", repeated=False, required=False, default=None),
+    }
+
+    def __init__(
+        self,
+        *,
+        rotation_index: Optional["int"] = None,
+    ) -> None:
+        self.rotation_index = rotation_index
 
 
 class MimbleWimbleCoinGetRootPublicKey(protobuf.MessageType):

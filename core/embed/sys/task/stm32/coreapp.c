@@ -30,7 +30,6 @@
 #include <sys/systask.h>
 
 #ifdef USE_TRUSTZONE
-#include <io/display.h>
 #include <sys/trustzone.h>
 #endif
 
@@ -40,7 +39,7 @@ static void* coreapp_api_getter = NULL;
 
 // defined in linker script
 extern uint32_t _kernel_flash_end;
-#define KERNEL_END ALIGN_UP((uint32_t) & _kernel_flash_end, COREAPP_ALIGNMENT)
+#define KERNEL_END ALIGN_UP((uint32_t)&_kernel_flash_end, COREAPP_ALIGNMENT)
 
 static void coreapp_clear_memory(applet_t* applet) {
   if (applet->layout.data1.size > 0) {
@@ -63,8 +62,6 @@ static void applet_set_unpriv(applet_t* applet, bool unpriv) {
   tz_set_flash_unpriv(layout->code2.start, layout->code2.size, unpriv);
 
   tz_set_flash_unpriv(ASSETS_START, ASSETS_MAXSIZE, unpriv);
-
-  display_set_unpriv_access(unpriv);
 }
 #endif  // USE_TRUSTZONE
 

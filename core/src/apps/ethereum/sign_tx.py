@@ -5,6 +5,7 @@ from ubinascii import unhexlify
 from trezor import TR
 from trezor.crypto import rlp
 from trezor.messages import EthereumTxRequest
+from trezor.utils import HashWriter
 from trezor.wire import DataError
 
 from .helpers import (
@@ -16,6 +17,7 @@ from .helpers import (
 from .keychain import with_keychain_from_chain_id
 
 if TYPE_CHECKING:
+    from buffer_types import AnyBytes
     from typing import Any, Coroutine, Iterable
 
     from trezor.messages import EthereumSignTx, EthereumTxAck
@@ -34,11 +36,11 @@ if TYPE_CHECKING:
 # Maximum chain_id which returns the full signature_v (which must fit into an uint32).
 # chain_ids larger than this will only return one bit and the caller must recalculate
 # the full value: v = 2 * chain_id + 35 + v_bit
-MAX_CHAIN_ID = (0xFFFF_FFFF - 36) // 2
+_MAX_CHAIN_ID = const(0xFFFF_FFFF - 36) // 2
 
 # EIP-7702
 
-EIP_7702_TX_TYPE = const(4)
+_EIP_7702_TX_TYPE = const(4)
 EIP_7702_KNOWN_ADDRESSES = {
     unhexlify("000000009B1D0aF20D8C6d0A44e162d11F9b8f00"): "Uniswap",
     unhexlify("69007702764179f14F51cdce752f4f775d74E139"): "alchemyplatform",
@@ -63,11 +65,10 @@ async def sign_tx(
 
     from apps.common import paths, safety_checks
 
-    from .clear_signing import InvalidFormatDefinition, InvalidFunctionCall
     from .helpers import format_ethereum_amount, get_fee_items_regular
 
     # local_cache_attribute
-    data_total = msg.data_length
+    data_length = msg.data_length
     tx_type = msg.tx_type
     network = defs.network
 
@@ -75,10 +76,10 @@ async def sign_tx(
 
     address_bytes = bytes_from_address(msg.to)
 
-    valid_tx_types = (1, 6, EIP_7702_TX_TYPE, None)
+    valid_tx_types = (1, 6, _EIP_7702_TX_TYPE, None)
     if tx_type not in valid_tx_types:
         raise DataError("tx_type out of bounds")
-    if tx_type == EIP_7702_TX_TYPE:
+    if tx_type == _EIP_7702_TX_TYPE:
         if safety_checks.is_strict():
             raise DataError("EIP-7702 not allowed in strict checks")
         if address_bytes not in EIP_7702_KNOWN_ADDRESSES:
@@ -88,6 +89,7 @@ async def sign_tx(
 
     # have the user confirm signing
     await paths.validate_path(keychain, msg.address_n)
+    sender_bytes = keychain.derive(msg.address_n).ethereum_pubkeyhash()
     gas_price = int.from_bytes(msg.gas_price, "big")
     gas_limit = int.from_bytes(msg.gas_limit, "big")
     maximum_fee = format_ethereum_amount(gas_price * gas_limit, None, network)
@@ -109,11 +111,8 @@ async def sign_tx(
             amount_size_bytes=32,
         )
 
-    # digest
-    total_length = _get_total_length(msg, data_total)
-
     sha = HashWriter(sha3_256(keccak=True))
-    rlp.write_header(sha, total_length, rlp.LIST_HEADER_BYTE)
+    rlp.write_header(sha, _get_digest_length(msg, data_length), rlp.LIST_HEADER_BYTE)
 
     if tx_type is not None:
         rlp.write(sha, tx_type)
@@ -121,7 +120,10 @@ async def sign_tx(
     for field in (msg.nonce, msg.gas_price, msg.gas_limit, address_bytes, msg.value):
         rlp.write(sha, field)
 
+    initial_data = await request_initial_data(msg, sha)
+
     confirm_data_chunk, confirm_summary = await confirm_tx_data(
+        initial_data,
         msg,
         defs,
         tx_type,
@@ -129,45 +131,26 @@ async def sign_tx(
         maximum_fee,
         fee_items,
         payment_req_verifier,
-        try_clear_signing=True,
+        sender_bytes,
     )
 
-    await confirm_data_chunk(msg.data_initial_chunk)
+    # `confirm_data_chunk` and `confirm_summary` can be `None`
+    # if we clear signed so there is nothing more to confirm
 
-    data_left = data_total - len(msg.data_initial_chunk)
+    if confirm_data_chunk is not None:
+        await confirm_data_chunk(initial_data)
 
-    summary_confirmed = False
-    if data_left == 0:  # Note: clear signing only works with the 1st chunk for now
-        try:
-            await confirm_summary
-            summary_confirmed = True
-        except (InvalidFunctionCall, InvalidFormatDefinition):
-            # parsing calldata by the clear signer failed,
-            # retry without clear signing
-            confirm_data_chunk, confirm_summary = await confirm_tx_data(
-                msg,
-                defs,
-                tx_type,
-                address_bytes,
-                maximum_fee,
-                fee_items,
-                payment_req_verifier,
-                try_clear_signing=False,
-            )
+        data_left = data_length - len(initial_data)
+        while data_left > 0:
+            resp = await send_request_chunk(data_left)
+            chunk = resp.data_chunk
+            await confirm_data_chunk(chunk)
+            data_left -= len(chunk)
+            sha.extend(chunk)
 
-            # we can safely assume that the initial data chunk was not confirmed
-            # because we are currently handling clear signer's exception
-            # so let's finally confirm the initial data chunk!
-            await confirm_data_chunk(msg.data_initial_chunk)
-
-    rlp.write_header(sha, data_total, rlp.STRING_HEADER_BYTE, msg.data_initial_chunk)
-    sha.extend(msg.data_initial_chunk)
-
-    while data_left > 0:
-        resp = await send_request_chunk(data_left)
-        await confirm_data_chunk(resp.data_chunk)
-        data_left -= len(resp.data_chunk)
-        sha.extend(resp.data_chunk)
+    if confirm_summary is not None:
+        # blind signer's summary
+        await confirm_summary
 
     # eip 155 replay protection
     rlp.write(sha, msg.chain_id)
@@ -176,9 +159,6 @@ async def sign_tx(
 
     digest = sha.get_digest()
 
-    if not summary_confirmed:
-        await confirm_summary
-
     # transaction data confirmed, proceed with signing
     result = _sign_digest(msg, keychain, digest)
 
@@ -186,79 +166,48 @@ async def sign_tx(
     return result
 
 
-def make_progress(total_len: int, progress_len: int = 0) -> ConfirmDataFn:
-    from trezor.ui.layouts.progress import progress
-
-    if __debug__:
-        from trezor import log
-
-    def _progress_value() -> int:
-        assert 0 <= progress_len <= total_len
-        if total_len == 0:
-            return 1000
-        return (1000 * progress_len) // total_len
-
-    layout = progress(title=TR.progress__loading_transaction)
-    layout.value = _progress_value()
-
-    async def confirm_fn(chunk: AnyBytes) -> None:
-        nonlocal progress_len
-
-        if __debug__:
-            log.debug(
-                __name__,
-                "chunk=%d [%d/%d]",
-                len(chunk),
-                progress_len,
-                total_len,
-            )
-        progress_len += len(chunk)
-        layout.report(_progress_value())
-
-    return confirm_fn
+_MAX_DATA_STORED = const(4096)
+_DATA_CHUNK_SIZE = const(1024)
 
 
-def make_confirm_data(total_len: int) -> ConfirmDataFn:
-    from trezor.enums import ButtonRequestType
-    from trezor.ui.layouts import confirm_blob_prefix
+async def request_initial_data(msg: MsgInSignTx, sha: HashWriter) -> AnyBytes:
+    """Request at most `MAX_DATA_STORED` which we keep locally"""
 
-    confirmed_len = 0
-    progress_bar: ConfirmDataFn | None = None
+    data_length = msg.data_length
+    if data_length > len(msg.data_initial_chunk):
+        # pre-allocate memory
+        initial_data = bytearray(min(data_length, _MAX_DATA_STORED))
 
-    async def confirm_fn(chunk: AnyBytes) -> None:
-        nonlocal confirmed_len
-        nonlocal progress_bar
+        chunk = msg.data_initial_chunk
+        initial_data[0 : len(chunk)] = chunk
+        initial_data_length = len(chunk)
+        rlp.write_header(sha, data_length, rlp.STRING_HEADER_BYTE, chunk)
+        sha.extend(chunk)
+        data_left = data_length - initial_data_length
+        while (
+            data_left > 0 and initial_data_length + _DATA_CHUNK_SIZE <= _MAX_DATA_STORED
+        ):
+            resp = await send_request_chunk(data_left)
+            chunk = resp.data_chunk
+            initial_data[
+                initial_data_length : initial_data_length + len(resp.data_chunk)
+            ] = chunk
+            data_left -= len(chunk)
+            initial_data_length += len(chunk)
+            sha.extend(chunk)
+    else:
+        initial_data = msg.data_initial_chunk
+        initial_data_length = len(msg.data_initial_chunk)
+        rlp.write_header(
+            sha, data_length, rlp.STRING_HEADER_BYTE, msg.data_initial_chunk
+        )
+        sha.extend(msg.data_initial_chunk)
 
-        if progress_bar is not None:
-            return await progress_bar(chunk)
-
-        # for efficient chunk slicing (see below)
-        chunk = memoryview(chunk)
-        while True:
-            assert 0 <= confirmed_len <= total_len
-            prefix_len = await confirm_blob_prefix(
-                title=TR.ethereum__title_input_data,
-                data=chunk,
-                total_len=total_len,
-                confirmed_len=confirmed_len,
-                br_name="confirm_data",
-                br_code=ButtonRequestType.SignTx,
-            )
-            if prefix_len is None:
-                # skip this and following chunks confirmation - use a progress bar instead
-                assert progress_bar is None
-                progress_bar = make_progress(total_len, confirmed_len)
-                return await progress_bar(chunk)
-            else:
-                confirmed_len += prefix_len
-                chunk = chunk[prefix_len:]
-                if not chunk:
-                    return
-
-    return confirm_fn
+    return initial_data
 
 
 async def confirm_tx_data(
+    initial_data: AnyBytes,
     msg: MsgInSignTx,
     defs: Definitions,
     tx_type: int | None,
@@ -266,13 +215,14 @@ async def confirm_tx_data(
     maximum_fee: str,
     fee_items: Iterable[StrPropertyType],
     payment_request_verifier: PaymentRequestVerifier | None,
-    try_clear_signing: bool,
-) -> tuple[ConfirmDataFn, Coroutine[Any, Any, None]]:
-    """Returns data chunk callback and transaction summary layout to be awaited."""
+    sender_bytes: AnyBytes,
+) -> tuple[ConfirmDataFn | None, Coroutine[Any, Any, None] | None]:
+    """Returns data chunk callback and transaction summary layout to be awaited.
+    [None, None] implies clear signing attempted and succeeded."""
 
     from trezor.ui.layouts import confirm_value
 
-    from . import clear_signing, staking
+    from . import clear_signing, staking, yielding
     from .helpers import format_ethereum_amount
     from .layout import require_confirm_payment_request, require_confirm_tx
 
@@ -288,7 +238,15 @@ async def confirm_tx_data(
             raise DataError("Payment Requests don't support staking")
         return staking_approver
 
-    if tx_type == EIP_7702_TX_TYPE:
+    yielding_approver = yielding.get_approver(
+        msg, initial_data, network, address_bytes, maximum_fee, fee_items, sender_bytes
+    )
+    if yielding_approver is not None:
+        if payment_request_verifier is not None:
+            raise DataError("Payment Requests don't support yielding")
+        return yielding_approver
+
+    if tx_type == _EIP_7702_TX_TYPE:
         # we have already made sure that the address is a known address
         # as part of the initial validation
         await confirm_value(
@@ -300,18 +258,18 @@ async def confirm_tx_data(
 
     value = int.from_bytes(msg.value, "big")
 
-    if try_clear_signing:
-        clear_signing_approver = clear_signing.get_approver(
+    try:
+        clear_signed = await clear_signing.try_parse(
+            initial_data,
+            address_bytes,
             msg,
             defs,
-            address_bytes,
-            value,
             maximum_fee,
             fee_items,
             payment_request_verifier,
         )
-        if clear_signing_approver is not None:
-            return clear_signing_approver
+    except clear_signing.ClearSigningFailed:
+        clear_signed = False
 
     recipient_str = (
         address_from_bytes(address_bytes, network) if address_bytes else None
@@ -337,16 +295,15 @@ async def confirm_tx_data(
             None,
             None,
         )
-    else:
+    elif not clear_signed:
         if data_length > 0:
-            # blind signing: we have data but `clear_signing` did not recognize the function
             confirm_data_chunk = get_data_confirmer(data_length)
         else:
             confirm_data_chunk = get_progress_indicator(data_length)
-
         token = (
             None  # what we want to confirm here is the ETH amount being sent on-chain
         )
+
         return confirm_data_chunk, require_confirm_tx(
             recipient_str,
             format_ethereum_amount(value, token, network),
@@ -355,12 +312,14 @@ async def confirm_tx_data(
             maximum_fee,
             fee_items,
             token,
-            is_send=(data_length == 0 and tx_type != EIP_7702_TX_TYPE),
+            is_send=(data_length == 0 and tx_type != _EIP_7702_TX_TYPE),
             chunkify=bool(msg.chunkify),
         )
+    else:
+        return None, None
 
 
-def _get_total_length(msg: EthereumSignTx, data_total: int) -> int:
+def _get_digest_length(msg: EthereumSignTx, data_total: int) -> int:
     length = 0
     if msg.tx_type is not None:
         length += rlp.length(msg.tx_type)
@@ -390,7 +349,7 @@ async def send_request_chunk(data_left: int) -> EthereumTxAck:
     from trezor.wire.context import call
 
     req = EthereumTxRequest()
-    req.data_length = min(data_left, 1024)
+    req.data_length = min(data_left, _DATA_CHUNK_SIZE)
     return await call(req, EthereumTxAck)
 
 
@@ -406,7 +365,7 @@ def _sign_digest(
 
     req = EthereumTxRequest()
     req.signature_v = signature[0]
-    if msg.chain_id > MAX_CHAIN_ID:
+    if msg.chain_id > _MAX_CHAIN_ID:
         req.signature_v -= 27
     else:
         req.signature_v += 2 * msg.chain_id + 8

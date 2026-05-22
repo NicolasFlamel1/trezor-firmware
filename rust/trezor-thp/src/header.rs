@@ -1,6 +1,6 @@
 use crate::Role;
-pub use crate::alternating_bit::SyncBits;
-use crate::control_byte::{self, ControlByte};
+use crate::alternating_bit::SyncBits;
+use crate::control_byte::ControlByte;
 use crate::crc32;
 use crate::error::{Error, Result};
 
@@ -10,8 +10,8 @@ const CHECKSUM_LEN: u16 = crc32::CHECKSUM_LEN as u16;
 pub const NONCE_LEN: u16 = 8;
 const MAX_PAYLOAD_LEN: u16 = 60000;
 
-const MIN_CHANNEL_ID: u16 = 0x0001;
-const MAX_CHANNEL_ID: u16 = 0xFFEF;
+pub const MIN_CHANNEL_ID: u16 = 0x0001;
+pub const MAX_CHANNEL_ID: u16 = 0xFFEF;
 pub const BROADCAST_CHANNEL_ID: u16 = 0xFFFF;
 
 /// Represents packet header, i.e. control byte, channel id and possibly payload length.
@@ -60,6 +60,7 @@ pub enum HandshakeMessage {
     CompletionResponse,
 }
 
+/// Check whether channel id is valid. Please note this also includes broadcast channel.
 pub const fn channel_id_valid(channel_id: u16) -> bool {
     (MIN_CHANNEL_ID <= channel_id && channel_id <= MAX_CHANNEL_ID)
         || channel_id == BROADCAST_CHANNEL_ID
@@ -68,7 +69,7 @@ pub const fn channel_id_valid(channel_id: u16) -> bool {
 pub(crate) fn parse_u16(buffer: &[u8]) -> Result<(u16, &[u8])> {
     let Some((bytes, rest)) = buffer.split_first_chunk::<2>() else {
         log::error!("Packet too short.");
-        return Err(Error::MalformedData);
+        return Err(Error::malformed_data());
     };
     Ok((u16::from_be_bytes(*bytes), rest))
 }
@@ -76,10 +77,10 @@ pub(crate) fn parse_u16(buffer: &[u8]) -> Result<(u16, &[u8])> {
 pub(crate) fn parse_cb_channel(buffer: &[u8]) -> Result<(ControlByte, u16, &[u8])> {
     let Some((cb, rest)) = buffer.split_first() else {
         log::error!("Packet is empty.");
-        return Err(Error::MalformedData);
+        return Err(Error::malformed_data());
     };
     let (channel_id, rest) = parse_u16(rest)?;
-    Ok((ControlByte::from(*cb), channel_id, rest))
+    Ok((ControlByte::try_from(*cb)?, channel_id, rest))
 }
 
 impl<R: Role> Header<R> {
@@ -100,8 +101,8 @@ impl<R: Role> Header<R> {
             }
         }
         if !channel_id_valid(channel_id) {
-            log::error!("Invalid channel id {}.", channel_id);
-            return Err(Error::OutOfBounds);
+            log::error!("Invalid channel id {:04x}.", channel_id);
+            return Err(Error::malformed_data());
         }
         if cb.is_continuation() {
             return Ok((Header::Continuation { channel_id }, rest));
@@ -109,11 +110,11 @@ impl<R: Role> Header<R> {
         let (payload_len, rest) = parse_u16(rest)?;
         if payload_len > MAX_PAYLOAD_LEN {
             log::error!("Payload length exceeds {}.", MAX_PAYLOAD_LEN);
-            return Err(Error::OutOfBounds);
+            return Err(Error::malformed_data());
         }
         if payload_len < CHECKSUM_LEN {
             log::error!("Payload length is less than {}.", CHECKSUM_LEN);
-            return Err(Error::OutOfBounds);
+            return Err(Error::malformed_data());
         }
         // strip padding if there is any
         let without_padding = rest.len().min(payload_len.into());
@@ -131,12 +132,12 @@ impl<R: Role> Header<R> {
             return Ok((header, rest));
         }
         log::error!(
-            "Unknown header: ({}, {}, {}).",
+            "Unknown header: (0x{:x}, {:04x}, {}).",
             u8::from(cb),
             channel_id,
             payload_len
         );
-        Err(Error::MalformedData)
+        Err(Error::malformed_data())
     }
 
     fn parse_single(cb: ControlByte, channel_id: u16, payload_len: u16) -> Result<Option<Self>> {
@@ -164,7 +165,7 @@ impl<R: Role> Header<R> {
             Ok(Some(res))
         } else {
             log::error!("Unexpected payload length.");
-            Err(Error::MalformedData)
+            Err(Error::malformed_data())
         }
     }
 
@@ -176,7 +177,10 @@ impl<R: Role> Header<R> {
     }
 
     fn parse_unicast(cb: ControlByte, channel_id: u16, payload_len: u16) -> Option<Self> {
-        if let Some(phase) = HandshakeMessage::from_u8::<R>(cb.into()) {
+        if let Some(phase) = cb.handshake_phase() {
+            if !phase.valid_incoming::<R>() {
+                return None;
+            }
             return Some(Self::Handshake {
                 phase,
                 channel_id,
@@ -192,22 +196,25 @@ impl<R: Role> Header<R> {
         None
     }
 
-    pub(crate) fn control_byte(&self, sync_bits: SyncBits) -> Option<ControlByte> {
-        let cb = match self {
-            Self::Continuation { .. } => control_byte::CONTINUATION_PACKET,
-            Self::Ack { .. } => control_byte::ACK_MESSAGE,
-            Self::ChannelAllocationRequest if R::is_host() => control_byte::CHANNEL_ALLOCATION_REQ,
-            Self::ChannelAllocationResponse { .. } if !R::is_host() => {
-                control_byte::CHANNEL_ALLOCATION_RES
+    pub fn control_byte(&self, sync_bits: SyncBits) -> Option<ControlByte> {
+        let mut cb = match self {
+            Self::Continuation { .. } => ControlByte::continuation(),
+            Self::Ack { .. } => ControlByte::ack(),
+            Self::ChannelAllocationRequest if R::is_host() => {
+                ControlByte::channel_allocation_request()
             }
-            Self::TransportError { .. } => control_byte::ERROR,
-            Self::Ping if R::is_host() => control_byte::PING,
-            Self::Pong if !R::is_host() => control_byte::PONG,
-            Self::Handshake { phase, .. } => phase.to_u8::<R>()?,
-            Self::Encrypted { .. } => control_byte::ENCRYPTED_TRANSPORT,
+            Self::ChannelAllocationResponse { .. } if !R::is_host() => {
+                ControlByte::channel_allocation_response()
+            }
+            Self::TransportError { .. } => ControlByte::error(),
+            Self::Ping if R::is_host() => ControlByte::ping(),
+            Self::Pong if !R::is_host() => ControlByte::pong(),
+            Self::Handshake { phase, .. } if phase.valid_outgoing::<R>() => {
+                ControlByte::handshake(*phase)
+            }
+            Self::Encrypted { .. } => ControlByte::encrypted_transport(),
             _ => return None,
         };
-        let mut cb = ControlByte::from(cb);
         if self.is_ack() && sync_bits.seq_bit() {
             // ACK must have seq_bit=0
             return None;
@@ -223,7 +230,7 @@ impl<R: Role> Header<R> {
             return if dest.len() < Self::CONT_LEN {
                 None
             } else {
-                dest[0] = control_byte::CONTINUATION_PACKET;
+                dest[0] = ControlByte::continuation().into();
                 dest[1..3].copy_from_slice(&channel_id.to_be_bytes());
                 Some(Self::CONT_LEN)
             };
@@ -291,13 +298,13 @@ impl<R: Role> Header<R> {
             }
         }
         log::error!("Cannot construct: message too long {}.", payload.len());
-        Err(Error::UnexpectedInput)
+        Err(Error::unexpected_input())
     }
 
     fn validate_channel(channel_id: u16) -> Result<u16> {
         if !channel_id_valid(channel_id) {
-            log::error!("Cannot construct: invalid channel id {}.", channel_id);
-            return Err(Error::UnexpectedInput);
+            log::error!("Cannot construct: invalid channel id {:04x}.", channel_id);
+            return Err(Error::unexpected_input());
         }
         Ok(channel_id)
     }
@@ -306,7 +313,7 @@ impl<R: Role> Header<R> {
         let channel_id = Self::validate_channel(channel_id)?;
         if channel_id == BROADCAST_CHANNEL_ID {
             log::error!("Cannot construct: illegal broadcast.");
-            return Err(Error::UnexpectedInput);
+            return Err(Error::unexpected_input());
         }
         Ok(channel_id)
     }
@@ -363,6 +370,14 @@ impl<R: Role> Header<R> {
         Self::Pong
     }
 
+    pub const fn new_codec1_request(is_continuation: bool) -> Self {
+        Self::CodecV1Request { is_continuation }
+    }
+
+    pub const fn new_codec1_response() -> Self {
+        Self::CodecV1Response
+    }
+
     pub const fn is_continuation(&self) -> bool {
         matches!(self, Self::Continuation { .. })
     }
@@ -408,37 +423,20 @@ impl<R: Role> Header<R> {
 }
 
 impl HandshakeMessage {
-    pub fn from_u8<R: Role>(val: u8) -> Option<Self> {
-        let masked = val & control_byte::DATA_MASK;
-        Some(match masked {
-            control_byte::HANDSHAKE_INIT_REQ if !R::is_host() => {
-                HandshakeMessage::InitiationRequest
-            }
-            control_byte::HANDSHAKE_INIT_RES if R::is_host() => {
-                HandshakeMessage::InitiationResponse
-            }
-            control_byte::HANDSHAKE_COMP_REQ if !R::is_host() => {
-                HandshakeMessage::CompletionRequest
-            }
-            control_byte::HANDSHAKE_COMP_RES if R::is_host() => {
-                HandshakeMessage::CompletionResponse
-            }
-            _ => return None,
-        })
+    /// True if this is valid outgoing message for a given role.
+    fn valid_outgoing<R: Role>(&self) -> bool {
+        match self {
+            HandshakeMessage::InitiationRequest if R::is_host() => true,
+            HandshakeMessage::InitiationResponse if !R::is_host() => true,
+            HandshakeMessage::CompletionRequest if R::is_host() => true,
+            HandshakeMessage::CompletionResponse if !R::is_host() => true,
+            _ => false,
+        }
     }
 
-    pub fn to_u8<R: Role>(&self) -> Option<u8> {
-        Some(match self {
-            HandshakeMessage::InitiationRequest if R::is_host() => control_byte::HANDSHAKE_INIT_REQ,
-            HandshakeMessage::InitiationResponse if !R::is_host() => {
-                control_byte::HANDSHAKE_INIT_RES
-            }
-            HandshakeMessage::CompletionRequest if R::is_host() => control_byte::HANDSHAKE_COMP_REQ,
-            HandshakeMessage::CompletionResponse if !R::is_host() => {
-                control_byte::HANDSHAKE_COMP_RES
-            }
-            _ => return None,
-        })
+    /// True if this is valid outgoing message for a given role.
+    fn valid_incoming<R: Role>(&self) -> bool {
+        !self.valid_outgoing::<R>()
     }
 }
 

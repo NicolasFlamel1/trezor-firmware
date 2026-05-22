@@ -17,6 +17,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#ifdef KERNEL_MODE
+
 #include <trezor_model.h>
 #include <trezor_rtl.h>
 
@@ -87,17 +89,19 @@ secbool erase_device(flash_progress_callback_t progress_cb) {
                  "Unsupported number of storage areas");
 
   static const flash_area_ref_t areas[] = {
-    {.area = &STORAGE_AREAS[0], .mpu_mode = MPU_MODE_STORAGE},
-    {.area = &STORAGE_AREAS[1], .mpu_mode = MPU_MODE_STORAGE},
-    {.area = &ASSETS_AREA, .mpu_mode = MPU_MODE_ASSETS},
+      {.area = &STORAGE_AREAS[0], .mpu_mode = MPU_MODE_STORAGE},
+      {.area = &STORAGE_AREAS[1], .mpu_mode = MPU_MODE_STORAGE},
+      {.area = &ASSETS_AREA, .mpu_mode = MPU_MODE_ASSETS},
 #if defined(BOARDLOADER) || defined(BOOTLOADER)
-    {.area = &FIRMWARE_AREA, .mpu_mode = MPU_MODE_DEFAULT},
+      {.area = &FIRMWARE_AREA, .mpu_mode = MPU_MODE_DEFAULT},
 #endif
 #if defined(BOARDLOADER) && defined(USE_SD_CARD)
-    {.area = &BOOTLOADER_AREA, .mpu_mode = MPU_MODE_DEFAULT},
-    {.area = &UNUSED_AREA, .mpu_mode = MPU_MODE_UNUSED_FLASH},
+      {.area = &BOOTLOADER_AREA, .mpu_mode = MPU_MODE_DEFAULT},
+      {.area = &UNUSED_AREA, .mpu_mode = MPU_MODE_UNUSED_FLASH},
 #endif
   };
 
   return erase_areas(areas, ARRAY_LENGTH(areas), progress_cb);
 }
+
+#endif  // KERNEL_MODE

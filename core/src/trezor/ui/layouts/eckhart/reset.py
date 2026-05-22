@@ -222,9 +222,9 @@ def slip39_prompt_threshold(
     def info(count: int) -> str:
         return (
             TR.reset__slip39_checklist_more_info_threshold
-            + "\n"
+            + " "
             + TR.reset__slip39_checklist_more_info_threshold_example_template.format(
-                count, num_of_shares, count
+                count, num_of_shares
             )
         )
 
@@ -306,9 +306,8 @@ async def slip39_advanced_prompt_group_threshold(num_of_groups: int) -> int:
     )
 
 
-async def show_intro_backup(single_share: bool, num_of_words: int | None) -> None:
-    if single_share:
-        assert num_of_words is not None
+async def show_intro_backup(num_of_words: int | None) -> None:
+    if num_of_words is not None:
         description = TR.backup__info_single_share_backup.format(num_of_words)
     else:
         description = TR.backup__info_multi_share_backup
@@ -317,7 +316,7 @@ async def show_intro_backup(single_share: bool, num_of_words: int | None) -> Non
         trezorui_api.show_info(
             title=TR.reset__recovery_wallet_backup_title,
             description=description,
-            button=TR.buttons__continue,
+            button=(TR.buttons__continue, True),
         ),
         "backup_intro",
         ButtonRequestType.ResetDevice,

@@ -14,11 +14,14 @@ from __future__ import annotations
 import time
 from typing import Callable, Generator, Sequence
 
+import pytest
+
 from trezorlib import messages
 from trezorlib.client import Session
 from trezorlib.debuglink import DebugLink, DebugSession, LayoutContent, LayoutType
 from trezorlib.debuglink import TrezorTestContext as Client
 from trezorlib.debuglink import multipage_content
+from trezorlib.exceptions import TrezorFailure
 
 from . import translations as TR
 from .common import (
@@ -34,6 +37,8 @@ from .common import (
 from .input_flows_helpers import BackupFlow, EthereumFlow, PinFlow, RecoveryFlow
 
 B = messages.ButtonRequestType
+
+FlowAdapter = Callable[[Session, Callable[[], BRGeneratorType]], BRGeneratorType]
 
 
 class InputFlowBase:
@@ -1716,32 +1721,36 @@ class InputFlowEthereumSignTxData(InputFlowBase):
     def input_flow_common(self) -> BRGeneratorType:
         confirm_tx = None  # will be used to confirm tx details
 
+        # First blob confirmation layout has different semantic on those models:
+        is_intro = self.client.layout_type in (LayoutType.Delizia, LayoutType.Eckhart)
+
         while True:
-            # first BRs are related to data confirmation
             br = yield
+
+            # first BRs are related to data confirmation
             if br.name == "confirm_data":
                 assert br.pages == 1
                 assert confirm_tx is None
 
-                if self.client.layout_type is LayoutType.Eckhart:
-                    TR.regexp("ethereum__title_all_input_data_template").fullmatch(
-                        self.debug.read_layout().title().strip()
-                    )
-                else:
-                    assert (
-                        TR.ethereum__title_input_data
-                        in self.debug.read_layout().title()
-                    )
+                layout = self.debug.read_layout()
+                assert layout.title().startswith(TR.ethereum__title_input_data)
+
+                # Only intro layout contains "view all" functionality:
+                assert is_intro == (
+                    TR.instructions__view_all_data in layout.text_content()
+                    or TR.buttons__view_all_data in layout.button_contents()
+                )
 
                 if self.scroll:
-                    self._go_to_next_page()
+                    self._go_to_next_page(is_intro)
                     if self.cancel:
                         self.scroll = False  # stop pagination & cancel on next page
                 else:
                     if self.cancel:
                         self._cancel_flow()
                     else:
-                        self._confirm_all()
+                        self._confirm_all(is_intro)
+                is_intro = False
                 continue
 
             # data confirmation is over - confirm tx details
@@ -1751,8 +1760,8 @@ class InputFlowEthereumSignTxData(InputFlowBase):
 
             confirm_tx.send(br)
 
-    def _go_to_next_page(self):
-        if self.client.layout_type in (LayoutType.Bolt, LayoutType.Caesar):
+    def _go_to_next_page(self, is_intro: bool):
+        if self.client.layout_type in (LayoutType.Bolt, LayoutType.Caesar) or is_intro:
             self.debug.press_info()  # pagination is a special button
         elif self.client.layout_type in (LayoutType.Delizia, LayoutType.Eckhart):
             self.debug.press_yes()  # pagination is a regular button
@@ -1762,8 +1771,8 @@ class InputFlowEthereumSignTxData(InputFlowBase):
     def _cancel_flow(self):
         self.debug.press_no()
 
-    def _confirm_all(self):
-        if self.client.layout_type in (LayoutType.Bolt, LayoutType.Caesar):
+    def _confirm_all(self, is_intro: bool):
+        if self.client.layout_type in (LayoutType.Bolt, LayoutType.Caesar) or is_intro:
             self.debug.press_yes()  # confirmation is a regular button
         elif self.client.layout_type in (LayoutType.Delizia, LayoutType.Eckhart):
             self.debug.press_info()  # confirmation is available via menu
@@ -3181,3 +3190,47 @@ class InputFlowCancelBrightness(InputFlowBase):
     def input_flow_delizia(self):
         yield
         self.debug.click(self.debug.screen_buttons.menu())
+
+
+# InputFlow adaptors
+
+
+def normal(_session: Session, flow: Callable[[], BRGeneratorType]) -> BRGeneratorType:
+    return flow()
+
+
+def try_to_cancel(skip_cancel: set[str] | None = None) -> FlowAdapter:
+    BACKUP_IN_PROGRESS = messages.Failure(
+        code=messages.FailureType.InProgress,
+        message="Backup in progress",
+    )
+
+    if skip_cancel is None:
+        skip_cancel = set()
+
+    def _try_to_cancel(
+        session: Session, flow: Callable[[], BRGeneratorType]
+    ) -> BRGeneratorType:
+        gen = flow()
+        next(gen)
+        cancels = 0
+        while True:
+            br = yield
+
+            # Don't cancel if the button request appears in `skip_cancel`
+            if br.name not in skip_cancel:
+                # Entering session's context will send an explicit THP ACK after `BACKUP_IN_PROGRESS` is received.
+                with session.client._interact(force_flush=True):
+                    # Try to cancel the backup flow on Core
+                    with pytest.raises(TrezorFailure) as exc_info:
+                        session.call(messages.Cancel(), expect=messages.Failure)
+                    # Following #6483, backup is not cancellable
+                    assert exc_info.value.failure == BACKUP_IN_PROGRESS
+                    cancels += 1
+            try:
+                gen.send(br)
+            except StopIteration:
+                assert cancels > 0
+                return
+
+    return _try_to_cancel

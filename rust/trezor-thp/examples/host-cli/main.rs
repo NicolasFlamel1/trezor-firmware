@@ -6,8 +6,8 @@ use std::{env, net::SocketAddr, str::FromStr};
 use protobuf::Message;
 
 use trezor_thp::{
-    Backend, Channel, Host,
-    channel::host::{ChannelOpen, ChannelPairing},
+    Backend,
+    channel::host::{Channel, ChannelOpen, Mux},
     credential::{CredentialStore, NullCredentialStore},
 };
 
@@ -29,23 +29,28 @@ impl Backend for RustCrypto {
     }
 }
 
+type HostChannel = Channel<RustCrypto>;
+
+fn do_allocation(client: &mut Client<Mux<RustCrypto>>) {
+    client.call(0, &[]);
+}
+
 fn do_handshake<C>(client: &mut Client<ChannelOpen<C, RustCrypto>>)
 where
     C: CredentialStore,
 {
-    // Handshake should finish within 3 request-response cycles.
-    // Device properties and channel id are available after the first one.
-    client.call(0, &[]);
+    client.device_properties = client.channel.device_properties().into();
     let device_properties =
-        ThpDeviceProperties::parse_from_bytes(client.channel.device_properties()).unwrap();
+        ThpDeviceProperties::parse_from_bytes(&client.device_properties).unwrap();
     log::debug!("Device properties: {:?}.", device_properties);
+    // Handshake should finish within 2 request-response cycles.
     client.call(0, &[]);
     client.call(0, &[]);
 }
 
-fn do_pairing(client: &mut Client<ChannelPairing<RustCrypto>>) {
+fn do_pairing(client: &mut Client<HostChannel>) {
     let device_properties =
-        ThpDeviceProperties::parse_from_bytes(client.channel.device_properties()).unwrap();
+        ThpDeviceProperties::parse_from_bytes(&client.device_properties).unwrap();
 
     let mut pairing_methods = Vec::new();
     for p in &device_properties.pairing_methods {
@@ -62,7 +67,7 @@ fn do_pairing(client: &mut Client<ChannelPairing<RustCrypto>>) {
     }
 }
 
-fn do_pairing_skip(client: &mut Client<ChannelPairing<RustCrypto>>) {
+fn do_pairing_skip(client: &mut Client<HostChannel>) {
     let mut pairing_request = ThpPairingRequest::new();
     pairing_request.set_host_name("localhost".into());
     pairing_request.set_app_name("trezor-thp/examples".into());
@@ -82,7 +87,7 @@ fn do_pairing_skip(client: &mut Client<ChannelPairing<RustCrypto>>) {
     );
 }
 
-fn do_ping(client: &mut Client<Channel<Host, RustCrypto>>) {
+fn do_ping(client: &mut Client<HostChannel>) {
     let mut ping = Ping::new();
     ping.set_message("trezor-thp/examples".into());
     ping.set_button_protection(true);
@@ -100,17 +105,19 @@ pub fn main() -> std::io::Result<()> {
     env_logger::init_from_env(env_logger::Env::default().filter_or("RUST_LOG", "info"));
 
     let cred_lookup = NullCredentialStore;
-    let channel = ChannelOpen::<_, RustCrypto>::new(false, cred_lookup).unwrap();
+    let mut channel = Mux::<RustCrypto>::new();
+    channel.request_channel(false);
     let mut client = Client::open(get_address(), channel);
+
+    do_allocation(&mut client);
+    assert!(client.channel.channel_alloc_ready());
+    let mut client = client.map(|c| c.complete(cred_lookup).unwrap());
 
     do_handshake(&mut client);
     assert!(client.channel.handshake_done());
     let mut client = client.map(|c| c.complete().unwrap());
 
     do_pairing(&mut client);
-    assert!(client.channel.pairing_done());
-    let mut client = client.map(|c| c.complete().unwrap());
-
     do_ping(&mut client);
     Ok(())
 }
