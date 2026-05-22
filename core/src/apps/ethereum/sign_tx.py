@@ -30,8 +30,6 @@ if TYPE_CHECKING:
     from .helpers import ConfirmDataFn
     from .keychain import MsgInSignTx
 
-    ConfirmDataFn = Callable[[AnyBytes], Awaitable[None]]
-
 
 # Maximum chain_id which returns the full signature_v (which must fit into an uint32).
 # chain_ids larger than this will only return one bit and the caller must recalculate
